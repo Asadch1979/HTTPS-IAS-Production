@@ -60,12 +60,12 @@
                                 P_NO      in number,
                                 R_ID      in number,
                                 io_cursor OUT t_cursor);
-                                
+
   PROCEDURE P_GET_ENG_PAGE_PERMISSIONS_BY_PPNO(P_PP_NO   IN NUMBER,
-                                               io_cursor OUT t_cursor);                                
-                                
+                                               io_cursor OUT t_cursor);
+
   PROCEDURE P_GET_COM_PAGE_PERMISSIONS_BY_PPNO(P_PP_NO   IN NUMBER,
-                                               io_cursor OUT t_cursor);                                
+                                               io_cursor OUT t_cursor);
 
   procedure P_GetRiskProcessDefinition(io_cursor OUT t_cursor);
 
@@ -104,7 +104,7 @@
                            p_module     IN VARCHAR2 DEFAULT NULL,
                            p_user_ppno  IN NUMBER DEFAULT NULL,
                            p_eng_id     IN NUMBER DEFAULT NULL,
-                           io_cursor     OUT SYS_REFCURSOR);
+                           io_cursor    OUT SYS_REFCURSOR);
 
   PROCEDURE REGISTER_SYSTEM_ERROR(P_FINGERPRINT          IN VARCHAR2,
                                   P_ERROR_TYPE           IN VARCHAR2,
@@ -134,9 +134,11 @@
                                   O_OCCURRENCE_COUNT     OUT NUMBER,
                                   O_EMAIL_ALREADY_SENT   OUT NUMBER);
 
-  PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER, O_CLAIMED OUT NUMBER);
+  PROCEDURE CLAIM_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER,
+                                     O_CLAIMED  OUT NUMBER);
 
-  PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID IN NUMBER, P_EMAIL_SENT IN NUMBER);
+  PROCEDURE MARK_SYSTEM_ERROR_EMAIL(P_ERROR_ID   IN NUMBER,
+                                    P_EMAIL_SENT IN NUMBER);
 
   PROCEDURE GET_SYSTEM_ERROR_RECIPIENTS(O_CUR OUT SYS_REFCURSOR);
 
@@ -159,24 +161,41 @@
                                  P_RESOLVED_BY_PPNO IN VARCHAR2,
                                  P_REMARKS          IN VARCHAR2);
 
-  PROCEDURE P_LOG_APPLICATION_ACTIVITY(
-    P_EVENT_TYPE IN VARCHAR2, P_ACTION_NAME IN VARCHAR2,
-    P_ACTION_CATEGORY IN VARCHAR2 DEFAULT NULL, P_MODULE_NAME IN VARCHAR2 DEFAULT NULL,
-    P_PPNO IN VARCHAR2 DEFAULT NULL, P_ROLE_ID IN NUMBER DEFAULT NULL,
-    P_GROUP_ID IN NUMBER DEFAULT NULL, P_ENTITY_ID IN NUMBER DEFAULT NULL,
-    P_USER_CONTEXT_ID IN NUMBER DEFAULT NULL, P_SESSION_ID IN VARCHAR2 DEFAULT NULL,
-    P_PAGE_ID IN NUMBER DEFAULT NULL, P_CONTROLLER_NAME IN VARCHAR2 DEFAULT NULL,
-    P_CONTROLLER_ACTION IN VARCHAR2 DEFAULT NULL, P_API_PATH IN VARCHAR2 DEFAULT NULL,
-    P_HTTP_METHOD IN VARCHAR2 DEFAULT NULL, P_DB_PACKAGE_NAME IN VARCHAR2 DEFAULT NULL,
-    P_DB_PROCEDURE_NAME IN VARCHAR2 DEFAULT NULL, P_ENGAGEMENT_ID IN NUMBER DEFAULT NULL,
-    P_PARA_ID IN NUMBER DEFAULT NULL, P_OLD_PARA_ID IN NUMBER DEFAULT NULL,
-    P_NEW_PARA_ID IN NUMBER DEFAULT NULL, P_COM_ID IN NUMBER DEFAULT NULL,
-    P_OBJECT_TYPE IN VARCHAR2 DEFAULT NULL, P_OBJECT_ID IN VARCHAR2 DEFAULT NULL,
-    P_RESULT_STATUS IN VARCHAR2 DEFAULT 'SUCCESS', P_RESULT_CODE IN VARCHAR2 DEFAULT NULL,
-    P_RESULT_MESSAGE IN VARCHAR2 DEFAULT NULL, P_CLIENT_IP_ADDRESS IN VARCHAR2 DEFAULT NULL,
-    P_PROXY_IP_ADDRESS IN VARCHAR2 DEFAULT NULL, P_USER_AGENT IN VARCHAR2 DEFAULT NULL,
-    P_TRACE_ID IN VARCHAR2 DEFAULT NULL, P_REQUEST_ID IN VARCHAR2 DEFAULT NULL,
-    P_DURATION_MS IN NUMBER DEFAULT NULL, P_DETAILS IN CLOB DEFAULT NULL);
+  PROCEDURE P_LOG_APPLICATION_ACTIVITY(P_EVENT_TYPE        IN VARCHAR2,
+                                       P_ACTION_NAME       IN VARCHAR2,
+                                       P_ACTION_CATEGORY   IN VARCHAR2 DEFAULT NULL,
+                                       P_MODULE_NAME       IN VARCHAR2 DEFAULT NULL,
+                                       P_PPNO              IN VARCHAR2 DEFAULT NULL,
+                                       P_ROLE_ID           IN NUMBER DEFAULT NULL,
+                                       P_GROUP_ID          IN NUMBER DEFAULT NULL,
+                                       P_ENTITY_ID         IN NUMBER DEFAULT NULL,
+                                       P_USER_CONTEXT_ID   IN NUMBER DEFAULT NULL,
+                                       P_SESSION_ID        IN VARCHAR2 DEFAULT NULL,
+                                       P_PAGE_ID           IN NUMBER DEFAULT NULL,
+                                       P_CONTROLLER_NAME   IN VARCHAR2 DEFAULT NULL,
+                                       P_CONTROLLER_ACTION IN VARCHAR2 DEFAULT NULL,
+                                       P_API_PATH          IN VARCHAR2 DEFAULT NULL,
+                                       P_HTTP_METHOD       IN VARCHAR2 DEFAULT NULL,
+                                       P_DB_PACKAGE_NAME   IN VARCHAR2 DEFAULT NULL,
+                                       P_DB_PROCEDURE_NAME IN VARCHAR2 DEFAULT NULL,
+                                       P_ENGAGEMENT_ID     IN NUMBER DEFAULT NULL,
+                                       P_PARA_ID           IN NUMBER DEFAULT NULL,
+                                       P_OLD_PARA_ID       IN NUMBER DEFAULT NULL,
+                                       P_NEW_PARA_ID       IN NUMBER DEFAULT NULL,
+                                       P_COM_ID            IN NUMBER DEFAULT NULL,
+                                       P_OBJECT_TYPE       IN VARCHAR2 DEFAULT NULL,
+                                       P_OBJECT_ID         IN VARCHAR2 DEFAULT NULL,
+                                       P_RESULT_STATUS     IN VARCHAR2 DEFAULT 'SUCCESS',
+                                       P_RESULT_CODE       IN VARCHAR2 DEFAULT NULL,
+                                       P_RESULT_MESSAGE    IN VARCHAR2 DEFAULT NULL,
+                                       P_CLIENT_IP_ADDRESS IN VARCHAR2 DEFAULT NULL,
+                                       P_PROXY_IP_ADDRESS  IN VARCHAR2 DEFAULT NULL,
+                                       P_USER_AGENT        IN VARCHAR2 DEFAULT NULL,
+                                       P_TRACE_ID          IN VARCHAR2 DEFAULT NULL,
+                                       P_REQUEST_ID        IN VARCHAR2 DEFAULT NULL,
+                                       P_DURATION_MS       IN NUMBER DEFAULT NULL,
+                                       P_DETAILS           IN CLOB DEFAULT NULL);
+
 
 end PKG_LG;
 /
@@ -878,15 +897,18 @@ create or replace package body PKG_LG is
                                       RESOLUTION_STATUS
                                    END
          WHERE FINGERPRINT = P_FINGERPRINT
-         RETURNING ERROR_ID, ERROR_REFERENCE, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, DECODE(EMAIL_SENT, 'Y', 1, 0)
-           INTO O_ERROR_ID, O_ERROR_REFERENCE, O_FIRST_OCCURRENCE_UTC, O_LAST_OCCURRENCE_UTC, O_OCCURRENCE_COUNT, O_EMAIL_ALREADY_SENT;
+        RETURNING ERROR_ID, ERROR_REFERENCE, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC, OCCURRENCE_COUNT, DECODE(EMAIL_SENT, 'Y', 1, 0) INTO O_ERROR_ID, O_ERROR_REFERENCE, O_FIRST_OCCURRENCE_UTC, O_LAST_OCCURRENCE_UTC, O_OCCURRENCE_COUNT, O_EMAIL_ALREADY_SENT;
         O_IS_FIRST_OCCURRENCE := 0;
-        
+      
         INSERT INTO T_AU_SYSTEM_ERROR_STATUS_HISTORY
           (ERROR_ID, OLD_STATUS, NEW_STATUS, CHANGED_BY_PPNO, REMARKS)
-        SELECT O_ERROR_ID, 'RESOLVED', 'OPEN', P_PPNO, 'Fingerprint recurred after resolution; reopened automatically.'
-          FROM dual
-         WHERE v_was_resolved = 1;
+          SELECT O_ERROR_ID,
+                 'RESOLVED',
+                 'OPEN',
+                 P_PPNO,
+                 'Fingerprint recurred after resolution; reopened automatically.'
+            FROM dual
+           WHERE v_was_resolved = 1;
     END;
   
     INSERT INTO T_AU_SYSTEM_ERROR_HISTORY
@@ -934,16 +956,16 @@ create or replace package body PKG_LG is
     PRAGMA AUTONOMOUS_TRANSACTION;
   BEGIN
     O_CLAIMED := 0;
-
+  
     UPDATE T_AU_SYSTEM_ERROR_MASTER
        SET EMAIL_SENT = 'P'
      WHERE ERROR_ID = P_ERROR_ID
        AND NVL(EMAIL_SENT, 'N') = 'N';
-
+  
     IF SQL%ROWCOUNT = 1 THEN
       O_CLAIMED := 1;
     END IF;
-
+  
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -986,92 +1008,127 @@ create or replace package body PKG_LG is
        ORDER BY SORT_ORDER, RECIPIENT_ID;
   END GET_SYSTEM_ERROR_RECIPIENTS;
 
- PROCEDURE GET_SYSTEM_ERRORS(
-      P_STATUS          IN  VARCHAR2,
-      P_FROM_DATE       IN  TIMESTAMP,
-      P_TO_DATE         IN  TIMESTAMP,
-      P_ERROR_REFERENCE IN  VARCHAR2,
-      P_MODULE          IN  VARCHAR2,
-      P_USER_PPNO       IN  VARCHAR2,
-      P_ENTITY          IN  VARCHAR2,
-      P_ERROR_TYPE_CODE IN  VARCHAR2,
-      O_CUR             OUT SYS_REFCURSOR) IS
+  PROCEDURE GET_SYSTEM_ERRORS(P_STATUS          IN VARCHAR2,
+                              P_FROM_DATE       IN TIMESTAMP,
+                              P_TO_DATE         IN TIMESTAMP,
+                              P_ERROR_REFERENCE IN VARCHAR2,
+                              P_MODULE          IN VARCHAR2,
+                              P_USER_PPNO       IN VARCHAR2,
+                              P_ENTITY          IN VARCHAR2,
+                              P_ERROR_TYPE_CODE IN VARCHAR2,
+                              O_CUR             OUT SYS_REFCURSOR) IS
   BEGIN
     OPEN O_CUR FOR
-      SELECT ERROR_ID, ERROR_REFERENCE, RESOLUTION_STATUS, FIRST_OCCURRENCE_UTC, LAST_OCCURRENCE_UTC,
-             OCCURRENCE_COUNT, MODULE, CONTROLLER, ACTION, API_PATH, PPNO, ROLE_NAME, ENTITY_NAME,
-             ERROR_TYPE, ERROR_CODE, STORED_PROCEDURE, LAST_IP_ADDRESS, RESOLVED_BY, RESOLVED_ON_UTC,
+      SELECT ERROR_ID,
+             ERROR_REFERENCE,
+             RESOLUTION_STATUS,
+             FIRST_OCCURRENCE_UTC,
+             LAST_OCCURRENCE_UTC,
+             OCCURRENCE_COUNT,
+             MODULE,
+             CONTROLLER,
+             ACTION,
+             API_PATH,
+             PPNO,
+             ROLE_NAME,
+             ENTITY_NAME,
+             ERROR_TYPE,
+             ERROR_CODE,
+             STORED_PROCEDURE,
+             LAST_IP_ADDRESS,
+             RESOLVED_BY,
+             RESOLVED_ON_UTC,
              RESOLUTION_REMARKS
         FROM T_AU_SYSTEM_ERROR_MASTER
-       WHERE (P_STATUS IS NULL OR P_STATUS = 'ALL' OR RESOLUTION_STATUS = P_STATUS)
+       WHERE (P_STATUS IS NULL OR P_STATUS = 'ALL' OR
+             RESOLUTION_STATUS = P_STATUS)
          AND (P_FROM_DATE IS NULL OR LAST_OCCURRENCE_UTC >= P_FROM_DATE)
          AND (P_TO_DATE IS NULL OR LAST_OCCURRENCE_UTC <= P_TO_DATE)
-         AND (P_ERROR_REFERENCE IS NULL OR UPPER(ERROR_REFERENCE) LIKE '%' || UPPER(P_ERROR_REFERENCE) || '%')
-         AND (P_MODULE IS NULL OR UPPER(MODULE) LIKE '%' || UPPER(P_MODULE) || '%')
-         AND (P_USER_PPNO IS NULL OR UPPER(PPNO) LIKE '%' || UPPER(P_USER_PPNO) || '%')
-         AND (P_ENTITY IS NULL OR UPPER(ENTITY_NAME) LIKE '%' || UPPER(P_ENTITY) || '%')
-         AND (P_ERROR_TYPE_CODE IS NULL OR UPPER(ERROR_TYPE) LIKE '%' || UPPER(P_ERROR_TYPE_CODE) || '%' OR UPPER(ERROR_CODE) LIKE '%' || UPPER(P_ERROR_TYPE_CODE) || '%')
+         AND (P_ERROR_REFERENCE IS NULL OR
+             UPPER(ERROR_REFERENCE) LIKE
+             '%' || UPPER(P_ERROR_REFERENCE) || '%')
+         AND (P_MODULE IS NULL OR
+             UPPER(MODULE) LIKE '%' || UPPER(P_MODULE) || '%')
+         AND (P_USER_PPNO IS NULL OR
+             UPPER(PPNO) LIKE '%' || UPPER(P_USER_PPNO) || '%')
+         AND (P_ENTITY IS NULL OR
+             UPPER(ENTITY_NAME) LIKE '%' || UPPER(P_ENTITY) || '%')
+         AND (P_ERROR_TYPE_CODE IS NULL OR
+             UPPER(ERROR_TYPE) LIKE '%' || UPPER(P_ERROR_TYPE_CODE) || '%' OR
+             UPPER(ERROR_CODE) LIKE '%' || UPPER(P_ERROR_TYPE_CODE) || '%')
        ORDER BY LAST_OCCURRENCE_UTC DESC;
   END GET_SYSTEM_ERRORS;
 
-  PROCEDURE GET_SYSTEM_ERROR_DETAIL(
-      P_ERROR_ID         IN  NUMBER,
-      O_MASTER           OUT SYS_REFCURSOR,
-      O_HISTORY          OUT SYS_REFCURSOR,
-      O_STATUS_HISTORY   OUT SYS_REFCURSOR) IS
+  PROCEDURE GET_SYSTEM_ERROR_DETAIL(P_ERROR_ID       IN NUMBER,
+                                    O_MASTER         OUT SYS_REFCURSOR,
+                                    O_HISTORY        OUT SYS_REFCURSOR,
+                                    O_STATUS_HISTORY OUT SYS_REFCURSOR) IS
   BEGIN
     OPEN O_MASTER FOR
-      SELECT *
-        FROM T_AU_SYSTEM_ERROR_MASTER
-       WHERE ERROR_ID = P_ERROR_ID;
-
+      SELECT * FROM T_AU_SYSTEM_ERROR_MASTER WHERE ERROR_ID = P_ERROR_ID;
+  
     OPEN O_HISTORY FOR
-      SELECT HISTORY_ID, OCCURRED_ON_UTC, TRACE_ID, IP_ADDRESS, USER_AGENT, PPNO, ROLE_NAME,
-             ENTITY_NAME, PAGE_ID, ENG_ID, PARA_ID, COM_ID, API_PATH, ERROR_MESSAGE
+      SELECT HISTORY_ID,
+             OCCURRED_ON_UTC,
+             TRACE_ID,
+             IP_ADDRESS,
+             USER_AGENT,
+             PPNO,
+             ROLE_NAME,
+             ENTITY_NAME,
+             PAGE_ID,
+             ENG_ID,
+             PARA_ID,
+             COM_ID,
+             API_PATH,
+             ERROR_MESSAGE
         FROM T_AU_SYSTEM_ERROR_HISTORY
        WHERE ERROR_ID = P_ERROR_ID
        ORDER BY OCCURRED_ON_UTC DESC;
-
+  
     OPEN O_STATUS_HISTORY FOR
-      SELECT CHANGED_ON_UTC, OLD_STATUS, NEW_STATUS, CHANGED_BY_PPNO, REMARKS
+      SELECT CHANGED_ON_UTC,
+             OLD_STATUS,
+             NEW_STATUS,
+             CHANGED_BY_PPNO,
+             REMARKS
         FROM T_AU_SYSTEM_ERROR_STATUS_HISTORY
        WHERE ERROR_ID = P_ERROR_ID
        ORDER BY CHANGED_ON_UTC DESC;
   END GET_SYSTEM_ERROR_DETAIL;
 
-  PROCEDURE RESOLVE_SYSTEM_ERROR(
-      P_ERROR_ID          IN NUMBER,
-      P_RESOLVED_BY_PPNO  IN VARCHAR2,
-      P_REMARKS           IN VARCHAR2) IS
+  PROCEDURE RESOLVE_SYSTEM_ERROR(P_ERROR_ID         IN NUMBER,
+                                 P_RESOLVED_BY_PPNO IN VARCHAR2,
+                                 P_REMARKS          IN VARCHAR2) IS
     PRAGMA AUTONOMOUS_TRANSACTION;
     v_old_status VARCHAR2(30);
   BEGIN
     IF TRIM(P_REMARKS) IS NULL THEN
       RAISE_APPLICATION_ERROR(-20001, 'Resolution remarks are required.');
     END IF;
-
+  
     SELECT RESOLUTION_STATUS
       INTO v_old_status
       FROM T_AU_SYSTEM_ERROR_MASTER
      WHERE ERROR_ID = P_ERROR_ID
-     FOR UPDATE;
-
+       FOR UPDATE;
+  
     IF v_old_status = 'RESOLVED' THEN
       RAISE_APPLICATION_ERROR(-20002, 'System error is already resolved.');
     END IF;
-
+  
     UPDATE T_AU_SYSTEM_ERROR_MASTER
-       SET RESOLUTION_STATUS = 'RESOLVED',
-           RESOLVED_BY = P_RESOLVED_BY_PPNO,
-           RESOLVED_ON_UTC = SYS_EXTRACT_UTC(SYSTIMESTAMP),
+       SET RESOLUTION_STATUS  = 'RESOLVED',
+           RESOLVED_BY        = P_RESOLVED_BY_PPNO,
+           RESOLVED_ON_UTC    = SYS_EXTRACT_UTC(SYSTIMESTAMP),
            RESOLUTION_REMARKS = P_REMARKS
      WHERE ERROR_ID = P_ERROR_ID;
-
+  
     INSERT INTO T_AU_SYSTEM_ERROR_STATUS_HISTORY
       (ERROR_ID, OLD_STATUS, NEW_STATUS, CHANGED_BY_PPNO, REMARKS)
     VALUES
       (P_ERROR_ID, v_old_status, 'RESOLVED', P_RESOLVED_BY_PPNO, P_REMARKS);
-
+  
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -1079,44 +1136,118 @@ create or replace package body PKG_LG is
       RAISE;
   END RESOLVE_SYSTEM_ERROR;
 
-  PROCEDURE P_LOG_APPLICATION_ACTIVITY(
-    P_EVENT_TYPE IN VARCHAR2, P_ACTION_NAME IN VARCHAR2,
-    P_ACTION_CATEGORY IN VARCHAR2 DEFAULT NULL, P_MODULE_NAME IN VARCHAR2 DEFAULT NULL,
-    P_PPNO IN VARCHAR2 DEFAULT NULL, P_ROLE_ID IN NUMBER DEFAULT NULL,
-    P_GROUP_ID IN NUMBER DEFAULT NULL, P_ENTITY_ID IN NUMBER DEFAULT NULL,
-    P_USER_CONTEXT_ID IN NUMBER DEFAULT NULL, P_SESSION_ID IN VARCHAR2 DEFAULT NULL,
-    P_PAGE_ID IN NUMBER DEFAULT NULL, P_CONTROLLER_NAME IN VARCHAR2 DEFAULT NULL,
-    P_CONTROLLER_ACTION IN VARCHAR2 DEFAULT NULL, P_API_PATH IN VARCHAR2 DEFAULT NULL,
-    P_HTTP_METHOD IN VARCHAR2 DEFAULT NULL, P_DB_PACKAGE_NAME IN VARCHAR2 DEFAULT NULL,
-    P_DB_PROCEDURE_NAME IN VARCHAR2 DEFAULT NULL, P_ENGAGEMENT_ID IN NUMBER DEFAULT NULL,
-    P_PARA_ID IN NUMBER DEFAULT NULL, P_OLD_PARA_ID IN NUMBER DEFAULT NULL,
-    P_NEW_PARA_ID IN NUMBER DEFAULT NULL, P_COM_ID IN NUMBER DEFAULT NULL,
-    P_OBJECT_TYPE IN VARCHAR2 DEFAULT NULL, P_OBJECT_ID IN VARCHAR2 DEFAULT NULL,
-    P_RESULT_STATUS IN VARCHAR2 DEFAULT 'SUCCESS', P_RESULT_CODE IN VARCHAR2 DEFAULT NULL,
-    P_RESULT_MESSAGE IN VARCHAR2 DEFAULT NULL, P_CLIENT_IP_ADDRESS IN VARCHAR2 DEFAULT NULL,
-    P_PROXY_IP_ADDRESS IN VARCHAR2 DEFAULT NULL, P_USER_AGENT IN VARCHAR2 DEFAULT NULL,
-    P_TRACE_ID IN VARCHAR2 DEFAULT NULL, P_REQUEST_ID IN VARCHAR2 DEFAULT NULL,
-    P_DURATION_MS IN NUMBER DEFAULT NULL, P_DETAILS IN CLOB DEFAULT NULL) IS
+  PROCEDURE P_LOG_APPLICATION_ACTIVITY(P_EVENT_TYPE        IN VARCHAR2,
+                                       P_ACTION_NAME       IN VARCHAR2,
+                                       P_ACTION_CATEGORY   IN VARCHAR2 DEFAULT NULL,
+                                       P_MODULE_NAME       IN VARCHAR2 DEFAULT NULL,
+                                       P_PPNO              IN VARCHAR2 DEFAULT NULL,
+                                       P_ROLE_ID           IN NUMBER DEFAULT NULL,
+                                       P_GROUP_ID          IN NUMBER DEFAULT NULL,
+                                       P_ENTITY_ID         IN NUMBER DEFAULT NULL,
+                                       P_USER_CONTEXT_ID   IN NUMBER DEFAULT NULL,
+                                       P_SESSION_ID        IN VARCHAR2 DEFAULT NULL,
+                                       P_PAGE_ID           IN NUMBER DEFAULT NULL,
+                                       P_CONTROLLER_NAME   IN VARCHAR2 DEFAULT NULL,
+                                       P_CONTROLLER_ACTION IN VARCHAR2 DEFAULT NULL,
+                                       P_API_PATH          IN VARCHAR2 DEFAULT NULL,
+                                       P_HTTP_METHOD       IN VARCHAR2 DEFAULT NULL,
+                                       P_DB_PACKAGE_NAME   IN VARCHAR2 DEFAULT NULL,
+                                       P_DB_PROCEDURE_NAME IN VARCHAR2 DEFAULT NULL,
+                                       P_ENGAGEMENT_ID     IN NUMBER DEFAULT NULL,
+                                       P_PARA_ID           IN NUMBER DEFAULT NULL,
+                                       P_OLD_PARA_ID       IN NUMBER DEFAULT NULL,
+                                       P_NEW_PARA_ID       IN NUMBER DEFAULT NULL,
+                                       P_COM_ID            IN NUMBER DEFAULT NULL,
+                                       P_OBJECT_TYPE       IN VARCHAR2 DEFAULT NULL,
+                                       P_OBJECT_ID         IN VARCHAR2 DEFAULT NULL,
+                                       P_RESULT_STATUS     IN VARCHAR2 DEFAULT 'SUCCESS',
+                                       P_RESULT_CODE       IN VARCHAR2 DEFAULT NULL,
+                                       P_RESULT_MESSAGE    IN VARCHAR2 DEFAULT NULL,
+                                       P_CLIENT_IP_ADDRESS IN VARCHAR2 DEFAULT NULL,
+                                       P_PROXY_IP_ADDRESS  IN VARCHAR2 DEFAULT NULL,
+                                       P_USER_AGENT        IN VARCHAR2 DEFAULT NULL,
+                                       P_TRACE_ID          IN VARCHAR2 DEFAULT NULL,
+                                       P_REQUEST_ID        IN VARCHAR2 DEFAULT NULL,
+                                       P_DURATION_MS       IN NUMBER DEFAULT NULL,
+                                       P_DETAILS           IN CLOB DEFAULT NULL) IS
     PRAGMA AUTONOMOUS_TRANSACTION;
   BEGIN
     INSERT INTO T_AU_APPLICATION_AUDIT_LOG
-      (ID, EVENT_TIME, EVENT_TYPE, ACTION_NAME, ACTION_CATEGORY, MODULE_NAME,
-       PPNO, ROLE_ID, GROUP_ID, ENTITY_ID, USER_CONTEXT_ID, SESSION_ID,
-       PAGE_ID, CONTROLLER_NAME, CONTROLLER_ACTION, API_PATH, HTTP_METHOD,
-       DB_PACKAGE_NAME, DB_PROCEDURE_NAME, ENGAGEMENT_ID, PARA_ID, OLD_PARA_ID,
-       NEW_PARA_ID, COM_ID, OBJECT_TYPE, OBJECT_ID, RESULT_STATUS, RESULT_CODE,
-       RESULT_MESSAGE, CLIENT_IP_ADDRESS, PROXY_IP_ADDRESS, USER_AGENT,
-       TRACE_ID, REQUEST_ID, DURATION_MS, DETAILS, CREATED_ON)
+      (ID,
+       EVENT_TIME,
+       EVENT_TYPE,
+       ACTION_NAME,
+       ACTION_CATEGORY,
+       MODULE_NAME,
+       PPNO,
+       ROLE_ID,
+       GROUP_ID,
+       ENTITY_ID,
+       USER_CONTEXT_ID,
+       SESSION_ID,
+       PAGE_ID,
+       CONTROLLER_NAME,
+       CONTROLLER_ACTION,
+       API_PATH,
+       HTTP_METHOD,
+       DB_PACKAGE_NAME,
+       DB_PROCEDURE_NAME,
+       ENGAGEMENT_ID,
+       PARA_ID,
+       OLD_PARA_ID,
+       NEW_PARA_ID,
+       COM_ID,
+       OBJECT_TYPE,
+       OBJECT_ID,
+       RESULT_STATUS,
+       RESULT_CODE,
+       RESULT_MESSAGE,
+       CLIENT_IP_ADDRESS,
+       PROXY_IP_ADDRESS,
+       USER_AGENT,
+       TRACE_ID,
+       REQUEST_ID,
+       DURATION_MS,
+       DETAILS,
+       CREATED_ON)
     VALUES
-      (SEQ_T_AU_APPLICATION_AUDIT_LOG.NEXTVAL, SYSTIMESTAMP, P_EVENT_TYPE,
-       P_ACTION_NAME, P_ACTION_CATEGORY, P_MODULE_NAME, P_PPNO, P_ROLE_ID,
-       P_GROUP_ID, P_ENTITY_ID, P_USER_CONTEXT_ID, P_SESSION_ID, P_PAGE_ID,
-       P_CONTROLLER_NAME, P_CONTROLLER_ACTION, P_API_PATH, P_HTTP_METHOD,
-       P_DB_PACKAGE_NAME, P_DB_PROCEDURE_NAME, P_ENGAGEMENT_ID, P_PARA_ID,
-       P_OLD_PARA_ID, P_NEW_PARA_ID, P_COM_ID, P_OBJECT_TYPE, P_OBJECT_ID,
-       NVL(P_RESULT_STATUS, 'SUCCESS'), P_RESULT_CODE, P_RESULT_MESSAGE,
-       P_CLIENT_IP_ADDRESS, P_PROXY_IP_ADDRESS, P_USER_AGENT, P_TRACE_ID,
-       P_REQUEST_ID, P_DURATION_MS, P_DETAILS, SYSTIMESTAMP);
+      (SEQ_T_AU_APPLICATION_AUDIT_LOG.NEXTVAL,
+       SYSTIMESTAMP,
+       P_EVENT_TYPE,
+       P_ACTION_NAME,
+       P_ACTION_CATEGORY,
+       P_MODULE_NAME,
+       P_PPNO,
+       P_ROLE_ID,
+       P_GROUP_ID,
+       P_ENTITY_ID,
+       P_USER_CONTEXT_ID,
+       P_SESSION_ID,
+       P_PAGE_ID,
+       P_CONTROLLER_NAME,
+       P_CONTROLLER_ACTION,
+       P_API_PATH,
+       P_HTTP_METHOD,
+       P_DB_PACKAGE_NAME,
+       P_DB_PROCEDURE_NAME,
+       P_ENGAGEMENT_ID,
+       P_PARA_ID,
+       P_OLD_PARA_ID,
+       P_NEW_PARA_ID,
+       P_COM_ID,
+       P_OBJECT_TYPE,
+       P_OBJECT_ID,
+       NVL(P_RESULT_STATUS, 'SUCCESS'),
+       P_RESULT_CODE,
+       P_RESULT_MESSAGE,
+       P_CLIENT_IP_ADDRESS,
+       P_PROXY_IP_ADDRESS,
+       P_USER_AGENT,
+       P_TRACE_ID,
+       P_REQUEST_ID,
+       P_DURATION_MS,
+       P_DETAILS,
+       SYSTIMESTAMP);
     COMMIT;
   EXCEPTION
     WHEN OTHERS THEN
@@ -1125,4 +1256,3 @@ create or replace package body PKG_LG is
   END P_LOG_APPLICATION_ACTIVITY;
 
 end PKG_LG;
-
