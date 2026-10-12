@@ -119,6 +119,13 @@ SELECT
     s.reporting_office_id,
     ro.name AS reporting_office_name,
 
+    s.reporting_1,
+    s.reporting_2,
+    s.reporting_3,
+    s.reporting_4,
+    s.reporting_5,
+    s.reporting_6,
+
     s.gm_office_id,
     gm.name AS gm_office_name,
 
@@ -561,7 +568,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   
   
     ---------------------------------------------------------------
-    -- CCO requires finer cycle breakup
+    -- CCO and CIA require finer cycle breakup
     ---------------------------------------------------------------
     IF V_TYPE IN ('CCO', 'CIA') THEN
     
