@@ -3106,6 +3106,51 @@ namespace AIS.Controllers
             }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult GetEntityTypesForSelection()
+            => ExecuteManageUsersSelection(() => Ok(dBConnection.GetEntityTypesForSelection(DBConnection.ManageUsersSelectionPageId)));
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult GetReportingOfficesForSelection([FromForm] int entityTypeId)
+            => ExecuteManageUsersSelection(() => Ok(dBConnection.GetReportingOfficesForSelection(entityTypeId, DBConnection.ManageUsersSelectionPageId)), entityTypeId);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult GetPostingsForSelection([FromForm] int reportingId, [FromForm] int entityTypeId)
+            => ExecuteManageUsersSelection(() => Ok(dBConnection.GetPostingsForSelection(reportingId, entityTypeId, DBConnection.ManageUsersSelectionPageId)), entityTypeId, reportingId);
+
+        private IActionResult ExecuteManageUsersSelection(Func<IActionResult> action, int? entityTypeId = null, int? reportingId = null)
+            {
+            var user = sessionHandler.GetUser();
+            if (User.Identity?.IsAuthenticated != true || user == null || sessionHandler.IsSessionRevoked(user))
+                return Unauthorized(new { message = "An active authenticated session is required." });
+            try
+                {
+                var permissions = HttpContext.RequestServices.GetRequiredService<IPermissionService>();
+                if (!permissions.HasViewPermission(sessionHandler.GetUser(), DBConnection.ManageUsersSelectionPageId))
+                    return StatusCode(403, new { message = "Manage Users access is required." });
+                if (!ModelState.IsValid || entityTypeId <= 0 || reportingId <= 0)
+                    return BadRequest(new { message = "Valid selection IDs are required." });
+                return action();
+                }
+            catch (AIS.Session.UnauthenticatedException)
+                {
+                return Unauthorized(new { message = "An active authenticated session is required." });
+                }
+            catch (DatabaseUnavailableException ex)
+                {
+                _logger.LogError(ex, "Manage Users selection database unavailable.");
+                return StatusCode(503, new { message = "The database is currently unavailable." });
+                }
+            catch (Exception ex)
+                {
+                _logger.LogError(ex, "Manage Users selection lookup failed.");
+                return StatusCode(500, new { message = "Unable to load Manage Users selections." });
+                }
+            }
+
+        [HttpPost]
         public IActionResult GetUserContexts([FromForm] int? userId, [FromForm] string ppNumber)
             {
             var unauthorized = EnsureAuthenticatedSession();
