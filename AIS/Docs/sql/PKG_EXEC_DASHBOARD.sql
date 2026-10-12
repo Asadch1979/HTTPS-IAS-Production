@@ -285,6 +285,17 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR);
 
+  PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
+                                    P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                    P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    IO_CURSOR        OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_CRITICAL_ITEMS(P_DASHBOARD_TYPE IN VARCHAR2,
+                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                 P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 IO_CURSOR        OUT SYS_REFCURSOR);
+
 END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
