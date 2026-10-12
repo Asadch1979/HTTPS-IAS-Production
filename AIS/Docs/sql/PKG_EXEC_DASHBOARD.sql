@@ -4,8 +4,7 @@ WITH entity_map AS
 (
     SELECT
         entity_id,
-        MAX(parent_id) AS parent_id,
-        MAX(c_type_id) AS c_type_id
+        CASE WHEN COUNT(DISTINCT c_type_id) = 1 THEN MAX(c_type_id) END AS c_type_id
     FROM t_auditee_entities_maping
     WHERE NVL(status, 'Y') = 'Y'
     GROUP BY entity_id
@@ -14,7 +13,7 @@ hierarchy AS
 (
     SELECT
         h.entity_id,
-        m.parent_id,
+        h.reporting_1 AS parent_id,
         h.reporting_1,
         h.reporting_2,
         h.reporting_3,
@@ -120,6 +119,13 @@ SELECT
     s.reporting_office_id,
     ro.name AS reporting_office_name,
 
+    s.reporting_1,
+    s.reporting_2,
+    s.reporting_3,
+    s.reporting_4,
+    s.reporting_5,
+    s.reporting_6,
+
     s.gm_office_id,
     gm.name AS gm_office_name,
 
@@ -152,18 +158,18 @@ SELECT
 
     CASE
         WHEN c.para_added_on IS NOT NULL
-        THEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on)
+        THEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on)
     END AS aging_days,
 
     CASE
         WHEN c.para_added_on IS NULL THEN 'UNKNOWN'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 90
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 90
             THEN '0-90 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 180
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 180
             THEN '91-180 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 365
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 365
             THEN '181-365 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
             THEN '1-3 YEARS'
         ELSE 'OVER 3 YEARS'
     END AS aging_bucket,
@@ -179,7 +185,7 @@ SELECT
     END AS is_open,
 
     CASE
-        WHEN c.para_status <> 8 THEN 1
+        WHEN c.para_status = 9 THEN 1
         ELSE 0
     END AS is_settled,
 
@@ -259,6 +265,11 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       TOP   = Bank-wide Top Management
       GROUP = Business Group scope
       CCO   = Bank-wide Compliance oversight
+      CIA   = Bank-wide Internal Audit oversight
+
+    The IAS backend must derive dashboard type and root entity from the
+    authenticated user. This package applies hierarchy-based filtering but
+    cannot authenticate privileges from dashboard type alone.
   */
 
   PROCEDURE P_GET_KPI_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
@@ -281,9 +292,37 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR);
 
+  PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
+                                    P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                    P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    IO_CURSOR        OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_CRITICAL_ITEMS(P_DASHBOARD_TYPE IN VARCHAR2,
+                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                 P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 IO_CURSOR        OUT SYS_REFCURSOR);
+
 END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
+
+  FUNCTION VALIDATE_REQUEST(P_DASHBOARD_TYPE IN VARCHAR2,
+                            P_ENTITY_ID IN NUMBER) RETURN VARCHAR2 AS
+    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+  BEGIN
+    IF V_TYPE IS NULL OR V_TYPE NOT IN ('TOP', 'GROUP', 'CCO', 'CIA') THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Unsupported executive dashboard type.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL AND
+       (P_ENTITY_ID <= 0 OR P_ENTITY_ID <> TRUNC(P_ENTITY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20002, 'Entity ID must be a positive integer.');
+    END IF;
+    IF V_TYPE = 'GROUP' AND P_ENTITY_ID IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20003, 'Group dashboard needs an authorized entity.');
+    END IF;
+    RETURN V_TYPE;
+  END VALIDATE_REQUEST;
 
   -------------------------------------------------------------------
   -- 1. KPI SUMMARY
@@ -292,26 +331,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                               P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                               P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                               IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    -- GROUP dashboard must have a valid entity.
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT 0 AS total_cases,
-               0 AS open_paras,
-               0 AS high_risk_paras,
-               0 AS zero_cycle_paras,
-               0 AS over_3_cycle_paras,
-               0 AS over_1_year_paras,
-               0 AS critical_items,
-               0 AS settled_total,
-               0 AS settled_mtd,
-               0 AS settlement_ratio
-          FROM dual;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
       SELECT COUNT(*) AS total_cases,
@@ -347,10 +369,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                  0) AS settled_mtd,
              
              ROUND(CASE
-                     WHEN COUNT(*) = 0 THEN
+                     WHEN NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0) = 0 THEN
                       0
                      ELSE
-                      NVL(SUM(p.is_settled), 0) / COUNT(*) * 100
+                      NVL(SUM(p.is_settled), 0) /
+                      (NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0)) * 100
                    END,
                    2) AS settlement_ratio
       
@@ -358,13 +381,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       
        WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
             
-         AND (V_TYPE IN ('TOP', 'CCO')
-             
-             OR (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-             p.reporting_office_id = P_ENTITY_ID OR
-             p.gm_office_id = P_ENTITY_ID OR
-             p.division_id = P_ENTITY_ID OR
-             p.business_group_id = P_ENTITY_ID)));
+         AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)));
   
   END P_GET_KPI_SUMMARY;
 
@@ -375,20 +400,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS NUMBER) AS risk_id,
-               CAST(NULL AS VARCHAR2(20)) AS risk_name,
-               0 AS para_count,
-               0 AS percentage
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
     
@@ -419,14 +433,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
               
-           AND (V_TYPE IN ('TOP', 'CCO')
-               
-               OR
-               (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-               p.reporting_office_id = P_ENTITY_ID OR
-               p.gm_office_id = P_ENTITY_ID OR
-               p.division_id = P_ENTITY_ID OR
-               p.business_group_id = P_ENTITY_ID)))
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
         
          GROUP BY CASE
                     WHEN p.risk_id IN (1, 2, 3) THEN
@@ -467,20 +482,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS VARCHAR2(30)) AS bucket_code,
-               CAST(NULL AS VARCHAR2(50)) AS bucket_name,
-               0 AS para_count,
-               0 AS high_risk_count
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
     
@@ -527,14 +531,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
               
-           AND (V_TYPE IN ('TOP', 'CCO')
-               
-               OR
-               (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-               p.reporting_office_id = P_ENTITY_ID OR
-               p.gm_office_id = P_ENTITY_ID OR
-               p.division_id = P_ENTITY_ID OR
-               p.business_group_id = P_ENTITY_ID)))
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
         
          GROUP BY p.aging_bucket)
       
@@ -558,25 +563,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS VARCHAR2(30)) AS bucket_code,
-               CAST(NULL AS VARCHAR2(50)) AS bucket_name,
-               0 AS para_count,
-               0 AS high_risk_count
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     ---------------------------------------------------------------
-    -- CCO requires finer cycle breakup
+    -- CCO and CIA require finer cycle breakup
     ---------------------------------------------------------------
-    IF V_TYPE = 'CCO' THEN
+    IF V_TYPE IN ('CCO', 'CIA') THEN
     
       OPEN IO_CURSOR FOR
       
@@ -635,7 +629,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            WHERE p.is_open = 1
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
-          
+             AND (P_ENTITY_ID IS NULL OR
+                  p.entity_id = P_ENTITY_ID OR
+                  p.reporting_1 = P_ENTITY_ID OR
+                  p.reporting_2 = P_ENTITY_ID OR
+                  p.reporting_3 = P_ENTITY_ID OR
+                  p.reporting_4 = P_ENTITY_ID OR
+                  p.reporting_5 = P_ENTITY_ID OR
+                  p.reporting_6 = P_ENTITY_ID)
            GROUP BY CASE
                       WHEN p.com_cycle = 0 THEN
                        'ZERO'
@@ -713,14 +714,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
                 
-             AND (V_TYPE = 'TOP'
-                 
-                 OR
-                 (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-                 p.reporting_office_id = P_ENTITY_ID OR
-                 p.gm_office_id = P_ENTITY_ID OR
-                 p.division_id = P_ENTITY_ID OR
-                 p.business_group_id = P_ENTITY_ID)))
+             AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
           
            GROUP BY CASE
                       WHEN p.com_cycle = 0 THEN
@@ -747,5 +749,102 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     END IF;
   
   END P_GET_CYCLE_SUMMARY;
+
+
+  -------------------------------------------------------------------
+  -- 5. SETTLED PARAS: last 12 calendar months (including zero months)
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
+                                    P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                    P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    IO_CURSOR        OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+  BEGIN
+    OPEN IO_CURSOR FOR
+      WITH months AS
+       (SELECT ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1 - LEVEL) month_start
+          FROM dual
+        CONNECT BY LEVEL <= 12),
+      month_counts AS
+       (SELECT TRUNC(p.setteled_on, 'MM') month_start,
+               COUNT(*) AS settled_paras,
+               SUM(CASE WHEN p.risk_id = 1 THEN 1 ELSE 0 END) AS high_risk_settled
+          FROM V_EXEC_PARA_BASE p
+         WHERE p.is_settled = 1
+           AND p.setteled_on >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -11)
+           AND p.setteled_on < ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1)
+           AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+             OR (P_ENTITY_ID IS NOT NULL AND
+                 (p.entity_id = P_ENTITY_ID OR
+                  p.reporting_1 = P_ENTITY_ID OR
+                  p.reporting_2 = P_ENTITY_ID OR
+                  p.reporting_3 = P_ENTITY_ID OR
+                  p.reporting_4 = P_ENTITY_ID OR
+                  p.reporting_5 = P_ENTITY_ID OR
+                  p.reporting_6 = P_ENTITY_ID)))
+         GROUP BY TRUNC(p.setteled_on, 'MM'))
+      SELECT TO_CHAR(m.month_start, 'YYYY-MM') AS settlement_month,
+             NVL(c.settled_paras, 0) AS settled_paras,
+             NVL(c.high_risk_settled, 0) AS high_risk_settled
+        FROM months m
+        LEFT JOIN month_counts c ON c.month_start = m.month_start
+       ORDER BY m.month_start;
+  END P_GET_SETTLEMENT_TREND;
+
+
+  -------------------------------------------------------------------
+  -- 6. CRITICAL OPEN PARAS: bounded detail for executive drill-down
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_CRITICAL_ITEMS(P_DASHBOARD_TYPE IN VARCHAR2,
+                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                 P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+  BEGIN
+    IF P_MAX_ROWS IS NULL OR P_MAX_ROWS < 1 OR P_MAX_ROWS > 500 OR
+       P_MAX_ROWS <> TRUNC(P_MAX_ROWS) THEN
+      RAISE_APPLICATION_ERROR(-20004, 'Maximum rows must be between 1 and 500.');
+    END IF;
+
+    OPEN IO_CURSOR FOR
+      SELECT *
+        FROM (
+          SELECT p.com_id,
+                 p.entity_id,
+                 p.entity_name,
+                 p.division_id,
+                 p.division_name,
+                 p.business_group_id,
+                 p.business_group_name,
+                 p.audit_period,
+                 p.para_no,
+                 p.gist_of_paras,
+                 p.risk_id,
+                 p.risk_name,
+                 p.com_cycle,
+                 p.para_added_on,
+                 p.aging_days,
+                 p.days_since_last_movement
+            FROM V_EXEC_PARA_BASE p
+           WHERE p.is_open = 1
+             AND p.is_critical = 1
+             AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
+           ORDER BY CASE WHEN p.risk_id = 1 THEN 0 ELSE 1 END,
+                    p.aging_days DESC NULLS LAST,
+                    p.com_id
+        )
+       WHERE ROWNUM <= P_MAX_ROWS;
+  END P_GET_CRITICAL_ITEMS;
 
 END PKG_EXEC_DASHBOARD;
