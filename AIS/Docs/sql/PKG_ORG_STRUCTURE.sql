@@ -430,20 +430,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_ORG_STRUCTURE AS
                               'The proposed parent is not connected to the ZTBL root.');
     END IF;
 
-    /* Infer the relation only from an existing, unambiguous
-    active parent-type / child-type combination. */
-    SELECT COUNT(DISTINCT RELATION_TYPE_ID), MIN(RELATION_TYPE_ID)
-      INTO V_COUNT, O_RELATION_ID
-      FROM T_AUDITEE_ENTITIES_MAPING
-     WHERE P_TYPE_ID = O_PARENT.C_TYPE_ID
-       AND C_TYPE_ID = O_ENTITY.C_TYPE_ID
-       AND UPPER(TRIM(STATUS)) = 'Y'
-       AND RELATION_TYPE_ID IS NOT NULL;
-
-    IF V_COUNT <> 1 THEN
-      RAISE_APPLICATION_ERROR(-20017,
-                              'No unambiguous relation type exists for this parent/child type combination.');
-    END IF;
+    /* Reporting changes are driven by the hierarchy (PARENT_ID/P_TYPE_ID),
+       not by the availability of a historical relation-type combination.
+       Retain the entity's existing legacy RELATION_TYPE_ID unchanged: other
+       IAS modules still depend on this field. Do not manufacture an ID or
+       set it to NULL while those consumers remain in service. */
+    O_RELATION_ID := O_ENTITY.RELATION_TYPE_ID;
   END VALIDATE_ENTITY_MOVE;
 
   PROCEDURE P_PREVIEW_ENTITY_MOVE(P_ENTITY_ID     IN NUMBER,
@@ -536,7 +528,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_ORG_STRUCTURE AS
              PARENT_CODE      = V_PARENT.CHILD_CODE,
              P_NAME           = V_PARENT.C_NAME,
              P_TYPE_ID        = V_PARENT.C_TYPE_ID,
-             RELATION_TYPE_ID = V_RELATION_ID,
              R_KEY            = V_NEW_R_KEY
        WHERE ENTITY_ID = P_ENTITY_ID
          AND PARENT_ID = P_EXPECTED_PARENT_ID;
