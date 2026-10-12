@@ -362,13 +362,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       
        WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
             
-         AND (V_TYPE IN ('TOP', 'CCO')
-             
-             OR (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-             p.reporting_office_id = P_ENTITY_ID OR
-             p.gm_office_id = P_ENTITY_ID OR
-             p.division_id = P_ENTITY_ID OR
-             p.business_group_id = P_ENTITY_ID)));
+         AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)));
   
   END P_GET_KPI_SUMMARY;
 
@@ -412,14 +414,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
               
-           AND (V_TYPE IN ('TOP', 'CCO')
-               
-               OR
-               (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-               p.reporting_office_id = P_ENTITY_ID OR
-               p.gm_office_id = P_ENTITY_ID OR
-               p.division_id = P_ENTITY_ID OR
-               p.business_group_id = P_ENTITY_ID)))
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
         
          GROUP BY CASE
                     WHEN p.risk_id IN (1, 2, 3) THEN
@@ -509,14 +512,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
               
-           AND (V_TYPE IN ('TOP', 'CCO')
-               
-               OR
-               (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-               p.reporting_office_id = P_ENTITY_ID OR
-               p.gm_office_id = P_ENTITY_ID OR
-               p.division_id = P_ENTITY_ID OR
-               p.business_group_id = P_ENTITY_ID)))
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
         
          GROUP BY p.aging_bucket)
       
@@ -606,7 +610,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            WHERE p.is_open = 1
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
-          
+             AND (P_ENTITY_ID IS NULL OR
+                  p.entity_id = P_ENTITY_ID OR
+                  p.reporting_1 = P_ENTITY_ID OR
+                  p.reporting_2 = P_ENTITY_ID OR
+                  p.reporting_3 = P_ENTITY_ID OR
+                  p.reporting_4 = P_ENTITY_ID OR
+                  p.reporting_5 = P_ENTITY_ID OR
+                  p.reporting_6 = P_ENTITY_ID)
            GROUP BY CASE
                       WHEN p.com_cycle = 0 THEN
                        'ZERO'
@@ -684,14 +695,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
                 
-             AND (V_TYPE = 'TOP'
-                 
-                 OR
-                 (V_TYPE = 'GROUP' AND (p.entity_id = P_ENTITY_ID OR
-                 p.reporting_office_id = P_ENTITY_ID OR
-                 p.gm_office_id = P_ENTITY_ID OR
-                 p.division_id = P_ENTITY_ID OR
-                 p.business_group_id = P_ENTITY_ID)))
+             AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
           
            GROUP BY CASE
                       WHEN p.com_cycle = 0 THEN
