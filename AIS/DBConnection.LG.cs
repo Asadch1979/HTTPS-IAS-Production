@@ -8,6 +8,48 @@ namespace AIS.Controllers
     {
     public partial class DBConnection
         {
+        public const int ManageUsersSelectionPageId = 43;
+
+        public List<EntityTypeSelectionDto> GetEntityTypesForSelection(int pageId)
+            => ReadManageUsersSelection("PKG_LG.P_Get_Entity_type", pageId, null, null,
+                r => new EntityTypeSelectionDto { AUTID = Convert.ToInt32(r["AUTID"]), ENTITYCODE = ReadString(r, "ENTITYCODE"), ENTITYTYPEDESC = ReadString(r, "ENTITYTYPEDESC"), DISPLAY_ORDER = ReadNullableInt(r, "DISPLAY_ORDER") });
+
+        public List<ReportingOfficeSelectionDto> GetReportingOfficesForSelection(int entityTypeId, int pageId)
+            => ReadManageUsersSelection("PKG_LG.P_Get_Reporting_Office", pageId, entityTypeId, null,
+                r => new ReportingOfficeSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), DESCRIPTION = ReadString(r, "DESCRIPTION"), PARENT_TYPE_ID = ReadNullableInt(r, "PARENT_TYPE_ID") });
+
+        public List<PostingSelectionDto> GetPostingsForSelection(int reportingId, int entityTypeId, int pageId)
+            => ReadManageUsersSelection("PKG_LG.P_Get_Posting", pageId, entityTypeId, reportingId,
+                r => new PostingSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), C_NAME = ReadString(r, "C_NAME"), TYPEID = Convert.ToInt32(r["TYPEID"]), PARENT_ID = ReadNullableInt(r, "PARENT_ID") });
+
+        private List<T> ReadManageUsersSelection<T>(string procedure, int pageId, int? entityTypeId, int? reportingId, Func<OracleDataReader, T> map)
+            {
+            if (pageId != ManageUsersSelectionPageId || entityTypeId <= 0 || reportingId <= 0)
+                throw new ArgumentOutOfRangeException(nameof(pageId));
+            var user = CreateSessionHandler().GetUserOrThrow();
+            if (CreateSessionHandler().IsSessionRevoked(user))
+                throw new AIS.Session.UnauthenticatedException();
+            var rows = new List<T>();
+            using (var con = DatabaseConnection())
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.CommandText = procedure;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.BindByName = true;
+                GuardAgainstDynamicSql(cmd);
+                if (reportingId.HasValue) cmd.Parameters.Add("Reporting_ID", OracleDbType.Int32).Value = reportingId.Value;
+                if (entityTypeId.HasValue) cmd.Parameters.Add("ENT_TYP_ID", OracleDbType.Int32).Value = entityTypeId.Value;
+                cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = Convert.ToInt32(user.PPNumber);
+                cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+                cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
+                cmd.Parameters.Add("PAGE_ID", OracleDbType.Int32).Value = ManageUsersSelectionPageId;
+                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) rows.Add(map(reader));
+                }
+            return rows;
+            }
+
         public void LogInfo(string module, string controller, string action, string message, string techDetails, int? pageId, int? engId, string userPpno)
             {
             LogWithLevel("PKG_LG.LOG_INFO", module, controller, action, message, techDetails, pageId, engId, userPpno);

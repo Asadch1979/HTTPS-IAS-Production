@@ -6,25 +6,14 @@
 
 <div class="row col-md-12 mt-1">
     <div class="col-md-2">
-        <label>Relationship Type</label>
+        <label>Entity Type</label>
     </div>
     <div class="col-md-10">
-        <select id="RelationshipField" data-onchange="getrelation();" class="form-control form-select">
-            <option id="0" value="0" selected="selected">--Select Relationship Type--</option>
-
-            @{
-                if (ViewData["Userrelationship"] != null)
-                {
-                    foreach (var item in (dynamic)(ViewData["Userrelationship"]))
-                    {
-                            <option value="@item.ENTITY_REALTION_ID" id="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
-                    }
-                }
-            }
-
-
-
+        <select id="EntityTypeField" class="form-control form-select">
+            <option value="0">Loading entity types...</option>
         </select>
+        <div id="manageUsersSelectionStatus" role="status" aria-live="polite" class="text-muted"></div>
+        <div id="manageUsersSelectionCsrf">@Html.AntiForgeryToken()</div>
     </div>
 </div>
 
@@ -33,7 +22,7 @@
         <label>Controlling/Reporting Office</label>
     </div>
     <div class="col-md-4">
-        <select id="controlingsearch" data-onchange="getplacepost();" class="form-control form-select">
+        <select id="controlingsearch" class="form-control form-select">
             <option id="0" value="0" selected="selected">--Select Controlling/Reporting Office--</option>
         </select>
     </div>
@@ -209,7 +198,7 @@
                                     <th>Role</th>
                                     <th>Controlling/Reporting Office</th>
                                     <th>Place of Posting</th>
-                                    <th>Relationship</th>
+                                    <th>Entity Type</th>
                                     <th style="width:90px;">Action</th>
                                 </tr>
                             </thead>
@@ -254,4 +243,4 @@
 
 
 
-<script src="~/js/csp/Views_AdministrationPanel_manage_user.js?v=1"></script>
+<script src="~/js/csp/Views_AdministrationPanel_manage_user.js?v=2"></script>

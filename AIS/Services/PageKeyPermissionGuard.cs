@@ -292,6 +292,16 @@ namespace AIS.Services
                 return true;
                 }
 
+            // These scoped lookups enforce active authentication and page 43 permission
+            // in their actions; they do not require new database API permission records.
+            if (HttpMethods.IsPost(method) &&
+                (path.Equals("/ApiCalls/GetEntityTypesForSelection", StringComparison.OrdinalIgnoreCase) ||
+                 path.Equals("/ApiCalls/GetReportingOfficesForSelection", StringComparison.OrdinalIgnoreCase) ||
+                 path.Equals("/ApiCalls/GetPostingsForSelection", StringComparison.OrdinalIgnoreCase)))
+                {
+                return true;
+                }
+
             if (path.Equals("/ApiCalls/get_user_name", StringComparison.OrdinalIgnoreCase) &&
                 (HttpMethods.IsGet(method) || HttpMethods.IsPost(method)))
                 {

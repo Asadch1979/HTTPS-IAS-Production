@@ -10,12 +10,14 @@ $(document).ready(function () {
         $('#roleSaveField').css('width', '100%');
     }
 
+    initializeEntitySelection();
     $('#isActiveSaveField').prop('checked', true);
-    $(document).on('click', '#addAssignmentButton', assignmentActionButtonClickHandler);
-    $(document).on('click', '.js-edit-context', editUserContextClickHandler);
-    $(document).on('click', '.js-remove-context', removeUserContextClickHandler);
-    $(document).on('change', '.js-default-context', defaultContextChangeHandler);
-    $(document).on('change', '.js-context-active', contextActiveChangeHandler);
+    $(document).off('click.manageUsers change.manageUsers');
+    $(document).on('click.manageUsers', '#addAssignmentButton', assignmentActionButtonClickHandler);
+    $(document).on('click.manageUsers', '.js-edit-context', editUserContextClickHandler);
+    $(document).on('click.manageUsers', '.js-remove-context', removeUserContextClickHandler);
+    $(document).on('change.manageUsers', '.js-default-context', defaultContextChangeHandler);
+    $(document).on('change.manageUsers', '.js-context-active', contextActiveChangeHandler);
 });
 
 function normalizeFlag(value, defaultValue) {
@@ -77,6 +79,8 @@ function mapApiContext(context) {
         entityName: (context.entityName || context.userEntityName || context.ENT_NAME || '').toString(),
         parentEntityId: toInt(context.parentEntityId || context.PARENT_ENTITY_ID),
         parentEntityName: (context.parentEntityName || context.userParentEntityName || context.PARENT_ENTITY_NAME || '').toString(),
+        entityTypeId: toInt(context.entityTypeId || context.userEntityTypeID || context.UserEntityTypeID || context.C_TYPE_ID || context.c_TYPE_ID || context.ENTITY_TYPE_ID),
+        entityTypeName: (context.entityTypeName || '').toString(),
         relationshipTypeId: toInt(context.relationshipTypeId || context.RELATIONSHIP_TYPE_ID),
         relationshipTypeName: (context.relationshipTypeName || context.RELATIONSHIP_TYPE_NAME || '').toString(),
         isDefault: normalizeFlag(context.isDefault || context.IS_DEFAULT || context.ISDEFAULT, 'N'),
@@ -99,6 +103,8 @@ function buildLegacyContextFromUser(user) {
         entityName: (user.userEntityName || '').toString(),
         parentEntityId: toInt(user.userParentEntityID),
         parentEntityName: (user.userParentEntityName || '').toString(),
+        entityTypeId: toInt(user.userEntityTypeID || user.UserEntityTypeID || user.C_TYPE_ID || user.c_TYPE_ID),
+        entityTypeName: '',
         relationshipTypeId: toInt(user.relationshipId),
         relationshipTypeName: '',
         isDefault: 'Y',
@@ -231,7 +237,7 @@ function renderUserContexts() {
             '<td>' + escapeHtml(context.roleName) + '</td>' +
             '<td>' + escapeHtml(context.parentEntityName) + '</td>' +
             '<td>' + escapeHtml(context.entityName) + '</td>' +
-            '<td>' + escapeHtml(context.relationshipTypeName) + '</td>' +
+            '<td>' + escapeHtml(context.entityTypeName || entityTypeLabel(context.entityTypeId) || 'Unresolved') + '</td>' +
             '<td class="text-center"><a href="#" class="js-edit-context" data-context-index="' + index + '">Edit</a> | <a href="#" class="js-remove-context" data-context-index="' + index + '">Remove</a></td>' +
             '</tr>'
         );
@@ -263,8 +269,7 @@ function findContextIndex(candidate, includeDeleted) {
 
         if (context.roleId === candidate.roleId &&
             context.entityId === candidate.entityId &&
-            context.parentEntityId === candidate.parentEntityId &&
-            context.relationshipTypeId === candidate.relationshipTypeId) {
+            context.groupId === candidate.groupId) {
             matchIndex = index;
             return false;
         }
@@ -276,7 +281,7 @@ function findContextIndex(candidate, includeDeleted) {
 function buildCurrentContext() {
     var roleId = toInt($('#roleSaveField option:selected').val());
     var entityId = toInt($('#childposting option:selected').val());
-    if (roleId <= 0 || entityId <= 0) {
+    if (roleId <= 0 || entityId <= 0 || !g_selectionReady) {
         return null;
     }
 
@@ -289,8 +294,10 @@ function buildCurrentContext() {
         entityName: getOptionText('#childposting option:selected'),
         parentEntityId: toInt($('#controlingsearch option:selected').val()),
         parentEntityName: getOptionText('#controlingsearch option:selected'),
-        relationshipTypeId: toInt($('#RelationshipField option:selected').val()),
-        relationshipTypeName: getOptionText('#RelationshipField option:selected'),
+        entityTypeId: toInt($('#EntityTypeField').val()),
+        entityTypeName: getOptionText('#EntityTypeField option:selected'),
+        relationshipTypeId: 0,
+        relationshipTypeName: '',
         isDefault: $('#defaultAssignmentSaveField').is(':checked') ? 'Y' : 'N',
         isActive: $('#isActiveSaveField').is(':checked') ? 'Y' : 'N',
         assignmentType: 'MANUAL',
@@ -309,6 +316,7 @@ function upsertContext(candidate) {
 
     if (existingIndex >= 0) {
         var existing = g_userContexts[existingIndex];
+        candidate = $.extend({}, existing, candidate, { relationshipTypeId: existing.relationshipTypeId, relationshipTypeName: existing.relationshipTypeName, assignmentType: existing.assignmentType, effectiveFrom: existing.effectiveFrom, effectiveTo: existing.effectiveTo, remarks: existing.remarks });
         candidate.assignmentId = existing.assignmentId || candidate.assignmentId;
         candidate.isDeleted = false;
         g_userContexts[existingIndex] = candidate;
@@ -379,6 +387,14 @@ function updateAssignmentButtonClickHandler() {
         return;
     }
 
+    candidate = $.extend({}, g_userContexts[index], candidate, {
+        relationshipTypeId: g_userContexts[index].relationshipTypeId,
+        relationshipTypeName: g_userContexts[index].relationshipTypeName,
+        assignmentType: g_userContexts[index].assignmentType,
+        effectiveFrom: g_userContexts[index].effectiveFrom,
+        effectiveTo: g_userContexts[index].effectiveTo,
+        remarks: g_userContexts[index].remarks
+    });
     candidate.assignmentId = g_userContexts[index].assignmentId || 0;
     candidate.isDeleted = false;
     g_userContexts[index] = candidate;
@@ -504,14 +520,11 @@ function applyContextToBuilder(context) {
     $('#roleSaveField').val(context.groupId || context.roleId).trigger('change');
     $('#defaultAssignmentSaveField').prop('checked', context.isDefault === 'Y');
     $('#isActiveSaveField').prop('checked', context.isActive === 'Y');
-    $('#RelationshipField').val(context.relationshipTypeId || 0);
-
-    if (context.relationshipTypeId > 0) {
-        getrelation(context.parentEntityId || 0, context.entityId || 0);
-    }
+    restoreEntitySelection(context);
 }
 
 function loadUserContexts(user) {
+    var requestedUserId = g_userId;
     if (!user || !user.id) {
         resetUserContexts();
         return;
@@ -526,6 +539,7 @@ function loadUserContexts(user) {
         },
         cache: false,
         success: function (data) {
+            if (requestedUserId !== g_userId) return;
             g_userContexts = $.map(data || [], function (context) {
                 return mapApiContext(context);
             });
@@ -536,6 +550,14 @@ function loadUserContexts(user) {
 
             normalizeContextCollection();
             renderUserContexts();
+            var contextsToResolve = g_userContexts;
+            (async function () {
+                for (var i = 0; i < contextsToResolve.length; i++) {
+                    if (requestedUserId !== g_userId || contextsToResolve !== g_userContexts) return;
+                    try { await resolveContextEntityType(contextsToResolve[i]); } catch (_) { /* Preserve unresolved assignments. */ }
+                }
+                if (requestedUserId === g_userId && contextsToResolve === g_userContexts) renderUserContexts();
+            })();
 
             var defaultContext = null;
             $.each(g_userContexts, function (_, context) {
@@ -548,55 +570,9 @@ function loadUserContexts(user) {
             applyContextToBuilder(defaultContext || g_userContexts[0]);
         },
         error: function (xhr) {
+            if (requestedUserId !== g_userId) return;
             resetUserContexts();
             showApiAlertFromXhr(xhr, xhr ? xhr.status : null, getErrorReferenceIdFromXhr(xhr), 'Unable to load user assignments.');
-        },
-        dataType: 'json'
-    });
-}
-
-function getrelation(parentEntityId, userEntityId) {
-    $('#controlingsearch').empty();
-    $('#childposting').empty();
-
-    $.ajax({
-        url: g_asiBaseURL + '/ApiCalls/getparentrel',
-        type: 'POST',
-        data: {
-            ENTITY_REALTION_ID: $('#RelationshipField option:selected').val()
-        },
-        cache: false,
-        success: function (data) {
-            $('#controlingsearch').append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
-            $.each(data, function (_, contof) {
-                var selected = contof.entitY_ID === parentEntityId ? 'selected="selected"' : '';
-                $('#controlingsearch').append('<option ' + selected + ' value="' + contof.entitY_ID + '" id="' + contof.entitY_REALTION_ID + '">' + contof.description + '</option>');
-            });
-
-            if (userEntityId) {
-                getplacepost(userEntityId);
-            }
-        },
-        dataType: 'json'
-    });
-}
-
-function getplacepost(userEntityId) {
-    $('#childposting').empty();
-
-    $.ajax({
-        url: g_asiBaseURL + '/ApiCalls/getpostplace',
-        type: 'POST',
-        data: {
-            E_R_ID: $('#controlingsearch option:selected').val()
-        },
-        cache: false,
-        success: function (data) {
-            $('#childposting').append('<option id="0" value="0" selected="selected">--Select Place of Posting--</option>');
-            $.each(data, function (_, gpp) {
-                var selected = gpp.entitY_ID === userEntityId ? 'selected="selected"' : '';
-                $('#childposting').append('<option ' + selected + ' value="' + gpp.entitY_ID + '" id="' + gpp.entitY_ID + '">' + gpp.c_NAME + '</option>');
-            });
         },
         dataType: 'json'
     });
@@ -612,10 +588,10 @@ function findButtonClickHandler() {
     if ($('#loginSearchField').val() !== '') {
         whereCheck++;
     }
-    if ($('#childposting').val() !== '0') {
+    if (toInt($('#childposting').val()) > 0) {
         whereCheck++;
         entityId = $('#childposting').val();
-    } else if ($('#controlingsearch').val() !== '0') {
+    } else if (toInt($('#controlingsearch').val()) > 0) {
         whereCheck++;
         entityId = $('#controlingsearch').val();
     }
@@ -675,8 +651,7 @@ function editUserDetails(userId) {
         $('#emailSaveField').val(user.email);
         $('#isActiveSaveField').prop('checked', normalizeFlag(user.isActive, 'Y') === 'Y');
         $('#roleSaveField').val(user.userGroupID || user.userRoleID || 0).trigger('change');
-        $('#RelationshipField').val(user.relationshipId || 0);
-        getrelation(toInt(user.userParentEntityID), toInt(user.userEntityID));
+
         loadUserContexts(user);
     });
 }
@@ -701,7 +676,10 @@ function clearSearchFields() {
     $('#passSaveField').val('');
     $('#conPassSaveField').val('');
     $('#roleSaveField').val(0).trigger('change');
-    $('#RelationshipField').val(0);
+    ++g_selectionVersion;
+    g_selectionReady = false;
+    $('#EntityTypeField').val(0);
+    selectionStatus('');
     $('#controlingsearch').empty().append('<option id="0" value="0">--Select Controlling/Reporting Office--</option>');
     $('#childposting').empty().append('<option id="0" value="0">--Select Place of Posting--</option>');
     $('#isActiveSaveField').prop('checked', true);
@@ -902,5 +880,173 @@ function checkBoxClicked() {
     } else {
         $('#passSaveField').val('');
         $('#conPassSaveField').val('');
+    }
+}
+var g_selectionVersion = (window.g_selectionVersion || 0) + 1;
+var g_selectionReady = false;
+var g_entityTypes = [];
+var g_entityTypesPromise;
+var g_selectionCache = {};
+
+function selectionStatus(message) {
+    $('#manageUsersSelectionStatus').text(message);
+}
+
+function entityTypeLabel(id) {
+    var row = g_entityTypes.filter(function (item) { return toInt(item.autid) === toInt(id); })[0];
+    return row ? row.entitytypedesc : '';
+}
+
+function resetSelection(selector, message) {
+    $(selector).empty().append($('<option>').val(0).text(message)).prop('disabled', true);
+}
+
+function selectionRequest(action, data) {
+    return $.ajax({
+        url: g_asiBaseURL + '/ApiCalls/' + action,
+        type: 'POST', data: data || {}, dataType: 'json', cache: false,
+        headers: { RequestVerificationToken: $('#manageUsersSelectionCsrf input[name="__RequestVerificationToken"]').val() }
+    });
+}
+
+function selectionMapping(action, data) {
+    var key = action + ':' + JSON.stringify(data);
+    if (!g_selectionCache[key]) {
+        g_selectionCache[key] = selectionRequest(action, data).catch(function (error) {
+            delete g_selectionCache[key];
+            throw error;
+        });
+    }
+    return g_selectionCache[key];
+}
+
+function fillSelection(selector, rows, idField, textField, placeholder, selected) {
+    resetSelection(selector, rows.length ? placeholder : 'No available selections');
+    $.each(rows, function (_, row) {
+        $(selector).append($('<option>').val(row[idField]).text(row[textField]));
+    });
+    $(selector).prop('disabled', !rows.length).val(selected || 0);
+}
+
+function initializeEntitySelection() {
+    resetSelection('#controlingsearch', '--Select Controlling/Reporting Office--');
+    resetSelection('#childposting', '--Select Place of Posting--');
+    $(document).off('change.manageUsersSelection')
+        .on('change.manageUsersSelection', '#EntityTypeField', function () { loadReportingSelection(); })
+        .on('change.manageUsersSelection', '#controlingsearch', function () { loadPostingSelection(); })
+        .on('change.manageUsersSelection', '#childposting', function () {
+            g_selectionReady = toInt($(this).val()) > 0;
+            selectionStatus('');
+        });
+    var element = document.getElementById('EntityTypeField');
+    g_entityTypesPromise = selectionRequest('GetEntityTypesForSelection').then(function (rows) {
+        if (document.getElementById('EntityTypeField') !== element) return [];
+        g_entityTypes = rows;
+        fillSelection('#EntityTypeField', rows, 'autid', 'entitytypedesc', '--Select Entity Type--');
+        renderUserContexts();
+        selectionStatus(rows.length ? '' : 'No entity types are available for your session.');
+        return rows;
+    }, function () {
+        if (document.getElementById('EntityTypeField') === element) {
+            resetSelection('#EntityTypeField', 'Unable to load entity types');
+            selectionStatus('Entity type lookup failed. Reload Manage Users to retry.');
+        }
+        return [];
+    });
+}
+
+async function loadReportingSelection(parentId, postingId, version) {
+    version = version === undefined ? ++g_selectionVersion : version;
+    g_selectionReady = false;
+    resetSelection('#controlingsearch', 'Loading reporting offices...');
+    resetSelection('#childposting', '--Select Place of Posting--');
+    var typeId = toInt($('#EntityTypeField').val());
+    if (!typeId) {
+        resetSelection('#controlingsearch', '--Select Controlling/Reporting Office--');
+        selectionStatus('');
+        return;
+    }
+    try {
+        var rows = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId });
+        if (version !== g_selectionVersion) return;
+        fillSelection('#controlingsearch', rows, 'entitY_ID', 'description', '--Select Controlling/Reporting Office--', parentId);
+        selectionStatus(rows.length ? '' : 'No reporting offices are available for this entity type.');
+        if (parentId) {
+            if (!rows.some(function (row) { return toInt(row.entitY_ID) === parentId; })) throw new Error('unresolved');
+            await loadPostingSelection(postingId, version);
+        }
+    } catch (_) {
+        if (version !== g_selectionVersion) return;
+        selectionStatus(parentId ? 'Existing assignment could not be resolved. It remains unchanged in the grid. Retry the lookup before updating it.' : 'Unable to load reporting offices. Select the entity type again to retry.');
+    }
+}
+
+async function loadPostingSelection(postingId, version) {
+    version = version === undefined ? ++g_selectionVersion : version;
+    g_selectionReady = false;
+    resetSelection('#childposting', 'Loading postings...');
+    var parentId = toInt($('#controlingsearch').val());
+    if (!parentId) {
+        resetSelection('#childposting', '--Select Place of Posting--');
+        selectionStatus('');
+        return;
+    }
+    try {
+        var rows = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: toInt($('#EntityTypeField').val()) });
+        if (version !== g_selectionVersion) return;
+        fillSelection('#childposting', rows, 'entitY_ID', 'c_NAME', '--Select Place of Posting--', postingId);
+        if (postingId && !rows.some(function (row) { return toInt(row.entitY_ID) === postingId; })) throw new Error('unresolved');
+        g_selectionReady = toInt($('#childposting').val()) > 0;
+        selectionStatus(rows.length ? '' : 'No postings are available for this reporting office.');
+    } catch (_) {
+        if (version !== g_selectionVersion) return;
+        selectionStatus(postingId ? 'Existing posting could not be resolved. The assignment remains unchanged in the grid.' : 'Unable to load postings. Select the reporting office again to retry.');
+    }
+}
+
+// Resolve missing context types only from the authoritative posting cursor TYPEID.
+async function resolveContextEntityType(context) {
+    if (context.entityTypeId > 0 && context.parentEntityId > 0) return context.entityTypeId;
+    await g_entityTypesPromise;
+    for (var i = 0; i < g_entityTypes.length; i++) {
+        var typeId = toInt(g_entityTypes[i].autid);
+        if (context.entityTypeId > 0 && context.entityTypeId !== typeId) continue;
+        var offices = await selectionMapping('GetReportingOfficesForSelection', { entityTypeId: typeId });
+        var candidates = offices.filter(function (office) {
+            return !context.parentEntityId || toInt(office.entitY_ID) === context.parentEntityId;
+        });
+        for (var j = 0; j < candidates.length; j++) {
+            var parentId = toInt(candidates[j].entitY_ID);
+            var postings = await selectionMapping('GetPostingsForSelection', { reportingId: parentId, entityTypeId: typeId });
+            var posting = postings.filter(function (row) { return toInt(row.entitY_ID) === context.entityId; })[0];
+            if (posting) {
+                context.entityTypeId = toInt(posting.typeid);
+                context.entityTypeName = entityTypeLabel(context.entityTypeId);
+                context.selectionParentId = parentId;
+                return context.entityTypeId;
+            }
+        }
+    }
+    return 0;
+}
+
+async function restoreEntitySelection(context) {
+    var version = ++g_selectionVersion;
+    g_selectionReady = false;
+    $('#EntityTypeField').val(0);
+    resetSelection('#controlingsearch', 'Resolving assignment...');
+    resetSelection('#childposting', '--Select Place of Posting--');
+    selectionStatus('Resolving existing assignment...');
+    try {
+        await g_entityTypesPromise;
+        var typeId = await resolveContextEntityType(context);
+        if (version !== g_selectionVersion) return;
+        renderUserContexts();
+        if (!typeId || !entityTypeLabel(typeId)) throw new Error('unresolved');
+        $('#EntityTypeField').val(typeId);
+        await loadReportingSelection(context.selectionParentId || context.parentEntityId, context.entityId, version);
+    } catch (_) {
+        if (version !== g_selectionVersion) return;
+        selectionStatus('Existing assignment could not be resolved. It remains unchanged in the grid.');
     }
 }
