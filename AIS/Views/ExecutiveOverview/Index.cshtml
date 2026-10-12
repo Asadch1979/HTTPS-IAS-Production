@@ -1,0 +1,34 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    ViewData["Title"] = "Executive Dashboard";
+    Layout = "_Layout";
+    var roleName = Model.DashboardType switch { "TOP" => "Top Management", "GROUP" => "Group Head", "CCO" => "Chief Compliance Officer", _ => "Chief Internal Auditor" };
+}
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
+<section class="org exec" id="executive-dashboard" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" aria-label="Executive Dashboard">
+    <header class="org-header">
+        <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-line-chart"></i></span><div><p class="org-eyebrow">ZTBL · @roleName</p><h1>Executive Dashboard</h1><p class="org-subtitle">@Model.ScopeLabel</p></div></div>
+        @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
+    </header>
+    <form id="exec-filters" class="exec-filters">
+        <div><label for="exec-period">Audit Period</label><select id="exec-period"><option value="">All periods</option>@foreach (var period in Model.AuditPeriods) { <option value="@period.DESCRIPTION">@period.DESCRIPTION</option> }</select></div>
+        <div><label for="exec-entity">Reporting Entity</label><select id="exec-entity"><option value="">@(Model.DashboardType == "GROUP" ? "My Group and descendants" : "Authorized bank-wide scope")</option>@foreach (var entity in Model.Entities) { <option value="@entity.EntityId" selected="@(entity.EntityId == Model.SelectedEntityId)">@entity.EntityName (@entity.EntityId)</option> }</select></div>
+        <button class="org-button" id="exec-refresh" type="submit">Refresh</button>
+    </form>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading dashboard…</p>
+    <div id="exec-results" hidden>
+        <div id="exec-kpis" class="exec-kpis" aria-label="Key performance indicators"></div>
+        <div class="exec-charts">
+            <article class="exec-panel"><h2>Risk distribution</h2><div id="exec-risk"></div></article>
+            <article class="exec-panel"><h2>Aging analysis</h2><div id="exec-aging"></div></article>
+            <article class="exec-panel"><h2>Compliance cycles</h2><p class="exec-note">@(Model.DashboardType == "CCO" || Model.DashboardType == "CIA" ? "Detailed compliance-cycle breakdown" : "Executive compliance-cycle summary")</p><div id="exec-cycle"></div></article>
+            <article class="exec-panel"><h2>Monthly settlement trend</h2><div id="exec-trend"></div></article>
+        </div>
+        <article class="exec-panel" id="exec-critical-panel" tabindex="-1"><h2>Critical audit observations</h2><p class="exec-note" id="exec-critical-note"></p><div class="exec-table-wrap"><table class="exec-table"><thead><tr><th>Entity</th><th>Audit period / Para</th><th>Risk</th><th>Cycles</th><th>Age (days)</th><th>Days since movement</th><th>Observation</th></tr></thead><tbody id="exec-critical"></tbody></table></div></article>
+    </div>
+    <noscript><p>Enable JavaScript to load your Executive Dashboard.</p></noscript>
+</section>
+@section Scripts {
+    <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+}

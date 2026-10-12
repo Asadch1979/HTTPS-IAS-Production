@@ -398,6 +398,12 @@
         if (node.parentEntityId === node.entityId) notes.push('This record reports to itself.');
         notes.push(snapshot.isRestricted ? 'Relationships and counts reflect your authorized organizational scope.' : 'Reporting relationships are provided by the organizational directory.');
         host.append(el('p', 'org-detail-note', notes.join(' ')));
+        if (app.dataset.executiveUrl) {
+            const url = new URL(app.dataset.executiveUrl, location.href);
+            url.searchParams.set('entityId', node.entityId);
+            const link = el('a', 'org-button', 'Executive Dashboard for this entity');
+            link.href = url.href; host.append(link);
+        }
         if (app.dataset.canMove === 'true') host.append(button('Move entity', 'org-button', openMove));
     }
 

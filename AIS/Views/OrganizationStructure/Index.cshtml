@@ -3,9 +3,10 @@
     Layout = "_Layout";
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
-<section id="organization-structure" class="org" data-nodes-url="@Url.Action("Data", "OrganizationStructure")" data-path-url="@Url.Action("EntityPath", "OrganizationStructure")" data-counts-url="@Url.Action("OpenParaCounts", "OrganizationStructure")" data-preview-url="@Url.Action("PreviewMove", "OrganizationStructure")" data-move-url="@Url.Action("Move", "OrganizationStructure")" data-can-move="@((ViewData["CanMoveEntity"] as bool? == true).ToString().ToLowerInvariant())" aria-label="ZTBL Organization Structure">
+<section id="organization-structure" class="org" data-executive-url="@(ViewData["ExecutiveDashboardPath"] is string executivePath ? Url.Content("~" + executivePath) : "")" data-nodes-url="@Url.Action("Data", "OrganizationStructure")" data-path-url="@Url.Action("EntityPath", "OrganizationStructure")" data-counts-url="@Url.Action("OpenParaCounts", "OrganizationStructure")" data-preview-url="@Url.Action("PreviewMove", "OrganizationStructure")" data-move-url="@Url.Action("Move", "OrganizationStructure")" data-can-move="@((ViewData["CanMoveEntity"] as bool? == true).ToString().ToLowerInvariant())" aria-label="ZTBL Organization Structure">
     <header class="org-header">
         <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-sitemap"></i></span><div><p class="org-eyebrow">ZTBL · EXECUTIVE DASHBOARD</p><h1>Organization Structure</h1><p class="org-subtitle">Explore offices and reporting relationships.</p></div></div>
+        @if (ViewData["ExecutiveDashboardPath"] is string dashboardPath) { <a class="org-button" href="@Url.Content("~" + dashboardPath)">Executive Dashboard</a> }
         <span class="org-scope" id="org-scope">Organizational directory</span>
     </header>
     <div class="org-topbar">

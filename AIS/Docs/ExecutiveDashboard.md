@@ -50,3 +50,30 @@ Deploy the latest supplied package and its dependencies as database owner; front
 uses only IAS HTTP endpoints. Audit period is the package's exact text value.
 Critical maxRows defaults to 100 and accepts 1..500; entity IDs must be positive and
 present in the permitted server-derived directory. Unknown or out-of-scope IDs deny.
+
+## Frontend and focused verification
+
+One reusable Razor page is served at /ExecutiveOverview/TOP, /GROUP, /CCO and /CIA.
+Each route must match the session-derived type and its dedicated page grant.
+The menu registration supplies IAS navigation; authorized Organization Structure
+users also get dashboard links for the page and selected entity. The dashboard link
+back to Organization Structure is shown only with its existing page permission.
+Entity lists are loaded server-side, restricted for GROUP, and API requests revalidate
+selected IDs. Period options use existing PKG_PG.P_GetAuditPeriods DESCRIPTION values
+(the exact text is passed as P_AUDIT_PERIOD, not a numeric period ID).
+
+The page renders eight KPIs, risk/aging/cycle/trend charts with accessible data tables,
+and critical observation details. CCO/CIA automatically receive the package's finer
+cycle categories. Data comes only from the six APIs; no sample metrics are supplied.
+All observation/entity text is rendered through Razor encoding or DOM textContent.
+Refresh hides stale figures, cancels previous requests and reports session/access,
+loading, empty and failure states. Critical Items is the only actionable KPI because
+only critical details have a verified package endpoint. Other KPIs/chart categories
+remain informational. Critical details are capped at 100 rows and explicitly labeled;
+no unsupported general observation drill-down or Audit Coverage is implemented.
+
+Deployment gaps: confirm TOP/GROUP role IDs, apply menu/API grants, configure mappings,
+and verify live authenticated Oracle responses after deployment. Local checks cover
+compilation, JavaScript syntax and route/response/authorization consistency only.
+
+Verification completed: AIS net8.0 build succeeded with 0 errors (57 existing warnings); both JavaScript files passed node --check. A temporary controller/route check confirmed unauthenticated rejection for six API and four MVC routes and four distinct page mappings. Source consistency checks confirmed all six procedure/API registrations, P_MAX_ROWS, strict page/API gates and no package modification. No live Oracle calls or extensive test suite were run.

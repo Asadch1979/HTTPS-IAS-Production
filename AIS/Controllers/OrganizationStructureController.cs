@@ -12,6 +12,7 @@ namespace AIS.Controllers
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public class OrganizationStructureController : Controller
     {
+        private readonly DBConnection database;
         private readonly SessionHandler session;
         private readonly IPermissionService permissions;
         private readonly IPageIdResolver pageIds;
@@ -19,10 +20,11 @@ namespace AIS.Controllers
         private readonly TopMenus menus;
         private readonly ILogger<OrganizationStructureController> logger;
 
-        public OrganizationStructureController(SessionHandler session, IPermissionService permissions,
+        public OrganizationStructureController(DBConnection database, SessionHandler session, IPermissionService permissions,
             IPageIdResolver pageIds, OrganizationStructureService organization, TopMenus menus,
             ILogger<OrganizationStructureController> logger)
         {
+            this.database = database;
             this.session = session;
             this.permissions = permissions;
             this.pageIds = pageIds;
@@ -41,6 +43,18 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = menus.GetTopMenus();
             ViewData["TopMenuPages"] = menus.GetTopMenusPages();
             ViewData["CanMoveEntity"] = session.IsSuperUser();
+            try
+            {
+                var scope = database.ResolveExecutiveDashboardScope();
+                permissions.EnsurePermissionsCached(session.GetUser());
+                var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
+                if (pageId > 0 && session.TryGetAllowedViewIds(out var allowedPages) && allowedPages.Contains(pageId))
+                    ViewData["ExecutiveDashboardPath"] = scope.PermissionPagePath;
+            }
+            catch (Exception exception)
+            {
+                logger.LogDebug(exception, "No executive navigation is available for this session.");
+            }
             return View();
         }
 
