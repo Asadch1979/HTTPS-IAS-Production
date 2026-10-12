@@ -433,6 +433,16 @@
     }
 
     let moveEntity = null, movePreview = null, moveVersion = 0, moveBusy = false;
+    function canConfirmMove() {
+        const reason = $('move-reason').value.trim();
+        return !moveBusy && !!movePreview && movePreview.entityId === moveEntity &&
+            movePreview.newParentId === Number($('move-destination').value) &&
+            reason.length > 0 && new TextEncoder().encode(reason).length <= 1000 &&
+            $('move-reason').checkValidity();
+    }
+    function updateMoveConfirmation() {
+        $('move-confirm').disabled = !canConfirmMove();
+    }
     function invalidateMovePreview() {
         ++moveVersion; movePreview = null;
         $('move-confirm').disabled = true;
@@ -469,13 +479,14 @@
     function moveProcessing(busy) {
         moveBusy = busy;
         for (const id of ['move-search', 'move-destination', 'move-reason', 'move-preview', 'move-cancel']) $(id).disabled = busy;
-        $('move-confirm').disabled = busy || !movePreview || !$('move-reason').value.trim();
+        updateMoveConfirmation();
         $('move-form').setAttribute('aria-busy', String(busy));
     }
     if (app.dataset.canMove === 'true') {
         $('move-search').addEventListener('input', moveDestinations);
         $('move-destination').addEventListener('change', invalidateMovePreview);
-        $('move-reason').addEventListener('input', () => moveProcessing(moveBusy));
+        $('move-reason').addEventListener('input', updateMoveConfirmation);
+        $('move-reason').addEventListener('change', updateMoveConfirmation);
         $('move-cancel').addEventListener('click', () => { invalidateMovePreview(); $('move-dialog').close(); });
         $('move-dialog').addEventListener('cancel', event => { if (moveBusy) event.preventDefault(); else invalidateMovePreview(); });
         $('move-preview').addEventListener('click', async () => {
@@ -489,16 +500,19 @@
             try {
                 const preview = await request(url);
                 if (version !== moveVersion) return;
+                if (preview?.entityId !== moveEntity || preview.newParentId !== destination ||
+                    !Number.isSafeInteger(preview.currentParentId) || preview.currentParentId <= 0) {
+                    throw new Error('The server returned an invalid move preview. Preview the destination again.');
+                }
                 movePreview = preview;
-                $('move-feedback').textContent = `${preview.entityName} (ID ${preview.entityId}): ${preview.currentParentName} (ID ${preview.currentParentId}) → ${preview.newParentName} (ID ${preview.newParentId}, code ${preview.newParentCode}, type ${preview.newParentTypeId}, relation ${preview.newRelationTypeId}). ${preview.descendantEntities} existing descendant entities move with this parent. Entity IDs, assigned paras and AUDITEDBY remain unchanged.`;
+                $('move-feedback').textContent = `${preview.entityName} (ID ${preview.entityId}): ${preview.currentParentName} (ID ${preview.currentParentId}) → ${preview.newParentName} (ID ${preview.newParentId}, code ${preview.newParentCode}, type ${preview.newParentTypeId}). ${preview.descendantEntities} existing descendant entities move with this parent. Entity IDs, assigned paras and AUDITEDBY remain unchanged.`;
             } catch (error) {
                 if (version === moveVersion) $('move-feedback').textContent = error.message;
             } finally { moveProcessing(false); }
         });
         $('move-form').addEventListener('submit', async event => {
             event.preventDefault();
-            if (moveBusy || !movePreview || !$('move-reason').value.trim() ||
-                movePreview.newParentId !== Number($('move-destination').value)) return;
+            if (!canConfirmMove()) return;
             const body = new FormData($('move-form'));
             body.set('EntityId', movePreview.entityId);
             body.set('ExpectedParentId', movePreview.currentParentId);
