@@ -743,4 +743,46 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   
   END P_GET_CYCLE_SUMMARY;
 
+
+  -------------------------------------------------------------------
+  -- 5. SETTLED PARAS: last 12 calendar months (including zero months)
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
+                                    P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                    P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    IO_CURSOR        OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+  BEGIN
+    OPEN IO_CURSOR FOR
+      WITH months AS
+       (SELECT ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1 - LEVEL) month_start
+          FROM dual
+        CONNECT BY LEVEL <= 12),
+      month_counts AS
+       (SELECT TRUNC(p.setteled_on, 'MM') month_start,
+               COUNT(*) AS settled_paras,
+               SUM(CASE WHEN p.risk_id = 1 THEN 1 ELSE 0 END) AS high_risk_settled
+          FROM V_EXEC_PARA_BASE p
+         WHERE p.is_settled = 1
+           AND p.setteled_on >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -11)
+           AND p.setteled_on < ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1)
+           AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+             OR (P_ENTITY_ID IS NOT NULL AND
+                 (p.entity_id = P_ENTITY_ID OR
+                  p.reporting_1 = P_ENTITY_ID OR
+                  p.reporting_2 = P_ENTITY_ID OR
+                  p.reporting_3 = P_ENTITY_ID OR
+                  p.reporting_4 = P_ENTITY_ID OR
+                  p.reporting_5 = P_ENTITY_ID OR
+                  p.reporting_6 = P_ENTITY_ID)))
+         GROUP BY TRUNC(p.setteled_on, 'MM'))
+      SELECT TO_CHAR(m.month_start, 'YYYY-MM') AS settlement_month,
+             NVL(c.settled_paras, 0) AS settled_paras,
+             NVL(c.high_risk_settled, 0) AS high_risk_settled
+        FROM months m
+        LEFT JOIN month_counts c ON c.month_start = m.month_start
+       ORDER BY m.month_start;
+  END P_GET_SETTLEMENT_TREND;
+
 END PKG_EXEC_DASHBOARD;
