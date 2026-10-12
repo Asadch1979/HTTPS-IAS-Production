@@ -785,4 +785,59 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
        ORDER BY m.month_start;
   END P_GET_SETTLEMENT_TREND;
 
+
+  -------------------------------------------------------------------
+  -- 6. CRITICAL OPEN PARAS: bounded detail for executive drill-down
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_CRITICAL_ITEMS(P_DASHBOARD_TYPE IN VARCHAR2,
+                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
+                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                 P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+  BEGIN
+    IF P_MAX_ROWS IS NULL OR P_MAX_ROWS < 1 OR P_MAX_ROWS > 500 OR
+       P_MAX_ROWS <> TRUNC(P_MAX_ROWS) THEN
+      RAISE_APPLICATION_ERROR(-20004, 'Maximum rows must be between 1 and 500.');
+    END IF;
+
+    OPEN IO_CURSOR FOR
+      SELECT *
+        FROM (
+          SELECT p.com_id,
+                 p.entity_id,
+                 p.entity_name,
+                 p.division_id,
+                 p.division_name,
+                 p.business_group_id,
+                 p.business_group_name,
+                 p.audit_period,
+                 p.para_no,
+                 p.gist_of_paras,
+                 p.risk_id,
+                 p.risk_name,
+                 p.com_cycle,
+                 p.para_added_on,
+                 p.aging_days,
+                 p.days_since_last_movement
+            FROM V_EXEC_PARA_BASE p
+           WHERE p.is_open = 1
+             AND p.is_critical = 1
+             AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+               OR (P_ENTITY_ID IS NOT NULL AND
+                   (p.entity_id = P_ENTITY_ID OR
+                    p.reporting_1 = P_ENTITY_ID OR
+                    p.reporting_2 = P_ENTITY_ID OR
+                    p.reporting_3 = P_ENTITY_ID OR
+                    p.reporting_4 = P_ENTITY_ID OR
+                    p.reporting_5 = P_ENTITY_ID OR
+                    p.reporting_6 = P_ENTITY_ID)))
+           ORDER BY CASE WHEN p.risk_id = 1 THEN 0 ELSE 1 END,
+                    p.aging_days DESC NULLS LAST,
+                    p.com_id
+        )
+       WHERE ROWNUM <= P_MAX_ROWS;
+  END P_GET_CRITICAL_ITEMS;
+
 END PKG_EXEC_DASHBOARD;
