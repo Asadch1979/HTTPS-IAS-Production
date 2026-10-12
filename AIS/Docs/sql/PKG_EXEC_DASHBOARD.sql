@@ -351,10 +351,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                  0) AS settled_mtd,
              
              ROUND(CASE
-                     WHEN COUNT(*) = 0 THEN
+                     WHEN NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0) = 0 THEN
                       0
                      ELSE
-                      NVL(SUM(p.is_settled), 0) / COUNT(*) * 100
+                      NVL(SUM(p.is_settled), 0) /
+                      (NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0)) * 100
                    END,
                    2) AS settlement_ratio
       
