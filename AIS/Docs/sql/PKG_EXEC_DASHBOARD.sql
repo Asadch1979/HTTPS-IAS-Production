@@ -4,8 +4,7 @@ WITH entity_map AS
 (
     SELECT
         entity_id,
-        MAX(parent_id) AS parent_id,
-        MAX(c_type_id) AS c_type_id
+        CASE WHEN COUNT(DISTINCT c_type_id) = 1 THEN MAX(c_type_id) END AS c_type_id
     FROM t_auditee_entities_maping
     WHERE NVL(status, 'Y') = 'Y'
     GROUP BY entity_id
@@ -14,7 +13,7 @@ hierarchy AS
 (
     SELECT
         h.entity_id,
-        m.parent_id,
+        h.reporting_1 AS parent_id,
         h.reporting_1,
         h.reporting_2,
         h.reporting_3,
@@ -152,18 +151,18 @@ SELECT
 
     CASE
         WHEN c.para_added_on IS NOT NULL
-        THEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on)
+        THEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on)
     END AS aging_days,
 
     CASE
         WHEN c.para_added_on IS NULL THEN 'UNKNOWN'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 90
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 90
             THEN '0-90 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 180
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 180
             THEN '91-180 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 365
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 365
             THEN '181-365 DAYS'
-        WHEN TRUNC(NVL(c.setteled_on, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
             THEN '1-3 YEARS'
         ELSE 'OVER 3 YEARS'
     END AS aging_bucket,
@@ -179,7 +178,7 @@ SELECT
     END AS is_open,
 
     CASE
-        WHEN c.para_status <> 8 THEN 1
+        WHEN c.para_status = 9 THEN 1
         ELSE 0
     END AS is_settled,
 
@@ -259,6 +258,11 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       TOP   = Bank-wide Top Management
       GROUP = Business Group scope
       CCO   = Bank-wide Compliance oversight
+      CIA   = Bank-wide Internal Audit oversight
+
+    The IAS backend must derive dashboard type and root entity from the
+    authenticated user. This package applies hierarchy-based filtering but
+    cannot authenticate privileges from dashboard type alone.
   */
 
   PROCEDURE P_GET_KPI_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
@@ -576,7 +580,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     ---------------------------------------------------------------
     -- CCO requires finer cycle breakup
     ---------------------------------------------------------------
-    IF V_TYPE = 'CCO' THEN
+    IF V_TYPE IN ('CCO', 'CIA') THEN
     
       OPEN IO_CURSOR FOR
       
