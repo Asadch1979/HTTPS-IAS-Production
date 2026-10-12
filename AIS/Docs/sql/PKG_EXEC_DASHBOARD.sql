@@ -289,6 +289,23 @@ END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
 
+  FUNCTION VALIDATE_REQUEST(P_DASHBOARD_TYPE IN VARCHAR2,
+                            P_ENTITY_ID IN NUMBER) RETURN VARCHAR2 AS
+    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+  BEGIN
+    IF V_TYPE IS NULL OR V_TYPE NOT IN ('TOP', 'GROUP', 'CCO', 'CIA') THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Unsupported executive dashboard type.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL AND
+       (P_ENTITY_ID <= 0 OR P_ENTITY_ID <> TRUNC(P_ENTITY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20002, 'Entity ID must be a positive integer.');
+    END IF;
+    IF V_TYPE = 'GROUP' AND P_ENTITY_ID IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20003, 'Group dashboard needs an authorized entity.');
+    END IF;
+    RETURN V_TYPE;
+  END VALIDATE_REQUEST;
+
   -------------------------------------------------------------------
   -- 1. KPI SUMMARY
   -------------------------------------------------------------------
@@ -296,26 +313,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                               P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                               P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                               IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    -- GROUP dashboard must have a valid entity.
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT 0 AS total_cases,
-               0 AS open_paras,
-               0 AS high_risk_paras,
-               0 AS zero_cycle_paras,
-               0 AS over_3_cycle_paras,
-               0 AS over_1_year_paras,
-               0 AS critical_items,
-               0 AS settled_total,
-               0 AS settled_mtd,
-               0 AS settlement_ratio
-          FROM dual;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
       SELECT COUNT(*) AS total_cases,
@@ -379,20 +379,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS NUMBER) AS risk_id,
-               CAST(NULL AS VARCHAR2(20)) AS risk_name,
-               0 AS para_count,
-               0 AS percentage
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
     
@@ -471,20 +460,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS VARCHAR2(30)) AS bucket_code,
-               CAST(NULL AS VARCHAR2(50)) AS bucket_name,
-               0 AS para_count,
-               0 AS high_risk_count
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     OPEN IO_CURSOR FOR
     
@@ -562,20 +540,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
-    V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
   
-    IF V_TYPE NOT IN ('TOP', 'GROUP', 'CCO') OR
-       (V_TYPE = 'GROUP' AND NVL(P_ENTITY_ID, 0) <= 0) THEN
-      OPEN IO_CURSOR FOR
-        SELECT CAST(NULL AS VARCHAR2(30)) AS bucket_code,
-               CAST(NULL AS VARCHAR2(50)) AS bucket_name,
-               0 AS para_count,
-               0 AS high_risk_count
-          FROM dual
-         WHERE 1 = 0;
-      RETURN;
-    END IF;
   
     ---------------------------------------------------------------
     -- CCO requires finer cycle breakup
