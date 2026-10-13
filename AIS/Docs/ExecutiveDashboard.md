@@ -209,3 +209,13 @@ and Reports making no data calls. No live Oracle or extensive test suite was run
 When a type/auditor or office is selected without an Entity, the UI withholds legacy
 figures and asks for an Entity rather than displaying wider perspective totals under
 an unsupported dimensional filter. The API continues disclosing its legacy scope mode.
+
+## Reports backend (phase 3)
+
+See [ExecutiveReports.md](ExecutiveReports.md) for the staged Reports A–E package,
+certified history dependencies, source evidence, deployment order and verification.
+New APIs are disabled by default. The original Oracle dashboard package and layouts
+are unchanged. Legacy summary APIs now reject DimensionId/ReportingOfficeId instead
+of returning unsupported broader figures, and no longer perform the full directory
+lookup merely because an unfiltered Select By mode was supplied. This supersedes the
+phase-2 compatibility behavior described above.

@@ -102,9 +102,10 @@ namespace AIS.Controllers
                     if (definition == null || !System.Linq.Enumerable.Contains(definition.Datasets, action))
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
                 }
-                // Legacy calls without the new contract retain their existing authorization and bindings.
-                if (Request.Query.ContainsKey("selectBy") || filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
-                    database.GetExecutiveDashboardFilterOptions(scope, filters);
+                // Legacy procedures cannot apply type/auditor/office predicates. Do not
+                // scan the full directory for a mode with no selected dimensional value.
+                if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
+                    return Error(400, "unsupported_filter", "Legacy dashboard summaries support only Entity hierarchy. Dimensional totals require the deployed Executive Reports backend.");
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
                 return Ok(new { success = true, data = query(scope), dateRangeApplied = false, organizationalDimensionsApplied = false, scopeMode = "entityHierarchy" });
             }
