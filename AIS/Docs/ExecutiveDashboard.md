@@ -219,3 +219,53 @@ are unchanged. Legacy summary APIs now reject DimensionId/ReportingOfficeId inst
 of returning unsupported broader figures, and no longer perform the full directory
 lookup merely because an unfiltered Select By mode was supplied. This supersedes the
 phase-2 compatibility behavior described above.
+
+
+## All matching entities and Reporting Line Management
+
+The 6 `PKG_EXEC_DASHBOARD` procedures now accept optional bind parameters:
+`P_ENTITY_TYPE_ID`, `P_AUDITED_BY_ID`, `P_REPORTING_OFFICE_ID`.
+`P_ENTITY_ID` remains optional for bank-wide authorized perspectives and represents
+an authorized subtree when set. With Entity = All matching entities, the dimensions
+select the intersecting portfolio across all matching entities. Reporting Office
+includes the selected office **and its descendants** via `REPORTING_1..6` from
+`V_EXEC_ENTITY_SCOPE`. Audited By uses observation-level `AUDITED_BY`;
+Entity Type uses observation `ENTITY_TYPE_ID`. No client-supplied ID can
+increase the authenticated scope. Dates remain displayed but are **not** applied
+to these six current-state/legacy summary APIs.
+
+The in-dashboard TOP/GROUP/CCO/CIA buttons were removed. Existing perspectives
+and separately permissioned routes remain available through existing navigation.
+
+`/ExecutiveOverview/RLM` is Reporting Line Management. It shares all modular
+dashboard views, but removes Select By/Entity Type/Audited By controls. It offers
+dates, Reporting Office and Entity. The server always derives the parent/root from
+`SessionUser.UserEntityID`; no query parameter can override this root.
+Descendant selection is checked against `PKG_ORG_STRUCTURE.P_GET_NODES` via
+`GetOrganizationNodes(root)`. An empty Entity selection means **all children and
+descendants of the logged-in entity**, including its own observations.
+`RLM` uses the existing `/Dashboard/entity_wise_obs` page permission and
+session-validated `/api/ExecutiveDashboard` endpoints.
+
+**Deployment order** (Oracle 18c): (1) compile the updated
+`AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql` view/package definition before
+deploying the C# application; (2) inspect USER_ERRORS in the target schema;
+(3) deploy the updated application; (4) review
+`AIS/Docs/sql/executive_reporting_line_permissions.sql` with DBA: its
+`V_ENABLE` defaults to `N` and it must be intentionally changed to `Y`
+for permitted roles to call the six read-only APIs; (5) re-login to refresh
+role/API permissions; (6) verify TOP/GROUP/CCO/CIA filters and RLM login-root
+scope using real organizational hierarchies. Test that forged
+`groupRootId`, out-of-line `entityId` and invalid office IDs fail.
+
+SQL Developer clients differ in keyboard shortcuts. In the user's environment,
+F8 executes statements and F5 displays Explain Plan: compile each `CREATE`
+statement separately if the client cannot execute multi-statement scripts.
+Do not execute raw SQL*Plus-only directives through the statement executor.
+No live Oracle compilation or role/API integration test was performed during
+this GitHub edit.
+
+**Reporting limitation:** The Reports catalogue remains staged; the five
+`PKG_EXEC_REPORTS` endpoints do not yet accept RLM as a formal reporting
+perspective. RLM summary widgets work after deployment/grants, but A–E remain
+placeholders pending separate controlled report integration.
