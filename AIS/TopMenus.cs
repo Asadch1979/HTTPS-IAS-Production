@@ -93,6 +93,27 @@ namespace AIS
                         Sub_Menu_Name = organizationParent.Sub_Menu_Name
                         });
                     }
+                if (organizationParent != null && !menus.Any(p => string.Equals(
+                    (p.Page_Path ?? string.Empty).Trim('/'), "ExecutiveOverview/RLM", StringComparison.OrdinalIgnoreCase)))
+                    {
+                    // Reuse the existing entity-visibility page grant. The API
+                    // always derives the Reporting Line root from the login session.
+                    menuList.Add(new MenuPagesModel
+                        {
+                        Id = organizationParent.Id,
+                        PageId = organizationParent.PageId,
+                        Menu_Id = organizationParent.Menu_Id,
+                        Page_Name = "Reporting Line Management",
+                        Page_Path = "ExecutiveOverview/RLM",
+                        Page_URL = "ExecutiveOverview/RLM",
+                        Page_Order = organizationParent.Page_Order + 2,
+                        Status = organizationParent.Status,
+                        Hide_Menu = organizationParent.Hide_Menu,
+                        Sub_Menu = organizationParent.Sub_Menu,
+                        Sub_Menu_Id = organizationParent.Sub_Menu_Id,
+                        Sub_Menu_Name = organizationParent.Sub_Menu_Name
+                        });
+                    }
                 foreach (var item in menus)
                     {
                     menuList.Add(item);

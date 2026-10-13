@@ -134,11 +134,6 @@
             $('results').hidden = true;
             return;
         }
-        if (($('dimension').value || $('office').value) && !$('entity').value) {
-            $('status').textContent = 'Select an Entity to load legacy hierarchy figures. Totals for a filtered type, auditor or reporting office await compatible reporting procedures.';
-            $('results').hidden = true;
-            return;
-        }
         const current = ++version;
         activeRequest?.abort(); activeRequest = new AbortController();
         const signal = activeRequest.signal;
@@ -148,10 +143,14 @@
         if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
         if ($('entity').value) query.set('entityId', $('entity').value);
-        // Legacy summary procedures support only the selected Entity hierarchy.
-        // Dates and other organizational selectors remain page/navigation filters,
-        // but must not be sent to legacy APIs as unsupported dimensional predicates.
-        // The MVC page already validates that Entity belongs to the selected filters.
+        // These organizational dimensions are independently applied by the Oracle
+        // dashboard package, including when the Entity selector is "All".
+        const filterValues = new FormData($('filters'));
+        for (const key of ['selectBy', 'dimensionId', 'reportingOfficeId']) {
+            const value = filterValues.get(key);
+            if (value) query.set(key, value);
+        }
+        // Start/end dates are not applied to the six current-state summary APIs.
         query.set('view', app.dataset.view);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
         $('status').textContent = 'Loading authorized dashboard data…';
@@ -180,7 +179,7 @@
             if (datasets.GetCriticalItems) critical(datasets.GetCriticalItems, datasets.GetKpiSummary.criticalItems);
             $('results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
-            $('status').textContent = `${entity} · Legacy entity-hierarchy figures; selected dates and organizational dimensions are not applied · Updated ${new Date().toLocaleTimeString()}.`;
+            $('status').textContent = `${entity} · Current organizational filters applied (date range not applied to current-state summaries) · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
@@ -216,9 +215,11 @@
     });
     // Parent changes reset children before asking the server for the next scoped options.
     for (const [id, children] of [['select-by', ['dimension', 'office', 'entity']], ['dimension', ['office', 'entity']], ['office', ['entity']]]) {
+        if (!$(id)) continue; // Reporting Line has no Select By / Dimension controls.
         $(id).addEventListener('change', () => {
             activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); $('results').hidden = true;
             for (const child of children) {
+                if (!$(child)) continue;
                 $(child).value = '';
                 const pending = el('option', 'Choose Apply / Refresh to reload options'); pending.value = '';
                 $(child).replaceChildren(pending);

@@ -41,6 +41,9 @@ namespace AIS.Controllers
         public IActionResult CCO(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CCO", entityId, groupRootId, view, filters);
         [HttpGet("CIA")]
         public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CIA", entityId, groupRootId, view, filters);
+        [HttpGet("RLM")]
+        public IActionResult RLM(int? entityId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => Dashboard("RLM", entityId, null, view, filters);
 
         private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view, ExecutiveDashboardFilterRequest filters)
         {
@@ -57,6 +60,8 @@ namespace AIS.Controllers
                 filters.EntityId = entityId;
                 filters.View = view;
                 filters.Validate();
+                if (requestedType == "RLM" && (filters.DimensionId.HasValue || filters.SelectBy != "entityType"))
+                    return BadRequest("Reporting Line Management supports Reporting Office and Entity only.");
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
                 var scope = database.ResolveExecutiveDashboardScope(requestedType, groupRootId, allowGroupSelection: superUser);
                 if (!superUser) permissions.EnsurePermissionsCached(user);
@@ -86,7 +91,8 @@ namespace AIS.Controllers
                     SelectedView = selectedView,
                     DashboardType = scope.DashboardType,
                     ScopeLabel = needsGroup ? "Select a Group Head entity to load its authorized hierarchy" :
-                        scope.DashboardType == "GROUP" ? (superUser ? groups.First(n => n.EntityId == scope.GroupRootId).EntityName : user.UserEntityName) + " and descendants" : "Authorized bank-wide perspective",
+                        scope.DashboardType == "GROUP" ? (superUser ? groups.First(n => n.EntityId == scope.GroupRootId).EntityName : user.UserEntityName) + " and descendants" :
+                        scope.DashboardType == "RLM" ? user.UserEntityName + " and all reporting descendants" : "Authorized bank-wide perspective",
                     SelectedEntityId = entityId,
                     IsSuperUser = superUser,
                     GroupRootId = scope.GroupRootId,

@@ -30,6 +30,7 @@ namespace AIS.Models
                 "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "criticalItems" },
                 "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "criticalItems" },
                 "CIA" => new[] { "openParas", "highRiskParas", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
+                "RLM" => new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas", "criticalItems" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
@@ -37,6 +38,7 @@ namespace AIS.Models
             {
                 "TOP" => new[] { "A", "B", "C", "D", "E" },
                 "GROUP" => new[] { "E" },
+                "RLM" => new[] { "E" },
                 "CCO" => new[] { "B", "C", "D" },
                 _ => new[] { "A", "B", "C", "D", "E" }
             };
