@@ -148,10 +148,10 @@
         if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
         if ($('entity').value) query.set('entityId', $('entity').value);
-        for (const key of ['startDate', 'endDate', 'selectBy', 'dimensionId', 'reportingOfficeId']) {
-            const value = new FormData($('filters')).get(key);
-            if (value) query.set(key, value);
-        }
+        // Legacy summary procedures support only the selected Entity hierarchy.
+        // Dates and other organizational selectors remain page/navigation filters,
+        // but must not be sent to legacy APIs as unsupported dimensional predicates.
+        // The MVC page already validates that Entity belongs to the selected filters.
         query.set('view', app.dataset.view);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
         $('status').textContent = 'Loading authorized dashboard data…';
