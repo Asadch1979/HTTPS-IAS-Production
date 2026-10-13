@@ -18,6 +18,15 @@ namespace AIS.Controllers
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new UnauthenticatedException();
             var requested = requestedType?.Trim().ToUpperInvariant();
+            // Reporting Line Management never accepts a browser-supplied root.
+            // It always starts at the entity assigned to the authenticated user.
+            if (requested == "RLM")
+            {
+                if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0 ||
+                    !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID))
+                    throw new ExecutiveDashboardAccessException("EntityScope", "Reporting Line Management requires the authenticated entity.");
+                return new ExecutiveDashboardScope(user, "RLM", "/Dashboard/entity_wise_obs", user.UserEntityID);
+            }
             if (user.UserRoleID == 1 && session.IsSuperUser())
             {
                 if (!IsExecutiveDashboardType(requested))
@@ -103,21 +112,22 @@ namespace AIS.Controllers
         {
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
-            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.GroupRootId : null);
+            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.GroupRootId :
+                scope.DashboardType == "RLM" ? scope.SessionEntityId : null);
             return scope.DashboardType != "GROUP" ? nodes : nodes.Where(n => n.EntityId == scope.GroupRootId ||
                 n.Reporting1 == scope.GroupRootId || n.Reporting2 == scope.GroupRootId ||
                 n.Reporting3 == scope.GroupRootId || n.Reporting4 == scope.GroupRootId ||
                 n.Reporting5 == scope.GroupRootId || n.Reporting6 == scope.GroupRootId).ToList();
         }
 
-        internal List<ExecutiveSettlementTrend> GetExecutiveSettlementTrend(ExecutiveDashboardScope scope, string auditPeriod)
+        internal List<ExecutiveSettlementTrend> GetExecutiveSettlementTrend(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_SETTLEMENT_TREND", scope, auditPeriod,
                 reader => new ExecutiveSettlementTrend {
                     SettlementMonth = ExecutiveText(reader, "SETTLEMENT_MONTH"),
                     SettledParas = ExecutiveCount(reader, "SETTLED_PARAS"),
-                    HighRiskSettled = ExecutiveCount(reader, "HIGH_RISK_SETTLED") });
+                    HighRiskSettled = ExecutiveCount(reader, "HIGH_RISK_SETTLED") }, filters: filters);
 
-        internal List<ExecutiveCriticalItem> GetExecutiveCriticalItems(ExecutiveDashboardScope scope, string auditPeriod, int maxRows)
+        internal List<ExecutiveCriticalItem> GetExecutiveCriticalItems(ExecutiveDashboardScope scope, string auditPeriod, int maxRows, ExecutiveDashboardFilterRequest filters = null)
         {
             if (maxRows < 1 || maxRows > 500) throw new ArgumentException("Maximum rows must be between 1 and 500.");
             return ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_CRITICAL_ITEMS", scope, auditPeriod,
@@ -131,10 +141,10 @@ namespace AIS.Controllers
                     RiskName = ExecutiveText(reader, "RISK_NAME"), ComCycle = OrgNumber(reader, "COM_CYCLE"),
                     ParaAddedOn = reader.IsDBNull(reader.GetOrdinal("PARA_ADDED_ON")) ? (DateTime?)null : reader.GetDateTime(reader.GetOrdinal("PARA_ADDED_ON")),
                     AgingDays = OrgNumber(reader, "AGING_DAYS"), DaysSinceLastMovement = OrgNumber(reader, "DAYS_SINCE_LAST_MOVEMENT")
-                }, maxRows);
+                }, maxRows, filters);
         }
 
-        internal ExecutiveKpiSummary GetExecutiveKpiSummary(ExecutiveDashboardScope scope, string auditPeriod)
+        internal ExecutiveKpiSummary GetExecutiveKpiSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
         {
             var rows = ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_KPI_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveKpiSummary
@@ -149,12 +159,12 @@ namespace AIS.Controllers
                     SettledTotal = ExecutiveCount(reader, "SETTLED_TOTAL"),
                     SettledMtd = ExecutiveCount(reader, "SETTLED_MTD"),
                     SettlementRatio = ExecutiveDecimal(reader, "SETTLEMENT_RATIO")
-                });
+                }, filters: filters);
             if (rows.Count != 1) throw new InvalidOperationException("Executive KPI cursor must contain one summary row.");
             return rows[0];
         }
 
-        internal List<ExecutiveRiskSummary> GetExecutiveRiskSummary(ExecutiveDashboardScope scope, string auditPeriod)
+        internal List<ExecutiveRiskSummary> GetExecutiveRiskSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_RISK_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveRiskSummary
                 {
@@ -162,9 +172,9 @@ namespace AIS.Controllers
                     RiskName = ExecutiveText(reader, "RISK_NAME"),
                     ParaCount = ExecutiveCount(reader, "PARA_COUNT"),
                     Percentage = ExecutiveDecimal(reader, "PERCENTAGE")
-                });
+                }, filters: filters);
 
-        internal List<ExecutiveAgingSummary> GetExecutiveAgingSummary(ExecutiveDashboardScope scope, string auditPeriod)
+        internal List<ExecutiveAgingSummary> GetExecutiveAgingSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_AGING_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveAgingSummary
                 {
@@ -172,9 +182,9 @@ namespace AIS.Controllers
                     BucketName = ExecutiveText(reader, "BUCKET_NAME"),
                     ParaCount = ExecutiveCount(reader, "PARA_COUNT"),
                     HighRiskCount = ExecutiveCount(reader, "HIGH_RISK_COUNT")
-                });
+                }, filters: filters);
 
-        internal List<ExecutiveCycleSummary> GetExecutiveCycleSummary(ExecutiveDashboardScope scope, string auditPeriod)
+        internal List<ExecutiveCycleSummary> GetExecutiveCycleSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_CYCLE_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveCycleSummary
                 {
@@ -182,7 +192,7 @@ namespace AIS.Controllers
                     BucketName = ExecutiveText(reader, "BUCKET_NAME"),
                     ParaCount = ExecutiveCount(reader, "PARA_COUNT"),
                     HighRiskCount = ExecutiveCount(reader, "HIGH_RISK_COUNT")
-                });
+                }, filters: filters);
 
         private SessionUser ValidateExecutiveDashboardSession(ExecutiveDashboardScope scope)
         {
@@ -195,7 +205,7 @@ namespace AIS.Controllers
             return user;
         }
 
-        private List<T> ReadExecutiveSummary<T>(string procedure, ExecutiveDashboardScope scope, string auditPeriod, Func<OracleDataReader, T> map, int? maxRows = null)
+        private List<T> ReadExecutiveSummary<T>(string procedure, ExecutiveDashboardScope scope, string auditPeriod, Func<OracleDataReader, T> map, int? maxRows = null, ExecutiveDashboardFilterRequest filters = null)
         {
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
@@ -211,6 +221,12 @@ namespace AIS.Controllers
                 command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
                 command.Parameters.Add("P_AUDIT_PERIOD", OracleDbType.Varchar2).Value = string.IsNullOrWhiteSpace(auditPeriod) ? (object)DBNull.Value : auditPeriod.Trim();
                 if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS", OracleDbType.Int32).Value = maxRows.Value;
+                command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
+                    filters?.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters?.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value =
+                    (object)filters?.ReportingOfficeId ?? DBNull.Value;
                 command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using (var reader = command.ExecuteReader())
                     while (reader.Read()) rows.Add(map(reader));
