@@ -7,10 +7,17 @@
     @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
     <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" /></div>
-    <div><label for="exec-select-by">Select By</label><select id="exec-select-by" name="selectBy" disabled="@needsGroup"><option value="entityType" selected="@(Model.Filters.SelectBy == "entityType")">Entity Type</option><option value="auditedBy" selected="@(Model.Filters.SelectBy == "auditedBy")">Audited By</option></select></div>
-    <div><label for="exec-dimension">@(Model.Filters.SelectBy == "entityType" ? "Entity Type" : "Audited By")</label><select id="exec-dimension" name="dimensionId" disabled="@needsGroup"><option value="">All in authorized scope</option>@foreach (var option in Model.FilterOptions.Dimensions) { <option value="@option.Id" selected="@(option.Id == Model.Filters.DimensionId)">@option.Name (@option.Id)</option> }</select></div>
+    @if (Model.DashboardType == "RLM")
+    {
+        <input type="hidden" name="selectBy" value="entityType" />
+    }
+    else
+    {
+        <div><label for="exec-select-by">Select By</label><select id="exec-select-by" name="selectBy" disabled="@needsGroup"><option value="entityType" selected="@(Model.Filters.SelectBy == "entityType")">Entity Type</option><option value="auditedBy" selected="@(Model.Filters.SelectBy == "auditedBy")">Audited By</option></select></div>
+        <div><label for="exec-dimension">@(Model.Filters.SelectBy == "entityType" ? "Entity Type" : "Audited By")</label><select id="exec-dimension" name="dimensionId" disabled="@needsGroup"><option value="">All in authorized scope</option>@foreach (var option in Model.FilterOptions.Dimensions) { <option value="@option.Id" selected="@(option.Id == Model.Filters.DimensionId)">@option.Name (@option.Id)</option> }</select></div>
+        }
     <div><label for="exec-office">Reporting Office</label><select id="exec-office" name="reportingOfficeId" disabled="@needsGroup"><option value="">All matching offices</option>@foreach (var option in Model.FilterOptions.ReportingOffices) { <option value="@option.Id" selected="@(option.Id == Model.Filters.ReportingOfficeId)">@option.Name (@option.Id)</option> }</select></div>
     <div><label for="exec-entity">Entity</label><select id="exec-entity" name="entityId" disabled="@needsGroup"><option value="">All matching entities</option>@foreach (var option in Model.FilterOptions.Entities) { <option value="@option.Id" selected="@(option.Id == Model.Filters.EntityId)">@option.Name (@option.Id)</option> }</select></div>
     <button class="org-button" id="exec-refresh" type="submit">Apply / Refresh</button>
 </form>
-<p class="exec-note" id="exec-filter-note">Selected dates are reserved for future date-based reporting. Current summaries and settlement trends are legacy figures and do not use this date range. Entity Type, Audited By and Reporting Office constrain entity choices; legacy figures use only the selected Entity and its descendants, or the full authorized perspective when no Entity is selected.</p>
+<p class="exec-note" id="exec-filter-note">Selected dates are reserved for future date-based reporting; current dashboard summaries do not use the date range. Audited By, Entity Type and Reporting Office now filter current dashboard results across all matching entities. Reporting Line Management is always restricted to the login entity and its reporting descendants.</p>
