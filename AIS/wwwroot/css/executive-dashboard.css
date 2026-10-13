@@ -40,3 +40,4 @@ button.exec-kpi:hover { border-color:#4c9278; }
 .exec-report-catalogue { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
 .exec-view-settlement .exec-panel-trend { grid-column:1/-1; }
 .exec-view-risk .exec-charts { grid-template-columns:1fr; }
+.exec-filters input[type="date"] { width:100%; padding:10px; border:1px solid #dce5df; border-radius:8px; background:white; }

@@ -34,15 +34,15 @@ namespace AIS.Controllers
         }
 
         [HttpGet("TOP")]
-        public IActionResult TOP(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("TOP", entityId, groupRootId, view);
+        public IActionResult TOP(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("TOP", entityId, groupRootId, view, filters);
         [HttpGet("GROUP")]
-        public IActionResult GROUP(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("GROUP", entityId, groupRootId, view);
+        public IActionResult GROUP(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("GROUP", entityId, groupRootId, view, filters);
         [HttpGet("CCO")]
-        public IActionResult CCO(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("CCO", entityId, groupRootId, view);
+        public IActionResult CCO(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CCO", entityId, groupRootId, view, filters);
         [HttpGet("CIA")]
-        public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("CIA", entityId, groupRootId, view);
+        public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CIA", entityId, groupRootId, view, filters);
 
-        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view)
+        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view, ExecutiveDashboardFilterRequest filters)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -53,6 +53,10 @@ namespace AIS.Controllers
             if (!ModelState.IsValid || entityId <= 0 || groupRootId <= 0) return BadRequest();
             try
             {
+                filters ??= new ExecutiveDashboardFilterRequest();
+                filters.EntityId = entityId;
+                filters.View = view;
+                filters.Validate();
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
                 var scope = database.ResolveExecutiveDashboardScope(requestedType, groupRootId, allowGroupSelection: superUser);
                 if (!superUser) permissions.EnsurePermissionsCached(user);
@@ -69,6 +73,9 @@ namespace AIS.Controllers
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;
                 // The selector page may open without a root; reporting queries may not.
                 if (!needsGroup || entityId.HasValue) database.NarrowExecutiveDashboardScope(scope, entityId);
+                if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
+                    throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
+                var options = needsGroup ? new ExecutiveDashboardFilterOptions() : database.GetExecutiveDashboardFilterOptions(scope, filters);
                 var groups = superUser && scope.DashboardType == "GROUP" ?
                     database.GetExecutiveDashboardGroups(scope).OrderBy(n => n.EntityName).ToList() : new System.Collections.Generic.List<OrganizationNode>();
                 ViewData["TopMenu"] = menus.GetTopMenus();
@@ -84,8 +91,8 @@ namespace AIS.Controllers
                     IsSuperUser = superUser,
                     GroupRootId = scope.GroupRootId,
                     Groups = groups,
-                    Entities = needsGroup ? new System.Collections.Generic.List<OrganizationNode>() : database.GetExecutiveDashboardEntities(scope).OrderBy(n => n.EntityName).ToList(),
-                    AuditPeriods = database.GetAuditPeriods(),
+                    Filters = filters,
+                    FilterOptions = options,
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
             }
@@ -95,6 +102,7 @@ namespace AIS.Controllers
                 LogDenial((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, requestedType);
                 return StatusCode(403);
             }
+            catch (ArgumentException exception) { return BadRequest(exception.Message); }
             catch (Exception exception)
             {
                 logger.LogError(exception, "Unable to open executive dashboard for user {UserId}.", user.ID);

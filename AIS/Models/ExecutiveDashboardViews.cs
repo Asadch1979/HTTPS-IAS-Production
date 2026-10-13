@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AIS.Models
 {
@@ -11,6 +12,10 @@ namespace AIS.Models
         public string Description { get; set; }
         public string[] Kpis { get; set; }
         public string[] Sections { get; set; }
+        public string[] Datasets => (Kpis.Length > 0 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
+            .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
+                "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
+                _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
         public string[] Reports { get; set; } = Array.Empty<string>();
     }
 

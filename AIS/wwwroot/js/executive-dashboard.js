@@ -1,7 +1,7 @@
 (() => {
     'use strict';
     const app = document.getElementById('executive-dashboard');
-    if (!app || app.dataset.view === 'reports') return;
+    if (!app) return;
     const $ = id => document.getElementById(`exec-${id}`);
     const number = value => Number(value).toLocaleString();
     const colors = ['#c56560', '#d7b16b', '#51937b', '#889890'];
@@ -134,6 +134,11 @@
             $('results').hidden = true;
             return;
         }
+        if (($('dimension').value || $('office').value) && !$('entity').value) {
+            $('status').textContent = 'Select an Entity to load legacy hierarchy figures. Totals for a filtered type, auditor or reporting office await compatible reporting procedures.';
+            $('results').hidden = true;
+            return;
+        }
         const current = ++version;
         activeRequest?.abort(); activeRequest = new AbortController();
         const signal = activeRequest.signal;
@@ -143,21 +148,16 @@
         if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
         if ($('entity').value) query.set('entityId', $('entity').value);
-        if ($('period').value) query.set('auditPeriod', $('period').value);
-        // Carry presentation filters between views; API scope is still revalidated.
-        app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => {
-            const url = new URL(link.href);
-            if ($('entity').value) url.searchParams.set('entityId', $('entity').value);
-            else url.searchParams.delete('entityId');
-            if ($('period').value) url.searchParams.set('auditPeriod', $('period').value);
-            else url.searchParams.delete('auditPeriod');
-            link.href = url.href;
-        });
+        for (const key of ['startDate', 'endDate', 'selectBy', 'dimensionId', 'reportingOfficeId']) {
+            const value = new FormData($('filters')).get(key);
+            if (value) query.set(key, value);
+        }
+        query.set('view', app.dataset.view);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
         $('status').textContent = 'Loading authorized dashboard data…';
         $('refresh').disabled = true;
         try {
-            const actions = ['GetKpiSummary', 'GetRiskSummary', 'GetAgingSummary', 'GetCycleSummary', 'GetSettlementTrend', 'GetCriticalItems'];
+            const actions = app.dataset.datasets.split(',').filter(Boolean);
             const data = await Promise.all(actions.map(async action => {
                 const response = await fetch(`${app.dataset.apiUrl}${action}?${query}`, { signal, credentials: 'same-origin', cache: 'no-store',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -168,14 +168,19 @@
                 if (!response.ok || result.success !== true) throw new Error(result.message || 'Dashboard data is temporarily unavailable.');
                 if (action === 'GetKpiSummary' ? !result.data || typeof result.data !== 'object' : !Array.isArray(result.data))
                     throw new Error('Dashboard response is incomplete. Please refresh.');
-                return result.data;
+                return [action, result.data];
             }));
             if (current !== version) return;
-            kpis(data[0]); risk(data[1]); bars('aging', data[2]); bars('cycle', data[3]); trend(data[4]); critical(data[5], data[0].criticalItems);
+            const datasets = Object.fromEntries(data);
+            if (datasets.GetKpiSummary) kpis(datasets.GetKpiSummary);
+            if (datasets.GetRiskSummary) risk(datasets.GetRiskSummary);
+            if (datasets.GetAgingSummary) bars('aging', datasets.GetAgingSummary);
+            if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);
+            if (datasets.GetSettlementTrend) trend(datasets.GetSettlementTrend);
+            if (datasets.GetCriticalItems) critical(datasets.GetCriticalItems, datasets.GetKpiSummary.criticalItems);
             $('results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
-            const period = $('period').selectedOptions[0].textContent;
-            $('status').textContent = `${entity} · ${period} · Updated ${new Date().toLocaleTimeString()}.`;
+            $('status').textContent = `${entity} · Legacy entity-hierarchy figures; selected dates and organizational dimensions are not applied · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
@@ -184,10 +189,54 @@
             if (current === version) { $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); }
         }
     }
-    $('filters').addEventListener('submit', event => { event.preventDefault(); refresh(); });
-    $('entity').addEventListener('change', refresh);
-    $('period').addEventListener('change', refresh);
-    const initialPeriod = new URLSearchParams(window.location.search).get('auditPeriod');
-    if (initialPeriod && Array.from($('period').options).some(option => option.value === initialPeriod)) $('period').value = initialPeriod;
-    refresh();
+    const form = $('filters');
+    function validateDates() {
+        const start = $('start-date'), end = $('end-date');
+        end.setCustomValidity((start.value || end.value) && (!start.value || !end.value || start.value > end.value)
+            ? 'Provide both dates, with Start Date no later than End Date.' : '');
+        return form.checkValidity();
+    }
+    function updateNavigation() {
+        const values = new FormData(form);
+        for (const key of ['startDate', 'endDate']) {
+            const input = app.querySelector(`form[action] input[type=hidden][name=${key}]`);
+            if (input) input.value = values.get(key) || '';
+        }
+        app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => {
+            const url = new URL(link.href);
+            for (const key of ['startDate', 'endDate', 'selectBy', 'dimensionId', 'reportingOfficeId', 'entityId']) {
+                const value = values.get(key);
+                if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
+            }
+            link.href = url.href;
+        });
+    }
+    form.addEventListener('submit', event => {
+        if (!validateDates()) { event.preventDefault(); form.reportValidity(); }
+    });
+    // Parent changes reset children before asking the server for the next scoped options.
+    for (const [id, children] of [['select-by', ['dimension', 'office', 'entity']], ['dimension', ['office', 'entity']], ['office', ['entity']]]) {
+        $(id).addEventListener('change', () => {
+            activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); $('results').hidden = true;
+            for (const child of children) {
+                $(child).value = '';
+                const pending = el('option', 'Choose Apply / Refresh to reload options'); pending.value = '';
+                $(child).replaceChildren(pending);
+            }
+            updateNavigation();
+            if (validateDates()) form.requestSubmit();
+            else { $('status').textContent = 'Correct the date range and choose Apply / Refresh to load authorized filter options.'; form.reportValidity(); }
+        });
+    }
+    for (const id of ['start-date', 'end-date', 'entity']) $(id).addEventListener('change', () => {
+        activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false');
+        if (app.dataset.view !== 'reports') $('results').hidden = true;
+        $('status').textContent = 'Filter selections changed. Choose Apply / Refresh to load this scope.';
+        validateDates(); updateNavigation();
+    });
+    app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => link.addEventListener('click', event => {
+        if (!validateDates()) { event.preventDefault(); form.reportValidity(); }
+    }));
+    updateNavigation();
+    if (app.dataset.view !== 'reports') refresh();
 })();

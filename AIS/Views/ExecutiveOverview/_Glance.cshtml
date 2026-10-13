@@ -3,6 +3,6 @@
 <nav class="exec-next" aria-label="Explore dashboard views">
 @foreach (var view in Model.Views.Where(v => v.Id != "glance"))
 {
-    <a class="org-button" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, groupRootId = Model.GroupRootId, entityId = Model.SelectedEntityId })">@view.Title</a>
+    <a class="org-button" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", Model.Filters.RouteValues(view.Id, Model.IsSuperUser ? Model.GroupRootId : null))">@view.Title</a>
 }
 </nav>

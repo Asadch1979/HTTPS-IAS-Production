@@ -154,3 +154,58 @@ users retain their session-derived perspective and hierarchy restrictions.
 
 Focused verification: AIS net8.0 build succeeded with 0 errors and 57 existing warnings;
 JavaScript syntax passed. Live authenticated role/Oracle verification remains a deployment check.
+
+## Shared dates and hierarchical filters (phase 2)
+
+One `_Filters.cshtml` GET form is shared by Glance and all five additional views,
+including Reports. Dates and all organizational selections are carried by view links;
+parent changes clear lower selections before reloading server-generated options.
+Switching the Super User GROUP root preserves dates and resets organizational choices.
+An unselected GROUP root never loads directory choices or summary APIs.
+
+`ExecutiveDashboardFilterRequest` is the common MVC/API contract:
+`startDate` / `endDate` are optional together, strict ISO `yyyy-MM-dd` calendar dates;
+`selectBy` is `entityType` or `auditedBy`; `dimensionId`, `reportingOfficeId` and
+`entityId` are optional positive IDs. Dates must be ordered and the end must allow
+an exclusive next-day bound. Future procedures should bind `P_START_DATE` and
+`P_END_DATE` with `OracleDbType.Date`, and use `[StartDate, EndExclusive)` for event
+activity. Opening/closing positions still require their own history-aware definitions.
+No date is translated to `P_AUDIT_PERIOD` or passed to the existing procedures.
+Legacy API callers may continue using the unchanged audit-period parameter.
+
+The dedicated `DBConnection.ExecutiveDashboardFilters.cs` reuses
+`PKG_AD.P_GET_AIS_ENTITIES` (its name-search branch with a bound wildcard) and
+`PKG_ORG_STRUCTURE.P_GET_NODES`. It intersects the directory with the existing
+server-authorized scope before constructing any options. Entity type is the
+unambiguous organizational category; Audited By is the entity directory's current
+`auditby_id`, a distinct dimension rather than the reporting parent. Reporting Office
+is `REPORTING_1`, consistent with `V_EXEC_ENTITY_SCOPE`. GROUP options exclude offices
+outside its hierarchy. Missing/ambiguous categories cannot elevate scope. Parent-child
+compatibility is revalidated on the MVC page and summary APIs; forged IDs are rejected.
+No bank-wide directory is sent to the browser for client-side filtering. No new SQL
+package or permission exemption is introduced. The Oracle principal also needs EXECUTE
+on the existing `PKG_AD` lookup package.
+
+Compatibility boundary: organizational dimensions narrow the available Entity choices.
+The six legacy summaries can apply only the selected Entity hierarchy (or authorized
+perspective/root when no Entity is selected), not an exact type/auditor/office predicate
+or the selected dates. The shared page note, loading status and API response metadata
+explicitly disclose this. Current directory Audited By is not evidence of a historical
+para's audit/settlement source. Exact dimensional reporting and date activity remain
+for compatible future reporting procedures; this phase implements no Reports A–E.
+
+Backend view definitions list required datasets. The browser requests only those
+APIs; Reports requests none. Requests carrying `view` are checked against the resolved
+perspective's dataset definition after the existing page and API permission gates.
+Direct legacy calls without a view retain their previous behavior. Session-derived
+ordinary perspectives, selected Super User perspective, GROUP root and entity hierarchy
+validation remain intact.
+
+Focused verification: one AIS net8.0 build succeeded. JavaScript syntax and temporary
+basic checks covered ISO/invalid/reversed dates, the exclusive end bound, both dimensions,
+outside/incompatible IDs, per-view dataset lists, cascade resets, navigation persistence
+and Reports making no data calls. No live Oracle or extensive test suite was run.
+
+When a type/auditor or office is selected without an Entity, the UI withholds legacy
+figures and asks for an Entity rather than displaying wider perspective totals under
+an unsupported dimensional filter. The API continues disclosing its legacy scope mode.

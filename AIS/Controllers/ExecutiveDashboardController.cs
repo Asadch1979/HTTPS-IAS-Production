@@ -34,35 +34,35 @@ namespace AIS.Controllers
 
         [HttpGet]
         public IActionResult GetKpiSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveKpiSummary(scope, auditPeriod));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveKpiSummary(scope, auditPeriod));
 
         [HttpGet]
         public IActionResult GetRiskSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveRiskSummary(scope, auditPeriod));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveRiskSummary(scope, auditPeriod));
 
         [HttpGet]
         public IActionResult GetAgingSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveAgingSummary(scope, auditPeriod));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveAgingSummary(scope, auditPeriod));
 
         [HttpGet]
         public IActionResult GetCycleSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveCycleSummary(scope, auditPeriod));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveCycleSummary(scope, auditPeriod));
 
         [HttpGet]
         public IActionResult GetSettlementTrend([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveSettlementTrend(scope, auditPeriod));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveSettlementTrend(scope, auditPeriod));
 
         [HttpGet]
         public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, scope => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows));
+            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, scope => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows));
 
-        private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId,
+        private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId, ExecutiveDashboardFilterRequest filters,
             Func<ExecutiveDashboardScope, T> query)
         {
             var user = session.GetUser();
@@ -92,8 +92,21 @@ namespace AIS.Controllers
                     LogDenial("ApiPermission", user, scope.DashboardType);
                     return Error(403, "forbidden", "The executive API is not authorized or registered.");
                 }
+                filters ??= new ExecutiveDashboardFilterRequest();
+                filters.EntityId = entityId;
+                filters.Validate();
+                if (filters.View != null)
+                {
+                    var definition = System.Linq.Enumerable.FirstOrDefault(ExecutiveDashboardViews.ForPerspective(scope.DashboardType), v => v.Id == filters.View);
+                    var action = Convert.ToString(RouteData.Values["action"]);
+                    if (definition == null || !System.Linq.Enumerable.Contains(definition.Datasets, action))
+                        return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
+                }
+                // Legacy calls without the new contract retain their existing authorization and bindings.
+                if (Request.Query.ContainsKey("selectBy") || filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
+                    database.GetExecutiveDashboardFilterOptions(scope, filters);
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
-                return Ok(new { success = true, data = query(scope) });
+                return Ok(new { success = true, data = query(scope), dateRangeApplied = false, organizationalDimensionsApplied = false, scopeMode = "entityHierarchy" });
             }
             catch (UnauthenticatedException)
             {
@@ -107,7 +120,7 @@ namespace AIS.Controllers
             }
             catch (ArgumentException)
             {
-                return Error(400, "invalid_request", "Provide valid dashboard parameters; maxRows must be between 1 and 500.");
+                return Error(400, "invalid_request", "Provide valid dates and dashboard filters; maxRows must be between 1 and 500.");
             }
             catch (DatabaseUnavailableException exception)
             {

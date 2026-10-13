@@ -13,7 +13,7 @@ namespace AIS.Models
         public int? GroupRootId { get; set; }
         public List<OrganizationNode> Groups { get; set; }
         public bool CanViewOrganization { get; set; }
-        public List<OrganizationNode> Entities { get; set; }
-        public List<AuditPeriodModel> AuditPeriods { get; set; }
+        public ExecutiveDashboardFilterRequest Filters { get; set; }
+        public ExecutiveDashboardFilterOptions FilterOptions { get; set; }
     }
 }
