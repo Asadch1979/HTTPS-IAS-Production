@@ -275,32 +275,50 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_KPI_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                               P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                               P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                              P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                              P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                              P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                               IO_CURSOR        OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_RISK_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                               P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                               P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                               P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                IO_CURSOR        OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_AGING_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_CYCLE_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
                                     P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                     P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                    P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                    P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                     IO_CURSOR        OUT SYS_REFCURSOR);
 
   PROCEDURE P_GET_CRITICAL_ITEMS(P_DASHBOARD_TYPE IN VARCHAR2,
                                  P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                  P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                  P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                 P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                 P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                  IO_CURSOR        OUT SYS_REFCURSOR);
 
 END PKG_EXEC_DASHBOARD;
@@ -311,14 +329,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                             P_ENTITY_ID IN NUMBER) RETURN VARCHAR2 AS
     V_TYPE VARCHAR2(20) := UPPER(TRIM(P_DASHBOARD_TYPE));
   BEGIN
-    IF V_TYPE IS NULL OR V_TYPE NOT IN ('TOP', 'GROUP', 'CCO', 'CIA') THEN
+    IF V_TYPE IS NULL OR V_TYPE NOT IN ('TOP', 'GROUP', 'CCO', 'CIA', 'RLM') THEN
       RAISE_APPLICATION_ERROR(-20001, 'Unsupported executive dashboard type.');
     END IF;
     IF P_ENTITY_ID IS NOT NULL AND
        (P_ENTITY_ID <= 0 OR P_ENTITY_ID <> TRUNC(P_ENTITY_ID)) THEN
       RAISE_APPLICATION_ERROR(-20002, 'Entity ID must be a positive integer.');
     END IF;
-    IF V_TYPE = 'GROUP' AND P_ENTITY_ID IS NULL THEN
+    IF V_TYPE IN ('GROUP','RLM') AND P_ENTITY_ID IS NULL THEN
       RAISE_APPLICATION_ERROR(-20003, 'Group dashboard needs an authorized entity.');
     END IF;
     RETURN V_TYPE;
@@ -330,6 +348,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_KPI_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                               P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                               P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                              P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                              P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                              P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                               IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -380,6 +401,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         FROM V_EXEC_PARA_BASE p
       
        WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
             
          AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
@@ -399,6 +425,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_RISK_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                               P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                               P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                               P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -432,6 +461,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
          WHERE p.is_open = 1
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
               
            AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
@@ -481,6 +515,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_AGING_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -530,6 +567,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
          WHERE p.is_open = 1
               
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
               
            AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
@@ -562,6 +604,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_CYCLE_SUMMARY(P_DASHBOARD_TYPE IN VARCHAR2,
                                 P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                 P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -629,6 +674,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            WHERE p.is_open = 1
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
              AND (P_ENTITY_ID IS NULL OR
                   p.entity_id = P_ENTITY_ID OR
                   p.reporting_1 = P_ENTITY_ID OR
@@ -713,6 +763,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            WHERE p.is_open = 1
                 
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
                 
              AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
@@ -757,6 +812,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   PROCEDURE P_GET_SETTLEMENT_TREND(P_DASHBOARD_TYPE IN VARCHAR2,
                                     P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                     P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
+                                    P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                    P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                    P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                     IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -774,6 +832,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND p.setteled_on >= ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -11)
            AND p.setteled_on < ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1)
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
            AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
              OR (P_ENTITY_ID IS NOT NULL AND
                  (p.entity_id = P_ENTITY_ID OR
@@ -800,6 +863,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                  P_ENTITY_ID      IN NUMBER DEFAULT NULL,
                                  P_AUDIT_PERIOD   IN VARCHAR2 DEFAULT NULL,
                                  P_MAX_ROWS       IN NUMBER DEFAULT 100,
+                                 P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+                                 P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+                                 P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                  IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
@@ -831,6 +897,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            WHERE p.is_open = 1
              AND p.is_critical = 1
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+             AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+             AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
+             AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
+                  P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                            p.reporting_4,p.reporting_5,p.reporting_6))
              AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
                    (p.entity_id = P_ENTITY_ID OR
