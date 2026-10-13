@@ -22,7 +22,7 @@ namespace AIS.Controllers
 
         private ExecutiveReportResult ReadExecutiveReport(string reportId, string procedure, ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
         {
-            if (!_configuration.GetValue<bool>("ExecutiveReports:Enabled") || !_configuration.GetValue<bool>("ExecutiveReports:HistoryVerified"))
+            if (!_configuration.GetValue<bool>("ExecutiveReports:Enabled"))
                 throw new ExecutiveReportsNotDeployedException();
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
