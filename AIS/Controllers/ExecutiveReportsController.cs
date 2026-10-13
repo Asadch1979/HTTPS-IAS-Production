@@ -56,8 +56,8 @@ namespace AIS.Controllers
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
                 return Error(401, "unauthenticated", "An active authenticated IAS session is required.");
             // No report-package/directory queries run while these flags are absent/false.
-            if (!configuration.GetValue<bool>("ExecutiveReports:Enabled") || !configuration.GetValue<bool>("ExecutiveReports:HistoryVerified"))
-                return Error(503, "reports_not_deployed", "Executive reports are disabled pending SQL deployment and historical verification.");
+            if (!configuration.GetValue<bool>("ExecutiveReports:Enabled"))
+                return Error(503, "reports_not_deployed", "Executive reports are disabled until the IAS reporting package is compiled and verified.");
             if (!ModelState.IsValid || groupRootId <= 0 || dashboardType?.Length > 20 || filters == null)
                 return Error(400, "invalid_request", "Provide valid report parameters and dates.");
             try
@@ -78,7 +78,8 @@ namespace AIS.Controllers
                 if (!reports.Contains(reportId)) return Denied("ReportPermission", user, scope.DashboardType);
                 // A separate immutable root is retained for GROUP; filters only narrow it.
                 database.NarrowExecutiveDashboardScope(scope, filters.EntityId);
-                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = true, organizationalDimensionsApplied = true });
+                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = true, organizationalDimensionsApplied = true,
+                    historicalBalancesEstimated = true, currentOrganizationMapping = true, settlementAttributionEstimated = true });
             }
             catch (UnauthenticatedException) { return Error(401, "unauthenticated", "The IAS session is no longer valid."); }
             catch (ExecutiveReportsNotDeployedException) { return Error(503, "reports_not_deployed", "Executive reports are not enabled."); }
@@ -89,7 +90,7 @@ namespace AIS.Controllers
             catch (OracleException exception) when (exception.Number == 20803)
             {
                 logger.LogWarning(exception, "Executive report historical evidence unavailable for user {UserId}.", user.ID);
-                return Error(503, "history_not_verified", "Historical report evidence is missing, ambiguous or incomplete for the selected scope and dates.");
+                return Error(503, "history_not_verified", "The report source could not be reconciled for the selected scope and dates.");
             }
             catch (DatabaseUnavailableException exception)
             {
