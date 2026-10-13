@@ -1,0 +1,8 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<partial name="_Sections" model="Model" />
+<nav class="exec-next" aria-label="Explore dashboard views">
+@foreach (var view in Model.Views.Where(v => v.Id != "glance"))
+{
+    <a class="org-button" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, groupRootId = Model.GroupRootId, entityId = Model.SelectedEntityId })">@view.Title</a>
+}
+</nav>

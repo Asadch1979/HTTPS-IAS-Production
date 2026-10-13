@@ -1,0 +1,8 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<p class="exec-note">Reports A–E are planned for the next reporting phase and are not yet available. The existing dashboard summaries remain available in the other views.</p>
+<div class="exec-report-catalogue">
+@foreach (var report in Model.SelectedView.Reports)
+{
+    <article class="exec-panel"><h2>@report. @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</h2><p>Available after the reporting contracts and Oracle calculations are verified.</p><span class="exec-note">Planned · @Model.ScopeLabel</span></article>
+}
+</div>

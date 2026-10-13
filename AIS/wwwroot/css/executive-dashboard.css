@@ -35,3 +35,8 @@ button.exec-kpi:hover { border-color:#4c9278; }
 .exec :focus-visible { outline:3px solid #a98024; outline-offset:3px; }
 @media(max-width:900px) { .exec-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } .exec-charts { grid-template-columns:1fr; } }
 @media(max-width:480px) { .exec-kpis { grid-template-columns:1fr; } .exec-filters>div { min-width:100%; } .exec .org-header { align-items:start; flex-direction:column; gap:15px; } }
+.exec-navigation,.exec-next { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0; }
+.exec-navigation [aria-current="page"] { background:#244638; color:white; }
+.exec-report-catalogue { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; }
+.exec-view-settlement .exec-panel-trend { grid-column:1/-1; }
+.exec-view-risk .exec-charts { grid-template-columns:1fr; }

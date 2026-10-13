@@ -1,0 +1,62 @@
+using System;
+using System.Collections.Generic;
+
+namespace AIS.Models
+{
+    public sealed class ExecutiveDashboardViewDefinition
+    {
+        public string Id { get; set; }
+        public string Title { get; set; }
+        public string Partial { get; set; }
+        public string Description { get; set; }
+        public string[] Kpis { get; set; }
+        public string[] Sections { get; set; }
+        public string[] Reports { get; set; } = Array.Empty<string>();
+    }
+
+    // Presentation definitions are chosen only after resolving the authorized perspective.
+    public static class ExecutiveDashboardViews
+    {
+        public static List<ExecutiveDashboardViewDefinition> ForPerspective(string perspective)
+        {
+            var glanceKpis = perspective switch
+            {
+                "TOP" => new[] { "openParas", "highRiskParas", "settledMtd", "settlementRatio", "criticalItems" },
+                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "criticalItems" },
+                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "criticalItems" },
+                "CIA" => new[] { "openParas", "highRiskParas", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
+                _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
+            };
+            var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
+            var reports = perspective switch
+            {
+                "TOP" => new[] { "A", "B", "C", "D", "E" },
+                "GROUP" => new[] { "E" },
+                "CCO" => new[] { "B", "C", "D" },
+                _ => new[] { "A", "B", "C", "D", "E" }
+            };
+            return new List<ExecutiveDashboardViewDefinition>
+            {
+                View("glance", "At a Glance", "_Glance", "Executive position and priority observations in your authorized scope.", glanceKpis, new[] { "trend", priority, "critical" }),
+                View("position", "Audit Para Position", "_AuditParaPosition", "Current open position and risk mix. Historical opening and additions will follow in the reporting phase.", new[] { "totalCases", "openParas", "settledTotal", "highRiskParas" }, new[] { "risk" }),
+                View("settlement", "Settlement & Performance", "_SettlementPerformance", "Existing monthly settlements and settlement ratio. Settlement-source and regional comparisons will follow in the reporting phase.", new[] { "settledMtd", "settlementRatio" }, perspective == "CCO" ? new[] { "trend", "cycle" } : new[] { "trend" }),
+                View("risk", "Risk", "_Risk", "Risk distribution and authorized critical observations.", new[] { "highRiskParas", "criticalItems" }, new[] { "risk", "critical" }),
+                View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas", "criticalItems" }, perspective == "CCO" ? new[] { "cycle", "aging", "critical" } : new[] { "aging", "cycle", "critical" }),
+                new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
+            };
+        }
+
+        private static ExecutiveDashboardViewDefinition View(string id, string title, string partial, string description, string[] kpis, string[] sections)
+            => new ExecutiveDashboardViewDefinition { Id = id, Title = title, Partial = partial, Description = description, Kpis = kpis, Sections = sections };
+
+        public static string ReportTitle(string id) => id switch
+        {
+            "A" => "Annual Field Audit Paras Progress",
+            "B" => "Field Audit Position — Field Office",
+            "C" => "Field Audit Position — GM / Region",
+            "D" => "Top Five and Bottom Five Regions",
+            "E" => "Division-wise Management Audit Settlement",
+            _ => throw new ArgumentException("Unknown report.", nameof(id))
+        };
+    }
+}

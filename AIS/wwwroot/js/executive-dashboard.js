@@ -1,7 +1,7 @@
 (() => {
     'use strict';
     const app = document.getElementById('executive-dashboard');
-    if (!app) return;
+    if (!app || app.dataset.view === 'reports') return;
     const $ = id => document.getElementById(`exec-${id}`);
     const number = value => Number(value).toLocaleString();
     const colors = ['#c56560', '#d7b16b', '#51937b', '#889890'];
@@ -35,7 +35,7 @@
         table.append(head, body); details.append(table); target.append(details);
     }
     function bars(id, rows) {
-        const target = $(id); target.replaceChildren();
+        const target = $(id); if (!target) return; target.replaceChildren();
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
         if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
@@ -53,7 +53,7 @@
         dataTable(target, ['Category', 'Open paras', 'High risk'], rows.map(row => [row.bucketName, number(row.paraCount), number(row.highRiskCount)]));
     }
     function risk(rows) {
-        const target = $('risk'); target.replaceChildren();
+        const target = $('risk'); if (!target) return; target.replaceChildren();
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
         if (!total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
@@ -76,7 +76,7 @@
         dataTable(target, ['Risk', 'Open paras', 'Percentage'], rows.map(row => [row.riskName, number(row.paraCount), `${number(row.percentage)}%`]));
     }
     function trend(rows) {
-        const target = $('trend'); target.replaceChildren();
+        const target = $('trend'); if (!target) return; target.replaceChildren();
         if (!rows.length || !rows.some(row => row.settledParas > 0))
             target.append(el('p', 'No settlements in the returned calendar months.', 'exec-empty'));
         if (rows.length) {
@@ -99,10 +99,10 @@
         dataTable(target, ['Month', 'Settled paras', 'High-risk settled'], rows.map(row => [row.settlementMonth, number(row.settledParas), number(row.highRiskSettled)]));
     }
     function kpis(data) {
-        const target = $('kpis'); target.replaceChildren();
-        [['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled MTD', 'settledMtd'],
+        const target = $('kpis'); if (!target) return; target.replaceChildren();
+        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled MTD', 'settledMtd'],
             ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
-            ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].forEach(([label, key]) => {
+            ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const card = el(key === 'criticalItems' ? 'button' : 'div', null, 'exec-kpi');
             card.append(el('span', label), el('strong', number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
             if (key === 'criticalItems') {
@@ -113,7 +113,7 @@
         });
     }
     function critical(rows, count) {
-        const target = $('critical'); target.replaceChildren();
+        const target = $('critical'); if (!target) return; target.replaceChildren();
         $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical items. At most 100 rows, ordered by high risk, age and case ID. Expand an observation to read its text.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = 7; tr.append(cell); target.append(tr);
@@ -144,6 +144,15 @@
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
         if ($('entity').value) query.set('entityId', $('entity').value);
         if ($('period').value) query.set('auditPeriod', $('period').value);
+        // Carry presentation filters between views; API scope is still revalidated.
+        app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => {
+            const url = new URL(link.href);
+            if ($('entity').value) url.searchParams.set('entityId', $('entity').value);
+            else url.searchParams.delete('entityId');
+            if ($('period').value) url.searchParams.set('auditPeriod', $('period').value);
+            else url.searchParams.delete('auditPeriod');
+            link.href = url.href;
+        });
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
         $('status').textContent = 'Loading authorized dashboard data…';
         $('refresh').disabled = true;
@@ -178,5 +187,7 @@
     $('filters').addEventListener('submit', event => { event.preventDefault(); refresh(); });
     $('entity').addEventListener('change', refresh);
     $('period').addEventListener('change', refresh);
+    const initialPeriod = new URLSearchParams(window.location.search).get('auditPeriod');
+    if (initialPeriod && Array.from($('period').options).some(option => option.value === initialPeriod)) $('period').value = initialPeriod;
     refresh();
 })();

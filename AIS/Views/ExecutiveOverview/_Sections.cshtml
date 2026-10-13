@@ -1,0 +1,12 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<div id="exec-kpis" class="exec-kpis" aria-label="Key performance indicators" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
+<div class="exec-charts">
+@foreach (var section in Model.SelectedView.Sections.Where(s => s != "critical"))
+{
+    <partial name="_Chart" model="section" />
+}
+</div>
+@if (Model.SelectedView.Sections.Contains("critical"))
+{
+    <partial name="_Critical" />
+}

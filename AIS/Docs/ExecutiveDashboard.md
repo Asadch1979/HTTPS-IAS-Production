@@ -123,3 +123,34 @@ The harness rejected ordinary-user perspective/root overrides, missing page/API
 grants, invalid/revoked sessions, unknown/ambiguous roots and out-of-hierarchy entities,
 and checked all five denial diagnostic categories. No live Oracle verification or
 extensive application test suite was run. GitHub main was verified at 368b47e.
+
+## Modular Executive Dashboard (phase 1)
+
+The four authorized entry routes now default to **At a Glance**. The shared shell
+selects a reusable view from backend definitions only after the existing session,
+role and page authorization checks. Unknown view IDs return HTTP 400. View selection
+is presentation state; the six existing API permission and hierarchy checks remain
+unchanged, as do their Oracle bindings and calculations.
+
+`ExecutiveDashboardViews.ForPerspective` defines KPI keys, ordered chart/table
+sections and report catalogue entries for the resolved perspective. Glance emphasizes
+bank-wide position/risk for TOP, local aging for GROUP, compliance cycles for CCO,
+and risk/settlement effectiveness for CIA. Common chart and critical-table partials
+and the existing JavaScript renderers are reused by Audit Para Position,
+Settlement & Performance, Risk, and Aging & Compliance. All existing widgets remain
+available across these views. Risk and Aging & Compliance are separate navigation
+items per this phase's requested scope.
+
+The Reports view lists relevant planned reports (TOP/CIA A–E, GROUP E, CCO B–D).
+It makes no reporting calls and clearly marks reports as unavailable pending the
+verified reporting phase. It supplies no invented data or new report permission grants.
+The existing audit-period/entity filters stay in place; date filters, cascading filters,
+formal report layouts, exports and new Oracle calculations are deferred.
+
+Super User perspective links use the original authorized routes. GROUP still requires
+a valid selected root before any dashboard API loads. Navigation within a perspective
+preserves the root and selected entity; filter changes update view links. Ordinary
+users retain their session-derived perspective and hierarchy restrictions.
+
+Focused verification: AIS net8.0 build succeeded with 0 errors and 57 existing warnings;
+JavaScript syntax passed. Live authenticated role/Oracle verification remains a deployment check.

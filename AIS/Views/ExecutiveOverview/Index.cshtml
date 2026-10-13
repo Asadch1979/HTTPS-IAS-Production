@@ -1,39 +1,49 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 @{
-    ViewData["Title"] = "Executive Dashboard";
+    ViewData["Title"] = Model.SelectedView.Title + " · Executive Dashboard";
     Layout = "_Layout";
     var roleName = Model.DashboardType switch { "TOP" => "Top Management", "GROUP" => "Group Head", "CCO" => "Chief Compliance Officer", _ => "Chief Internal Auditor" };
     var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
-<section class="org exec" id="executive-dashboard" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
+<section class="org exec" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
     <header class="org-header">
-        <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-line-chart"></i></span><div><p class="org-eyebrow">ZTBL · @roleName</p><h1>Executive Dashboard</h1><p class="org-subtitle">@Model.ScopeLabel</p></div></div>
+        <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-line-chart"></i></span><div><p class="org-eyebrow">ZTBL · @roleName</p><h1>@Model.SelectedView.Title</h1><p class="org-subtitle">@Model.ScopeLabel</p></div></div>
         @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
     </header>
+    @if (Model.IsSuperUser)
+    {
+        <nav class="exec-navigation" aria-label="Super User perspective">
+            @foreach (var perspective in new[] { "TOP", "GROUP", "CCO", "CIA" })
+            {
+                <a class="org-button" aria-current="@(perspective == Model.DashboardType ? "page" : null)" href="@Url.Action(perspective, "ExecutiveOverview")">@perspective</a>
+            }
+        </nav>
+    }
     @if (Model.IsSuperUser && Model.DashboardType == "GROUP")
     {
         <form class="exec-filters" method="get" action="@Url.Action("GROUP", "ExecutiveOverview")">
             <div><label for="exec-group-root">Group Head entity</label><select id="exec-group-root" name="groupRootId" required><option value="">Select a Group Head entity</option>@foreach (var group in Model.Groups) { <option value="@group.EntityId" selected="@(group.EntityId == Model.GroupRootId)">@group.EntityName (@group.EntityId)</option> }</select></div>
+            <input type="hidden" name="view" value="@Model.SelectedView.Id" />
             <button type="submit" class="org-button">Load Group</button>
         </form>
     }
-    <form id="exec-filters" class="exec-filters">
+    <nav class="exec-navigation" data-view-navigation aria-label="Executive Dashboard views">
+        @foreach (var view in Model.Views)
+        {
+            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, groupRootId = Model.GroupRootId, entityId = Model.SelectedEntityId })">@view.Title</a>
+        }
+    </nav>
+    <p class="exec-note">@Model.SelectedView.Description</p>
+    <form id="exec-filters" hidden="@(Model.SelectedView.Id == "reports")" class="exec-filters">
         <div><label for="exec-period">Audit Period</label><select id="exec-period" disabled="@needsGroup"><option value="">All periods</option>@foreach (var period in Model.AuditPeriods) { <option value="@period.DESCRIPTION">@period.DESCRIPTION</option> }</select></div>
         <div><label for="exec-entity">Reporting Entity</label><select id="exec-entity" disabled="@needsGroup"><option value="">@(Model.DashboardType == "GROUP" ? (Model.IsSuperUser ? "Selected Group and descendants" : "My Group and descendants") : "Authorized bank-wide scope")</option>@foreach (var entity in Model.Entities) { <option value="@entity.EntityId" selected="@(entity.EntityId == Model.SelectedEntityId)">@entity.EntityName (@entity.EntityId)</option> }</select></div>
         <button class="org-button" id="exec-refresh" type="submit" disabled="@needsGroup">Refresh</button>
     </form>
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading dashboard…</p>
-    <div id="exec-results" hidden>
-        <div id="exec-kpis" class="exec-kpis" aria-label="Key performance indicators"></div>
-        <div class="exec-charts">
-            <article class="exec-panel"><h2>Risk distribution</h2><div id="exec-risk"></div></article>
-            <article class="exec-panel"><h2>Aging analysis</h2><div id="exec-aging"></div></article>
-            <article class="exec-panel"><h2>Compliance cycles</h2><p class="exec-note">@(Model.DashboardType == "CCO" || Model.DashboardType == "CIA" ? "Detailed compliance-cycle breakdown" : "Executive compliance-cycle summary")</p><div id="exec-cycle"></div></article>
-            <article class="exec-panel"><h2>Monthly settlement trend</h2><div id="exec-trend"></div></article>
-        </div>
-        <article class="exec-panel" id="exec-critical-panel" tabindex="-1"><h2>Critical audit observations</h2><p class="exec-note" id="exec-critical-note"></p><div class="exec-table-wrap"><table class="exec-table"><thead><tr><th>Entity</th><th>Audit period / Para</th><th>Risk</th><th>Cycles</th><th>Age (days)</th><th>Days since movement</th><th>Observation</th></tr></thead><tbody id="exec-critical"></tbody></table></div></article>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
+    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
+        <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
     <noscript><p>Enable JavaScript to load your Executive Dashboard.</p></noscript>
 </section>

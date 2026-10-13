@@ -34,15 +34,15 @@ namespace AIS.Controllers
         }
 
         [HttpGet("TOP")]
-        public IActionResult TOP(int? entityId = null, int? groupRootId = null) => Dashboard("TOP", entityId, groupRootId);
+        public IActionResult TOP(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("TOP", entityId, groupRootId, view);
         [HttpGet("GROUP")]
-        public IActionResult GROUP(int? entityId = null, int? groupRootId = null) => Dashboard("GROUP", entityId, groupRootId);
+        public IActionResult GROUP(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("GROUP", entityId, groupRootId, view);
         [HttpGet("CCO")]
-        public IActionResult CCO(int? entityId = null, int? groupRootId = null) => Dashboard("CCO", entityId, groupRootId);
+        public IActionResult CCO(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("CCO", entityId, groupRootId, view);
         [HttpGet("CIA")]
-        public IActionResult CIA(int? entityId = null, int? groupRootId = null) => Dashboard("CIA", entityId, groupRootId);
+        public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance") => Dashboard("CIA", entityId, groupRootId, view);
 
-        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId)
+        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -63,6 +63,9 @@ namespace AIS.Controllers
                     LogDenial("PagePermission", user, requestedType);
                     return StatusCode(403);
                 }
+                var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
+                var selectedView = views.FirstOrDefault(v => v.Id == view);
+                if (selectedView == null) return BadRequest("Unknown dashboard view.");
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;
                 // The selector page may open without a root; reporting queries may not.
                 if (!needsGroup || entityId.HasValue) database.NarrowExecutiveDashboardScope(scope, entityId);
@@ -72,6 +75,8 @@ namespace AIS.Controllers
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
                 return View("Index", new ExecutiveDashboardPageModel
                 {
+                    Views = views,
+                    SelectedView = selectedView,
                     DashboardType = scope.DashboardType,
                     ScopeLabel = needsGroup ? "Select a Group Head entity to load its authorized hierarchy" :
                         scope.DashboardType == "GROUP" ? (superUser ? groups.First(n => n.EntityId == scope.GroupRootId).EntityName : user.UserEntityName) + " and descendants" : "Authorized bank-wide perspective",

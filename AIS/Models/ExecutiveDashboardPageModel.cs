@@ -4,6 +4,8 @@ namespace AIS.Models
 {
     public sealed class ExecutiveDashboardPageModel
     {
+        public List<ExecutiveDashboardViewDefinition> Views { get; set; }
+        public ExecutiveDashboardViewDefinition SelectedView { get; set; }
         public string DashboardType { get; set; }
         public string ScopeLabel { get; set; }
         public int? SelectedEntityId { get; set; }

@@ -1,0 +1,5 @@
+@model string
+@{
+    var title = Model switch { "risk" => "Risk distribution", "aging" => "Aging analysis", "cycle" => "Compliance cycles", _ => "Monthly settlement trend" };
+}
+<article class="exec-panel exec-panel-@Model"><h2>@title</h2><div id="exec-@Model"></div></article>
