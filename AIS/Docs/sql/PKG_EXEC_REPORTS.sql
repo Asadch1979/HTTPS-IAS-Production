@@ -36,7 +36,8 @@ SELECT c.com_id, c.entity_id, c.entity_type_id, c.audited_by,
     WHEN t6.c_type_id=5 THEN s.reporting_6 END region_id,
        CASE WHEN NVL(c.audited_by,-1)=NVL(e.auditby_id,-1) THEN 0 ELSE 1 END auditor_assignment_mismatch
 FROM AIS_T_AU_POST_COMPLIANCE c
-JOIN V_EXEC_ENTITY_SCOPE s ON s.entity_id=c.entity_id
+-- LEFT JOIN retains unmapped bank-wide cases as unassigned (GROUP still restricts root).
+LEFT JOIN V_EXEC_ENTITY_SCOPE s ON s.entity_id=c.entity_id
 LEFT JOIN T_AUDITEE_ENT_TYPES et ON et.autid=c.entity_type_id
 LEFT JOIN T_AUDITEE_ENTITIES e ON e.entity_id=c.entity_id
 LEFT JOIN T_AUDITEE_ENTITIES o ON o.entity_id=s.reporting_office_id
