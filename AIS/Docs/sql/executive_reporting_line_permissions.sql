@@ -13,7 +13,7 @@ BEGIN
   END IF;
   SELECT ID INTO V_PAGE_ID
   FROM T_MENU_PAGES
-  WHERE LOWER(TRIM(PAGE_PATH,'/')) = 'dashboard/entity_wise_obs'
+  WHERE LOWER(TRIM(BOTH '/' FROM PAGE_PATH)) = 'dashboard/entity_wise_obs'
     AND ROWNUM = 1;
 
   IF V_ENABLE = 'Y' THEN
