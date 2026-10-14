@@ -45,6 +45,21 @@ namespace AIS.Controllers
             }
             if (user.UserRoleID == 1)
                 throw new ExecutiveDashboardAccessException("SessionValidation", "The Super User session flag does not match the active IAS role.");
+
+            // CIA and CCO have verified, fixed IAS role IDs. Resolve the perspective
+            // from the authenticated session, not from environment-specific appsettings.
+            // The MVC page and each API still require their normal database-backed grants.
+            if (user.UserRoleID == 3 || user.UserRoleID == 38)
+            {
+                var verifiedType = user.UserRoleID == 3 ? "CIA" : "CCO";
+                if (requested != null && requested != verifiedType)
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "The requested executive perspective does not match the authenticated IAS role.");
+                if (groupRootId.HasValue)
+                    throw new ExecutiveDashboardAccessException("EntityScope", "CIA and CCO do not accept a client-supplied Group root.");
+
+                return new ExecutiveDashboardScope(user, verifiedType, "/ExecutiveOverview/" + verifiedType, null);
+            }
+
             var mappings = _configuration.GetSection("ExecutiveDashboard:RoleMappings")
                 .Get<List<ExecutiveDashboardRoleMapping>>() ?? new List<ExecutiveDashboardRoleMapping>();
             var matches = mappings.Where(mapping => mapping != null && mapping.RoleId > 0 && mapping.RoleId == user.UserRoleID).ToList();
