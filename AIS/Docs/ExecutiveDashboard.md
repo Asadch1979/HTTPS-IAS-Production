@@ -4,33 +4,25 @@ Reviewed commit 64c0901 and PKG_EXEC_DASHBOARD.sql on main (14379e21).
 The package supports all four types, optional hierarchy filters and six procedures.
 No Oracle package changes are included.
 
-## Configuration template (merge into environment configuration)
+## Role-to-perspective resolution
 
-```json
-{
-  "ExecutiveDashboard": {
-    "RoleMappings": [
-      { "RoleId": 0, "DashboardType": "TOP", "PagePath": "/ExecutiveOverview/TOP", "AllowBankWide": false },
-      { "RoleId": 0, "DashboardType": "GROUP", "PagePath": "/ExecutiveOverview/GROUP", "AllowBankWide": false },
-      { "RoleId": 38, "DashboardType": "CCO", "PagePath": "/ExecutiveOverview/CCO", "AllowBankWide": true },
-      { "RoleId": 3, "DashboardType": "CIA", "PagePath": "/ExecutiveOverview/CIA", "AllowBankWide": true }
-    ]
-  }
-}
-```
+CIA (IAS Role ID 3) and CCO (IAS Role ID 38) resolve directly from the
+authenticated IAS session. They **do not require** an
+`ExecutiveDashboard:RoleMappings` entry in appsettings. They cannot switch
+to another perspective or supply a Group root. The dashboard controller and
+all six summary APIs **still require** their dedicated page and API permissions
+from the IAS database; this is not a permission bypass.
 
-CIA=3 and CCO=38 are verified by the repository's
-`Codex/IAS_Comprehensive_Review_2026-08-28/Role_Permission_Matrix.csv`.
-TOP and GROUP IDs are NOT verified in repository evidence: 0 disables those entries.
-Verify against the deployment's IAS role catalog before replacing them; never substitute
-Super User, general Compliance Officer (9), Regional Head (23), or GM (39).
-Enable TOP AllowBankWide only after confirming the role's bank-wide entitlement.
-GROUP must keep AllowBankWide=false and have a positive session entity with business
- group category 18. Missing/duplicate role mappings, shared permission paths, invalid
- types, or missing explicit bank-wide approval deny access. Roles 3/38 cannot be
- reassigned to a different perspective. Ordinary users cannot change the session-derived
- type/root. Role 1 uses the authenticated Super User exception described below and
- must not be added to RoleMappings.
+TOP and GROUP remain opt-in roles until their actual IAS role IDs are verified
+against the deployment's role catalog. Those perspectives continue using
+`ExecutiveDashboard:RoleMappings` and require distinct permission paths,
+appropriate bank-wide (TOP) versus logged-in Group root (GROUP) restrictions,
+and their explicit role-based page/API grants. No fallback role ID is assumed.
+Super User (Role 1) retains its separate session-validated behavior.
+
+CIA/CCO role IDs are confirmed by
+`Codex/IAS_Comprehensive_Review_2026-08-28/Role_Permission_Matrix.csv`
+and already enforced in `DBConnection.ExecutiveDashboard.cs`.
 
 ## Database permissions and navigation
 
@@ -57,7 +49,7 @@ present in the permitted server-derived directory. Unknown or out-of-scope IDs d
 ## Frontend and focused verification
 
 One reusable Razor page is served at /ExecutiveOverview/TOP, /GROUP, /CCO and /CIA.
-For ordinary users, each route must match the session-derived type and its dedicated page grant.
+For ordinary users, each route must match their verified session role/perspective (or configured TOP/GROUP role) and its dedicated page grant.
 The menu registration supplies IAS navigation; authorized Organization Structure
 users also get dashboard links for the page and selected entity. The dashboard link
 back to Organization Structure is shown only with its existing page permission.
