@@ -321,6 +321,21 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
                                  P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
                                  IO_CURSOR        OUT SYS_REFCURSOR);
 
+  -------------------------------------------------------------------
+  -- Lifecycle KPIs: activity by event date; existing APIs unaffected.
+  -- This procedure uses the approved V_EXEC_KPI_LIFECYCLE view.
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_KPI_LIFECYCLE(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR);
+
+
 END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
@@ -917,5 +932,133 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         )
        WHERE ROWNUM <= P_MAX_ROWS;
   END P_GET_CRITICAL_ITEMS;
+
+  -------------------------------------------------------------------
+  -- Lifecycle / At-a-Glance KPI preview.
+  --
+  -- Four activity counts use inclusive Start/End calendar dates
+  -- and the tested Source A/O/C lifecycle business rules.
+  -- The ISSUE_RECTIFIED figure includes status 23 (dropped);
+  -- ISSUE_DROPPED is returned separately for transparency.
+  --
+  -- Neither AIS_T_AU_POST_COMPLIANCE_HISTORY.COM_STATUS nor the current
+  -- PARA_STATUS is sufficient to reconstruct arbitrary past balances,
+  -- reopening events and historical compliance-cycle counts. Until
+  -- those transitions are verified, return NULL for unsupported as-of
+  -- metrics. Current-state balances are only returned for End Date=today.
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_KPI_LIFECYCLE(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+    V_FROM DATE;
+    V_TO_EXCLUSIVE DATE;
+    V_TODAY_SNAPSHOT NUMBER(1);
+  BEGIN
+    IF P_START_DATE IS NULL OR P_END_DATE IS NULL
+       OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE) THEN
+      RAISE_APPLICATION_ERROR(-20005,
+        'Both KPI reporting dates are required; Start Date cannot exceed End Date.');
+    END IF;
+
+    V_FROM := TRUNC(P_START_DATE);
+    V_TO_EXCLUSIVE := TRUNC(P_END_DATE) + 1;
+    V_TODAY_SNAPSHOT := CASE
+      WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+
+    OPEN IO_CURSOR FOR
+      SELECT
+        NVL(SUM(CASE
+          WHEN k.record_type = 'ISSUE'
+           AND k.issue_eligible = 1
+           AND k.issue_identified_on >= V_FROM
+           AND k.issue_identified_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS issue_identified,
+
+        NVL(SUM(CASE
+          WHEN k.record_type = 'ISSUE'
+           AND k.issue_rectified_on >= V_FROM
+           AND k.issue_rectified_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS issue_rectified,
+
+        NVL(SUM(CASE
+          WHEN k.record_type = 'ISSUE'
+           AND k.observation_status = 23
+           AND k.issue_rectified_on >= V_FROM
+           AND k.issue_rectified_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS issue_dropped,
+
+        NVL(SUM(CASE
+          WHEN k.record_type = 'PARA'
+           AND k.para_added_on >= V_FROM
+           AND k.para_added_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS para_added,
+
+        NVL(SUM(CASE
+          WHEN k.record_type = 'PARA'
+           AND k.para_settled_on >= V_FROM
+           AND k.para_settled_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS paras_settled,
+
+        NVL(SUM(CASE
+          WHEN k.record_type = 'PARA'
+           AND k.excluded_pre_finalization = 1
+           AND k.raw_para_added_on >= V_FROM
+           AND k.raw_para_added_on < V_TO_EXCLUSIVE
+          THEN 1 ELSE 0 END), 0) AS excluded_para_additions,
+
+        CAST(NULL AS NUMBER) AS opening_open_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN k.current_open ELSE 0 END), 0)
+        ELSE CAST(NULL AS NUMBER) END AS closing_open_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN k.current_high_risk_open ELSE 0 END), 0)
+        ELSE CAST(NULL AS NUMBER) END AS high_risk_open_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN k.current_over_one_year ELSE 0 END), 0)
+        ELSE CAST(NULL AS NUMBER) END AS over_1_year_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN k.current_over_three_cycles ELSE 0 END), 0)
+        ELSE CAST(NULL AS NUMBER) END AS over_3_compliance_cycles,
+
+        V_FROM AS start_date,
+        V_TO_EXCLUSIVE - 1 AS end_date,
+        'N' AS historical_opening_verified,
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN 'Y' ELSE 'N' END
+          AS closing_asof_verified
+
+      FROM V_EXEC_KPI_LIFECYCLE k
+      WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
+        AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+        AND (P_REPORTING_OFFICE_ID IS NULL
+             OR k.entity_id = P_REPORTING_OFFICE_ID
+             OR P_REPORTING_OFFICE_ID IN
+                (k.reporting_1, k.reporting_2, k.reporting_3,
+                 k.reporting_4, k.reporting_5, k.reporting_6))
+        AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
+             OR (P_ENTITY_ID IS NOT NULL
+                 AND (k.entity_id = P_ENTITY_ID
+                      OR k.reporting_1 = P_ENTITY_ID
+                      OR k.reporting_2 = P_ENTITY_ID
+                      OR k.reporting_3 = P_ENTITY_ID
+                      OR k.reporting_4 = P_ENTITY_ID
+                      OR k.reporting_5 = P_ENTITY_ID
+                      OR k.reporting_6 = P_ENTITY_ID)));
+  END P_GET_KPI_LIFECYCLE;
+
 
 END PKG_EXEC_DASHBOARD;
