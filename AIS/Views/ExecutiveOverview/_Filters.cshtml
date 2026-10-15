@@ -4,8 +4,13 @@
 }
 <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
     <input type="hidden" name="view" value="@Model.SelectedView.Id" />
+    @if (Model.SelectedView.Id == "reports")
+    {
+        var requestedReport = Context.Request.Query["report"].ToString();
+        <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(requestedReport) ? requestedReport : Model.SelectedView.Reports.FirstOrDefault())" />
+    }
     @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
-    @if (Model.SelectedView.UseLifecycleKpis)
+    @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports")
     {
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
     <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" /></div>

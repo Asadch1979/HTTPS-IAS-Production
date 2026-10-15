@@ -36,5 +36,12 @@
     <noscript><p>Enable JavaScript to load your Executive Dashboard.</p></noscript>
 </section>
 @section Scripts {
-    <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+    @if (Model.SelectedView.Id == "reports")
+    {
+        <script src="~/js/executive-reports.js" asp-append-version="true"></script>
+    }
+    else
+    {
+        <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+    }
 }

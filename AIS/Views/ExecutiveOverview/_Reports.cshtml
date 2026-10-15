@@ -1,8 +1,35 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<p class="exec-note">Reports A–E are planned for the next reporting phase and are not yet available. The existing dashboard summaries remain available in the other views.</p>
-<div class="exec-report-catalogue">
-@foreach (var report in Model.SelectedView.Reports)
-{
-    <article class="exec-panel"><h2>@report. @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</h2><p>Available after the reporting contracts and Oracle calculations are verified.</p><span class="exec-note">Planned · @Model.ScopeLabel</span></article>
+@inject Microsoft.Extensions.Configuration.IConfiguration ReportConfiguration
+@{
+    var enabled = string.Equals(ReportConfiguration["ExecutiveReports:Enabled"], "true", System.StringComparison.OrdinalIgnoreCase);
+    var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
-</div>
+<section id="exec-reports" data-api-url="@Url.Content("~/api/ExecutiveReports/")" data-enabled="@(enabled ? "true" : "false")" data-perspective="@Model.DashboardType" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
+    @if (Model.SelectedView.Reports.Length == 0)
+    {
+        <p class="exec-empty">Executive reports are not yet supported for Reporting Line Management.</p>
+    }
+    else
+    {
+        <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report">
+            @foreach (var report in Model.SelectedView.Reports)
+            {
+                <button type="button" class="org-button" data-report="@report" data-title="@AIS.Models.ExecutiveDashboardViews.ReportTitle(report)" aria-pressed="false" disabled="@(!enabled || needsGroup)">@report · @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</button>
+            }
+        </nav>
+        @if (!enabled)
+        {
+            <p class="exec-empty">Executive reports are disabled. An administrator must enable ExecutiveReports:Enabled after deployment verification.</p>
+        }
+        else if (needsGroup)
+        {
+            <p class="exec-empty">Select a Group Head entity and choose Load Group to view its authorized reports.</p>
+        }
+        <article class="exec-panel exec-report-panel" id="exec-report-panel" hidden>
+            <h2 id="exec-report-title"></h2>
+            <p class="exec-note" id="exec-report-period"></p>
+            <div class="exec-report-cautions" id="exec-report-cautions"></div>
+            <div id="exec-report-content"></div>
+        </article>
+    }
+</section>
