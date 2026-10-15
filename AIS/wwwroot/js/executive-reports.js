@@ -58,13 +58,15 @@
     function bars(target, title, rows, series, label) {
         const section = node('section', null, 'exec-report-chart'); section.append(node('h3', title));
         const legend = node('p', series.map(s => s.label).join(' · '), 'exec-note'); section.append(legend);
-        const maximum = Math.max(1, ...rows.flatMap(row => series.map(s => Number(row[s.key]) || 0)));
+        const countMaximum = Math.max(1, ...rows.flatMap(row => series.filter(s => !s.percent).map(s => Number(row[s.key]) || 0)));
         rows.forEach(row => {
             const group = node('div', null, 'exec-report-bar-group'); group.append(node('h4', label(row)));
             series.forEach((s, index) => {
                 const value = row[s.key], line = node('div', null, 'exec-report-bar-row');
                 const track = node('div', null, 'exec-track'), fill = node('div', null, `exec-fill exec-report-series-${index}`);
-                fill.style.width = `${Math.max(0, (Number(value) || 0) / maximum * 100)}%`;
+                // Always use a 0–100% axis for percentage bars, across TOP and BOTTOM charts.
+                const axisMaximum = s.percent ? 100 : countMaximum;
+                fill.style.width = `${Math.min(100, Math.max(0, (Number(value) || 0) / axisMaximum * 100))}%`;
                 line.title = `${label(row)} · ${s.label}: ${s.percent ? percent(value) : number(value)}`;
                 track.append(fill); line.append(node('span', s.label), track, node('strong', s.percent ? percent(value) : number(value))); group.append(line);
             });
@@ -105,7 +107,7 @@
             table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas')], rows);
         }
         const sources = node('details', null, 'exec-data'); sources.open = true; sources.append(node('summary', 'Settlement attribution and reconciliation details'));
-        table(sources, 'Oracle settlement attribution and reconciliation', [column('Office / region / year', 'itemName',plain), column('Compliance','settledByCompliance'),column('Audit','settledByAudit'),column('Unknown','settledByUnknown'),column('Reopenings','reopeningEvents'),column('Resettlements','resettlementEvents'),column('Initially closed additions','initiallyClosedAdditions'),column('Reconciliation difference','reconciliationDifference'),column('Auditor assignment mismatch','auditorAssignmentMismatch')], rows);
+        table(sources, 'Oracle settlement attribution and reconciliation', [column('Office / region / year', 'itemName',plain), column('Compliance','settledByCompliance'),column('Audit','settledByAudit'),column('Unknown','settledByUnknown'),column('Reopenings','reopeningEvents', () => 'Not measured'),column('Resettlements','resettlementEvents', () => 'Not measured'),column('Initially closed additions','initiallyClosedAdditions', () => 'Not measured'),column('Reconciliation difference','reconciliationDifference'),column('Auditor assignment mismatch','auditorAssignmentMismatch')], rows);
         target.append(sources);
     }
     let request, version = 0;
@@ -156,6 +158,7 @@
             if (result.historicalBalancesEstimated) cautions.append(node('p','Historical balances are estimates and must not be treated as certified results.'));
             if (result.currentOrganizationMapping) cautions.append(node('p','Historical activity is presented using the current authorized organizational portfolio and hierarchy.'));
             if (result.settlementAttributionEstimated) cautions.append(node('p','Settlement attribution is estimated. Unknown attribution remains included; see settlement attribution details below.'));
+            cautions.append(node('p','Reopenings, resettlements and initially closed additions are not yet measured. The Oracle package returns placeholder zeros for these fields; they are shown as Not measured.'));
             if (result.data.settlementMethod) cautions.append(node('p',result.data.settlementMethod));
             if (result.data.auditorBasis) cautions.append(node('p',`Auditor basis: ${result.data.auditorBasis}`));
             render(selection.value,result.data.rows);
