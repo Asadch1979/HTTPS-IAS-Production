@@ -106,7 +106,3 @@ Page_ID,ID,MENU_ID,PAGE_NAME,Menu,PAGE_PATH,PAGE_ORDER,STATUS,HIDE_MENU,SUB_MENU
 108,108,5,Zonewise Settlement of Paras,Reports,Reports/zonewise_settlement_paras,6,A,0,,zonewise_settlement_paras,108
 1000218,1000218,,Entity Shifting History,Administration Panel,AdministrationPanel/EntityShiftingHistory,,A,0,,ENTITY_SHIFTING_HISTORY,1000218
 
-1000300,1000300,1,Executive Dashboard TOP,Dashboard,ExecutiveOverview/TOP,80,A,0,,EXECUTIVE_TOP,
-1000301,1000301,1,Executive Dashboard GROUP,Dashboard,ExecutiveOverview/GROUP,81,A,0,,EXECUTIVE_GROUP,
-1000302,1000302,1,Executive Dashboard CCO,Dashboard,ExecutiveOverview/CCO,82,A,0,,EXECUTIVE_CCO,
-1000303,1000303,1,Executive Dashboard CIA,Dashboard,ExecutiveOverview/CIA,83,A,0,,EXECUTIVE_CIA,
