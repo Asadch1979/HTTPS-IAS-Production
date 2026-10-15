@@ -275,21 +275,27 @@ namespace AIS.Controllers
                 using (var reader = command.ExecuteReader())
                 {
                     if (!reader.Read()) throw new InvalidOperationException("Lifecycle KPI cursor must contain one summary row.");
-                    var openingVerified = ExecutiveText(reader, "HISTORICAL_OPENING_VERIFIED") == "Y";
-                    var closingVerified = ExecutiveText(reader, "CLOSING_ASOF_VERIFIED") == "Y";
+                    var openingQuality = ExecutiveText(reader, "HISTORICAL_OPENING_VERIFIED");
+                    var closingQuality = ExecutiveText(reader, "CLOSING_ASOF_VERIFIED");
+                    var openingVerified = openingQuality == "Y";
+                    var closingVerified = closingQuality == "Y";
+                    var openingEstimated = openingQuality == "E";
+                    var closingEstimated = closingQuality == "E";
                     var result = new ExecutiveKpiLifecycle
                     {
-                        OpeningOpenParas = openingVerified ? ExecutiveNullableCount(reader, "OPENING_OPEN_PARAS") : null,
+                        OpeningOpenParas = openingVerified || openingEstimated ? ExecutiveNullableCount(reader, "OPENING_OPEN_PARAS") : null,
                         IssueIdentified = ExecutiveNullableCount(reader, "ISSUE_IDENTIFIED"),
                         IssueRectified = ExecutiveNullableCount(reader, "ISSUE_RECTIFIED"),
                         ParaAdded = ExecutiveNullableCount(reader, "PARA_ADDED"),
                         ParasSettled = ExecutiveNullableCount(reader, "PARAS_SETTLED"),
-                        ClosingOpenParas = closingVerified ? ExecutiveNullableCount(reader, "CLOSING_OPEN_PARAS") : null,
-                        HighRiskOpenParas = closingVerified ? ExecutiveNullableCount(reader, "HIGH_RISK_OPEN_PARAS") : null,
-                        Over1YearParas = closingVerified ? ExecutiveNullableCount(reader, "OVER_1_YEAR_PARAS") : null,
-                        Over3ComplianceCycles = closingVerified ? ExecutiveNullableCount(reader, "OVER_3_COMPLIANCE_CYCLES") : null,
+                        ClosingOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "CLOSING_OPEN_PARAS") : null,
+                        HighRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "HIGH_RISK_OPEN_PARAS") : null,
+                        Over1YearParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_1_YEAR_PARAS") : null,
+                        Over3ComplianceCycles = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_3_COMPLIANCE_CYCLES") : null,
                         HistoricalOpeningVerified = openingVerified,
-                        ClosingAsofVerified = closingVerified
+                        ClosingAsofVerified = closingVerified,
+                        OpeningEstimated = openingEstimated,
+                        ClosingEstimated = closingEstimated
                     };
                     if (reader.Read()) throw new InvalidOperationException("Lifecycle KPI cursor must contain one summary row.");
                     return result;
