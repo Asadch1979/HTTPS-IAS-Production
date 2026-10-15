@@ -1,5 +1,4 @@
 using AIS.Models;
-using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -22,8 +21,6 @@ namespace AIS.Controllers
 
         private ExecutiveReportResult ReadExecutiveReport(string reportId, string procedure, ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
         {
-            if (!_configuration.GetValue<bool>("ExecutiveReports:Enabled"))
-                throw new ExecutiveReportsNotDeployedException();
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
             if (filters == null) throw new ArgumentException("Report filters and dates are required.");

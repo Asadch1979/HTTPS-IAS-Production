@@ -133,7 +133,7 @@
         }
     }
     async function load() {
-        if (root.dataset.enabled !== 'true' || root.dataset.needsGroup === 'true' || !buttons.length) return;
+        if (root.dataset.needsGroup === 'true' || !buttons.length) return;
         if (!validDates()) { $('status').textContent = 'Choose a valid reporting period and apply filters.'; return; }
         const selected = buttons.find(button => button.dataset.report === selection.value) || buttons[0];
         selection.value = selected.dataset.report;
