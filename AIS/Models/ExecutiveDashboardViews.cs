@@ -29,10 +29,10 @@ namespace AIS.Models
             var glanceKpis = perspective switch
             {
                 "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "criticalItems" },
-                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "criticalItems" },
+                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "settlementRatio", "criticalItems" },
+                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio", "criticalItems" },
                 "CIA" => new[] { "openParas", "highRiskParas", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
-                "RLM" => new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas", "criticalItems" },
+                "RLM" => new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas", "settlementRatio", "criticalItems" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";

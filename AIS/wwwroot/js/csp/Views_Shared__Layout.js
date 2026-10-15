@@ -23,6 +23,8 @@
                     document.body.classList.remove('ias-sidebar-collapsed');
                 }
 
+                var toggle = document.getElementById('iasSidebarCollapseBtn');
+                if (toggle) { toggle.title = collapsed ? 'Expand menu' : 'Collapse menu'; toggle.setAttribute('aria-label', toggle.title); toggle.setAttribute('aria-expanded', String(!collapsed)); }
                 if (persist){
                     try{
                         localStorage.setItem('ias.sidebar.collapsed', collapsed ? '1' : '0');
@@ -31,7 +33,9 @@
             }
 
             if (!sidebarDisabled && isDesktop){
-                setSidebarCollapsed(true, true);
+                var savedCollapsed = false;
+                try { savedCollapsed = localStorage.getItem('ias.sidebar.collapsed') === '1'; } catch(e) {}
+                setSidebarCollapsed(savedCollapsed, false);
             }
 
             // Collapse toggle (desktop)
@@ -42,62 +46,6 @@
                     clearSidebarTimers();
                     setSidebarCollapsed(shouldCollapse, true);
                 });
-            }
-
-            if (!sidebarDisabled && isDesktop){
-                document.addEventListener('mousemove', function(event){
-                    if (event.clientX <= 18 && document.body.classList.contains('ias-sidebar-collapsed')){
-                        if (!openTimer){
-                            openTimer = setTimeout(function(){
-                                setSidebarCollapsed(false, false);
-                                openTimer = null;
-                            }, 120);
-                        }
-                    } else if (openTimer){
-                        clearTimeout(openTimer);
-                        openTimer = null;
-                    }
-
-                    if (!document.body.classList.contains('ias-sidebar-collapsed')){
-                        var rect = sidebar.getBoundingClientRect();
-                        var pointerAway = event.clientX > (rect.right + 60);
-                        if (pointerAway){
-                            if (!closeTimer){
-                                closeTimer = setTimeout(function(){
-                                    setSidebarCollapsed(true, false);
-                                    closeTimer = null;
-                                }, 260);
-                            }
-                        } else if (closeTimer){
-                            clearTimeout(closeTimer);
-                            closeTimer = null;
-                        }
-                    }
-                });
-
-                sidebar.addEventListener('mouseenter', function(){
-                    if (closeTimer){
-                        clearTimeout(closeTimer);
-                        closeTimer = null;
-                    }
-                });
-
-                sidebar.addEventListener('mouseleave', function(){
-                    if (!document.body.classList.contains('ias-sidebar-collapsed') && !closeTimer){
-                        closeTimer = setTimeout(function(){
-                            setSidebarCollapsed(true, false);
-                            closeTimer = null;
-                        }, 260);
-                    }
-                });
-
-                sidebar.addEventListener('click', function(event){
-                    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-                    if (link){
-                        clearSidebarTimers();
-                        setSidebarCollapsed(true, false);
-                    }
-                }, true);
             }
 
             // Logout must not be affected by sidebar collapse, delegated navigation,
@@ -274,6 +222,9 @@
                     // href may be ~/path; browser resolves to /path in rendered HTML, so compare by endsWith
                     if (href && path && (path === href || path.endsWith(href.replace('~','')))){
                         a.classList.add('active');
+                        a.setAttribute('aria-current', 'page');
+                        var group = a.closest('[data-group]');
+                        if (group) { group.querySelector('[data-menu-btn]').classList.add('active'); setMenuOpen(group.dataset.menuId, true); }
                     }
                 });
             }catch(e){}

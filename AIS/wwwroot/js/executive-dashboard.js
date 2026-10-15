@@ -5,7 +5,6 @@
     const $ = id => document.getElementById(`exec-${id}`);
     const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
     const number = value => Number(value).toLocaleString();
-    const colors = ['#c56560', '#d7b16b', '#51937b', '#889890'];
     const el = (tag, text, className) => {
         const node = document.createElement(tag);
         if (text !== undefined && text !== null) node.textContent = text;
@@ -58,21 +57,17 @@
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
         if (!total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
-            const graphic = chart('Risk distribution of open observations');
-            let offset = 0;
-            const circumference = 2 * Math.PI * 85;
-            rows.forEach((row, index) => {
-                const length = row.paraCount / total * circumference;
-                graphic.append(svg('circle', { cx: 155, cy: 130, r: 85, fill: 'none', stroke: colors[index % colors.length],
-                    'stroke-width': 35, 'stroke-dasharray': `${length} ${circumference - length}`,
-                    'stroke-dashoffset': -offset, transform: 'rotate(-90 155 130)' }));
-                offset += length;
-                graphic.append(svg('circle', { cx: 290, cy: 60 + index * 38, r: 6, fill: colors[index % colors.length] }));
-                text(graphic, 310, 65 + index * 38, `${row.riskName}: ${number(row.paraCount)} (${number(row.percentage)}%)`);
+            const graphic = el('div', null, 'exec-risk-stack');
+            rows.forEach(row => {
+                const share = row.paraCount / total * 100;
+                const color = /high/i.test(row.riskName) ? '#b42318' : /medium/i.test(row.riskName) ? '#b65c00' : '#2457be';
+                const segment = el('div'); segment.style.width = `${share}%`; segment.style.backgroundColor = color;
+                segment.title = `${row.riskName}: ${number(row.paraCount)} (${share.toFixed(1)}%)`;
+                graphic.append(segment);
+                const label = el('p', segment.title, 'exec-risk-label'); label.style.borderLeftColor = color; target.append(label);
             });
-            text(graphic, 155, 132, number(total), { 'text-anchor': 'middle', 'font-size': 24 });
-            text(graphic, 155, 153, 'Open paras', { 'text-anchor': 'middle' });
-            target.append(graphic);
+            target.prepend(graphic);
+
         }
         dataTable(target, ['Risk', 'Open paras', 'Percentage'], rows.map(row => [row.riskName, number(row.paraCount), `${number(row.percentage)}%`]));
     }
@@ -82,20 +77,27 @@
             target.append(el('p', 'No settlements in the returned calendar months.', 'exec-empty'));
         if (rows.length) {
             const graphic = chart('Monthly settled paras and high-risk settlements');
-            const maximum = Math.max(1, ...rows.map(row => row.settledParas));
-            [0, 0.5, 1].forEach(fraction => {
+            const rawMaximum = Math.max(1, ...rows.map(row => Math.max(row.settledParas, row.highRiskSettled)));
+            const magnitude = Math.pow(10, Math.floor(Math.log10(rawMaximum / 2)));
+            const step = Math.max(1, Math.ceil(rawMaximum / 2 / magnitude) * magnitude);
+            const maximum = Math.ceil(rawMaximum / step) * step;
+            Array.from({ length: Math.round(maximum / step) + 1 }, (_, i) => i * step / maximum).forEach(fraction => {
                 const y = 215 - fraction * 180;
                 graphic.append(svg('line', { x1: 50, x2: 540, y1: y, y2: y, stroke: '#e1e8e3', 'stroke-dasharray': '4 4' }));
-                text(graphic, 43, y + 4, number(maximum * fraction), { 'text-anchor': 'end' });
+                text(graphic, 43, y + 4, number(Math.round(maximum * fraction)), { 'text-anchor': 'end' });
             });
             const x = index => 60 + index * 470 / Math.max(1, rows.length - 1);
-            [['settledParas', '#51937b'], ['highRiskSettled', '#c56560']].forEach(([key, color]) => {
+            [['settledParas', '#2457be'], ['highRiskSettled', '#b42318']].forEach(([key, color]) => {
                 const points = rows.map((row, index) => `${x(index)},${215 - row[key] / maximum * 180}`).join(' ');
-                graphic.append(svg('polyline', { points, fill: 'none', stroke: color, 'stroke-width': 3 }));
-                rows.forEach((row, index) => graphic.append(svg('circle', { cx: x(index), cy: 215 - row[key] / maximum * 180, r: 3, fill: color })));
+                graphic.append(svg('polyline', { points, fill: 'none', stroke: color, 'stroke-width': 3, 'stroke-dasharray': key === 'highRiskSettled' ? '7 5' : 'none' }));
+                rows.forEach((row, index) => {
+                    const point = svg('circle', { cx: x(index), cy: 215 - row[key] / maximum * 180, r: 5, fill: color, tabindex: 0 });
+                    const label = `${row.settlementMonth}: ${key === 'settledParas' ? 'All settled' : 'High-risk settled'} ${number(row[key])}`;
+                    const hint = svg('title'); hint.textContent = label; point.append(hint); point.setAttribute('aria-label', label); graphic.append(point);
+                });
             });
             rows.forEach((row, index) => { if (index % 3 === 0 || index === rows.length - 1) text(graphic, x(index), 241, row.settlementMonth, { 'text-anchor': 'middle', 'font-size': 10 }); });
-            target.append(graphic, el('p', 'Green: all settled paras · Red: high-risk settled paras', 'exec-note'));
+            target.append(el('p', '━━ All settled (blue) · ┄┄ High-risk settled (red)', 'exec-legend'), graphic);
         }
         dataTable(target, ['Month', 'Settled paras', 'High-risk settled'], rows.map(row => [row.settlementMonth, number(row.settledParas), number(row.highRiskSettled)]));
     }
@@ -104,12 +106,10 @@
         [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled MTD', 'settledMtd'],
             ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
-            const card = el(key === 'criticalItems' ? 'button' : 'div', null, 'exec-kpi');
+            const card = el('div', null, 'exec-kpi');
             card.append(el('span', label), el('strong', number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
-            if (key === 'criticalItems') {
-                card.type = 'button'; card.append(el('small', 'View authorized critical observations ↓'));
-                card.addEventListener('click', () => { $('critical-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('critical-panel').focus({ preventScroll: true }); });
-            }
+            const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
+            card.append(el('small', key === 'settlementRatio' ? 'Settled as a share of all cases' : denominator > 0 ? `${(data[key] / denominator * 100).toFixed(1)}% of ${key === 'settledMtd' ? 'all settled' : ['totalCases', 'openParas', 'settledTotal'].includes(key) ? 'all cases' : 'open paras'}` : 'Comparison unavailable'));
             target.append(card);
         });
     }
@@ -137,20 +137,28 @@
                         ? (key === 'over3ComplianceCycles' ? 'Estimated · current cycle data' : 'Estimated · historical changes not fully traced')
                         : 'Verified current snapshot';
                 card.append(el('small', note));
+                const base = ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? data.closingOpenParas : key === 'issueRectified' ? data.issueIdentified : data.openingOpenParas;
+                card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${key === 'issueRectified' ? 'issues identified' : ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
                 cards.append(card);
             });
         $('kpis').replaceChildren(cards);
     }
+    let criticalRows = [], criticalCount = 0;
     function critical(rows, count) {
         const target = $('critical'); if (!target) return; target.replaceChildren();
+        const selection = $('critical-risk').value;
+        rows = rows.filter(row => !selection || row.riskName === selection);
         $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical items. At most 100 rows, ordered by high risk, age and case ID. Expand an observation to read its text.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = 7; tr.append(cell); target.append(tr);
         }
         rows.forEach(row => {
             const tr = el('tr');
-            [row.entityName, `${row.auditPeriod ?? '—'} / ${row.paraNo ?? '—'}`, row.riskName,
-                row.comCycle, row.agingDays, row.daysSinceLastMovement].forEach(value => tr.append(el('td', value ?? '—')));
+            [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
+                row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
+            const age = el('td', row.agingDays == null ? 'N/A' : `${(row.agingDays / 365.25).toFixed(1)} yrs`);
+            if (row.agingDays != null) age.title = `${number(row.agingDays)} days`;
+            tr.append(age, el('td', row.daysSinceLastMovement == null ? 'No movement' : number(row.daysSinceLastMovement)));
             const cell = el('td'), details = el('details');
             details.append(el('summary', `Observation ${row.comId}`), el('p', row.gistOfParas || 'Observation text is unavailable.'));
             cell.append(details); tr.append(cell); target.append(tr);
@@ -211,15 +219,21 @@
             if (datasets.GetAgingSummary) bars('aging', datasets.GetAgingSummary);
             if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);
             if (datasets.GetSettlementTrend) trend(datasets.GetSettlementTrend);
-            if (datasets.GetCriticalItems) critical(datasets.GetCriticalItems, datasets.GetKpiSummary.criticalItems);
+            if (datasets.GetCriticalItems) {
+                criticalRows = datasets.GetCriticalItems; criticalCount = datasets.GetKpiSummary.criticalItems;
+                const filter = $('critical-risk'), selected = filter.value;
+                filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
+                if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+                critical(criticalRows, criticalCount);
+            }
             $('results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
-            $('status').textContent = `${entity} · Current organizational filters applied (date range not applied to current-state summaries) · Updated ${new Date().toLocaleTimeString()}.`;
+            $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;
             if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
-            $('status').textContent = `${error.message} Use Refresh to retry.`;
+            $('status').textContent = `${error.message} Use Apply to retry.`;
         } finally {
             if (current === version) { $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); }
         }
@@ -227,6 +241,7 @@
     const form = $('filters');
     function validateDates() {
         const start = $('start-date'), end = $('end-date');
+        if (!start || !end) return form.checkValidity();
         end.setCustomValidity((lifecycle || start.value || end.value) && (!start.value || !end.value || start.value > end.value)
             ? 'Provide both dates, with Start Date no later than End Date.' : '');
         return form.checkValidity();
@@ -252,28 +267,29 @@
     // Parent changes reset children before asking the server for the next scoped options.
     for (const [id, children] of [['select-by', ['dimension', 'office', 'entity']], ['dimension', ['office', 'entity']], ['office', ['entity']]]) {
         if (!$(id)) continue; // Reporting Line has no Select By / Dimension controls.
-        $(id).addEventListener('change', () => {
+        $(id)?.addEventListener('change', () => {
             activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); $('results').hidden = true;
             for (const child of children) {
                 if (!$(child)) continue;
                 $(child).value = '';
-                const pending = el('option', 'Choose Apply / Refresh to reload options'); pending.value = '';
+                const pending = el('option', 'Choose Apply to reload options'); pending.value = '';
                 $(child).replaceChildren(pending);
             }
             updateNavigation();
             if (validateDates()) form.requestSubmit();
-            else { $('status').textContent = 'Correct the date range and choose Apply / Refresh to load authorized filter options.'; form.reportValidity(); }
+            else { $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
         });
     }
-    for (const id of ['start-date', 'end-date', 'entity']) $(id).addEventListener('change', () => {
+    for (const id of ['start-date', 'end-date', 'entity']) $(id)?.addEventListener('change', () => {
         activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false');
         if (app.dataset.view !== 'reports') $('results').hidden = true;
-        $('status').textContent = 'Filter selections changed. Choose Apply / Refresh to load this scope.';
+        $('status').textContent = 'Filter selections changed. Choose Apply to load this scope.';
         validateDates(); updateNavigation();
     });
     app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => link.addEventListener('click', event => {
         if (!validateDates()) { event.preventDefault(); form.reportValidity(); }
     }));
+    $('critical-risk')?.addEventListener('change', () => critical(criticalRows, criticalCount));
     updateNavigation();
     if (app.dataset.view !== 'reports') refresh();
 })();

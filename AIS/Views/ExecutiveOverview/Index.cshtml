@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
 <section class="org exec" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
     <header class="org-header">
-        <div class="org-brand"><span class="org-emblem" aria-hidden="true"><i class="fa fa-line-chart"></i></span><div><p class="org-eyebrow">ZTBL · @roleName</p><h1>@Model.SelectedView.Title</h1><p class="org-subtitle">@Model.ScopeLabel</p></div></div>
+        <div class="exec-title"><h1>@Model.SelectedView.Title <span>· @Model.ScopeLabel</span></h1><button type="button" class="exec-info" aria-label="About this view" title="@roleName · @Model.SelectedView.Description">i</button></div>
         @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
     </header>
     @if (Model.IsSuperUser && Model.DashboardType == "GROUP")
@@ -28,7 +28,6 @@
             <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", Model.Filters.RouteValues(view.Id, Model.IsSuperUser ? Model.GroupRootId : null))">@view.Title</a>
         }
     </nav>
-    <p class="exec-note">@Model.SelectedView.Description</p>
     <partial name="_Filters" model="Model" />
     <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
