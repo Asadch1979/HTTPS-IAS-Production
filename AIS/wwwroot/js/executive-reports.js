@@ -6,6 +6,8 @@
     const $ = id => document.getElementById(`exec-${id}`);
     const form = $('filters'), selection = $('report-selection');
     const buttons = [...root.querySelectorAll('[data-report]')];
+    // RLM has no report selector/export panel until a scoped report is authorized.
+    if (!buttons.length) return;
     const node = (tag, value, className) => {
         const result = document.createElement(tag);
         if (value != null) result.textContent = value;
