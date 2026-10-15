@@ -57,6 +57,12 @@ namespace AIS.Controllers
             try
             {
                 filters ??= new ExecutiveDashboardFilterRequest();
+                if (requestedType == "TOP" && view == "glance" &&
+                    string.IsNullOrEmpty(filters.StartDate) && string.IsNullOrEmpty(filters.EndDate))
+                {
+                    filters.StartDate = new DateTime(DateTime.Today.Year, 1, 1).ToString("yyyy-MM-dd");
+                    filters.EndDate = DateTime.Today.ToString("yyyy-MM-dd");
+                }
                 filters.EntityId = entityId;
                 filters.View = view;
                 filters.Validate();

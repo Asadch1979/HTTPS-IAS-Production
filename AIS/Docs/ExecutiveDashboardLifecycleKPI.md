@@ -24,4 +24,10 @@ Scope: add a safe, separately testable KPI procedure to `PKG_EXEC_DASHBOARD`. Th
 
 **Important:** The four independent date-based activity counts do not necessarily add up to the same date's Issue Identified figure. The confirmed equality `14681 = 6789 + 7892` is a fixed cohort of identified observations on currently concluded engagements, not a universal date-event accounting equation.
 
-No production DB changes have been performed by this pull request. The new procedure is not yet connected to MVC/JavaScript.
+## TOP At a Glance integration
+
+`GET /api/ExecutiveDashboard/GetKpiLifecycle` calls the deployed procedure with typed Oracle parameters. Under the application's `/ZTBLAIS` path base, the URL is `/ZTBLAIS/api/ExecutiveDashboard/GetKpiLifecycle`. It accepts `startDate` and `endDate` (required ISO dates), `entityId`, `selectBy`, `dimensionId`, `reportingOfficeId`, and the existing `dashboardType` perspective parameter. `selectBy` maps the dimension to Entity Type or Audited By. The authenticated scope must resolve to TOP, including for Super User requests; existing session, page/API grants and organizational scope checks apply. When `view` is supplied, only TOP's `glance` view enables this dataset.
+
+Only TOP At a Glance requests this endpoint. Its initial period defaults to January 1 through today on the application server; selected dates persist through navigation and filter submissions. All nine cards refresh together. Counts remain nullable, and unverified opening/closing snapshot values are suppressed on both server and client. Existing summaries still supply charts and the critical-items count, and do not receive the selected date range. CIA, CCO, GROUP, RLM and the other TOP views retain their existing data sources.
+
+Deployment prerequisite: register GET `/api/ExecutiveDashboard/GetKpiLifecycle` in the existing API permission administration and grant it only to the authorized TOP role(s), including Super User if applicable, against the TOP permission page. An absent registration/grant returns 403; there is no permission bypass or automatic grant. This integration does not modify any database tables, views or packages.

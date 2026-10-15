@@ -1,5 +1,20 @@
 namespace AIS.Models
 {
+    public sealed class ExecutiveKpiLifecycle
+    {
+        public long? OpeningOpenParas { get; set; }
+        public long? IssueIdentified { get; set; }
+        public long? IssueRectified { get; set; }
+        public long? ParaAdded { get; set; }
+        public long? ParasSettled { get; set; }
+        public long? ClosingOpenParas { get; set; }
+        public long? HighRiskOpenParas { get; set; }
+        public long? Over1YearParas { get; set; }
+        public long? Over3ComplianceCycles { get; set; }
+        public bool HistoricalOpeningVerified { get; set; }
+        public bool ClosingAsofVerified { get; set; }
+    }
+
     public sealed class ExecutiveKpiSummary
     {
         public long TotalCases { get; set; }
