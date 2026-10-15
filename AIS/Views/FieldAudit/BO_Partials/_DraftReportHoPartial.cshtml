@@ -2,5 +2,6 @@
 @{
     ViewData["ReadOnlyMode"] = Model.IsReadOnly;
     ViewData["SuppressLayout"] = true;
+    ViewData["HideEntitySelector"] = true;
 }
 @await Html.PartialAsync("~/Views/Execution/draft_audit_report.cshtml")
