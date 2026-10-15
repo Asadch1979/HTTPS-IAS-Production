@@ -5,7 +5,6 @@ using AIS.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -23,14 +22,13 @@ namespace AIS.Controllers
         private readonly SessionHandler session;
         private readonly IPermissionService permissions;
         private readonly IPageIdResolver pageIds;
-        private readonly IConfiguration configuration;
         private readonly ILogger<ExecutiveReportsController> logger;
 
         public ExecutiveReportsController(DBConnection database, SessionHandler session, IPermissionService permissions,
-            IPageIdResolver pageIds, IConfiguration configuration, ILogger<ExecutiveReportsController> logger)
+            IPageIdResolver pageIds, ILogger<ExecutiveReportsController> logger)
         {
             this.database = database; this.session = session; this.permissions = permissions;
-            this.pageIds = pageIds; this.configuration = configuration; this.logger = logger;
+            this.pageIds = pageIds; this.logger = logger;
         }
 
         [HttpGet]
@@ -55,9 +53,6 @@ namespace AIS.Controllers
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
                 return Error(401, "unauthenticated", "An active authenticated IAS session is required.");
-            // No report-package/directory queries run while these flags are absent/false.
-            if (!configuration.GetValue<bool>("ExecutiveReports:Enabled"))
-                return Error(503, "reports_not_deployed", "Executive reports are disabled until the IAS reporting package is compiled and verified.");
             if (!ModelState.IsValid || groupRootId <= 0 || dashboardType?.Length > 20 || filters == null)
                 return Error(400, "invalid_request", "Provide valid report parameters and dates.");
             try
@@ -82,7 +77,6 @@ namespace AIS.Controllers
                     historicalBalancesEstimated = true, currentOrganizationMapping = true, settlementAttributionEstimated = true });
             }
             catch (UnauthenticatedException) { return Error(401, "unauthenticated", "The IAS session is no longer valid."); }
-            catch (ExecutiveReportsNotDeployedException) { return Error(503, "reports_not_deployed", "Executive reports are not enabled."); }
             catch (UnauthorizedAccessException exception) { return Denied((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, dashboardType); }
             catch (ArgumentException) { return Error(400, "invalid_request", "Provide ordered ISO dates and valid report filters."); }
             catch (OracleException exception) when (exception.Number == 20801) { return Error(400, "invalid_request", "Invalid report parameters."); }

@@ -1,10 +1,8 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-@inject Microsoft.Extensions.Configuration.IConfiguration ReportConfiguration
 @{
-    var enabled = string.Equals(ReportConfiguration["ExecutiveReports:Enabled"], "true", System.StringComparison.OrdinalIgnoreCase);
     var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
-<section id="exec-reports" data-api-url="@Url.Content("~/api/ExecutiveReports/")" data-enabled="@(enabled ? "true" : "false")" data-perspective="@Model.DashboardType" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
+<section id="exec-reports" data-api-url="@Url.Content("~/api/ExecutiveReports/")" data-perspective="@Model.DashboardType" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
     @if (Model.SelectedView.Reports.Length == 0)
     {
         <p class="exec-empty">Executive reports are not yet supported for Reporting Line Management.</p>
@@ -14,14 +12,10 @@
         <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report">
             @foreach (var report in Model.SelectedView.Reports)
             {
-                <button type="button" class="org-button" data-report="@report" data-title="@AIS.Models.ExecutiveDashboardViews.ReportTitle(report)" aria-pressed="false" disabled="@(!enabled || needsGroup)">@report · @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</button>
+                <button type="button" class="org-button" data-report="@report" data-title="@AIS.Models.ExecutiveDashboardViews.ReportTitle(report)" aria-pressed="false" disabled="@needsGroup">@report · @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</button>
             }
         </nav>
-        @if (!enabled)
-        {
-            <p class="exec-empty">Executive reports are disabled. An administrator must enable ExecutiveReports:Enabled after deployment verification.</p>
-        }
-        else if (needsGroup)
+        @if (needsGroup)
         {
             <p class="exec-empty">Select a Group Head entity and choose Load Group to view its authorized reports.</p>
         }

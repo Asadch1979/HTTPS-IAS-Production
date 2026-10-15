@@ -49,9 +49,4 @@ namespace AIS.Models
         public string AuditorBasis => "Observation AUDITED_BY, not current entity-directory AUDITBY_ID";
         public List<ExecutiveReportRow> Rows { get; set; }
     }
-
-    public sealed class ExecutiveReportsNotDeployedException : InvalidOperationException
-    {
-        public ExecutiveReportsNotDeployedException() : base("Executive reports are disabled pending SQL deployment and historical verification.") { }
-    }
 }
