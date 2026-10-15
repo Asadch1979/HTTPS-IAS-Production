@@ -949,6 +949,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- Do NOT mark older snapshots Y merely because they have a count.
   -- Estimate algorithm follows PKG_EXEC_REPORTS close-on convention,
   -- but uses approved lifecycle source A/O/C exclusions and scope.
+  -- For modern source A, a para is not considered open before the
+  -- known STATUS=14 conclusion event, even if PARA_ADDED_ON is copied
+  -- from the much earlier observation ENTEREDDATE. When missing,
+  -- the date-based estimate falls back to PARA_ADDED_ON.
   -------------------------------------------------------------------
   PROCEDURE P_GET_KPI_LIFECYCLE(
       P_DASHBOARD_TYPE IN VARCHAR2,
@@ -1026,6 +1030,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         NVL(SUM(CASE
           WHEN k.record_type = 'PARA'
            AND k.para_added_on < V_FROM
+           AND (k.source_ind <> 'A'
+                OR k.report_concluded_on IS NULL
+                OR k.report_concluded_on < V_FROM)
            AND (k.para_status = 8
                 OR (k.para_status = 9
                     AND k.para_settled_on >= V_FROM))
@@ -1038,6 +1045,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           NVL(SUM(CASE
             WHEN k.record_type = 'PARA'
              AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
              AND (k.para_status = 8
                   OR (k.para_status = 9
                       AND k.para_settled_on >= V_TO_EXCLUSIVE))
@@ -1051,6 +1061,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           NVL(SUM(CASE
             WHEN k.record_type = 'PARA'
              AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
              AND (k.para_status = 8
                   OR (k.para_status = 9
                       AND k.para_settled_on >= V_TO_EXCLUSIVE))
@@ -1065,6 +1078,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           NVL(SUM(CASE
             WHEN k.record_type = 'PARA'
              AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
              AND (k.para_status = 8
                   OR (k.para_status = 9
                       AND k.para_settled_on >= V_TO_EXCLUSIVE))
@@ -1079,6 +1095,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           NVL(SUM(CASE
             WHEN k.record_type = 'PARA'
              AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
              AND (k.para_status = 8
                   OR (k.para_status = 9
                       AND k.para_settled_on >= V_TO_EXCLUSIVE))
