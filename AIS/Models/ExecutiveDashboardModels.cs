@@ -13,6 +13,8 @@ namespace AIS.Models
         public long? Over3ComplianceCycles { get; set; }
         public bool HistoricalOpeningVerified { get; set; }
         public bool ClosingAsofVerified { get; set; }
+        public bool OpeningEstimated { get; set; }
+        public bool ClosingEstimated { get; set; }
     }
 
     public sealed class ExecutiveKpiSummary

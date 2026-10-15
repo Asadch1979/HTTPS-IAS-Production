@@ -31,3 +31,49 @@ Scope: add a safe, separately testable KPI procedure to `PKG_EXEC_DASHBOARD`. Th
 Only TOP At a Glance requests this endpoint. Its initial period defaults to January 1 through today on the application server; selected dates persist through navigation and filter submissions. All nine cards refresh together. Counts remain nullable, and unverified opening/closing snapshot values are suppressed on both server and client. Existing summaries still supply charts and the critical-items count, and do not receive the selected date range. CIA, CCO, GROUP, RLM and the other TOP views retain their existing data sources.
 
 Deployment prerequisite: register GET `/api/ExecutiveDashboard/GetKpiLifecycle` in the existing API permission administration and grant it only to the authorized TOP role(s), including Super User if applicable, against the TOP permission page. An absent registration/grant returns 403; there is no permission bypass or automatic grant. This integration does not modify any database tables, views or packages.
+
+
+## Historical snapshot blank-value correction (2026-10-15)
+
+`P_GET_KPI_LIFECYCLE` previously always returned NULL for Opening and only
+returned closing/risk/aging/cycle when `TRUNC(P_END_DATE)=TRUNC(SYSDATE)`.
+For a historical End Date (including yesterday), this led to five blank cards.
+
+The updated procedure returns numeric **date-based estimates** for historical
+opening, closing, high-risk, over-one-year, and over-three-cycle counts, using
+the same latest-master-date convention as `PKG_EXEC_REPORTS`:
+- A para is included only when `V_EXEC_KPI_LIFECYCLE.PARA_ADDED_ON` is before
+  the boundary (so source-A pre-conclusion exclusions are respected).
+  For source A, if a Status 14 conclusion date exists, the estimate also
+  requires report conclusion before that boundary; this avoids treating
+  an un-concluded audit observation as an already-open compliance para.
+  Missing conclusion events fall back to the para addition date as an
+  explicitly marked estimate.
+- A currently open para is provisionally considered open after its addition.
+- A currently settled para is provisionally considered open until its current
+  `PARA_SETTLED_ON`.
+- Opening boundary: midnight of Start Date. Closing boundary: midnight
+  immediately after End Date (End Date inclusive).
+- For historical risk/cycle metrics, today's risk and COM_CYCLE are used.
+  Historical cycle changes are not derivable from latest current master alone.
+- Future End Dates are rejected; the four activity KPIs are unchanged.
+- `HISTORICAL_OPENING_VERIFIED = 'E'` means **ESTIMATED**, not verified.
+- `CLOSING_ASOF_VERIFIED = 'E'` for past End Dates, `'Y'` only when End Date
+  equals today and current-state flags are used.
+
+These are **not authoritative historical counts**. Reopenings after the
+selected date, transfers, and changes of risk or compliance cycle can change
+historical figures; full precision requires reconstructing dated status events
+and past organizational assignments from verified logs. The API now returns
+estimated values with explicit `OpeningEstimated`/`ClosingEstimated`
+booleans while preserving the original `...Verified` booleans. TOP shows
+`≈` and an estimate qualifier. CIA/CCO/GROUP/RLM keep existing reporting.
+
+Deployment sequence:
+1. Compile only the revised **PACKAGE BODY** section of
+   `AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql` in Oracle (existing spec unchanged).
+2. Run individual queries in
+   `AIS/Docs/sql/PKG_EXEC_DASHBOARD_snapshot_verify.sql`.
+3. Deploy the updated TOP C# model/DBConnection/JS from the application
+   branch only after Oracle compilation; then refresh TOP and verify the
+   previously blank cards show numerical estimates, not verified data.

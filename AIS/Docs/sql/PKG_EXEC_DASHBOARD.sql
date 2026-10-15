@@ -941,11 +941,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- The ISSUE_RECTIFIED figure includes status 23 (dropped);
   -- ISSUE_DROPPED is returned separately for transparency.
   --
-  -- Neither AIS_T_AU_POST_COMPLIANCE_HISTORY.COM_STATUS nor the current
-  -- PARA_STATUS is sufficient to reconstruct arbitrary past balances,
-  -- reopening events and historical compliance-cycle counts. Until
-  -- those transitions are verified, return NULL for unsupported as-of
-  -- metrics. Current-state balances are only returned for End Date=today.
+  -- Historical opening/closing balances and associated end-date risk,
+  -- aging and cycle counts are DATE-BASED ESTIMATES (E). A historical
+  -- source status ledger is not complete enough to certify reopens,
+  -- transfers, and historic changes in risk/COM_CYCLE.
+  -- For End Date=today, closing snapshots use the current-state flags (Y).
+  -- Do NOT mark older snapshots Y merely because they have a count.
+  -- Estimate algorithm follows PKG_EXEC_REPORTS close-on convention,
+  -- but uses approved lifecycle source A/O/C exclusions and scope.
+  -- For modern source A, a para is not considered open before the
+  -- known STATUS=14 conclusion event, even if PARA_ADDED_ON is copied
+  -- from the much earlier observation ENTEREDDATE. When missing,
+  -- the date-based estimate falls back to PARA_ADDED_ON.
   -------------------------------------------------------------------
   PROCEDURE P_GET_KPI_LIFECYCLE(
       P_DASHBOARD_TYPE IN VARCHAR2,
@@ -969,6 +976,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
 
     V_FROM := TRUNC(P_START_DATE);
     V_TO_EXCLUSIVE := TRUNC(P_END_DATE) + 1;
+    IF TRUNC(P_END_DATE) > TRUNC(SYSDATE) THEN
+      RAISE_APPLICATION_ERROR(-20006, 'KPI End Date cannot be in the future.');
+    END IF;
+
     V_TODAY_SNAPSHOT := CASE
       WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
 
@@ -1013,32 +1024,93 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND k.raw_para_added_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS excluded_para_additions,
 
-        CAST(NULL AS NUMBER) AS opening_open_paras,
+        -- Opening: outstanding immediately before selected Start Date.
+        -- Historical ESTIMATE based on current master status/latest
+        -- SETTELED_ON; cannot reconstruct unlogged reopenings.
+        NVL(SUM(CASE
+          WHEN k.record_type = 'PARA'
+           AND k.para_added_on < V_FROM
+           AND (k.source_ind <> 'A'
+                OR k.report_concluded_on IS NULL
+                OR k.report_concluded_on < V_FROM)
+           AND (k.para_status = 8
+                OR (k.para_status = 9
+                    AND k.para_settled_on >= V_FROM))
+          THEN 1 ELSE 0 END), 0) AS opening_open_paras,
 
         CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
           NVL(SUM(CASE WHEN k.record_type = 'PARA'
                         THEN k.current_open ELSE 0 END), 0)
-        ELSE CAST(NULL AS NUMBER) END AS closing_open_paras,
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+            THEN 1 ELSE 0 END), 0)
+        END AS closing_open_paras,
 
         CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
           NVL(SUM(CASE WHEN k.record_type = 'PARA'
                         THEN k.current_high_risk_open ELSE 0 END), 0)
-        ELSE CAST(NULL AS NUMBER) END AS high_risk_open_paras,
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+             AND k.risk_id = 1
+            THEN 1 ELSE 0 END), 0)
+        END AS high_risk_open_paras,
 
         CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
           NVL(SUM(CASE WHEN k.record_type = 'PARA'
                         THEN k.current_over_one_year ELSE 0 END), 0)
-        ELSE CAST(NULL AS NUMBER) END AS over_1_year_paras,
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+             AND TRUNC(P_END_DATE) - TRUNC(k.para_added_on) > 365
+            THEN 1 ELSE 0 END), 0)
+        END AS over_1_year_paras,
 
         CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
           NVL(SUM(CASE WHEN k.record_type = 'PARA'
                         THEN k.current_over_three_cycles ELSE 0 END), 0)
-        ELSE CAST(NULL AS NUMBER) END AS over_3_compliance_cycles,
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+             AND NVL(k.com_cycle, 0) > 3
+            THEN 1 ELSE 0 END), 0)
+        END AS over_3_compliance_cycles,
 
         V_FROM AS start_date,
         V_TO_EXCLUSIVE - 1 AS end_date,
-        'N' AS historical_opening_verified,
-        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN 'Y' ELSE 'N' END
+        -- E=Estimated (not verified); Y=verified current-state only.
+        -- Keep existing column names for API compatibility.
+        'E' AS historical_opening_verified,
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN 'Y' ELSE 'E' END
           AS closing_asof_verified
 
       FROM V_EXEC_KPI_LIFECYCLE k

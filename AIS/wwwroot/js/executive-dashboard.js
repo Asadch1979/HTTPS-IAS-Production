@@ -115,20 +115,30 @@
     }
     function lifecycleKpis(data) {
         const cards = document.createDocumentFragment();
-        [['Opening Open Paras', 'openingOpenParas', data.historicalOpeningVerified],
-            ['Issue Identified', 'issueIdentified', true], ['Issue Rectified', 'issueRectified', true],
-            ['Para Added', 'paraAdded', true], ['Paras Settled', 'parasSettled', true],
-            ['Closing Open Paras', 'closingOpenParas', data.closingAsofVerified],
-            ['High-Risk Open Paras', 'highRiskOpenParas', data.closingAsofVerified],
-            ['Over 1 Year', 'over1YearParas', data.closingAsofVerified],
-            ['Over 3 Compliance Cycles', 'over3ComplianceCycles', data.closingAsofVerified]].forEach(([label, key, verified]) => {
-            const card = el('div', null, 'exec-kpi');
-            const available = verified === true && data[key] !== null && data[key] !== undefined;
-            card.append(el('span', label), el('strong', available ? number(data[key]) : 'N/A'));
-            card.append(el('small', !available ? 'Verified value unavailable' :
-                ['issueIdentified', 'issueRectified', 'paraAdded', 'parasSettled'].includes(key) ? 'Selected reporting period' : 'Verified as-of snapshot'));
-            cards.append(card);
-        });
+        const openingQuality = data.historicalOpeningVerified ? 'verified' : data.openingEstimated ? 'estimated' : 'unavailable';
+        const closingQuality = data.closingAsofVerified ? 'verified' : data.closingEstimated ? 'estimated' : 'unavailable';
+        [['Opening Open Paras', 'openingOpenParas', openingQuality],
+            ['Issue Identified', 'issueIdentified', 'period'],
+            ['Issue Rectified', 'issueRectified', 'period'],
+            ['Para Added', 'paraAdded', 'period'],
+            ['Paras Settled', 'parasSettled', 'period'],
+            ['Closing Open Paras', 'closingOpenParas', closingQuality],
+            ['High-Risk Open Paras', 'highRiskOpenParas', closingQuality],
+            ['Over 1 Year', 'over1YearParas', closingQuality],
+            ['Over 3 Compliance Cycles', 'over3ComplianceCycles', closingQuality]]
+            .forEach(([label, key, quality]) => {
+                const card = el('div', null, 'exec-kpi');
+                const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
+                card.append(el('span', label), el('strong',
+                    available ? (quality === 'estimated' ? '≈ ' : '') + number(data[key]) : 'N/A'));
+                const note = !available ? 'Historical value unavailable'
+                    : quality === 'period' ? 'Selected reporting period'
+                    : quality === 'estimated'
+                        ? (key === 'over3ComplianceCycles' ? 'Estimated · current cycle data' : 'Estimated · historical changes not fully traced')
+                        : 'Verified current snapshot';
+                card.append(el('small', note));
+                cards.append(card);
+            });
         $('kpis').replaceChildren(cards);
     }
     function critical(rows, count) {
