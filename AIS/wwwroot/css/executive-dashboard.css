@@ -189,3 +189,53 @@ button.exec-kpi:hover { border-color:#4c9278; }
     #exec-report-panel .exec-report-cautions { break-inside:avoid; }
     #exec-report-panel .exec-data { display:block!important; }
 }
+
+/* Distinct report palettes, scoped to Reports so dashboard colors stay intact. */
+#exec-reports[data-active-report="A"] {
+    --report-accent:#2457a6; --report-tint:#edf3fc; --report-total:#dbe7fa;
+    --report-series-2:#427d92; --report-series-3:#91651e;
+}
+#exec-reports[data-active-report="B"] {
+    --report-accent:#14685a; --report-tint:#eaf6f1; --report-total:#d1e9e0;
+    --report-series-2:#3b8192; --report-series-3:#8b6b22;
+}
+#exec-reports[data-active-report="C"] {
+    --report-accent:#6a3d91; --report-tint:#f4eef9; --report-total:#e7d9f1;
+    --report-series-2:#9275b2; --report-series-3:#3b7c86;
+}
+#exec-reports[data-active-report="D"] {
+    --report-accent:#94500c; --report-tint:#fff5e6; --report-total:#f5e1c2;
+    --report-series-2:#b07832; --report-series-3:#80623a;
+}
+#exec-reports[data-active-report="E"] {
+    --report-accent:#943e55; --report-tint:#fcf0f3; --report-total:#f3dbe2;
+    --report-series-2:#b4687d; --report-series-3:#75658d;
+}
+#exec-reports[data-active-report] .exec-report-panel { border-top:3px solid var(--report-accent); }
+#exec-reports[data-active-report] .exec-report-panel h2,
+#exec-reports[data-active-report] .exec-report-chart h3,
+#exec-reports[data-active-report] .exec-report-table caption { color:var(--report-accent); }
+#exec-reports[data-active-report] .exec-report-selector [aria-pressed="true"] {
+    color:var(--report-accent); border-bottom-color:var(--report-accent); background:var(--report-tint);
+}
+#exec-reports[data-active-report] .exec-report-table thead th {
+    color:#fff; background:var(--report-accent);
+}
+#exec-reports[data-active-report] .exec-report-group th,
+#exec-reports[data-active-report] .exec-report-subtotal>* { background:var(--report-tint); }
+#exec-reports[data-active-report] .exec-report-total>* {
+    background:var(--report-total); border-top-color:var(--report-accent);
+}
+#exec-reports[data-active-report] .exec-report-actions .org-button { color:var(--report-accent); border-color:var(--report-accent); }
+#exec-reports[data-active-report] .exec-report-series-0 { background:var(--report-accent); }
+#exec-reports[data-active-report] .exec-report-series-1 { background:var(--report-series-2); }
+#exec-reports[data-active-report] .exec-report-series-2 { background:var(--report-series-3); }
+/* Override the general first-column and numeric minimums for Rank only. */
+.exec .exec-report-table th.exec-rank,
+.exec .exec-report-table td.exec-rank {
+    width:1%; min-width:3ch; max-width:none; padding-left:6px; padding-right:6px;
+    text-align:center; white-space:nowrap;
+}
+@media print {
+    #exec-reports { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+}
