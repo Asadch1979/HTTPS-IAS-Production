@@ -75,3 +75,46 @@ an 'Unknown' settlement-source count when applicable.
 **No live Oracle compilation or data comparison was possible in this repository edit.**
 The application code uses Oracle 18c bind parameters and maintains the authenticated
 GROUP scope; the package is designed for use only through authorized IAS endpoints.
+
+## How to enable the Executive Reports tab (IIS / ASP.NET Core)
+
+The Reports page and `ExecutiveReportsController` independently read
+`IConfiguration.GetValue<bool>("ExecutiveReports:Enabled")`. If absent, the
+value is **false**; the Reports tab displays "Executive reports are disabled"
+and the API returns HTTP **503**. No front-end change can override this flag.
+
+After the database owner verifies `V_EXEC_REPORT_SOURCE`, `PKG_EXEC_REPORTS`,
+all five report cursors, and the Field/Management source attribution, enable
+**one** of the following in the *deployed IIS application*:
+
+- Recommended deployment setting: environment variable
+  `ExecutiveReports__Enabled=true` (double underscore is the .NET configuration
+  section separator); use the environment settings for the IAS application or an
+  authorized IIS `web.config` environmentVariables entry.
+- Alternative: in the production application's deployed
+  `appsettings.Production.json` (when Production is the active ASP.NET Core
+  environment), add `"ExecutiveReports": { "Enabled": true }`.
+
+Avoid overwriting production settings with a development `appsettings.json`.
+Restart/recycle the IAS application pool after changing deployment settings,
+then refresh the Reports page. Do not enable via source-controlled defaults
+unless the production approval process explicitly calls for it.
+
+**Second gate — IAS API permissions:**
+
+1. Check registration of GET `/api/ExecutiveReports/GetReportA` through
+   `GetReportE` in `T_AU_API_MASTER` and active role grants in
+   `T_AU_ROLE_API_PERMISSION`.
+2. The repository's `AIS/Docs/sql/executive_reports_permissions.sql`
+   defaults `V_ACTIVE='N'` and TOP/GROUP role IDs to `NULL`; simply running it
+   **will not enable** the endpoints. Review deployment-specific role IDs and
+   desired perspective-by-report grants before using or adapting it, and
+   do not guess role IDs or grant unauthorized scopes.
+3. Refresh IAS permissions and sign in again. The API also checks page
+   authorization, report authorization and the selected organizational scope.
+
+**Troubleshooting:** HTTP **503** (`reports_not_deployed`) typically means
+`ExecutiveReports:Enabled` is false/missing; **403** means a missing/denied
+page or API permission or scope; **401** means no active IAS session; **500**
+requires inspection of server/Oracle logs. A compiled package does not by itself
+activate the application feature flag or grant API permissions.

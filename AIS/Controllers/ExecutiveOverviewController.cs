@@ -60,7 +60,15 @@ namespace AIS.Controllers
                 if (((requestedType == "TOP" && view == "glance") || view == "reports") &&
                     string.IsNullOrEmpty(filters.StartDate) && string.IsNullOrEmpty(filters.EndDate))
                 {
-                    filters.StartDate = new DateTime(DateTime.Today.Year, 1, 1).ToString("yyyy-MM-dd");
+                    // The reference Annual Field Audit report compares four calendar years.
+                    // Only use that default when Report A is the initial authorized report;
+                    // never replace a reporting period explicitly selected by the user.
+                    var requestedReport = Request.Query["report"].ToString();
+                    var annualDefault = view == "reports" &&
+                        (requestedType == "TOP" || requestedType == "CIA") &&
+                        (string.IsNullOrEmpty(requestedReport) ||
+                         string.Equals(requestedReport, "A", StringComparison.OrdinalIgnoreCase));
+                    filters.StartDate = new DateTime(DateTime.Today.Year - (annualDefault ? 3 : 0), 1, 1).ToString("yyyy-MM-dd");
                     filters.EndDate = DateTime.Today.ToString("yyyy-MM-dd");
                 }
                 filters.EntityId = entityId;
