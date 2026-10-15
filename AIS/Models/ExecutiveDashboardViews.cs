@@ -40,7 +40,7 @@ namespace AIS.Models
             {
                 "TOP" => new[] { "A", "B", "C", "D", "E" },
                 "GROUP" => new[] { "E" },
-                "RLM" => new[] { "E" },
+                "RLM" => Array.Empty<string>(),
                 "CCO" => new[] { "B", "C", "D" },
                 _ => new[] { "A", "B", "C", "D", "E" }
             };

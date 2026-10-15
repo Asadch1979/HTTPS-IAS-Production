@@ -80,3 +80,34 @@ button.exec-kpi:hover { border-color:#4c9278; }
 .exec-view-list { display:block; text-align:right; margin:-8px 0 14px; white-space:nowrap; }
 @media(max-width:1100px) { .exec-filters { flex-wrap:wrap; } .exec-filters>div { flex:1 1 160px; } }
 @media(max-width:600px) { .exec-kpis { grid-template-columns:1fr!important; } .exec-title h1 span { display:block; } }
+
+/* Executive reports only: preserve dashboard and shared-shell presentation. */
+.exec-report-selector { flex-wrap:wrap; }
+.exec-report-selector .org-button { text-align:left; }
+.exec-report-selector [aria-pressed="true"] { border-bottom-color:#087e80; font-weight:700; }
+.exec-report-panel h2 { margin-bottom:8px; }
+.exec-report-cautions { border-left:3px solid #b99b59; background:#faf8f0; padding:8px 12px; margin:12px 0 18px; font-size:12px; line-height:1.5; }
+.exec-report-cautions:empty { display:none; }
+.exec-report-cautions p { margin:3px 0; }
+.exec-report-charts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:18px 0; }
+.exec-report-charts>section { min-width:0; }
+.exec-report-chart h3 { font-size:16px; margin:0 0 8px; }
+.exec-report-bar-group { margin:16px 0; }
+.exec-report-bar-group h4 { font-size:13px; margin:0 0 8px; }
+.exec-report-bar-row { display:grid; grid-template-columns:125px minmax(60px,1fr) 85px; gap:10px; align-items:center; font-size:12px; margin:6px 0; }
+.exec-report-bar-row strong { text-align:right; font-variant-numeric:tabular-nums; }
+.exec-report-series-0 { background:#2457be; }
+.exec-report-series-1 { background:#087e80; }
+.exec-report-series-2 { background:#b65c00; }
+.exec-report-table-wrap { margin:16px 0; }
+.exec .exec-report-table { table-layout:auto; min-width:650px; }
+.exec .exec-report-table th { width:auto; min-width:90px; }
+.exec .exec-report-table td,.exec .exec-report-table th { white-space:normal; overflow-wrap:normal; vertical-align:middle; }
+.exec .exec-report-table th:first-child { min-width:180px; }
+.exec .exec-report-table .exec-number { text-align:right; font-variant-numeric:tabular-nums; }
+.exec-report-table caption { caption-side:top; color:#244638; font-weight:600; padding:8px 0; }
+.exec .exec-report-group th { text-align:left; background:#eef4f3; }
+.exec .exec-report-subtotal>* { background:#edf2f8; font-weight:700; }
+.exec .exec-report-total>* { background:#dce9e4; font-weight:700; border-top:2px solid #365b46; }
+@media(max-width:1000px) { .exec-report-charts { grid-template-columns:1fr; } }
+@media(max-width:480px) { .exec-report-bar-row { grid-template-columns:95px minmax(35px,1fr) 70px; gap:6px; } }
