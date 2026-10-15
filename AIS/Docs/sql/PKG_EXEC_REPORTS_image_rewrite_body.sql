@@ -241,7 +241,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                  WHEN 'C' THEN NVL(f.gm_name, 'Unassigned GM')
                  WHEN 'D' THEN CAST(NULL AS VARCHAR2(500))
                  WHEN 'E' THEN 'Management Audit'
-               END AS group_name,
+               END AS report_group_name,
                CASE P_REPORT_ID
                  WHEN 'B' THEN f.audited_by
                  WHEN 'C' THEN f.region_id
@@ -271,7 +271,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                  WHEN GROUPING(item_id) = 1 THEN 'SUBTOTAL'
                  ELSE 'DETAIL'
                END AS row_kind,
-               group_id, group_name, item_id, item_code, item_name,
+               group_id, report_group_name AS group_name, item_id, item_code, item_name,
                P_START_DATE AS period_start,
                P_END_DATE AS period_end,
                NVL(SUM(opening_balance), 0) AS opening_balance,
@@ -294,8 +294,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
            NVL(SUM(auditor_assignment_mismatch), 0) AS auditor_assignment_mismatch
         FROM dimensions
         GROUP BY GROUPING SETS (
-          (group_id, group_name, item_id, item_code, item_name),
-          (group_id, group_name),
+          (group_id, report_group_name, item_id, item_code, item_name),
+          (group_id, report_group_name),
           ()
         )
       ),
