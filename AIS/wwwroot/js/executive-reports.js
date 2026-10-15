@@ -37,7 +37,11 @@
         const table = node('table', null, 'exec-table exec-report-table');
         table.append(node('caption', title));
         const head = node('thead'), header = node('tr'), body = node('tbody');
-        columns.forEach(col => { const th = node('th', col.label, col.numeric ? 'exec-number' : ''); th.scope = 'col'; header.append(th); });
+        columns.forEach(col => {
+            const th = node('th', col.label, col.numeric ? 'exec-number' : '');
+            if (col.key === 'rankPosition') th.classList.add('exec-rank');
+            th.scope = 'col'; header.append(th);
+        });
         head.append(header);
         let previousGroup;
         rows.forEach(row => {
@@ -50,6 +54,7 @@
             columns.forEach((col, index) => {
                 const value = index === 0 && total(row) ? 'Grand total' : index === 0 && kind(row) === 'SUBTOTAL' ? `Subtotal · ${row.groupName || 'Unassigned group'}` : col.format(row[col.key]);
                 const cell = node(index === 0 ? 'th' : 'td', value, col.numeric ? 'exec-number' : '');
+                if (col.key === 'rankPosition') cell.classList.add('exec-rank');
                 if (index === 0) cell.scope = 'row'; tr.append(cell);
             });
             body.append(tr);
@@ -182,6 +187,7 @@
         if (!validDates()) { $('status').textContent = 'Choose a valid reporting period and apply filters.'; return; }
         const selected = buttons.find(button => button.dataset.report === selection.value) || buttons[0];
         selection.value = selected.dataset.report;
+        root.dataset.activeReport = selection.value;
         buttons.forEach(button => button.setAttribute('aria-pressed', String(button === selected)));
         invalidate(); const current = version; request = new AbortController();
         const query = new URLSearchParams(new FormData(form)); query.delete('report');
