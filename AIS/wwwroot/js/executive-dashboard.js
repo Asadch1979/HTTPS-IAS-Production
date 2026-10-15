@@ -3,6 +3,7 @@
     const app = document.getElementById('executive-dashboard');
     if (!app) return;
     const $ = id => document.getElementById(`exec-${id}`);
+    const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
     const number = value => Number(value).toLocaleString();
     const colors = ['#c56560', '#d7b16b', '#51937b', '#889890'];
     const el = (tag, text, className) => {
@@ -112,6 +113,24 @@
             target.append(card);
         });
     }
+    function lifecycleKpis(data) {
+        const cards = document.createDocumentFragment();
+        [['Opening Open Paras', 'openingOpenParas', data.historicalOpeningVerified],
+            ['Issue Identified', 'issueIdentified', true], ['Issue Rectified', 'issueRectified', true],
+            ['Para Added', 'paraAdded', true], ['Paras Settled', 'parasSettled', true],
+            ['Closing Open Paras', 'closingOpenParas', data.closingAsofVerified],
+            ['High-Risk Open Paras', 'highRiskOpenParas', data.closingAsofVerified],
+            ['Over 1 Year', 'over1YearParas', data.closingAsofVerified],
+            ['Over 3 Compliance Cycles', 'over3ComplianceCycles', data.closingAsofVerified]].forEach(([label, key, verified]) => {
+            const card = el('div', null, 'exec-kpi');
+            const available = verified === true && data[key] !== null && data[key] !== undefined;
+            card.append(el('span', label), el('strong', available ? number(data[key]) : 'N/A'));
+            card.append(el('small', !available ? 'Verified value unavailable' :
+                ['issueIdentified', 'issueRectified', 'paraAdded', 'parasSettled'].includes(key) ? 'Selected reporting period' : 'Verified as-of snapshot'));
+            cards.append(card);
+        });
+        $('kpis').replaceChildren(cards);
+    }
     function critical(rows, count) {
         const target = $('critical'); if (!target) return; target.replaceChildren();
         $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical items. At most 100 rows, ordered by high risk, age and case ID. Expand an observation to read its text.`;
@@ -158,20 +177,26 @@
         try {
             const actions = app.dataset.datasets.split(',').filter(Boolean);
             const data = await Promise.all(actions.map(async action => {
-                const response = await fetch(`${app.dataset.apiUrl}${action}?${query}`, { signal, credentials: 'same-origin', cache: 'no-store',
+                const actionQuery = new URLSearchParams(query);
+                if (lifecycle && action === 'GetKpiLifecycle') {
+                    actionQuery.set('startDate', filterValues.get('startDate') || '');
+                    actionQuery.set('endDate', filterValues.get('endDate') || '');
+                }
+                const response = await fetch(`${app.dataset.apiUrl}${action}?${actionQuery}`, { signal, credentials: 'same-origin', cache: 'no-store',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                 if (response.status === 401 || response.status === 403 || response.redirected)
                     throw new Error('Your session or dashboard access has changed. Reload or sign in again.');
                 if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Unexpected response. Reload the page or sign in again.');
                 const result = await response.json();
                 if (!response.ok || result.success !== true) throw new Error(result.message || 'Dashboard data is temporarily unavailable.');
-                if (action === 'GetKpiSummary' ? !result.data || typeof result.data !== 'object' : !Array.isArray(result.data))
+                if (['GetKpiSummary', 'GetKpiLifecycle'].includes(action) ? !result.data || typeof result.data !== 'object' || Array.isArray(result.data) : !Array.isArray(result.data))
                     throw new Error('Dashboard response is incomplete. Please refresh.');
                 return [action, result.data];
             }));
             if (current !== version) return;
             const datasets = Object.fromEntries(data);
-            if (datasets.GetKpiSummary) kpis(datasets.GetKpiSummary);
+            if (lifecycle && datasets.GetKpiLifecycle) lifecycleKpis(datasets.GetKpiLifecycle);
+            else if (datasets.GetKpiSummary) kpis(datasets.GetKpiSummary);
             if (datasets.GetRiskSummary) risk(datasets.GetRiskSummary);
             if (datasets.GetAgingSummary) bars('aging', datasets.GetAgingSummary);
             if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);
@@ -180,6 +205,7 @@
             $('results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
             $('status').textContent = `${entity} · Current organizational filters applied (date range not applied to current-state summaries) · Updated ${new Date().toLocaleTimeString()}.`;
+            if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
@@ -191,7 +217,7 @@
     const form = $('filters');
     function validateDates() {
         const start = $('start-date'), end = $('end-date');
-        end.setCustomValidity((start.value || end.value) && (!start.value || !end.value || start.value > end.value)
+        end.setCustomValidity((lifecycle || start.value || end.value) && (!start.value || !end.value || start.value > end.value)
             ? 'Provide both dates, with Start Date no later than End Date.' : '');
         return form.checkValidity();
     }

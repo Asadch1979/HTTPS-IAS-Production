@@ -249,6 +249,57 @@ namespace AIS.Controllers
             return rows;
         }
 
+        internal ExecutiveKpiLifecycle GetExecutiveKpiLifecycle(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "TOP")
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Lifecycle KPIs require the TOP perspective.");
+            var dates = filters.Validate() ?? throw new ArgumentException("Both KPI dates are required.");
+            using (var connection = DatabaseConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "PKG_EXEC_DASHBOARD.P_GET_KPI_LIFECYCLE";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                GuardAgainstDynamicSql(command);
+                command.Parameters.Add("P_DASHBOARD_TYPE", OracleDbType.Varchar2).Value = scope.DashboardType;
+                command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
+                command.Parameters.Add("P_START_DATE", OracleDbType.Date).Value = dates.StartDate;
+                command.Parameters.Add("P_END_DATE", OracleDbType.Date).Value = dates.EndDate;
+                command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
+                command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) throw new InvalidOperationException("Lifecycle KPI cursor must contain one summary row.");
+                    var openingVerified = ExecutiveText(reader, "HISTORICAL_OPENING_VERIFIED") == "Y";
+                    var closingVerified = ExecutiveText(reader, "CLOSING_ASOF_VERIFIED") == "Y";
+                    var result = new ExecutiveKpiLifecycle
+                    {
+                        OpeningOpenParas = openingVerified ? ExecutiveNullableCount(reader, "OPENING_OPEN_PARAS") : null,
+                        IssueIdentified = ExecutiveNullableCount(reader, "ISSUE_IDENTIFIED"),
+                        IssueRectified = ExecutiveNullableCount(reader, "ISSUE_RECTIFIED"),
+                        ParaAdded = ExecutiveNullableCount(reader, "PARA_ADDED"),
+                        ParasSettled = ExecutiveNullableCount(reader, "PARAS_SETTLED"),
+                        ClosingOpenParas = closingVerified ? ExecutiveNullableCount(reader, "CLOSING_OPEN_PARAS") : null,
+                        HighRiskOpenParas = closingVerified ? ExecutiveNullableCount(reader, "HIGH_RISK_OPEN_PARAS") : null,
+                        Over1YearParas = closingVerified ? ExecutiveNullableCount(reader, "OVER_1_YEAR_PARAS") : null,
+                        Over3ComplianceCycles = closingVerified ? ExecutiveNullableCount(reader, "OVER_3_COMPLIANCE_CYCLES") : null,
+                        HistoricalOpeningVerified = openingVerified,
+                        ClosingAsofVerified = closingVerified
+                    };
+                    if (reader.Read()) throw new InvalidOperationException("Lifecycle KPI cursor must contain one summary row.");
+                    return result;
+                }
+            }
+        }
+
+        private static long? ExecutiveNullableCount(OracleDataReader reader, string column)
+            => reader.IsDBNull(reader.GetOrdinal(column)) ? (long?)null : checked((long)reader.GetDecimal(reader.GetOrdinal(column)));
+
         private static decimal ExecutiveDecimal(OracleDataReader reader, string column)
         {
             var ordinal = reader.GetOrdinal(column);

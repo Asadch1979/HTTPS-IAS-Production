@@ -33,6 +33,12 @@ namespace AIS.Controllers
         }
 
         [HttpGet]
+        public IActionResult GetKpiLifecycle([FromQuery] int? entityId = null,
+            [FromQuery] string dashboardType = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, null, dashboardType, null, filters,
+                (scope, f) => database.GetExecutiveKpiLifecycle(scope, f), lifecycle: true);
+
+        [HttpGet]
         public IActionResult GetKpiSummary([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null,
             [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
             => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) => database.GetExecutiveKpiSummary(scope, auditPeriod, f));
@@ -63,7 +69,7 @@ namespace AIS.Controllers
             => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f));
 
         private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId, ExecutiveDashboardFilterRequest filters,
-            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query)
+            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -77,6 +83,8 @@ namespace AIS.Controllers
             try
             {
                 var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
+                if (lifecycle && scope.DashboardType != "TOP")
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "Lifecycle KPIs require the TOP perspective.");
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
                 if (!superUser) permissions.EnsurePermissionsCached(user);
@@ -94,7 +102,8 @@ namespace AIS.Controllers
                 }
                 filters ??= new ExecutiveDashboardFilterRequest();
                 filters.EntityId = entityId;
-                filters.Validate();
+                var dates = filters.Validate();
+                if (lifecycle && dates == null) throw new ArgumentException("Both KPI dates are required.");
                 if (filters.View != null)
                 {
                     var definition = System.Linq.Enumerable.FirstOrDefault(ExecutiveDashboardViews.ForPerspective(scope.DashboardType), v => v.Id == filters.View);
@@ -106,7 +115,7 @@ namespace AIS.Controllers
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
-                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = false,
+                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = lifecycle,
                     organizationalDimensionsApplied = true, scopeMode = scope.DashboardType == "RLM" ? "loginReportingLine" : "authorizedHierarchy" });
             }
             catch (UnauthenticatedException)
