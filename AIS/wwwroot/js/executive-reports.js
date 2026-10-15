@@ -6,6 +6,8 @@
     const $ = id => document.getElementById(`exec-${id}`);
     const form = $('filters'), selection = $('report-selection');
     const buttons = [...root.querySelectorAll('[data-report]')];
+    // RLM has no report selector/export panel until a scoped report is authorized.
+    if (!buttons.length) return;
     const node = (tag, value, className) => {
         const result = document.createElement(tag);
         if (value != null) result.textContent = value;
@@ -87,7 +89,7 @@
             target.append(charts);
             table(target, 'Annual field audit summary', [column('Reporting year', 'yearLabel', plain), column('Total paras settled','settledParas'), column('Settlement %','settlementPercentage',percent), column('Paras added','parasAdded'), column('Paras outstanding','outstandingParas')], rows.map(row => ({...row,yearLabel:year(row)})));
         } else if (id === 'B' || id === 'C') {
-            const identity = id === 'B' ? [column('Field office', 'itemName', plain)] : [column('Region code', 'itemCode', plain), column('General Manager', 'groupName', plain), column('Region name', 'itemName', plain)];
+            const identity = id === 'B' ? [column('Field office', 'itemName', plain)] : [column('General Manager', 'groupName', plain), column('Region name', 'itemName', plain)];
             table(target, id === 'B' ? 'Field office paras position' : 'GM / region paras position', [...identity, ...position], rows, true);
         } else if (id === 'D') {
             const charts = node('div', null, 'exec-report-charts');
@@ -110,8 +112,51 @@
         table(sources, 'Oracle settlement attribution and reconciliation', [column('Office / region / year', 'itemName',plain), column('Compliance','settledByCompliance'),column('Audit','settledByAudit'),column('Unknown','settledByUnknown'),column('Reopenings','reopeningEvents', () => 'Not measured'),column('Resettlements','resettlementEvents', () => 'Not measured'),column('Initially closed additions','initiallyClosedAdditions', () => 'Not measured'),column('Reconciliation difference','reconciliationDifference'),column('Auditor assignment mismatch','auditorAssignmentMismatch')], rows);
         target.append(sources);
     }
-    let request, version = 0;
-    function invalidate() { request?.abort(); ++version; $('report-panel')?.setAttribute('hidden',''); app.setAttribute('aria-busy','false'); }
+    // Only a successful response from an authorized report API is exportable.
+    const exportCsvButton = $('report-export-csv'), exportPrintButton = $('report-export-print');
+    let request, version = 0, loadedReport = null;
+    function setExportReady(ready) {
+        exportCsvButton.disabled = !ready;
+        exportPrintButton.disabled = !ready;
+    }
+    function csvEscape(value) {
+        const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+        // Prevent formula execution when a recipient opens exported text in Excel.
+        // Preserve genuine negative numeric values as numbers.
+        const safe = /^[=+@\-]/.test(text) && !/^-?\d+(?:,\d{3})*(?:\.\d+)?%?$/.test(text) ? "'" + text : text;
+        return '"' + safe.replace(/"/g, '""') + '"';
+    }
+    function exportCsv() {
+        if (!loadedReport) return;
+        const lines = [];
+        const add = cells => lines.push(cells.map(csvEscape).join(','));
+        add([loadedReport.title]);
+        add(['Reporting period', loadedReport.period]);
+        add(['Report', loadedReport.id]);
+        $('report-cautions').querySelectorAll('p').forEach(p => add(['Note', p.textContent]));
+        const tables = [...$('report-content').querySelectorAll('table')];
+        tables.forEach(table => {
+            lines.push('');
+            add([table.querySelector('caption')?.textContent || 'Report table']);
+            add([...table.querySelectorAll('thead th')].map(th => th.textContent));
+            table.querySelectorAll('tbody tr').forEach(tr => add([...tr.children].map(cell => cell.textContent)));
+        });
+        const blob = new Blob(['\uFEFF', lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'IAS_Report_' + loadedReport.id + '_' + loadedReport.start + '_to_' + loadedReport.end + '.csv';
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    exportCsvButton.addEventListener('click', exportCsv);
+    exportPrintButton.addEventListener('click', () => { if (loadedReport) window.print(); });
+    function invalidate() {
+        request?.abort(); ++version; loadedReport = null; setExportReady(false);
+        $('report-panel')?.setAttribute('hidden',''); app.setAttribute('aria-busy','false');
+    }
     function validDates() {
         const start = $('start-date'), end = $('end-date');
         end.setCustomValidity(!start.value || !end.value || start.value > end.value ? 'Provide both dates, with Start Date no later than End Date.' : '');
@@ -162,6 +207,14 @@
             if (result.data.settlementMethod) cautions.append(node('p',result.data.settlementMethod));
             if (result.data.auditorBasis) cautions.append(node('p',`Auditor basis: ${result.data.auditorBasis}`));
             render(selection.value,result.data.rows);
+            loadedReport = {
+                id: selection.value,
+                title: $('report-title').textContent,
+                period: $('report-period').textContent,
+                start: query.get('startDate'),
+                end: query.get('endDate')
+            };
+            setExportReady(true);
             $('status').textContent = `Report ${selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;

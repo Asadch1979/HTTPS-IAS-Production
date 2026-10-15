@@ -20,8 +20,16 @@
             <p class="exec-empty">Select a Group Head entity and choose Load Group to view its authorized reports.</p>
         }
         <article class="exec-panel exec-report-panel" id="exec-report-panel" hidden>
-            <h2 id="exec-report-title"></h2>
-            <p class="exec-note" id="exec-report-period"></p>
+            <div class="exec-report-heading">
+                <div>
+                    <h2 id="exec-report-title"></h2>
+                    <p class="exec-note" id="exec-report-period"></p>
+                </div>
+                <div class="exec-report-actions" aria-label="Report export options">
+                    <button type="button" class="org-button" id="exec-report-export-csv" disabled>Export Excel (CSV)</button>
+                    <button type="button" class="org-button" id="exec-report-export-print" disabled>Print / Save as PDF</button>
+                </div>
+            </div>
             <div class="exec-report-cautions" id="exec-report-cautions"></div>
             <div id="exec-report-content"></div>
         </article>
