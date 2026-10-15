@@ -44,6 +44,11 @@ opening, closing, high-risk, over-one-year, and over-three-cycle counts, using
 the same latest-master-date convention as `PKG_EXEC_REPORTS`:
 - A para is included only when `V_EXEC_KPI_LIFECYCLE.PARA_ADDED_ON` is before
   the boundary (so source-A pre-conclusion exclusions are respected).
+  For source A, if a Status 14 conclusion date exists, the estimate also
+  requires report conclusion before that boundary; this avoids treating
+  an un-concluded audit observation as an already-open compliance para.
+  Missing conclusion events fall back to the para addition date as an
+  explicitly marked estimate.
 - A currently open para is provisionally considered open after its addition.
 - A currently settled para is provisionally considered open until its current
   `PARA_SETTLED_ON`.
