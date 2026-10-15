@@ -19,24 +19,29 @@ WITH dates AS (
 SELECT k.source_ind,
        COUNT(*) AS all_para_rows,
        SUM(CASE WHEN k.para_added_on < d.period_start
+                 AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on < d.period_start)
                  AND (k.para_status = 8
                       OR (k.para_status = 9 AND k.para_settled_on >= d.period_start))
                 THEN 1 ELSE 0 END) AS opening_estimate,
        SUM(CASE WHEN k.para_added_on < d.end_exclusive
+                 AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on < d.end_exclusive)
                  AND (k.para_status = 8
                       OR (k.para_status = 9 AND k.para_settled_on >= d.end_exclusive))
                 THEN 1 ELSE 0 END) AS closing_estimate,
        SUM(CASE WHEN k.para_added_on < d.end_exclusive
+                 AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on < d.end_exclusive)
                  AND (k.para_status = 8
                       OR (k.para_status = 9 AND k.para_settled_on >= d.end_exclusive))
                  AND k.risk_id = 1
                 THEN 1 ELSE 0 END) AS high_risk_estimate,
        SUM(CASE WHEN k.para_added_on < d.end_exclusive
+                 AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on < d.end_exclusive)
                  AND (k.para_status = 8
                       OR (k.para_status = 9 AND k.para_settled_on >= d.end_exclusive))
                  AND TRUNC(d.end_exclusive-1)-TRUNC(k.para_added_on)>365
                 THEN 1 ELSE 0 END) AS over_one_year_estimate,
        SUM(CASE WHEN k.para_added_on < d.end_exclusive
+                 AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on < d.end_exclusive)
                  AND (k.para_status = 8
                       OR (k.para_status = 9 AND k.para_settled_on >= d.end_exclusive))
                  AND NVL(k.com_cycle, 0)>3
