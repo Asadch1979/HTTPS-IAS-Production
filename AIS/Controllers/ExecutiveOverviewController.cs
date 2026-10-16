@@ -68,8 +68,11 @@ namespace AIS.Controllers
                         (requestedType == "TOP" || requestedType == "CIA") &&
                         (string.IsNullOrEmpty(requestedReport) ||
                          string.Equals(requestedReport, "A", StringComparison.OrdinalIgnoreCase));
-                    filters.StartDate = new DateTime(DateTime.Today.Year - (annualDefault ? 3 : 0), 1, 1).ToString("yyyy-MM-dd");
-                    filters.EndDate = DateTime.Today.ToString("yyyy-MM-dd");
+                    // Default complete days only: today's partial date can produce
+                    // inconsistent snapshot/results during debugging and time zones.
+                    var defaultEndDate = DateTime.Today.AddDays(-1);
+                    filters.StartDate = new DateTime(defaultEndDate.Year - (annualDefault ? 3 : 0), 1, 1).ToString("yyyy-MM-dd");
+                    filters.EndDate = defaultEndDate.ToString("yyyy-MM-dd");
                 }
                 filters.EntityId = entityId;
                 filters.View = view;
