@@ -140,6 +140,20 @@
         wrap.append(node('p','■ Settled (dark green)  ■ Added (light green)  — Outstanding (amber, right-hand scale)', 'exec-note'));
         return wrap;
     }
+    function sortedWithinGroup(rows) {
+        // Preserve Oracle group/subtotal/grand-total boundaries; sort only
+        // detail offices/regions inside each GM or division by open volume.
+        const output = [], pending = [];
+        const flush = () => {
+            pending.sort((a,b) => (Number(b.outstandingParas)||0) - (Number(a.outstandingParas)||0));
+            output.push(...pending); pending.length = 0;
+        };
+        rows.forEach(row => {
+            if (detail(row)) pending.push(row);
+            else { flush(); output.push(row); }
+        });
+        flush(); return output;
+    }
     function render(id, rows, benchmark = null) {
         const target = $('report-content'); target.replaceChildren();
         if (!rows.length) { target.append(node('p', 'No records for the selected scope and reporting period.', 'exec-empty')); return; }
@@ -161,7 +175,7 @@
                 table(target, 'GM paras position', [column('GM Office','itemName',plain), ...dynamicPosition], gmRows);
             }
             table(target, id === 'B' ? 'Field office paras position' : 'GM / region paras position',
-                [column(id === 'B' ? 'Field office' : 'Region name','itemName',plain), ...dynamicPosition], rows, true);
+                [column(id === 'B' ? 'Field office' : 'Region name','itemName',plain), ...dynamicPosition], sortedWithinGroup(rows), true);
         } else if (id === 'D') {
             const charts = node('div', null, 'exec-report-charts');
             for (const [group, title] of [['TOP','Top five regions'],['BOTTOM','Bottom five regions']]) {
