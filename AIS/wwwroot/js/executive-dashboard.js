@@ -4,6 +4,7 @@
     if (!app) return;
     const $ = id => document.getElementById(`exec-${id}`);
     const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
+    const ciaIssues = $('kpis')?.dataset.ciaIssues === 'true';
     const prettyDate = value => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return 'selected date';
         const [year, month, day] = value.split('-').map(Number);
@@ -109,11 +110,19 @@
     }
     function kpis(data) {
         const target = $('kpis'); if (!target) return; target.replaceChildren();
-        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled Month-to-Date', 'settledMtd'],
+        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
+            ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const card = el('div', null, 'exec-kpi');
             card.append(el('span', label), el('strong', number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
+            if (ciaIssues && ['issueIdentified', 'issueRectified'].includes(key)) {
+                const dates = new FormData($('filters'));
+                card.append(el('small', dates.get('startDate') && dates.get('endDate')
+                    ? 'Selected Date Range' : 'All eligible IAS issue history'));
+                target.append(card);
+                return;
+            }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
             card.append(el('small', key === 'settlementRatio' ? 'Settled as a share of all cases' : denominator > 0 ? `${(data[key] / denominator * 100).toFixed(1)}% of ${key === 'settledMtd' ? 'all settled' : ['totalCases', 'openParas', 'settledTotal'].includes(key) ? 'all cases' : 'open paras'}` : 'Comparison unavailable'));
             target.append(card);
@@ -210,9 +219,15 @@
             const actions = app.dataset.datasets.split(',').filter(Boolean);
             const data = await Promise.all(actions.map(async action => {
                 const actionQuery = new URLSearchParams(query);
-                if (lifecycle && action === 'GetKpiLifecycle') {
-                    actionQuery.set('startDate', filterValues.get('startDate') || '');
-                    actionQuery.set('endDate', filterValues.get('endDate') || '');
+                if ((lifecycle && action === 'GetKpiLifecycle') ||
+                    (ciaIssues && action === 'GetKpiSummary')) {
+                    const start = filterValues.get('startDate');
+                    const end = filterValues.get('endDate');
+                    // CIA with neither date applies no period predicates in Oracle.
+                    if (start && end) {
+                        actionQuery.set('startDate', start);
+                        actionQuery.set('endDate', end);
+                    }
                 }
                 const response = await fetch(`${app.dataset.apiUrl}${action}?${actionQuery}`, { signal, credentials: 'same-origin', cache: 'no-store',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -244,6 +259,7 @@
             const entity = $('entity').selectedOptions[0].textContent;
             $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;
             if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
+            if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
