@@ -1,0 +1,49 @@
+-- Register only the three new CIA GET APIs using the established IAS permission tables.
+-- Run through the normal IAS DBA deployment process; no package/procedure changes.
+-- Existing CIA page grants must already exist. No other role's grants are modified.
+WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
+DECLARE
+  V_CIA_PAGE_ID NUMBER;
+  V_API_ID NUMBER;
+  V_COLLISIONS NUMBER;
+BEGIN
+  SELECT ID INTO V_CIA_PAGE_ID FROM T_MENU_PAGES
+   WHERE LOWER(LTRIM(PAGE_PATH, '/')) = 'executiveoverview/cia' AND STATUS = 'A';
+  FOR A IN (SELECT 'GetCiaAuditYears' ACTION FROM DUAL UNION ALL
+            SELECT 'GetCiaExecKpis' FROM DUAL UNION ALL
+            SELECT 'GetCiaIssueNature' FROM DUAL) LOOP
+    SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
+     WHERE LOWER(API_PATH) = LOWER('/api/ExecutiveDashboard/' || A.ACTION)
+       AND UPPER(HTTP_METHOD) = 'GET'
+       AND (NVL(PAGE_ID, -1) <> V_CIA_PAGE_ID
+            OR LOWER(NVL(CONTROLLER_NAME, '#')) <> 'executivedashboard'
+            OR LOWER(NVL(ACTION_NAME, '#')) <> LOWER(A.ACTION));
+    IF V_COLLISIONS > 0 THEN
+      RAISE_APPLICATION_ERROR(-20020, 'CIA API registration collision; resolve before deployment.');
+    END IF;
+    MERGE INTO T_AU_API_MASTER M
+    USING (SELECT '/api/ExecutiveDashboard/' || A.ACTION API_PATH FROM DUAL) S
+       ON (LOWER(M.API_PATH) = LOWER(S.API_PATH) AND UPPER(M.HTTP_METHOD) = 'GET')
+    WHEN MATCHED THEN UPDATE SET M.IS_ACTIVE = 'Y'
+    WHEN NOT MATCHED THEN INSERT
+      (ACTION_NAME, PAGE_ID, CONTROLLER_NAME, API_PATH, HTTP_METHOD, IS_ACTIVE, CREATED_ON)
+      VALUES (A.ACTION, V_CIA_PAGE_ID, 'ExecutiveDashboard', S.API_PATH, 'GET', 'Y', SYSDATE);
+    SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
+     WHERE LOWER(API_PATH) = LOWER('/api/ExecutiveDashboard/' || A.ACTION) AND UPPER(HTTP_METHOD) = 'GET';
+    -- Verified CIA (3) and Super User (1), only if already granted the CIA page.
+    FOR R IN (SELECT DISTINCT GROUP_ID ROLE_ID FROM T_MENU_PAGES_GROUPMAP
+               WHERE PAGE_ID = V_CIA_PAGE_ID AND GROUP_ID IN (1, 3)) LOOP
+      MERGE INTO T_AU_ROLE_API_PERMISSION P
+      USING (SELECT R.ROLE_ID ROLE_ID, V_API_ID API_ID FROM DUAL) S
+         ON (P.ROLE_ID = S.ROLE_ID AND P.API_ID = S.API_ID)
+      WHEN MATCHED THEN UPDATE SET P.IS_ACTIVE = 'Y'
+      WHEN NOT MATCHED THEN INSERT (ROLE_ID, API_ID, IS_ACTIVE, CREATED_BY)
+        VALUES (S.ROLE_ID, S.API_ID, 'Y', NULL);
+    END LOOP;
+  END LOOP;
+  COMMIT;
+EXCEPTION WHEN OTHERS THEN
+  ROLLBACK;
+  RAISE;
+END;
+/

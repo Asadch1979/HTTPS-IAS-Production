@@ -1,5 +1,39 @@
 namespace AIS.Models
 {
+    public sealed class CiaExecKpis
+    {
+        public long? PlannedEntities { get; set; }
+        public long? AuditedEntities { get; set; }
+        public decimal? PlanCoveragePct { get; set; }
+        public long? DelayedAuditReports { get; set; }
+        public long? FraudA1Paras { get; set; }
+        public long? AwaitingAuditeeResponse { get; set; }
+        public long? TeamsConductingAudit { get; set; }
+        public int AuditPeriodId { get; set; }
+        public System.DateTime AuditPeriodFrom { get; set; }
+        public System.DateTime AuditPeriodTo { get; set; }
+        public System.DateTime CurrentStateAsOf { get; set; }
+    }
+
+    public sealed class CiaIssueNature
+    {
+        public string CategoryCode { get; set; }
+        public string CategoryName { get; set; }
+        public int DisplayOrder { get; set; }
+        public long IssueCount { get; set; }
+        public long TotalIssues { get; set; }
+        public long UnmappedIssues { get; set; }
+        public string MappingStatus { get; set; }
+    }
+
+    public sealed class CiaAuditYear
+    {
+        public int AuditPeriodId { get; set; }
+        public string Description { get; set; }
+        public System.DateTime StartDate { get; set; }
+        public System.DateTime EndDate { get; set; }
+    }
+
     public sealed class ExecutiveKpiLifecycle
     {
         public long? OpeningOpenParas { get; set; }

@@ -226,6 +226,119 @@ namespace AIS.Controllers
             }
         }
 
+        internal List<CiaAuditYear> GetCiaAuditYears(ExecutiveDashboardScope scope)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "CIA")
+                throw new ExecutiveDashboardAccessException("RoleMapping", "CIA audit years require CIA scope.");
+            var years = new List<CiaAuditYear>();
+            using (var connection = DatabaseConnection())
+            using (OracleCommand command = connection.CreateCommand())
+            {
+                // Existing master lookup returns actual T_AU_PERIOD IDs, including history.
+                command.CommandText = "PKG_AIS.P_GetAuditPeriods";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                GuardAgainstDynamicSql(command);
+                command.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = command.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        if (reader.IsDBNull(reader.GetOrdinal("START_DATE")) || reader.IsDBNull(reader.GetOrdinal("END_DATE"))) continue;
+                        var year = new CiaAuditYear {
+                            AuditPeriodId = checked((int)ExecutiveCount(reader, "AUDITPERIODID")),
+                            Description = ExecutiveText(reader, "DESCRIPTION"),
+                            StartDate = reader.GetDateTime(reader.GetOrdinal("START_DATE")),
+                            EndDate = reader.GetDateTime(reader.GetOrdinal("END_DATE")) };
+                        if (year.AuditPeriodId > 0 && year.StartDate.Date <= year.EndDate.Date) years.Add(year);
+                    }
+            }
+            return years.OrderByDescending(y => y.StartDate).ThenByDescending(y => y.AuditPeriodId).ToList();
+        }
+
+        private void ValidateCiaCommandRequest(ExecutiveDashboardScope scope, int? auditPeriodId, ExecutiveDashboardFilterRequest filters)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "CIA")
+                throw new ExecutiveDashboardAccessException("RoleMapping", "CIA command datasets require CIA scope.");
+            filters.Validate();
+            if (auditPeriodId.GetValueOrDefault() <= 0 || !GetCiaAuditYears(scope).Any(y => y.AuditPeriodId == auditPeriodId))
+                throw new ArgumentException("Select a valid numeric audit period ID.");
+        }
+
+        internal CiaExecKpis GetCiaExecKpis(ExecutiveDashboardScope scope, int? auditPeriodId, ExecutiveDashboardFilterRequest filters)
+        {
+            ValidateCiaCommandRequest(scope, auditPeriodId, filters);
+            using (var connection = DatabaseConnection())
+            using (OracleCommand command = connection.CreateCommand())
+            {
+                command.CommandText = "PKG_EXEC_DASHBOARD.P_GET_CIA_EXEC_KPIS";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                GuardAgainstDynamicSql(command);
+                command.Parameters.Add("P_DASHBOARD_TYPE", OracleDbType.Varchar2).Value = scope.DashboardType;
+                command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
+                command.Parameters.Add("P_AUDIT_PERIOD_ID", OracleDbType.Int32).Value = auditPeriodId.Value;
+                command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
+                command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) return null;
+                    var result = new CiaExecKpis {
+                        PlannedEntities = ExecutiveNullableCount(reader, "PLANNED_ENTITIES"),
+                        AuditedEntities = ExecutiveNullableCount(reader, "AUDITED_ENTITIES"),
+                        PlanCoveragePct = reader.IsDBNull(reader.GetOrdinal("PLAN_COVERAGE_PCT")) ? (decimal?)null : ExecutiveDecimal(reader, "PLAN_COVERAGE_PCT"),
+                        DelayedAuditReports = ExecutiveNullableCount(reader, "DELAYED_AUDIT_REPORTS"),
+                        FraudA1Paras = ExecutiveNullableCount(reader, "FRAUD_A1_PARAS"),
+                        AwaitingAuditeeResponse = ExecutiveNullableCount(reader, "AWAITING_AUDITEE_RESPONSE"),
+                        TeamsConductingAudit = ExecutiveNullableCount(reader, "TEAMS_CONDUCTING_AUDIT"),
+                        AuditPeriodId = checked((int)ExecutiveCount(reader, "AUDIT_PERIOD_ID")),
+                        AuditPeriodFrom = reader.GetDateTime(reader.GetOrdinal("AUDIT_PERIOD_FROM")),
+                        AuditPeriodTo = reader.GetDateTime(reader.GetOrdinal("AUDIT_PERIOD_TO")),
+                        CurrentStateAsOf = reader.GetDateTime(reader.GetOrdinal("CURRENT_STATE_AS_OF")) };
+                    if (reader.Read()) throw new InvalidOperationException("CIA executive KPI cursor returned multiple rows.");
+                    return result;
+                }
+            }
+        }
+
+        internal List<CiaIssueNature> GetCiaIssueNature(ExecutiveDashboardScope scope, int? auditPeriodId, ExecutiveDashboardFilterRequest filters)
+        {
+            ValidateCiaCommandRequest(scope, auditPeriodId, filters);
+            var rows = new List<CiaIssueNature>();
+            using (var connection = DatabaseConnection())
+            using (OracleCommand command = connection.CreateCommand())
+            {
+                command.CommandText = "PKG_EXEC_DASHBOARD.P_GET_CIA_ISSUE_NATURE";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                GuardAgainstDynamicSql(command);
+                command.Parameters.Add("P_DASHBOARD_TYPE", OracleDbType.Varchar2).Value = scope.DashboardType;
+                command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
+                command.Parameters.Add("P_AUDIT_PERIOD_ID", OracleDbType.Int32).Value = auditPeriodId.Value;
+                command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
+                command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = command.ExecuteReader())
+                    while (reader.Read()) rows.Add(new CiaIssueNature {
+                        CategoryCode = ExecutiveText(reader, "CATEGORY_CODE"),
+                        CategoryName = ExecutiveText(reader, "CATEGORY_NAME"),
+                        DisplayOrder = checked((int)ExecutiveCount(reader, "DISPLAY_ORDER")),
+                        IssueCount = ExecutiveCount(reader, "ISSUE_COUNT"),
+                        TotalIssues = ExecutiveCount(reader, "TOTAL_ISSUES"),
+                        UnmappedIssues = ExecutiveCount(reader, "UNMAPPED_ISSUES"),
+                        MappingStatus = ExecutiveText(reader, "MAPPING_STATUS") });
+            }
+            return rows;
+        }
+
         internal List<ExecutiveRiskSummary> GetExecutiveRiskSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_RISK_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveRiskSummary

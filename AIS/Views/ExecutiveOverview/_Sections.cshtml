@@ -1,4 +1,15 @@
 @model AIS.Models.ExecutiveDashboardPageModel
+@if (Model.SelectedView.UseCiaCommandCenter)
+{
+    <section class="exec-cia-command" aria-labelledby="exec-cia-title">
+        <h2 id="exec-cia-title">CIA Audit Command Center</h2>
+        <p id="exec-cia-kpi-status" class="exec-note" role="status">Loading executive KPIs…</p>
+        <div id="exec-cia-kpis" class="exec-kpis" aria-label="CIA executive KPIs"></div>
+        <article class="exec-panel"><h2>Nature of Issue Identified</h2><p id="exec-cia-nature-period" class="exec-note">Selected audit year; independent of optional issue dates.</p><div id="exec-cia-nature" role="region" aria-label="Issue categories"><p class="exec-empty">Loading issue categories…</p></div></article>
+        <h2 class="exec-cia-existing-title">IAS issue events and current-state position</h2>
+    </section>
+}
+<div id="exec-existing-results">
 <div id="exec-kpis" class="exec-kpis @(Model.SelectedView.UseLifecycleKpis ? "exec-lifecycle-kpis" : "")" aria-label="Key performance indicators" data-lifecycle="@(Model.SelectedView.UseLifecycleKpis ? "true" : "false")" data-cia-issues="@(Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance" ? "true" : "false")" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
 @if (Model.SelectedView.Sections.Contains("critical"))
 {
@@ -14,3 +25,4 @@
 {
     <partial name="_Critical" />
 }
+</div>

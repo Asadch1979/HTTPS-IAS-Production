@@ -5,6 +5,8 @@
     const $ = id => document.getElementById(`exec-${id}`);
     const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
     const ciaIssues = $('kpis')?.dataset.ciaIssues === 'true';
+    const ciaCommand = !!$('cia-kpis');
+    const ciaActions = ['GetCiaAuditYears', 'GetCiaExecKpis', 'GetCiaIssueNature'];
     const prettyDate = value => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return 'selected date';
         const [year, month, day] = value.split('-').map(Number);
@@ -193,6 +195,131 @@
             cell.append(details); tr.append(cell); target.append(tr);
         });
     }
+    function ciaKpis(data, yearLabel = 'Selected audit year') {
+        const target = $('cia-kpis');
+        const count = value => value == null ? 'N/A' : number(value);
+        target.replaceChildren();
+        const annual = `Annual · ${yearLabel}`;
+        const current = data ? `Current state · ${prettyDate(data.currentStateAsOf?.slice(0, 10))} · All audit years` : 'Current state · All audit years';
+        const cards = [
+            ['Audit Plan Coverage', data ? `${count(data.plannedEntities)} / ${count(data.auditedEntities)}` : 'N/A', annual,
+                `Planned / Audited entities · ${!data ? 'Coverage unavailable' : data.planCoveragePct == null ? 'Coverage N/A (no denominator)' : `${number(data.planCoveragePct)}% coverage (audited ÷ planned)`}`],
+            ['Delayed Audit Reports', count(data?.delayedAuditReports), current, 'Audit end +15 days passed; no status-14 milestone'],
+            ['Fraud Detected (A1 Paras)', count(data?.fraudA1Paras), annual, 'Reported A1 paras, statuses 8/9; not a determination of fraud'],
+            ['Awaiting Auditee Response', count(data?.awaitingAuditeeResponse), current, 'Observations with STATUS = 2'],
+            ['Teams Conducting Audit', count(data?.teamsConductingAudit), current, 'Distinct teams in commenced, unconcluded audit stages 4–12']
+        ];
+        cards.forEach(([label, value, period, note]) => {
+            const card = el('article', null, 'exec-kpi');
+            card.append(el('span', label), el('strong', value), el('small', period, 'exec-cia-period'), el('small', note));
+            target.append(card);
+        });
+    }
+    function ciaNature(rows) {
+        const target = $('cia-nature'); target.replaceChildren();
+        if (!rows.length) { target.append(el('p', 'No issue-category data was returned. Classification is unavailable.', 'exec-empty')); return; }
+        const first = rows[0];
+        const validCount = value => Number.isSafeInteger(value) && value >= 0;
+        if (rows.length !== 10 || new Set(rows.map(row => row.categoryCode)).size !== 10 ||
+            !validCount(first.totalIssues) || !validCount(first.unmappedIssues) ||
+            !['COMPLETE', 'PARTIAL', 'NO_ISSUES'].includes(first.mappingStatus) ||
+            rows.some(row => !row.categoryCode || !row.categoryName || !validCount(row.issueCount) ||
+                row.totalIssues !== first.totalIssues || row.unmappedIssues !== first.unmappedIssues || row.mappingStatus !== first.mappingStatus) ||
+            rows.reduce((sum, row) => sum + row.issueCount, 0) + first.unmappedIssues !== first.totalIssues ||
+            (first.mappingStatus === 'COMPLETE' && first.unmappedIssues !== 0) ||
+            (first.mappingStatus === 'NO_ISSUES' && first.totalIssues !== 0))
+            throw new Error('Issue classification data is incomplete or does not reconcile. Refresh or contact IAS support.');
+        const partial = first.mappingStatus === 'PARTIAL' || first.unmappedIssues > 0;
+        target.append(el('p', partial
+            ? `Incomplete classification · ${number(first.unmappedIssues)} unmapped of ${number(first.totalIssues)} identified issues. Bars show mapped issues only; zero means no mapped issues in that category.`
+            : first.totalIssues === 0 ? 'No eligible issues identified for this audit year and scope.'
+            : `Complete classification · ${number(first.totalIssues)} identified issues; 0 unmapped.`, partial ? 'exec-cia-warning' : 'exec-note'));
+        const maximum = Math.max(1, ...rows.map(row => row.issueCount));
+        const graphic = el('div', null, 'exec-cia-nature-bars');
+        rows.sort((a, b) => a.displayOrder - b.displayOrder).forEach(row => {
+            const bar = el('div', null, 'exec-cia-nature-row');
+            const label = `${row.categoryName}: ${number(row.issueCount)} ${partial ? 'mapped ' : ''}issues`;
+            const track = el('div', null, 'exec-track'), fill = el('div', null, 'exec-fill');
+            fill.style.width = `${row.issueCount / maximum * 100}%`;
+            track.append(fill); track.setAttribute('aria-hidden', 'true');
+            bar.setAttribute('aria-label', label);
+            bar.append(el('span', row.categoryName), track, el('strong', number(row.issueCount)));
+            graphic.append(bar);
+        });
+        target.append(graphic);
+        dataTable(target, ['Category', partial ? 'Mapped issues' : 'Identified issues'], rows.map(row => [row.categoryName, number(row.issueCount)]));
+    }
+    async function ciaRequest(action, query, signal) {
+        const response = await fetch(`${app.dataset.apiUrl}${action}?${query}`, { signal, credentials: 'same-origin', cache: 'no-store',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+        if (response.status === 401 || response.status === 403 || response.redirected)
+            throw new Error('CIA session or API permission is unavailable. Reload or ask the IAS administrator to verify the CIA API grants.');
+        if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Unexpected CIA response. Reload or sign in again.');
+        const result = await response.json();
+        if (!response.ok || result.success !== true) throw new Error(result.message || 'CIA dataset is temporarily unavailable.');
+        return result.data;
+    }
+    async function refreshCia(query, signal, current) {
+        ciaKpis(null);
+        $('cia-kpi-status').textContent = 'Loading CIA executive KPIs…';
+        $('cia-nature').replaceChildren(el('p', 'Loading issue categories…', 'exec-empty'));
+        const year = $('audit-year');
+        try {
+            const years = await ciaRequest('GetCiaAuditYears', query, signal);
+            if (current !== version) return;
+            if (!Array.isArray(years) || years.some(y => !Number.isSafeInteger(y.auditPeriodId) || y.auditPeriodId <= 0 || !y.startDate || !y.endDate))
+                throw new Error('Audit-year lookup is incomplete.');
+            const requested = year.value || year.dataset.selectedId;
+            year.replaceChildren(new Option('Select audit year', ''), ...years.map(y => new Option(y.description || `${y.startDate.slice(0, 10)} – ${y.endDate.slice(0, 10)}`, y.auditPeriodId)));
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const preferred = years.find(y => y.startDate.slice(0, 10) <= today && y.endDate.slice(0, 10) >= today)
+                || years.find(y => y.startDate.slice(0, 10) <= today) || years[0];
+            year.value = requested || (preferred ? String(preferred.auditPeriodId) : '');
+            if (!year.value) throw new Error(years.length ? 'Select a valid audit year and choose Apply.' : 'No valid audit years are available.');
+            updateNavigation();
+            const annualQuery = new URLSearchParams(query);
+            annualQuery.set('auditPeriodId', year.value);
+            const yearLabel = year.selectedOptions[0].textContent;
+            $('cia-nature-period').textContent = `Annual · ${yearLabel} · Uses audit-period dates, independently of optional Start/End Dates.`;
+            // Independent failures must not suppress the other dataset or existing dashboard features.
+            await Promise.allSettled([
+                (async () => {
+                    try {
+                        const data = await ciaRequest('GetCiaExecKpis', annualQuery, signal);
+                        if (current !== version) return;
+                        if (data != null && (typeof data !== 'object' || Array.isArray(data) || data.auditPeriodId !== Number(year.value) ||
+                            !data.auditPeriodFrom || !data.auditPeriodTo || !data.currentStateAsOf ||
+                            ['plannedEntities', 'auditedEntities', 'delayedAuditReports', 'fraudA1Paras', 'awaitingAuditeeResponse', 'teamsConductingAudit'].some(key =>
+                                data[key] !== null && (!Number.isSafeInteger(data[key]) || data[key] < 0)) ||
+                            (data.planCoveragePct !== null && (!Number.isFinite(data.planCoveragePct) || data.planCoveragePct < 0 || data.planCoveragePct > 100))))
+                            throw new Error('CIA executive KPI response is incomplete.');
+                        ciaKpis(data, yearLabel);
+                        $('cia-kpi-status').textContent = data
+                            ? `Annual measures: ${prettyDate(data.auditPeriodFrom.slice(0, 10))} to ${prettyDate(data.auditPeriodTo.slice(0, 10))}. Operational cards are current-state as of ${prettyDate(data.currentStateAsOf.slice(0, 10))}, including prior-year work.`
+                            : 'No executive KPI row was returned. Values are unavailable (N/A).';
+                    } catch (error) {
+                        if (current === version && error.name !== 'AbortError') $('cia-kpi-status').textContent = `${error.message} Choose Apply to retry.`;
+                    }
+                })(),
+                (async () => {
+                    try {
+                        const rows = await ciaRequest('GetCiaIssueNature', annualQuery, signal);
+                        if (current !== version) return;
+                        if (!Array.isArray(rows)) throw new Error('Issue-category response is incomplete.');
+                        ciaNature(rows);
+                    } catch (error) {
+                        if (current === version && error.name !== 'AbortError') $('cia-nature').replaceChildren(el('p', `${error.message} Choose Apply to retry.`, 'exec-cia-warning'));
+                    }
+                })()
+            ]);
+        } catch (error) {
+            if (current !== version || error.name === 'AbortError') return;
+            if (year.options.length === 1 && !year.value) year.replaceChildren(new Option('Audit years unavailable — choose Apply to retry', ''));
+            $('cia-kpi-status').textContent = `${error.message} Executive KPIs are unavailable (N/A).`;
+            $('cia-nature').replaceChildren(el('p', `${error.message} Choose Apply to retry.`, 'exec-cia-warning'));
+        }
+    }
     let activeRequest, version = 0;
     async function refresh() {
         if (app.dataset.dashboardType === 'GROUP' && !app.dataset.groupRootId) {
@@ -218,11 +345,14 @@
         }
         // Start/end dates are not applied to the six current-state summary APIs.
         query.set('view', app.dataset.view);
-        $('results').hidden = true; app.setAttribute('aria-busy', 'true');
+        $('results').hidden = !ciaCommand; app.setAttribute('aria-busy', 'true');
+        if (ciaCommand) $('existing-results').hidden = true;
         $('status').textContent = 'Loading authorized dashboard data…';
         $('refresh').disabled = true;
+        let ciaTask;
         try {
-            const actions = app.dataset.datasets.split(',').filter(Boolean);
+            ciaTask = ciaCommand ? refreshCia(new URLSearchParams(query), signal, current) : null;
+            const actions = app.dataset.datasets.split(',').filter(action => action && !ciaActions.includes(action));
             const data = await Promise.all(actions.map(async action => {
                 const actionQuery = new URLSearchParams(query);
                 if ((lifecycle && action === 'GetKpiLifecycle') ||
@@ -262,14 +392,20 @@
                 critical(criticalRows, criticalCount);
             }
             $('results').hidden = false;
+            if (ciaCommand) $('existing-results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
             $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;
             if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
+            if (ciaCommand) {
+                $('status').textContent += ' Audit Year applies separately to coverage, A1 paras and issue nature.';
+                await ciaTask;
+            }
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
-            activeRequest.abort();
+            if (!ciaCommand) activeRequest.abort();
             $('status').textContent = `${error.message} Use Apply to retry.`;
+            if (ciaCommand) await ciaTask;
         } finally {
             if (current === version) { $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); }
         }
@@ -290,7 +426,7 @@
         }
         app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => {
             const url = new URL(link.href);
-            for (const key of ['startDate', 'endDate', 'selectBy', 'dimensionId', 'reportingOfficeId', 'entityId']) {
+            for (const key of ['startDate', 'endDate', 'selectBy', 'dimensionId', 'reportingOfficeId', 'entityId', ...(ciaCommand ? ['auditPeriodId'] : [])]) {
                 const value = values.get(key);
                 if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
             }
@@ -316,7 +452,7 @@
             else { $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
         });
     }
-    for (const id of ['start-date', 'end-date', 'entity']) $(id)?.addEventListener('change', () => {
+    for (const id of ['start-date', 'end-date', 'entity', 'audit-year']) $(id)?.addEventListener('change', () => {
         activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false');
         if (app.dataset.view !== 'reports') $('results').hidden = true;
         $('status').textContent = 'Filter selections changed. Choose Apply to load this scope.';

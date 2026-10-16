@@ -1,4 +1,28 @@
 .exec { max-width:1500px; margin:0 auto; }
+/* CIA command datasets only; existing dashboards and reports retain their styling. */
+.exec .exec-cia-command { color:#122d47; margin-bottom:24px; }
+.exec-cia-command>h2 { font-size:20px; color:#122d47; }
+.exec-cia-command #exec-cia-kpis { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.exec-cia-command .exec-kpi { border-top:3px solid #147d92; color:#122d47; }
+.exec-cia-command .exec-kpi strong { font-size:26px; font-variant-numeric:tabular-nums; }
+.exec-cia-command .exec-kpi small { font-size:12px; line-height:1.5; color:#526579; }
+.exec-cia-command .exec-kpi .exec-cia-period { color:#116b7d; font-weight:600; }
+.exec-cia-command .exec-panel h2 { color:#122d47; }
+.exec-cia-command .exec-cia-existing-title { margin:24px 0 14px; font-size:17px; }
+.exec-cia-command .exec-cia-warning { padding:12px; border-left:4px solid #b65c00; background:#fff4df; color:#704000; line-height:1.6; }
+.exec-cia-command .exec-cia-nature-bars { display:grid; gap:14px; }
+.exec-cia-command .exec-cia-nature-row { display:grid; grid-template-columns:minmax(140px,2fr) minmax(60px,5fr) minmax(45px,1fr); gap:14px; align-items:center; font-size:13px; }
+.exec-cia-command .exec-cia-nature-row>span { overflow-wrap:anywhere; }
+.exec-cia-command .exec-cia-nature-row>strong { text-align:right; font-variant-numeric:tabular-nums; }
+.exec-cia-command .exec-fill { background:#147d92; }
+.exec-cia-command .exec-track { background:#e7eef4; }
+.exec-cia-command .exec-data { overflow-x:auto; }
+@media(max-width:1200px) { .exec-cia-command #exec-cia-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) {
+    .exec-cia-command #exec-cia-kpis { grid-template-columns:1fr; }
+    .exec-cia-command .exec-cia-nature-row { grid-template-columns:minmax(0,1fr) 60px; gap:6px 12px; }
+    .exec-cia-command .exec-cia-nature-row>span { grid-column:1/-1; }
+}
 .exec-filters { display:flex; align-items:end; gap:18px; padding:20px 0; flex-wrap:wrap; }
 .exec-filters>div { flex:1; min-width:220px; }
 .exec-filters label { display:block; font-size:13px; font-weight:600; margin-bottom:7px; }

@@ -33,6 +33,24 @@ namespace AIS.Controllers
         }
 
         [HttpGet]
+        public IActionResult GetCiaAuditYears([FromQuery] int? entityId = null,
+            [FromQuery] string dashboardType = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, null, dashboardType, null, filters,
+                (scope, f) => database.GetCiaAuditYears(scope), ciaOnly: true);
+
+        [HttpGet]
+        public IActionResult GetCiaExecKpis([FromQuery] int? auditPeriodId = null, [FromQuery] int? entityId = null,
+            [FromQuery] string dashboardType = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, null, dashboardType, null, filters,
+                (scope, f) => database.GetCiaExecKpis(scope, auditPeriodId, f), ciaOnly: true);
+
+        [HttpGet]
+        public IActionResult GetCiaIssueNature([FromQuery] int? auditPeriodId = null, [FromQuery] int? entityId = null,
+            [FromQuery] string dashboardType = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, null, dashboardType, null, filters,
+                (scope, f) => database.GetCiaIssueNature(scope, auditPeriodId, f), ciaOnly: true);
+
+        [HttpGet]
         public IActionResult GetKpiLifecycle([FromQuery] int? entityId = null,
             [FromQuery] string dashboardType = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
             => ExecuteSummary(entityId, null, dashboardType, null, filters,
@@ -69,7 +87,7 @@ namespace AIS.Controllers
             => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f));
 
         private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId, ExecutiveDashboardFilterRequest filters,
-            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false)
+            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false, bool ciaOnly = false)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -83,6 +101,8 @@ namespace AIS.Controllers
             try
             {
                 var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
+                if (ciaOnly && scope.DashboardType != "CIA")
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA command datasets require the verified CIA perspective.");
                 if (lifecycle && scope.DashboardType != "TOP")
                     throw new ExecutiveDashboardAccessException("RoleMapping", "Lifecycle KPIs require the TOP perspective.");
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);

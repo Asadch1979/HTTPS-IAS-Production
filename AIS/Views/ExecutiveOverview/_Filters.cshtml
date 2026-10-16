@@ -10,6 +10,10 @@
         <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(requestedReport) ? requestedReport : Model.SelectedView.Reports.FirstOrDefault())" />
     }
     @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
+    @if (Model.SelectedView.UseCiaCommandCenter)
+    {
+        <div><label for="exec-audit-year">Select Audit Year</label><select id="exec-audit-year" name="auditPeriodId" data-selected-id="@Context.Request.Query["auditPeriodId"]" aria-describedby="exec-cia-year-note"><option value="">Loading audit years…</option></select></div>
+    }
     @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports" || (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance"))
     {
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
@@ -35,5 +39,6 @@
 }
 else if (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance")
 {
-    <p class="exec-note" id="exec-filter-note">Dates are optional for CIA Issue Identified and Issue Rectified. Leave both blank to count all eligible historical issues. Other KPI cards, charts and critical observations show current-state information.</p>
+    <p class="exec-note" id="exec-cia-year-note">Audit Year applies to plan coverage, A1 paras and Nature of Issue Identified. Delayed reports, awaiting responses and conducting teams remain current-state across all audit years.</p>
+    <p class="exec-note" id="exec-filter-note">Start/End Dates are optional and apply only to CIA Issue Identified and Issue Rectified. Leave both blank for all eligible historical issues. Existing para KPIs, risk, settlement trends and critical observations retain their current-state definitions.</p>
 }

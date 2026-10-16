@@ -13,8 +13,10 @@ namespace AIS.Models
         public string[] Kpis { get; set; }
         public string[] Sections { get; set; }
         public bool UseLifecycleKpis { get; set; }
+        public bool UseCiaCommandCenter { get; set; }
         public string[] Datasets => (Kpis.Length > 0 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
             .Concat(UseLifecycleKpis ? new[] { "GetKpiLifecycle" } : Array.Empty<string>())
+            .Concat(UseCiaCommandCenter ? new[] { "GetCiaAuditYears", "GetCiaExecKpis", "GetCiaIssueNature" } : Array.Empty<string>())
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
                 _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
@@ -54,6 +56,7 @@ namespace AIS.Models
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             views[0].UseLifecycleKpis = perspective == "TOP";
+            views[0].UseCiaCommandCenter = perspective == "CIA";
             return views;
         }
 
