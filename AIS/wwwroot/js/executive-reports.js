@@ -24,7 +24,9 @@
     const detail = row => ['DETAIL', 'ANNUAL'].includes(kind(row));
     const total = row => ['TOTAL', 'GRAND_TOTAL'].includes(kind(row));
     const column = (label, key, format = number) => ({ label, key, format, numeric: format === number || format === percent });
-    const plain = value => value == null || value === '' ? 'N/A' : String(value);
+    const plain = value => value == null || value === '' ? '' : String(value);
+    const groupLabel = value => value === 'GM Field Offices' ? 'Field Audit Division'
+        : value === 'Other Field Offices' ? 'Management Audit Division' : (value || 'Unassigned group');
     const position = [column('Opening balance', 'openingBalance'), column('Paras added', 'parasAdded'), column('Total paras', 'totalParas'),
         column('Settled', 'settledParas'), column('Settlement %', 'settlementPercentage', percent), column('Outstanding', 'outstandingParas'),
         column('Low risk', 'lowRisk'), column('Medium risk', 'mediumRisk'), column('High risk', 'highRisk'), column('Unrated risk', 'unratedRisk'),
@@ -47,14 +49,22 @@
         rows.forEach(row => {
             const groupKey = `${row.groupId ?? ''}:${row.groupName ?? ''}`;
             if (grouped && !total(row) && groupKey !== previousGroup) {
-                const group = node('tr', null, 'exec-report-group'), label = node('th', row.groupName || 'Unassigned group');
+                const group = node('tr', null, 'exec-report-group'), label = node('th', groupLabel(row.groupName));
                 label.colSpan = columns.length; label.scope = 'rowgroup'; group.append(label); body.append(group); previousGroup = groupKey;
             }
             const tr = node('tr', null, total(row) ? 'exec-report-total' : kind(row) === 'SUBTOTAL' ? 'exec-report-subtotal' : '');
             columns.forEach((col, index) => {
-                const value = index === 0 && total(row) ? 'Grand total' : index === 0 && kind(row) === 'SUBTOTAL' ? `Subtotal · ${row.groupName || 'Unassigned group'}` : col.format(row[col.key]);
+                const value = index === 0 && total(row) ? 'Grand total' : index === 0 && kind(row) === 'SUBTOTAL' ? `Subtotal · ${groupLabel(row.groupName)}`
+                    : kind(row) === 'SUBTOTAL' && (row[col.key] == null || row[col.key] === '') ? '' : col.format(row[col.key]);
                 const cell = node(index === 0 ? 'th' : 'td', value, col.numeric ? 'exec-number' : '');
                 if (col.key === 'rankPosition') cell.classList.add('exec-rank');
+                if (col.key === 'settlementPercentage' && value !== 'N/A' && detail(row)) {
+                    cell.classList.add('exec-report-settlement');
+                    // Visual data bar, not a performance target or status classification.
+                    cell.style.setProperty('--settlement-width', `${Math.max(0, Math.min(100, Number(row.settlementPercentage) || 0))}%`);
+                }
+                if (['lowRisk','mediumRisk','highRisk'].includes(col.key)) cell.classList.add('exec-risk-' + col.key);
+                if (value === 'Not measured') cell.classList.add('exec-not-measured');
                 if (index === 0) cell.scope = 'row'; tr.append(cell);
             });
             body.append(tr);
@@ -62,9 +72,11 @@
         if (!rows.length) { const tr = node('tr'), cell = node('td', 'No records for the selected scope and reporting period.'); cell.colSpan = columns.length; tr.append(cell); body.append(tr); }
         table.append(head, body); wrap.append(table); target.append(wrap);
     }
-    function bars(target, title, rows, series, label) {
-        const section = node('section', null, 'exec-report-chart'); section.append(node('h3', title));
-        const legend = node('p', series.map(s => s.label).join(' · '), 'exec-note'); section.append(legend);
+    function bars(target, title, rows, series, label, options = {}) {
+        const section = node('section', null, 'exec-report-chart');
+        if (options.semantic) section.classList.add('exec-report-' + options.semantic);
+        section.append(node('h3', title));
+        if (options.benchmark != null) section.append(node('p', `Overall settlement average: ${percent(options.benchmark)} (dashed reference line)`, 'exec-note'));
         const countMaximum = Math.max(1, ...rows.flatMap(row => series.filter(s => !s.percent).map(s => Number(row[s.key]) || 0)));
         rows.forEach(row => {
             const group = node('div', null, 'exec-report-bar-group'); group.append(node('h4', label(row)));
@@ -75,34 +87,90 @@
                 const axisMaximum = s.percent ? 100 : countMaximum;
                 fill.style.width = `${Math.min(100, Math.max(0, (Number(value) || 0) / axisMaximum * 100))}%`;
                 line.title = `${label(row)} · ${s.label}: ${s.percent ? percent(value) : number(value)}`;
-                track.append(fill); line.append(node('span', s.label), track, node('strong', s.percent ? percent(value) : number(value))); group.append(line);
+                track.append(fill);
+                if (options.benchmark != null && s.percent) {
+                    const marker = node('i', null, 'exec-report-benchmark');
+                    marker.style.left = `${Math.max(0, Math.min(100, Number(options.benchmark)))}%`;
+                    track.append(marker);
+                }
+                line.append(node('span', s.label), track, node('strong', s.percent ? percent(value) : number(value))); group.append(line);
             });
             section.append(group);
         });
         if (!rows.length) section.append(node('p', 'No ranked or annual records for this period.', 'exec-empty'));
         target.append(section);
     }
-    function render(id, rows) {
+    function annualChart(annual, year) {
+        const wrap = node('section', null, 'exec-report-annual-visual');
+        wrap.append(node('h3', 'Annual settled vs added; outstanding trend'));
+        const svg = (tag, attrs = {}, value) => {
+            const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            Object.entries(attrs).forEach(([name, val]) => element.setAttribute(name, String(val)));
+            if (value != null) element.textContent = value;
+            return element;
+        };
+        const graph = svg('svg', {viewBox:'0 0 760 285',role:'img', 'aria-label':'Annual settled and added counts shown as grouped columns; outstanding stock shown as an amber line'});
+        const maxFlow = Math.max(1, ...annual.map(r => Math.max(Number(r.settledParas) || 0, Number(r.parasAdded) || 0)));
+        const maxStock = Math.max(1, ...annual.map(r => Number(r.outstandingParas) || 0));
+        const xAt = i => 75 + (i + .5) * (620 / Math.max(1, annual.length));
+        const y = v => 238 - Math.max(0, v) / maxFlow * 183;
+        const sy = v => 238 - Math.max(0, v) / maxStock * 183;
+        for (let t=0;t<=4;t++) {
+            const gy = 238 - t * 45.75;
+            graph.append(svg('line',{x1:64,y1:gy,x2:700,y2:gy,stroke:'#e2e8f0'}));
+            graph.append(svg('text',{x:60,y:gy+4,'text-anchor':'end','font-size':10,fill:'#64748b'},number(maxFlow*t/4)));
+        }
+        const path = [];
+        annual.forEach((row,i) => {
+            const x=xAt(i), settled=Number(row.settledParas)||0, added=Number(row.parasAdded)||0, stock=Number(row.outstandingParas)||0;
+            graph.append(svg('rect',{x:x-25,y:y(settled),width:22,height:238-y(settled),rx:2,fill:'#0f5c4d'}));
+            graph.append(svg('rect',{x:x+3,y:y(added),width:22,height:238-y(added),rx:2,fill:'#75b5a2'}));
+            graph.append(svg('text',{x,y:258,'text-anchor':'middle','font-size':11,fill:'#1f2933'},String(row.periodStart).slice(0,4)));
+            path.push(`${i?'L':'M'} ${x} ${sy(stock)}`);
+        });
+        if (path.length) {
+            graph.append(svg('path',{d:path.join(' '),fill:'none',stroke:'#e39b1b','stroke-width':3}));
+            annual.forEach((row,i)=>{
+                const x=xAt(i), stock=Number(row.outstandingParas)||0;
+                graph.append(svg('circle',{cx:x,cy:sy(stock),r:4,fill:'#e39b1b'}));
+                graph.append(svg('text',{x:708,y:sy(stock)+4,'font-size':9,fill:'#8b5d08'},i===annual.length-1?number(stock):''));
+            });
+        }
+        wrap.append(graph);
+        wrap.append(node('p','■ Settled (dark green)  ■ Added (light green)  — Outstanding (amber, right-hand scale)', 'exec-note'));
+        return wrap;
+    }
+    function render(id, rows, benchmark = null) {
         const target = $('report-content'); target.replaceChildren();
         if (!rows.length) { target.append(node('p', 'No records for the selected scope and reporting period.', 'exec-empty')); return; }
         if (id === 'A') {
             const annual = rows.filter(detail);
             const year = row => `${String(row.periodStart).slice(0, 4)}${row.isPartialYear ? ` · Partial year (${date(row.periodStart)} – ${date(row.periodEnd)})` : ''}`;
-            const charts = node('div', null, 'exec-report-charts');
-            bars(charts, 'Annual field audit comparison', annual, [{key:'settledParas',label:'Total paras settled'}, {key:'parasAdded',label:'Paras added'}, {key:'outstandingParas',label:'Paras outstanding'}], year);
-            bars(charts, 'Annual settlement percentage', annual, [{key:'settlementPercentage',label:'Settlement %',percent:true}], year);
-            target.append(charts);
-            table(target, 'Annual field audit summary', [column('Reporting year', 'yearLabel', plain), column('Total paras settled','settledParas'), column('Settlement %','settlementPercentage',percent), column('Paras added','parasAdded'), column('Paras outstanding','outstandingParas')], rows.map(row => ({...row,yearLabel:year(row)})));
+            const layout = node('div', null, 'exec-report-annual-layout');
+            layout.append(annualChart(annual, year));
+            const summary = node('div', null, 'exec-report-annual-summary');
+            table(summary, 'Annual field audit summary', [column('Reporting year', 'yearLabel', plain), column('Total paras settled','settledParas'), column('Settlement %','settlementPercentage',percent), column('Paras added','parasAdded'), column('Paras outstanding','outstandingParas')], rows.map(row => ({...row,yearLabel:year(row)})));
+            layout.append(summary); target.append(layout);
         } else if (id === 'B' || id === 'C') {
-            const identity = id === 'B' ? [column('Field office', 'itemName', plain)] : [column('General Manager', 'groupName', plain), column('Region name', 'itemName', plain)];
-            table(target, id === 'B' ? 'Field office paras position' : 'GM / region paras position', [...identity, ...position], rows, true);
+            const dynamicPosition = position.filter(col => col.key !== 'unratedRisk' || rows.some(row => (Number(row.unratedRisk)||0) !== 0));
+            if (id === 'C') {
+                const gmRows = rows.filter(row => kind(row) === 'SUBTOTAL')
+                    .map(row => ({...row, itemName: groupLabel(row.groupName), rowKind:'DETAIL'}));
+                const grandTotal = rows.find(total);
+                if (grandTotal) gmRows.push(grandTotal);
+                table(target, 'GM paras position', [column('GM Office','itemName',plain), ...dynamicPosition], gmRows);
+            }
+            table(target, id === 'B' ? 'Field office paras position' : 'GM / region paras position',
+                [column(id === 'B' ? 'Field office' : 'Region name','itemName',plain), ...dynamicPosition], rows, true);
         } else if (id === 'D') {
             const charts = node('div', null, 'exec-report-charts');
             for (const [group, title] of [['TOP','Top five regions'],['BOTTOM','Bottom five regions']]) {
                 // Oracle determines membership and rank, including ties; never re-rank or truncate here.
                 const ranked = rows.filter(row => detail(row) && row.rankingGroup === group && row.rankPosition != null).sort((a,b) => a.rankPosition - b.rankPosition);
                 const panel = node('section');
-                bars(panel, title, ranked, [{key:'settlementPercentage',label:'Settlement %',percent:true}], row => `${row.rankPosition}. ${row.itemName || 'Unassigned region'}`);
+                bars(panel, title, ranked, [{key:'settlementPercentage',label:'Settlement %',percent:true}], row =>
+                    `${row.rankPosition}. ${row.itemName || 'Unassigned region'} · ${number(row.outstandingParas)} open / ${number(row.totalParas)} total`,
+                    {semantic: group === 'TOP' ? 'top' : 'bottom', benchmark});
                 table(panel, title, rankingColumns, ranked); charts.append(panel);
             }
             target.append(charts);
@@ -111,10 +179,16 @@
             const summaries = rows.filter(row => !detail(row));
             if (summaries.length) table(target, 'Oracle summary records (excluded from ranked charts)', rankingColumns, summaries);
         } else {
-            table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas')], rows);
+            table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], rows);
         }
-        const sources = node('details', null, 'exec-data'); sources.open = true; sources.append(node('summary', 'Settlement attribution and reconciliation details'));
-        table(sources, 'Oracle settlement attribution and reconciliation', [column('Office / region / year', 'itemName',plain), column('Compliance','settledByCompliance'),column('Audit','settledByAudit'),column('Unknown','settledByUnknown'),column('Reopenings','reopeningEvents', () => 'Not measured'),column('Resettlements','resettlementEvents', () => 'Not measured'),column('Initially closed additions','initiallyClosedAdditions', () => 'Not measured'),column('Reconciliation difference','reconciliationDifference'),column('Auditor assignment mismatch','auditorAssignmentMismatch')], rows);
+        const sources = node('details', null, 'exec-data'); sources.open = false;
+        sources.append(node('summary', 'IAS Settlement Attribution and Reconciliation'));
+        table(sources, 'IAS Settlement Attribution and Reconciliation', [
+            column('Office / region / year', 'itemName', plain),
+            column('Compliance', 'settledByCompliance'),
+            column('Audit', 'settledByAudit'),
+            column('Unknown', 'settledByUnknown')
+        ], rows);
         target.append(sources);
     }
     // Only a successful response from an authorized report API is exportable.
