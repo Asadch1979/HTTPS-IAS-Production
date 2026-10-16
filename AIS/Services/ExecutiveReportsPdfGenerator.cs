@@ -67,9 +67,12 @@ namespace AIS.Services
             using (var pdfDocument = new PdfDocument(pdfWriter))
             {
                 pdfDocument.SetDefaultPageSize(PageSize.A4.Rotate());
-                using (var layout = HtmlConverter.ConvertToDocument(html, pdfDocument))
+                // The three-argument overload supports PdfDocument (unlike
+                // ConvertToDocument(html, pdfDocument), which binds to PdfWriter).
+                using (var layout = HtmlConverter.ConvertToDocument(
+                    html, pdfDocument, new ConverterProperties()))
                 {
-                    // PdfHtml lays out tables as real text and writes only occupied pages.
+                    // Render report as searchable text rather than an image.
                 }
             }
             var basePdf = baseStream.ToArray();
@@ -79,7 +82,7 @@ namespace AIS.Services
             {
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-                var logo = Path.Combine(webRootPath ?? "", "Images", "ztbllogo.png");
+                var logo = System.IO.Path.Combine(webRootPath ?? "", "Images", "ztbllogo.png");
                 ImageData data = File.Exists(logo) ? ImageDataFactory.Create(logo) : null;
                 var total = pdf.GetNumberOfPages();
                 for (int i = 1; i <= total; i++)
