@@ -190,52 +190,58 @@ button.exec-kpi:hover { border-color:#4c9278; }
     #exec-report-panel .exec-data { display:block!important; }
 }
 
-/* Distinct report palettes, scoped to Reports so dashboard colors stay intact. */
-#exec-reports[data-active-report="A"] {
-    --report-accent:#2457a6; --report-tint:#edf3fc; --report-total:#dbe7fa;
-    --report-series-2:#427d92; --report-series-3:#91651e;
-}
-#exec-reports[data-active-report="B"] {
-    --report-accent:#14685a; --report-tint:#eaf6f1; --report-total:#d1e9e0;
-    --report-series-2:#3b8192; --report-series-3:#8b6b22;
-}
-#exec-reports[data-active-report="C"] {
-    --report-accent:#6a3d91; --report-tint:#f4eef9; --report-total:#e7d9f1;
-    --report-series-2:#9275b2; --report-series-3:#3b7c86;
-}
-#exec-reports[data-active-report="D"] {
-    --report-accent:#94500c; --report-tint:#fff5e6; --report-total:#f5e1c2;
-    --report-series-2:#b07832; --report-series-3:#80623a;
-}
-#exec-reports[data-active-report="E"] {
-    --report-accent:#943e55; --report-tint:#fcf0f3; --report-total:#f3dbe2;
-    --report-series-2:#b4687d; --report-series-3:#75658d;
-}
-#exec-reports[data-active-report] .exec-report-panel { border-top:3px solid var(--report-accent); }
+/* Unified brand styling for Reports A-E; status colors retain semantic meaning. */
+#exec-reports { --report-accent:#0f5c4d; --report-tint:#eaf3f0; --report-total:#dcebe5; }
+#exec-reports[data-active-report] .exec-report-panel { border-top:2px solid var(--report-accent); }
 #exec-reports[data-active-report] .exec-report-panel h2,
 #exec-reports[data-active-report] .exec-report-chart h3,
 #exec-reports[data-active-report] .exec-report-table caption { color:var(--report-accent); }
 #exec-reports[data-active-report] .exec-report-selector [aria-pressed="true"] {
     color:var(--report-accent); border-bottom-color:var(--report-accent); background:var(--report-tint);
 }
-#exec-reports[data-active-report] .exec-report-table thead th {
-    color:#fff; background:var(--report-accent);
-}
+#exec-reports[data-active-report] .exec-report-table thead th { color:#1f2933; background:#e9f3f0; }
 #exec-reports[data-active-report] .exec-report-group th,
 #exec-reports[data-active-report] .exec-report-subtotal>* { background:var(--report-tint); }
 #exec-reports[data-active-report] .exec-report-total>* {
     background:var(--report-total); border-top-color:var(--report-accent);
 }
 #exec-reports[data-active-report] .exec-report-actions .org-button { color:var(--report-accent); border-color:var(--report-accent); }
-#exec-reports[data-active-report] .exec-report-series-0 { background:var(--report-accent); }
-#exec-reports[data-active-report] .exec-report-series-1 { background:var(--report-series-2); }
-#exec-reports[data-active-report] .exec-report-series-2 { background:var(--report-series-3); }
-/* Override the general first-column and numeric minimums for Rank only. */
-.exec .exec-report-table th.exec-rank,
-.exec .exec-report-table td.exec-rank {
-    width:1%; min-width:3ch; max-width:none; padding-left:6px; padding-right:6px;
-    text-align:center; white-space:nowrap;
-}
+.exec-report-series-0 { background:#0f5c4d!important; }
+.exec-report-series-1 { background:#75b5a2!important; }
+.exec-report-series-2 { background:#e39b1b!important; }
+.exec-report-top .exec-report-series-0 { background:#2e7d32!important; }
+.exec-report-bottom .exec-report-series-0 { background:#c62828!important; }
+.exec-report-benchmark { position:absolute; top:-2px; bottom:-2px; width:0; border-left:2px dashed #e39b1b; z-index:2; }
+.exec-report-bar-row .exec-track { position:relative; height:12px; background:transparent; border-radius:0; }
+.exec-report-bar-row .exec-fill { border-radius:2px; }
+.exec-report-bar-row strong { font-size:12px; color:#1f2933; }
+.exec-report-bar-row { grid-template-columns:120px minmax(50px,1fr) 85px; }
+.exec-report-bar-group h4 { color:#1f2933; line-height:1.4; }
+.exec-report-annual-layout { display:grid; grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr); gap:18px; align-items:start; }
+.exec-report-annual-visual { min-width:0; }
+.exec-report-annual-visual svg { display:block; width:100%; height:auto; }
+.exec-report-annual-visual h3 { font-size:15px; color:var(--report-accent); }
+.exec-report-annual-summary { min-width:0; }
+.exec-report-annual-summary .exec-report-table { font-size:11px; }
+.exec-report-annual-summary .exec-report-table th,
+.exec-report-annual-summary .exec-report-table td { padding:7px 5px; }
+.exec-report-cautions { background:transparent; border:0; padding:2px 0; margin:6px 0 12px; font-size:12px; color:#64748b; }
+.exec .exec-report-table { border-collapse:collapse; font-family:"Segoe UI",Calibri,sans-serif; }
+.exec .exec-report-table thead th { white-space:nowrap; padding:10px 8px; border-bottom:2px solid #d3e3db; font-weight:700; }
+.exec .exec-report-table td { padding:8px; border-bottom:1px solid #e2e8f0; }
+.exec .exec-report-table tbody tr:nth-child(even):not(.exec-report-subtotal):not(.exec-report-total):not(.exec-report-group) { background:#f8fafc; }
+.exec .exec-report-table tbody th:first-child { color:#1f2933; font-weight:500; background:transparent; }
+.exec .exec-report-table .exec-report-subtotal > * { font-weight:700; border-top:1px solid #94a3b8; }
+.exec .exec-report-table .exec-report-total > * { font-weight:700; }
+.exec .exec-report-settlement { position:relative; background-image:linear-gradient(to right,#c7e6d6 var(--settlement-width),transparent var(--settlement-width)); font-variant-numeric:tabular-nums; }
+.exec .exec-report-table .exec-risk-lowRisk { background-color:#fff9e9; }
+.exec .exec-report-table .exec-risk-mediumRisk { background-color:#fff0d3; }
+.exec .exec-report-table .exec-risk-highRisk { background-color:#fdecea; color:#9a2525; font-weight:600; }
+.exec .exec-report-table .exec-not-measured { text-align:center!important; color:#64748b; font-style:italic; }
+.exec .exec-report-table th.exec-rank,.exec .exec-report-table td.exec-rank { width:1%; min-width:3ch; max-width:none; padding-left:6px; padding-right:6px; text-align:center; white-space:nowrap; }
+.exec-report-group { break-after:avoid; }
+@media(max-width:1000px){.exec-report-annual-layout{grid-template-columns:1fr;}}
 @media print {
+    @page { size:A4 landscape; margin:12mm; }
     #exec-reports { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
 }
