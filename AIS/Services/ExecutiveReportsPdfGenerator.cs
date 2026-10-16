@@ -64,13 +64,11 @@ namespace AIS.Services
             // iText pdfHTML writes real searchable text and paginates tables;
             // nothing is rasterized or taken from a browser screenshot.
             using (var pdfWriter = new PdfWriter(baseStream))
-            using (var pdfDocument = new PdfDocument(pdfWriter))
+            using (var layout = HtmlConverter.ConvertToDocument(html, pdfWriter))
             {
-                pdfDocument.SetDefaultPageSize(PageSize.A4.Rotate());
-                using (var layout = HtmlConverter.ConvertToDocument(html, pdfDocument))
-                {
-                    // PdfHtml lays out tables as real text and writes only occupied pages.
-                }
+                // iText pdfHTML 5.x accepts PdfWriter; Document exposes its PdfDocument.
+                // Set the default page size before closing and laying out content.
+                layout.GetPdfDocument().SetDefaultPageSize(PageSize.A4.Rotate());
             }
             var basePdf = baseStream.ToArray();
             using var input = new MemoryStream(basePdf);
@@ -79,7 +77,7 @@ namespace AIS.Services
             {
                 var font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-                var logo = Path.Combine(webRootPath ?? "", "Images", "ztbllogo.png");
+                var logo = System.IO.Path.Combine(webRootPath ?? "", "Images", "ztbllogo.png");
                 ImageData data = File.Exists(logo) ? ImageDataFactory.Create(logo) : null;
                 var total = pdf.GetNumberOfPages();
                 for (int i = 1; i <= total; i++)
