@@ -63,7 +63,15 @@ namespace AIS.Services
             using var baseStream = new MemoryStream();
             // iText pdfHTML writes real searchable text and paginates tables;
             // nothing is rasterized or taken from a browser screenshot.
-            HtmlConverter.ConvertToPdf(html, baseStream);
+            using (var pdfWriter = new PdfWriter(baseStream))
+            using (var pdfDocument = new PdfDocument(pdfWriter))
+            {
+                pdfDocument.SetDefaultPageSize(PageSize.A4.Rotate());
+                using (var layout = HtmlConverter.ConvertToDocument(html, pdfDocument))
+                {
+                    // PdfHtml lays out tables as real text and writes only occupied pages.
+                }
+            }
             var basePdf = baseStream.ToArray();
             using var input = new MemoryStream(basePdf);
             using var stamped = new MemoryStream();
