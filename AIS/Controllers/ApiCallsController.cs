@@ -4807,6 +4807,24 @@ namespace AIS.Controllers
 
             return rows;
             }
+        [HttpPost]
+        public IActionResult get_ias_para_position_for_entity_type_id(int ENT_TYPE_ID, DateTime? S_DATE, DateTime? E_DATE)
+            {
+            if (!ModelState.IsValid || ENT_TYPE_ID == 0 || ENT_TYPE_ID < -1 ||
+                !S_DATE.HasValue || !E_DATE.HasValue || S_DATE.Value.Date > E_DATE.Value.Date ||
+                E_DATE.Value.Date == DateTime.MaxValue.Date)
+                {
+                return BadRequest(new { message = "Select an entity type and a valid report period; From must not exceed To." });
+                }
+
+            var rows = dBConnection.GetIASParaPosition(ENT_TYPE_ID, S_DATE.Value.Date, E_DATE.Value.Date);
+            var canViewReportingOffice = new[] { 1, 3, 5, 6, 7 }.Contains(sessionHandler.GetCurrentUserRoleId() ?? 0);
+            if (!canViewReportingOffice)
+                {
+                rows.ForEach(row => row.REPORTING_OFFICE = string.Empty);
+                }
+            return Json(rows);
+            }
         [HttpGet]
         [HttpPost]
         public List<SpecialAuditPlanModel> get_saved_special_audit_plans()

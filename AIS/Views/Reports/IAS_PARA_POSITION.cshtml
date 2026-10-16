@@ -1,0 +1,104 @@
+@{
+    var page_id = ViewData["PageId"] as int? ?? 0;
+    var showReportingOffice = ViewData["ShowReportingOffice"] as bool? ?? false;
+}
+
+@{
+    ViewData["Title"] = "IAS_PARA_POSITION";
+    Layout = "_Layout";
+}
+
+
+
+<div class="row col-md-12">
+
+    <div class="row col-md-12 mt-3">
+        <h3 style=" display:block;color: #be0e43">IAS Para Position</h3>
+    </div>
+    <div class="row col-md-12 mt-3">
+        <label>Entity Type</label>
+    </div>
+    <div class="row col-md-12 mt-1">
+        <select id="entityTypeSelectionField" class="form-select form-control" aria-label="Default select example">
+            <option value="0" selected>--Select Entity Type--</option>
+            @{
+                if (ViewData["EntitiesList"] != null)
+                    {
+                    foreach (var item in (dynamic)(ViewData["EntitiesList"]))
+                        {
+                        <option value="@item.CODE" id="@item.CODE">@item.NAME</option>
+                        }
+                    }
+            }
+        </select>
+
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <label for="periodStartModalField"><b>Report Period From</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodStartModalField" aria-describedby="brcode" placeholder="Start Date">
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <label for="periodEndModalField"><b>Report Period To</b><span class="text-danger">*</span></label>
+        <input required type="date" class="form-control" id="periodEndModalField" aria-describedby="brcode" placeholder="End Date">
+
+    </div>
+    <div class="row col-md-12 mt-3">
+
+        <button id="iasParaPositionSearch" data-onclick="entityTypeSelectionChangeEvent();" class="btn btn-danger col-md-2 offset-md-10">Search</button>
+
+    </div>
+    <div class="row col-md-12 mt-3 table-responsive">
+        <p class="text-muted">Issue Rectified counts issues resolved before audit conclusion and excludes dropped issues. Total = Opening Balance + Para Added. Historical balances are estimates based on recorded addition and settlement dates.</p>
+        <div id="iasParaPositionError" class="alert alert-danger d-none" role="alert"></div>
+        <table id="iasParaPositionGrid" class="table table-hover table-bordered table-hover mt-3 table-striped"
+               data-show-reporting-office="@(showReportingOffice.ToString().ToLowerInvariant())">
+            <thead style="background-color: #19875478 !important; ">
+                <tr>
+                    <th class="col-md-auto">Sr. No</th>
+                    @if (showReportingOffice)
+                    {
+                        <th class="col-md-auto">Reporting Office</th>
+                    }
+                    <th class="col-md-auto">Audit Entity ID</th>
+                    <th class="col-md-auto">Entity Name</th>
+                    <th class="col-md-auto">Opening Balance</th>
+                    <th class="col-md-auto">Issue Identified</th>
+                    <th class="col-md-auto">Issue Rectified</th>
+                    <th class="col-md-auto">Para Added</th>
+                    <th class="col-md-auto">Total</th>
+                    <th class="col-md-auto">Settled By Audit</th>
+                    <th class="col-md-auto">Settled By Compliance</th>
+                    <th class="col-md-auto">Paras Outstanding</th>
+                    <th class="col-md-auto">High Risk</th>
+                    <th class="col-md-auto">Medium Risk</th>
+                    <th class="col-md-auto">Low Risk</th>
+
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr class="table-secondary fw-bold">
+                    <td colspan="@(showReportingOffice ? 4 : 3)" class="text-end">Total</td>
+                    <td id="totalOpeningBalance" class="text-end">0</td>
+                    <td id="totalIssueIdentified" class="text-end">0</td>
+                    <td id="totalIssueRectified" class="text-end">0</td>
+                    <td id="totalParaAdded" class="text-end">0</td>
+                    <td id="totalCombined" class="text-end">0</td>
+                    <td id="totalSettledAudit" class="text-end">0</td>
+                    <td id="totalSettledCompliance" class="text-end">0</td>
+                    <td id="totalOutstanding" class="text-end">0</td>
+                    <td id="totalHighRisk" class="text-end">0</td>
+                    <td id="totalMediumRisk" class="text-end">0</td>
+                    <td id="totalLowRisk" class="text-end">0</td>
+                </tr>
+            </tfoot>
+
+        </table>
+    </div>
+
+</div>
+<script src="~/js/csp/Views_Reports_IAS_PARA_POSITION.js" asp-append-version="true"></script>
+

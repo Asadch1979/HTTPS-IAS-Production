@@ -289,6 +289,7 @@ namespace AIS.Services
                 ["/FieldAuditReport/FinalizeReport"] = 970106,
                 ["/Reports/consolidated_outstanding_paras_pdf"] = 970107,
                 ["/Reports/monitoring_of_para_settlement"] = 249,
+                ["/Reports/IAS_PARA_POSITION"] = 1000400,
                 ["/OutstandingParasPdf/GeneratePdf"] = 970107,
                 ["/OutstandingParasPdf/LoadEntities"] = 970107,
                 ["/OutstandingParasPdf/GeneratePdfByEngId"] = 970107,

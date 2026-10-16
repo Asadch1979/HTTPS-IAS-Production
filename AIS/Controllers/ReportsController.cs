@@ -41,6 +41,16 @@ namespace AIS.Controllers
             return ReportView();
             }
 
+        public IActionResult IAS_PARA_POSITION()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            ViewData["EntitiesList"] = dBConnection.GetEntityTypesForEntityWiseOutstandingObsPosition();
+            var roleId = sessionHandler.GetCurrentUserRoleId() ?? 0;
+            ViewData["ShowReportingOffice"] = roleId == 1 || roleId == 3 || roleId == 5 || roleId == 6 || roleId == 7;
+            return ReportView();
+            }
+
         public IActionResult gist_wise_report()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();
