@@ -43,6 +43,12 @@
     }
     function bars(id, rows) {
         const target = $(id); if (!target) return; target.replaceChildren();
+        // Report age bucket thresholds in days, consistent with AGING_DAYS.
+        // The Oracle bucket codes retain their original boundary calculations.
+        const ageLabel = row => id !== 'aging' ? row.bucketName
+            : row.bucketCode === '1_3_YEARS' ? '366–1,095 days'
+            : row.bucketCode === 'OVER_3_YEARS' ? 'Over 1,095 days'
+            : row.bucketName;
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
         if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
@@ -50,14 +56,14 @@
             const graphic = chart(`${id === 'aging' ? 'Aging' : 'Compliance cycle'} distribution of open observations`);
             rows.forEach((row, index) => {
                 const y = 20 + index * (210 / rows.length);
-                text(graphic, 0, y + 15, row.bucketName);
+                text(graphic, 0, y + 15, ageLabel(row));
                 graphic.append(svg('rect', { x: 145, y, width: 330, height: 20, rx: 4, fill: '#edf2ef' }));
                 graphic.append(svg('rect', { x: 145, y, width: 330 * row.paraCount / maximum, height: 20, rx: 4, fill: '#51937b' }));
                 text(graphic, 550, y + 15, number(row.paraCount), { 'text-anchor': 'end' });
             });
             target.append(graphic);
         }
-        dataTable(target, ['Category', 'Open paras', 'High risk'], rows.map(row => [row.bucketName, number(row.paraCount), number(row.highRiskCount)]));
+        dataTable(target, ['Category', 'Open paras', 'High risk'], rows.map(row => [ageLabel(row), number(row.paraCount), number(row.highRiskCount)]));
     }
     function risk(rows) {
         const target = $('risk'); if (!target) return; target.replaceChildren();
