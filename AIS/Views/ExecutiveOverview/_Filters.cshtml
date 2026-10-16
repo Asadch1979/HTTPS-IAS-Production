@@ -33,3 +33,7 @@
 {
     <p class="exec-note" id="exec-filter-note">Dates filter lifecycle KPIs only. Charts and observations show current data. N/A indicates unavailable history.</p>
 }
+else if (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance")
+{
+    <p class="exec-note" id="exec-filter-note">Dates are optional for CIA Issue Identified and Issue Rectified. Leave both blank to count all eligible historical issues. Other KPI cards, charts and critical observations show current-state information.</p>
+}
