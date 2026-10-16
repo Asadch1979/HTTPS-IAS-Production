@@ -4,6 +4,7 @@ using AIS.Services;
 using AIS.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
@@ -23,12 +24,13 @@ namespace AIS.Controllers
         private readonly IPermissionService permissions;
         private readonly IPageIdResolver pageIds;
         private readonly ILogger<ExecutiveReportsController> logger;
+        private readonly IWebHostEnvironment environment;
 
         public ExecutiveReportsController(DBConnection database, SessionHandler session, IPermissionService permissions,
-            IPageIdResolver pageIds, ILogger<ExecutiveReportsController> logger)
+            IPageIdResolver pageIds, ILogger<ExecutiveReportsController> logger, IWebHostEnvironment environment)
         {
             this.database = database; this.session = session; this.permissions = permissions;
-            this.pageIds = pageIds; this.logger = logger;
+            this.pageIds = pageIds; this.logger = logger; this.environment = environment;
         }
 
         [HttpGet]
@@ -73,7 +75,18 @@ namespace AIS.Controllers
                 if (!reports.Contains(reportId)) return Denied("ReportPermission", user, scope.DashboardType);
                 // A separate immutable root is retained for GROUP; filters only narrow it.
                 database.NarrowExecutiveDashboardScope(scope, filters.EntityId);
-                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = true, organizationalDimensionsApplied = true,
+                // Reuse the existing GET report route and its page/API/portfolio permissions for PDF.
+                // Do not create an unregistered export endpoint or bypass the current scope.
+                var format = Request.Query["format"].ToString();
+                if (!string.IsNullOrEmpty(format) && !string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+                    return Error(400, "invalid_format", "Only PDF export is supported.");
+                var data = query(scope, filters);
+                if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    var bytes = ExecutiveReportsPdfGenerator.Create(reportId, data, environment.WebRootPath);
+                    return File(bytes, "application/pdf", $"IAS_Report_{reportId}_{filters.StartDate}_to_{filters.EndDate}.pdf");
+                }
+                return Ok(new { success = true, data, dateRangeApplied = true, organizationalDimensionsApplied = true,
                     historicalBalancesEstimated = true, currentOrganizationMapping = true, settlementAttributionEstimated = true });
             }
             catch (UnauthenticatedException) { return Error(401, "unauthenticated", "The IAS session is no longer valid."); }
