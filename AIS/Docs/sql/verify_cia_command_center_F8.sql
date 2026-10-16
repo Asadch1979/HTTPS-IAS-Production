@@ -121,3 +121,50 @@ BEGIN
     IO_CURSOR => c
   );
 END;
+
+-- 13. Automatic 11-category reconciliation with approved ISSUE source.
+-- Change both literal period dates to match your selected CIA range.
+-- Enable DBMS Output in SQL Developer; expect MATCH.
+DECLARE
+  rc SYS_REFCURSOR;
+  v_id NUMBER;
+  v_name VARCHAR2(250);
+  v_count NUMBER;
+  v_percent NUMBER;
+  v_mapping VARCHAR2(250);
+  v_start DATE;
+  v_end DATE;
+  v_total NUMBER := 0;
+  v_expected NUMBER := 0;
+BEGIN
+  PKG_EXEC_DASHBOARD.P_GET_CIA_ISSUE_NATURE(
+    P_DASHBOARD_TYPE => 'CIA',
+    P_ENTITY_ID => NULL,
+    P_START_DATE => DATE '2026-01-01',
+    P_END_DATE => DATE '2026-10-15',
+    IO_CURSOR => rc
+  );
+  LOOP
+    FETCH rc INTO v_id, v_name, v_count, v_percent,
+                  v_mapping, v_start, v_end;
+    EXIT WHEN rc%NOTFOUND;
+    v_total := v_total + NVL(v_count, 0);
+    DBMS_OUTPUT.PUT_LINE(v_id || ' ' || v_name || ': ' || v_count);
+  END LOOP;
+  CLOSE rc;
+
+  SELECT COUNT(DISTINCT observation_id)
+    INTO v_expected
+    FROM v_exec_kpi_lifecycle
+   WHERE record_type = 'ISSUE'
+     AND issue_eligible = 1
+     AND issue_identified_on >= DATE '2026-01-01'
+     AND issue_identified_on < DATE '2026-10-16';
+
+  DBMS_OUTPUT.PUT_LINE('Nature categories total = ' || v_total);
+  DBMS_OUTPUT.PUT_LINE('Existing IAS issue total = ' || v_expected);
+  IF v_total <> v_expected THEN
+    RAISE_APPLICATION_ERROR(-20109, 'Nature categories do not reconcile to CIA Issue Identified.');
+  END IF;
+  DBMS_OUTPUT.PUT_LINE('MATCH');
+END;
