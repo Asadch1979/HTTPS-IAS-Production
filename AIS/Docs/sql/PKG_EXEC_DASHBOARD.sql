@@ -1352,22 +1352,24 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    (s.reporting_1, s.reporting_2, s.reporting_3,
                     s.reporting_4, s.reporting_5, s.reporting_6))
       ),
+      completed_plan_ids AS
+      (
+        SELECT DISTINCT e.plan_id
+          FROM engagement_scope e
+         WHERE e.plan_id IS NOT NULL
+           AND e.period_id = P_AUDIT_PERIOD_ID
+           AND (e.status = 14 OR EXISTS
+               (SELECT 1 FROM t_au_plan_eng_log l
+                 WHERE l.e_id = e.eng_id AND l.status_id = 14))
+      ),
       coverage AS
       (
         SELECT COUNT(DISTINCT p.entity_id) AS planned_entities,
-               COUNT(DISTINCT CASE
-                 WHEN EXISTS
-                 (
-                   SELECT 1 FROM engagement_scope e
-                    WHERE e.plan_id = p.plan_id
-                      AND e.period_id = P_AUDIT_PERIOD_ID
-                      AND (e.status = 14 OR EXISTS
-                          (SELECT 1 FROM t_au_plan_eng_log l
-                            WHERE l.e_id = e.eng_id
-                              AND l.status_id = 14))
-                 )
-                 THEN p.entity_id END) AS audited_entities
+               COUNT(DISTINCT CASE WHEN cp.plan_id IS NOT NULL
+                                   THEN p.entity_id END)
+                 AS audited_entities
           FROM plan_scope p
+          LEFT JOIN completed_plan_ids cp ON cp.plan_id = p.plan_id
       ),
       delayed AS
       (
