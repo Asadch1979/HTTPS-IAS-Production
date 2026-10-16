@@ -31,7 +31,7 @@ namespace AIS.Models
                 "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
                 "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "settlementRatio", "criticalItems" },
                 "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio", "criticalItems" },
-                "CIA" => new[] { "openParas", "highRiskParas", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
+                "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
                 "RLM" => new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas", "settlementRatio", "criticalItems" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };

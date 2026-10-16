@@ -336,6 +336,17 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       IO_CURSOR OUT SYS_REFCURSOR);
 
 
+  -- CIA issues: both dates optional, all eligible history when omitted.
+  PROCEDURE P_GET_CIA_ISSUES(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE DEFAULT NULL,
+      P_END_DATE IN DATE DEFAULT NULL,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR);
+
 END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
@@ -938,8 +949,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   --
   -- Four activity counts use inclusive Start/End calendar dates
   -- and the tested Source A/O/C lifecycle business rules.
-  -- The ISSUE_RECTIFIED figure includes status 23 (dropped);
-  -- ISSUE_DROPPED is returned separately for transparency.
+  -- Issue Rectified excludes status 23 drops. ISSUE_DROPPED remains
+  -- an independent diagnostic of drops before audit conclusion.
   --
   -- Historical opening/closing balances and associated end-date risk,
   -- aging and cycle counts are DATE-BASED ESTIMATES (E). A historical
@@ -994,6 +1005,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
 
         NVL(SUM(CASE
           WHEN k.record_type = 'ISSUE'
+           AND k.observation_status IN (4, 9)
            AND k.issue_rectified_on >= V_FROM
            AND k.issue_rectified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_rectified,
@@ -1132,5 +1144,69 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       OR k.reporting_6 = P_ENTITY_ID)));
   END P_GET_KPI_LIFECYCLE;
 
+
+  -------------------------------------------------------------------
+  -- CIA-only ISSUE event counts. No dates = all eligible historical
+  -- observations within the authenticated authorized IAS scope.
+  -- Issue identified/rectified use their own event date and may differ.
+  -- Status 23 (Drop by Team Lead) is excluded from rectifications.
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_CIA_ISSUES(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE DEFAULT NULL,
+      P_END_DATE IN DATE DEFAULT NULL,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+    V_FROM DATE;
+    V_TO_EXCLUSIVE DATE;
+  BEGIN
+    IF V_TYPE <> 'CIA' THEN
+      RAISE_APPLICATION_ERROR(-20007, 'Issue count procedure requires CIA perspective.');
+    END IF;
+    IF (P_START_DATE IS NULL AND P_END_DATE IS NOT NULL)
+       OR (P_START_DATE IS NOT NULL AND P_END_DATE IS NULL)
+       OR (P_START_DATE IS NOT NULL AND
+           TRUNC(P_START_DATE) > TRUNC(P_END_DATE)) THEN
+      RAISE_APPLICATION_ERROR(-20008,
+        'CIA issue dates must both be omitted or form a valid Start/End Date range.');
+    END IF;
+    IF P_START_DATE IS NOT NULL THEN
+      V_FROM := TRUNC(P_START_DATE);
+      V_TO_EXCLUSIVE := TRUNC(P_END_DATE) + 1;
+    END IF;
+
+    OPEN IO_CURSOR FOR
+      SELECT NVL(SUM(CASE
+                 WHEN k.issue_eligible = 1
+                  AND k.issue_identified_on IS NOT NULL
+                  AND (V_FROM IS NULL OR
+                      (k.issue_identified_on >= V_FROM AND
+                       k.issue_identified_on < V_TO_EXCLUSIVE))
+                 THEN 1 ELSE 0 END), 0) AS issue_identified,
+             NVL(SUM(CASE
+                 WHEN k.observation_status IN (4, 9)
+                  AND k.issue_rectified_on IS NOT NULL
+                  AND (V_FROM IS NULL OR
+                      (k.issue_rectified_on >= V_FROM AND
+                       k.issue_rectified_on < V_TO_EXCLUSIVE))
+                 THEN 1 ELSE 0 END), 0) AS issue_rectified
+        FROM V_EXEC_KPI_LIFECYCLE k
+       WHERE k.record_type = 'ISSUE'
+         AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
+         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+         AND (P_REPORTING_OFFICE_ID IS NULL
+              OR k.entity_id = P_REPORTING_OFFICE_ID
+              OR P_REPORTING_OFFICE_ID IN
+                 (k.reporting_1, k.reporting_2, k.reporting_3,
+                  k.reporting_4, k.reporting_5, k.reporting_6))
+         AND (P_ENTITY_ID IS NULL OR
+              (k.entity_id = P_ENTITY_ID OR P_ENTITY_ID IN
+                 (k.reporting_1, k.reporting_2, k.reporting_3,
+                  k.reporting_4, k.reporting_5, k.reporting_6)));
+  END P_GET_CIA_ISSUES;
 
 END PKG_EXEC_DASHBOARD;

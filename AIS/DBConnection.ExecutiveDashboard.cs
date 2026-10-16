@@ -176,7 +176,54 @@ namespace AIS.Controllers
                     SettlementRatio = ExecutiveDecimal(reader, "SETTLEMENT_RATIO")
                 }, filters: filters);
             if (rows.Count != 1) throw new InvalidOperationException("Executive KPI cursor must contain one summary row.");
-            return rows[0];
+            var summary = rows[0];
+            // CIA issue events use a separate authorized, independently
+            // date-filtered procedure; current-state para KPIs are unchanged.
+            if (scope.DashboardType == "CIA" && filters?.View == "glance")
+            {
+                var issueCounts = GetExecutiveCiaIssues(scope, filters);
+                summary.IssueIdentified = issueCounts.identified;
+                summary.IssueRectified = issueCounts.rectified;
+            }
+            return summary;
+        }
+
+        private (long identified, long rectified) GetExecutiveCiaIssues(
+            ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "CIA")
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Issue counts require CIA scope.");
+            var dates = filters.Validate(); // null = all eligible issue history
+            using (var connection = DatabaseConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "PKG_EXEC_DASHBOARD.P_GET_CIA_ISSUES";
+                command.CommandType = CommandType.StoredProcedure;
+                command.BindByName = true;
+                GuardAgainstDynamicSql(command);
+                command.Parameters.Add("P_DASHBOARD_TYPE", OracleDbType.Varchar2).Value = scope.DashboardType;
+                command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
+                command.Parameters.Add("P_START_DATE", OracleDbType.Date).Value =
+                    dates == null ? (object)DBNull.Value : dates.StartDate;
+                command.Parameters.Add("P_END_DATE", OracleDbType.Date).Value =
+                    dates == null ? (object)DBNull.Value : dates.EndDate;
+                command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value =
+                    (object)filters.ReportingOfficeId ?? DBNull.Value;
+                command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) throw new InvalidOperationException("CIA issue cursor must contain one row.");
+                    var identified = ExecutiveCount(reader, "ISSUE_IDENTIFIED");
+                    var rectified = ExecutiveCount(reader, "ISSUE_RECTIFIED");
+                    if (reader.Read()) throw new InvalidOperationException("CIA issue cursor returned multiple rows.");
+                    return (identified, rectified);
+                }
+            }
         }
 
         internal List<ExecutiveRiskSummary> GetExecutiveRiskSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)

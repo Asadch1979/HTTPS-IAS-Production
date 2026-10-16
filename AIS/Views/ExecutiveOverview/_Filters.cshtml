@@ -10,7 +10,7 @@
         <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(requestedReport) ? requestedReport : Model.SelectedView.Reports.FirstOrDefault())" />
     }
     @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
-    @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports")
+    @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports" || (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance"))
     {
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
     <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" /></div>
@@ -32,4 +32,8 @@
 @if (Model.SelectedView.UseLifecycleKpis)
 {
     <p class="exec-note" id="exec-filter-note">Dates filter lifecycle KPIs only. Charts and observations show current data. N/A indicates unavailable history.</p>
+}
+else if (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance")
+{
+    <p class="exec-note" id="exec-filter-note">Dates are optional for CIA Issue Identified and Issue Rectified. Leave both blank to count all eligible historical issues. Other KPI cards, charts and critical observations show current-state information.</p>
 }

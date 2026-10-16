@@ -1,5 +1,5 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<div id="exec-kpis" class="exec-kpis @(Model.SelectedView.UseLifecycleKpis ? "exec-lifecycle-kpis" : "")" aria-label="Key performance indicators" data-lifecycle="@(Model.SelectedView.UseLifecycleKpis ? "true" : "false")" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
+<div id="exec-kpis" class="exec-kpis @(Model.SelectedView.UseLifecycleKpis ? "exec-lifecycle-kpis" : "")" aria-label="Key performance indicators" data-lifecycle="@(Model.SelectedView.UseLifecycleKpis ? "true" : "false")" data-cia-issues="@(Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance" ? "true" : "false")" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
 @if (Model.SelectedView.Sections.Contains("critical"))
 {
     <a class="exec-view-list" href="#exec-critical-panel">View list</a>
