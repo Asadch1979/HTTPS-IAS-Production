@@ -4,6 +4,12 @@
     if (!app) return;
     const $ = id => document.getElementById(`exec-${id}`);
     const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
+    const prettyDate = value => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return 'selected date';
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-GB',
+            {day: '2-digit', month: 'short', year: 'numeric', timeZone:'UTC'}).replaceAll(' ', '-');
+    };
     const number = value => Number(value).toLocaleString();
     const el = (tag, text, className) => {
         const node = document.createElement(tag);
@@ -103,7 +109,7 @@
     }
     function kpis(data) {
         const target = $('kpis'); if (!target) return; target.replaceChildren();
-        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled MTD', 'settledMtd'],
+        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'], ['Settled Month-to-Date', 'settledMtd'],
             ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const card = el('div', null, 'exec-kpi');
@@ -117,6 +123,8 @@
         const cards = document.createDocumentFragment();
         const openingQuality = data.historicalOpeningVerified ? 'verified' : data.openingEstimated ? 'estimated' : 'unavailable';
         const closingQuality = data.closingAsofVerified ? 'verified' : data.closingEstimated ? 'estimated' : 'unavailable';
+        const startLabel = prettyDate($('start-date')?.value);
+        const endLabel = prettyDate($('end-date')?.value);
         [['Opening Open Paras', 'openingOpenParas', openingQuality],
             ['Issue Identified', 'issueIdentified', 'period'],
             ['Issue Rectified', 'issueRectified', 'period'],
@@ -131,14 +139,20 @@
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
                 card.append(el('span', label), el('strong',
                     available ? (quality === 'estimated' ? '≈ ' : '') + number(data[key]) : 'N/A'));
-                const note = !available ? 'Historical value unavailable'
-                    : quality === 'period' ? 'Selected reporting period'
+                const note = key === 'openingOpenParas' ? `Position as on ${startLabel}`
+                    : key === 'closingOpenParas' ? `Position as on ${endLabel}`
+                    : !available ? 'Historical value unavailable'
+                    : quality === 'period' ? 'Selected Date Range'
                     : quality === 'estimated'
                         ? (key === 'over3ComplianceCycles' ? 'Estimated · current cycle data' : 'Estimated · historical changes not fully traced')
                         : 'Verified current snapshot';
                 card.append(el('small', note));
-                const base = ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? data.closingOpenParas : key === 'issueRectified' ? data.issueIdentified : data.openingOpenParas;
-                card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${key === 'issueRectified' ? 'issues identified' : ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
+                // Opening is a baseline, not its own 100% KPI. Rectification and
+                // identification may involve different issue cohorts in this interval.
+                if (key !== 'openingOpenParas' && key !== 'issueRectified') {
+                    const base = ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? data.closingOpenParas : data.openingOpenParas;
+                    card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
+                }
                 cards.append(card);
             });
         $('kpis').replaceChildren(cards);
@@ -156,7 +170,7 @@
             const tr = el('tr');
             [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
                 row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
-            const age = el('td', row.agingDays == null ? 'N/A' : `${(row.agingDays / 365.25).toFixed(1)} yrs`);
+            const age = el('td', row.agingDays == null ? 'N/A' : `${number(row.agingDays)} days`);
             if (row.agingDays != null) age.title = `${number(row.agingDays)} days`;
             tr.append(age, el('td', row.daysSinceLastMovement == null ? 'No movement' : number(row.daysSinceLastMovement)));
             const cell = el('td'), details = el('details');
