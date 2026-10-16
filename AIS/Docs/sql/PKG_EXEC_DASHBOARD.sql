@@ -352,7 +352,7 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
   -- CIA Audit Command Center (isolated; existing cursors unchanged).
   -- The selected audit period defines plan and issue-event dates.
   -- Pending response / delayed reports / active teams are CURRENT
-  -- states of engagements belonging to that selected audit period.
+  -- bank-wide scoped states across all audit periods.
   -------------------------------------------------------------------
   PROCEDURE P_GET_CIA_EXEC_KPIS(
       P_DASHBOARD_TYPE IN VARCHAR2,
@@ -1284,9 +1284,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- Fraud A1:        final observation statuses 8,9 with ANNEX=1,
   --                  ENTEREDDATE inside selected audit period dates.
   -- Awaiting reply:  T_AU_OBSERVATION.STATUS=2, current state,
-  --                  linked to engagements in the selected period.
+  --                  includes outstanding responses from prior years.
   -- Active teams:    distinct assigned teams in active stages 4..12,
-  --                  work commenced and audit not concluded.
+  --                  work commenced and audit not concluded, all years.
   --
   -- NOTE: Delay SLA and active stage range must be reconciled with
   -- actual IAS workflow before front-end publication. This procedure
@@ -1373,8 +1373,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       (
         SELECT COUNT(DISTINCT e.eng_id) AS delayed_audit_reports
           FROM engagement_scope e
-         WHERE e.period_id = P_AUDIT_PERIOD_ID
-           AND e.status BETWEEN 4 AND 13
+         WHERE e.status BETWEEN 4 AND 13
            AND e.audit_enddate + 15 < TRUNC(SYSDATE)
            AND NOT EXISTS
                (SELECT 1 FROM t_au_plan_eng_log l
@@ -1395,15 +1394,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT COUNT(DISTINCT o.id) AS awaiting_auditee_response
           FROM t_au_observation o
           JOIN engagement_scope e ON e.eng_id = o.engplanid
-         WHERE e.period_id = P_AUDIT_PERIOD_ID
-           AND o.status = 2
+         WHERE o.status = 2
       ),
       active_teams AS
       (
         SELECT COUNT(DISTINCT e.team_id) AS teams_conducting_audit
           FROM engagement_scope e
-         WHERE e.period_id = P_AUDIT_PERIOD_ID
-           AND e.team_id IS NOT NULL
+         WHERE e.team_id IS NOT NULL
            AND e.status BETWEEN 4 AND 12
            AND TRUNC(NVL(e.operation_startdate, e.audit_startdate))
                <= TRUNC(SYSDATE)
