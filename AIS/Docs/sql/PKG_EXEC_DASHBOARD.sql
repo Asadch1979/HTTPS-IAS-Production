@@ -1239,8 +1239,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -------------------------------------------------------------------
   -- CIA five executive cards. As-designed output and data-quality flags.
   --
-  -- Verified cohort for Plan Coverage: distinct planned entity IDs in
-  -- T_AU_PLAN_ENG linked to an audit plan and T_AU_PERIOD audit year.
+  -- Plan Coverage: distinct entity IDs in T_AU_PLAN (includes plans
+  -- awaiting engagement creation), linked to T_AU_PERIOD audit year.
   -- "Audited" requires status 14 and its recorded conclusion event.
   --
   -- A1: modern, post-conclusion source A paras only. Report the limited
@@ -1304,15 +1304,38 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                     (s.reporting_1, s.reporting_2, s.reporting_3,
                      s.reporting_4, s.reporting_5, s.reporting_6))
       ),
+      scoped_plans AS (
+          -- Approved pre-plans enter T_AU_PLAN before engagement creation.
+          -- Counting only T_AU_PLAN_ENG would understate Entities Planned.
+          SELECT p.id AS plan_id, p.entity_id
+          FROM t_au_plan p
+          JOIN t_au_period per ON per.auditperiodid = p.auditperiodid
+          LEFT JOIN v_exec_entity_scope s ON s.entity_id = p.entity_id
+          WHERE EXTRACT(YEAR FROM per.start_date) = P_AUDIT_YEAR
+            AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_typeid = P_ENTITY_TYPE_ID)
+            AND (P_AUDITED_BY_ID IS NULL OR p.auditedby = P_AUDITED_BY_ID)
+            AND (P_REPORTING_OFFICE_ID IS NULL
+                 OR p.entity_id = P_REPORTING_OFFICE_ID
+                 OR P_REPORTING_OFFICE_ID IN
+                    (s.reporting_1, s.reporting_2, s.reporting_3,
+                     s.reporting_4, s.reporting_5, s.reporting_6))
+            AND (P_ENTITY_ID IS NULL OR p.entity_id = P_ENTITY_ID
+                 OR P_ENTITY_ID IN
+                    (s.reporting_1, s.reporting_2, s.reporting_3,
+                     s.reporting_4, s.reporting_5, s.reporting_6))
+      ),
+      completed_plans AS (
+          SELECT DISTINCT e.plan_id, e.entity_id
+          FROM scoped_engagements e
+          WHERE e.status = 14 AND e.concluded_on IS NOT NULL
+      ),
       plan_counts AS (
-          SELECT COUNT(DISTINCT CASE WHEN plan_id IS NOT NULL THEN entity_id END)
-                   AS entities_planned,
-                 COUNT(DISTINCT CASE
-                    WHEN plan_id IS NOT NULL AND status = 14
-                         AND concluded_on IS NOT NULL THEN entity_id
-                    END) AS entities_audited
-          FROM scoped_engagements
-          WHERE EXTRACT(YEAR FROM start_date) = P_AUDIT_YEAR
+          SELECT COUNT(DISTINCT p.entity_id) AS entities_planned,
+                 COUNT(DISTINCT CASE WHEN cp.plan_id IS NOT NULL
+                                     THEN p.entity_id END) AS entities_audited
+          FROM scoped_plans p
+          LEFT JOIN completed_plans cp
+            ON cp.plan_id = p.plan_id AND cp.entity_id = p.entity_id
       ),
       fraud_counts AS (
           SELECT COUNT(DISTINCT k.com_id) AS detected_a1
@@ -1356,7 +1379,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
              p.entities_audited,
              ROUND(100 * p.entities_audited /
                    NULLIF(p.entities_planned, 0), 2) AS audit_plan_coverage_pct,
-             'PROVISIONAL_PLAN_ENTITY_COHORT' AS plan_metric_status,
+             'PROVISIONAL_PLAN_MASTER_PENDING_CANCELLED_STATUS_REVIEW' AS plan_metric_status,
              CAST(NULL AS NUMBER) AS delayed_audit_reports,
              'NOT_VERIFIED_REPORT_ISSUE_DATE_AND_SLA' AS delayed_report_metric_status,
              f.detected_a1 AS fraud_detected_a1_paras,
