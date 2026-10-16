@@ -13,7 +13,7 @@ This update responds to exported Report A–E PDFs captured on 16-Oct-2026 and t
 - Web Reports A–E use unified dark-green/neutral styling, semantic good/poor color for regional rankings, compact neutral source-estimate note, and the collapsed **IAS Settlement Attribution and Reconciliation** table showing Compliance/Audit/Unknown only.
 - Report A: grouped annual columns for Settled and Added with Outstanding as a separate-axis line; summary alongside on wide screens.
 - Report B: label GM Field Offices **Field Audit Division**, Other Field Offices **Management Audit Division** for presentation only (underlying Oracle classifications unchanged).
-- Report C: GM-summary table derived from returned SUBTOTAL rows; region detail retains GM group headers without repeating GM column and puts the subtotal in Region Name.
+- Report C: GM-summary table derived from returned SUBTOTAL rows; region detail retains GM group headers without repeating GM column and puts the subtotal in Region Name. Report B/C detail rows sort by descending outstanding within each Oracle group, preserving subtotals/grand total.
 - Report D: green TOP / red BOTTOM; captions show outstanding and total. Reference-line benchmark is fetched from the authorized Report C `TOTAL` for identical filters. Do not hardcode screenshot 54.25%.
 - Report E: settlement percentage appended.
 - Hide all-zero Unrated risk column in B/C. Settlement percentage uses neutral in-cell scale, not invented performance targets.
