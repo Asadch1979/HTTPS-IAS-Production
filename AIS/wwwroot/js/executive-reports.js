@@ -231,7 +231,24 @@
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
     exportCsvButton.addEventListener('click', exportCsv);
-    exportPrintButton.addEventListener('click', () => { if (loadedReport) window.print(); });
+    exportPrintButton.addEventListener('click', async () => {
+        if (!loadedReport) return;
+        const snapshot = loadedReport;
+        exportPrintButton.disabled = true;
+        try {
+            const response = await fetch(snapshot.pdfUrl, {credentials:'same-origin', cache:'no-store'});
+            if (!response.ok || !(response.headers.get('content-type') || '').includes('application/pdf'))
+                throw new Error('PDF export was unavailable. Check session and report API permissions.');
+            if (loadedReport !== snapshot) return;
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url; link.download = `IAS_Report_${snapshot.id}_${snapshot.start}_to_${snapshot.end}.pdf`;
+            document.body.append(link); link.click(); link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (error) { $('status').textContent = error.message || 'Unable to export report PDF.'; }
+        finally { exportPrintButton.disabled = !loadedReport; }
+    });
     function invalidate() {
         request?.abort(); ++version; loadedReport = null; setExportReady(false);
         $('report-panel')?.setAttribute('hidden',''); app.setAttribute('aria-busy','false');
@@ -280,19 +297,31 @@
             if (!result.data || !Array.isArray(result.data.rows)) throw new Error('The report response is incomplete.');
             if (current !== version) return;
             const cautions = $('report-cautions');
-            if (result.historicalBalancesEstimated) cautions.append(node('p','Historical balances are estimates and must not be treated as certified results.'));
-            if (result.currentOrganizationMapping) cautions.append(node('p','Historical activity is presented using the current authorized organizational portfolio and hierarchy.'));
-            if (result.settlementAttributionEstimated) cautions.append(node('p','Settlement attribution is estimated. Unknown attribution remains included; see settlement attribution details below.'));
-            cautions.append(node('p','Reopenings, resettlements and initially closed additions are not yet measured. The Oracle package returns placeholder zeros for these fields; they are shown as Not measured.'));
-            if (result.data.settlementMethod) cautions.append(node('p',result.data.settlementMethod));
-            if (result.data.auditorBasis) cautions.append(node('p',`Auditor basis: ${result.data.auditorBasis}`));
-            render(selection.value,result.data.rows);
+            // Replace the old six-paragraph cream disclaimer with one quiet,
+            // accurate data note. Estimates must still not appear certified.
+            cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
+            let benchmark = null;
+            if (selection.value === 'D') {
+                // Read overall benchmark from the same authorized Field Audit source.
+                // Never hardcode the 54.25% observed in one reference screenshot.
+                try {
+                    const benchmarkResponse = await fetch(`${root.dataset.apiUrl}GetReportC?${query}`,
+                        {signal:request.signal,credentials:'same-origin',cache:'no-store'});
+                    if (benchmarkResponse.ok) {
+                        const benchmarkJson = await benchmarkResponse.json();
+                        benchmark = benchmarkJson.data?.rows?.find(total)?.settlementPercentage ?? null;
+                    }
+                } catch (error) { if (error.name === 'AbortError') throw error; }
+            }
+            if (current !== version) return;
+            render(selection.value,result.data.rows,benchmark);
             loadedReport = {
                 id: selection.value,
                 title: $('report-title').textContent,
                 period: $('report-period').textContent,
                 start: query.get('startDate'),
-                end: query.get('endDate')
+                end: query.get('endDate'),
+                pdfUrl: `${root.dataset.apiUrl}GetReport${selection.value}?${query}&format=pdf`
             };
             setExportReady(true);
             $('status').textContent = `Report ${selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
