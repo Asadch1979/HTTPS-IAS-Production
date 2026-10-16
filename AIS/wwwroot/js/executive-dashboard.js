@@ -5,6 +5,7 @@
     const $ = id => document.getElementById(`exec-${id}`);
     const lifecycle = $('kpis')?.dataset.lifecycle === 'true';
     const ciaIssues = $('kpis')?.dataset.ciaIssues === 'true';
+    const ciaCommandCenter = app.classList.contains('cia-dashboard');
     const prettyDate = value => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return 'selected date';
         const [year, month, day] = value.split('-').map(Number);
@@ -116,12 +117,14 @@
     }
     function kpis(data) {
         const target = $('kpis'); if (!target) return; target.replaceChildren();
+        if (ciaCommandCenter) $('cia-high-risk').textContent = data.highRiskParas == null ? 'N/A' : number(data.highRiskParas);
         [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const card = el('div', null, 'exec-kpi');
-            card.append(el('span', label), el('strong', number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
+            if (ciaCommandCenter) card.dataset.kpiKey = key;
+            card.append(el('span', label), el('strong', ciaCommandCenter && data[key] == null ? 'N/A' : number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
             if (ciaIssues && ['issueIdentified', 'issueRectified'].includes(key)) {
                 const dates = new FormData($('filters'));
                 card.append(el('small', dates.get('startDate') && dates.get('endDate')
@@ -266,6 +269,11 @@
             $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;
             if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
+            if (ciaCommandCenter) {
+                const asOf = $('as-of'), now = new Date();
+                asOf.dateTime = now.toISOString();
+                asOf.textContent = now.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+            }
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();

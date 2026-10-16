@@ -1,0 +1,56 @@
+/* Phase 1: only the CIA command center. Shared views and reports retain their theme. */
+.cia-dashboard { --cia-navy:#122d47; --cia-teal:#147d92; color:var(--cia-navy); background:#f3f6fa; padding:24px; border-radius:16px; }
+.cia-dashboard .org-header { padding:24px; border-radius:12px; background:var(--cia-navy); color:#fff; align-items:center; }
+.cia-dashboard .cia-heading h1 { color:#fff; font-size:30px; font-weight:700; margin:6px 0 10px; }
+.cia-dashboard .cia-heading p { margin:5px 0; }
+.cia-dashboard .cia-eyebrow { text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:700; }
+.cia-dashboard .cia-heading .cia-eyebrow { color:#9de3e7; }
+.cia-dashboard .cia-as-of { color:#d1dfe9; font-size:12px; }
+.cia-dashboard .org-button { color:var(--cia-navy); border-color:#bdccd9; background:#fff; }
+.cia-dashboard .exec-navigation { border-color:#ccd8e3; }
+.cia-dashboard .exec-navigation .org-button { background:transparent; }
+.cia-dashboard .exec-navigation .org-button[aria-current="page"] { color:var(--cia-teal); border-bottom-color:var(--cia-teal); }
+.cia-dashboard .exec-filters { flex-wrap:wrap; padding:16px; background:#fff; border:1px solid #dce4ec; border-radius:12px; }
+.cia-dashboard .exec-filters>div { flex:1 1 145px; }
+.cia-dashboard .exec-filters label { color:#42586d; }
+.cia-dashboard .exec-filters select,.cia-dashboard .exec-filters input[type="date"] { border-color:#bdccd9; color:var(--cia-navy); }
+.cia-dashboard #exec-refresh { color:#fff; background:var(--cia-teal); border-color:var(--cia-teal); }
+.cia-dashboard .org-status { color:#42586d; font-size:13px; }
+.cia-dashboard .cia-section-heading { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:26px 0 14px; }
+.cia-dashboard .cia-section-heading h2 { font-size:20px; font-weight:700; margin:0; color:var(--cia-navy); }
+.cia-dashboard .cia-section-heading>span { color:#526579; font-size:12px; }
+.cia-dashboard a,.cia-dashboard .exec-table summary { color:#116b7d; }
+.cia-dashboard .cia-priorities,.cia-dashboard .exec-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.cia-dashboard .exec-kpi,.cia-dashboard .exec-panel { border:1px solid #dce4ec; border-radius:12px; box-shadow:0 4px 14px #122d4709; }
+.cia-dashboard .exec-kpi { border-top:3px solid var(--cia-teal); padding:18px; color:var(--cia-navy); }
+.cia-dashboard .exec-kpi span { color:#42586d; font-size:13px; font-weight:600; }
+.cia-dashboard .exec-kpi strong { font-size:30px; font-variant-numeric:tabular-nums; }
+.cia-dashboard .exec-kpi small { color:#526579; font-size:12px; line-height:1.5; }
+.cia-dashboard .cia-unavailable { border-top-color:#aab9c7; }
+.cia-dashboard .cia-unavailable strong { color:#63768a; }
+.cia-dashboard .cia-high-risk,.cia-dashboard .exec-kpi[data-kpi-key="highRiskParas"] { border-top-color:#b42318; }
+.cia-dashboard .cia-high-risk strong,.cia-dashboard [data-kpi-key="highRiskParas"] strong { color:#b42318; }
+.cia-dashboard .cia-subheading { font-size:14px; font-weight:700; margin:22px 0 12px; }
+.cia-dashboard .exec-panel { min-width:0; padding:22px; }
+.cia-dashboard .exec-panel h2,.cia-dashboard .exec-panel h3 { color:var(--cia-navy); font-size:17px; margin:0 0 16px; }
+.cia-dashboard .cia-plan-gap { background:linear-gradient(135deg,#fff,#eaf3f6); }
+.cia-dashboard .cia-plan-gap p { font-size:13px; line-height:1.6; max-width:60ch; }
+.cia-dashboard .cia-na { font-size:36px; display:block; margin:18px 0; color:#63768a; }
+.cia-dashboard .exec-note { color:#526579; line-height:1.6; }
+.cia-dashboard .exec-fill { background:var(--cia-teal); }
+.cia-dashboard .exec-track { background:#e9f0f5; }
+.cia-dashboard .exec-table th { background:#edf3f8; color:var(--cia-navy); }
+.cia-dashboard .exec-table td,.cia-dashboard .exec-table th { border-bottom-color:#e0e7ef; }
+.cia-dashboard .exec-table tbody tr:nth-child(even) { background:#f8fafc; }
+.cia-dashboard .exec-data { color:#42586d; }
+.cia-dashboard .exec-data th,.cia-dashboard .exec-data td { padding:6px; }
+.cia-dashboard :focus-visible { outline:3px solid var(--cia-teal); outline-offset:3px; }
+@media(max-width:1100px) { .cia-dashboard .cia-priorities,.cia-dashboard .exec-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) {
+    .cia-dashboard { padding:12px; }
+    .cia-dashboard .org-header { padding:18px; align-items:flex-start; flex-direction:column; }
+    .cia-dashboard .cia-heading h1 { font-size:25px; }
+    .cia-dashboard .cia-priorities,.cia-dashboard .exec-kpis { grid-template-columns:1fr; }
+    .cia-dashboard .exec-filters>div { flex-basis:100%; }
+    .cia-dashboard .exec-panel { padding:16px; }
+}

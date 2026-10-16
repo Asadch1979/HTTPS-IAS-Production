@@ -54,6 +54,12 @@ namespace AIS.Models
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             views[0].UseLifecycleKpis = perspective == "TOP";
+            if (perspective == "CIA")
+            {
+                views[0].Title = "Command Center";
+                views[0].Partial = "_CiaCommandCenter";
+                views[0].Sections = new[] { "trend", "risk", "aging", "critical" };
+            }
             return views;
         }
 

@@ -1,0 +1,9 @@
+@{
+    // Retain the IAS header, branding, authorized navigation and script dependencies.
+    Layout = "_Layout";
+}
+@RenderBody()
+<link rel="stylesheet" href="~/css/cia-dashboard.css" asp-append-version="true" />
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}

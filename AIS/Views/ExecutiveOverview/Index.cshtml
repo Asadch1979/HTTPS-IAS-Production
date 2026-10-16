@@ -1,15 +1,23 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 @{
-    ViewData["Title"] = Model.SelectedView.Title + " · Executive Dashboard";
-    Layout = "_Layout";
+    var ciaCommandCenter = Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance";
+    ViewData["Title"] = ciaCommandCenter ? "Audit Command Center" : Model.SelectedView.Title + " · Executive Dashboard";
+    Layout = ciaCommandCenter ? "_CiaDashboardLayout" : "_Layout";
     var roleName = Model.DashboardType switch { "TOP" => "Top Management", "GROUP" => "Group Head", "CCO" => "Chief Compliance Officer", "RLM" => "Reporting Line Management", _ => "Chief Internal Auditor" };
     var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
-<section class="org exec" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
+<section class="org exec @(ciaCommandCenter ? "cia-dashboard" : "")" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
     <header class="org-header">
-        <div class="exec-title"><h1>@Model.SelectedView.Title <span>· @Model.ScopeLabel</span></h1><button type="button" class="exec-info" aria-label="About this view" title="@roleName · @Model.SelectedView.Description">i</button></div>
+        @if (ciaCommandCenter)
+        {
+            <div class="cia-heading"><p class="cia-eyebrow">IAS · Chief Internal Auditor</p><h1>Audit Command Center</h1><p>@Model.ScopeLabel</p><p class="cia-as-of">As of <time id="exec-as-of">awaiting data</time> · Current-state position</p></div>
+        }
+        else
+        {
+            <div class="exec-title"><h1>@Model.SelectedView.Title <span>· @Model.ScopeLabel</span></h1><button type="button" class="exec-info" aria-label="About this view" title="@roleName · @Model.SelectedView.Description">i</button></div>
+        }
         @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
     </header>
     @if (Model.IsSuperUser && Model.DashboardType == "GROUP")

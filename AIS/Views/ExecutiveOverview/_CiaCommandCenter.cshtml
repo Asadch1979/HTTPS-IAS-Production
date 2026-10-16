@@ -1,0 +1,38 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<section aria-labelledby="cia-executive-title">
+    <div class="cia-section-heading"><h2 id="cia-executive-title">Executive priorities</h2><a href="#exec-critical-panel">View critical observations ↓</a></div>
+    <div class="cia-priorities">
+        <article class="exec-kpi cia-unavailable"><span>Audit plan coverage</span><strong>N/A</strong><small>Not available · verified plan and coverage denominator required.</small></article>
+        <article class="exec-kpi cia-high-risk"><span>High-risk open</span><strong id="exec-cia-high-risk">N/A</strong><small>Current open paras rated high risk</small></article>
+        <article class="exec-kpi cia-unavailable"><span>Draft reports awaiting review</span><strong>N/A</strong><small>Not available · verified approval queue required.</small></article>
+        <article class="exec-kpi cia-unavailable"><span>Overdue remediation</span><strong>N/A</strong><small>Not available · verified remediation due dates required.</small></article>
+    </div>
+    <h2 class="cia-subheading">IAS executive KPIs</h2>
+    <div id="exec-kpis" class="exec-kpis" aria-label="IAS key performance indicators" data-lifecycle="false" data-cia-issues="true" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
+</section>
+<section aria-labelledby="cia-performance-title">
+    <div class="cia-section-heading"><h2 id="cia-performance-title">Audit performance</h2><span>Current settlement history</span></div>
+    <div class="exec-charts">
+        <article class="exec-panel cia-plan-gap"><p class="cia-eyebrow">Audit portfolio</p><h3>Audit plan execution</h3><strong class="cia-na">N/A</strong><p>Portfolio comparisons will be available after planned audits, completed audits and their authorized organizational scope are verified.</p><p class="exec-note">Settlement counts measure para remediation, not audit plan completion.</p></article>
+        <partial name="_Chart" model='@("trend")' />
+    </div>
+</section>
+<section aria-labelledby="cia-remediation-title">
+    <div class="cia-section-heading"><h2 id="cia-remediation-title">Risk &amp; remediation</h2><span>Current open position</span></div>
+    <p class="exec-note">The settlement trend includes high-risk settlements. Aging shows elapsed days; it does not establish a remediation deadline.</p>
+    <div class="exec-charts">
+        <partial name="_Chart" model='@("risk")' />
+        <partial name="_Chart" model='@("aging")' />
+    </div>
+</section>
+<section aria-labelledby="cia-attention-title">
+    <div class="cia-section-heading"><h2 id="cia-attention-title">Leadership attention</h2><span>Critical observations</span></div>
+    <p class="exec-note">Entities, risk, compliance cycles and age come from existing scoped IAS observations. Assigned action owners, approval actions and due dates are N/A until verified sources are implemented.</p>
+    <partial name="_Critical" />
+</section>
+<nav class="exec-next" aria-label="Explore CIA dashboard views">
+@foreach (var view in Model.Views.Where(v => v.Id != "glance"))
+{
+    <a class="org-button" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", Model.Filters.RouteValues(view.Id, Model.IsSuperUser ? Model.GroupRootId : null))">@view.Title</a>
+}
+</nav>
