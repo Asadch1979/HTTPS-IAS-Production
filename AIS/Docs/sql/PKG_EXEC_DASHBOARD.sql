@@ -1470,7 +1470,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         UNION ALL SELECT 9, 'MANAGEMENT_AUDIT', 'Management Audit' FROM dual
         UNION ALL SELECT 10, 'IS_AUDIT', 'IS Audit' FROM dual
       ),
-      identified AS
+      cia_issue_rows AS
       (
         SELECT k.observation_id, o.annex AS annex_id,
                o.v_cat_nature_id AS violation_sub_id,
@@ -1495,7 +1495,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    (k.reporting_1, k.reporting_2, k.reporting_3,
                     k.reporting_4, k.reporting_5, k.reporting_6))
       ),
-      matches AS
+      nature_matches AS
       (
         SELECT i.observation_id, m.category_code,
                ROW_NUMBER() OVER
@@ -1506,7 +1506,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                              WHEN 'ANNEX' THEN 2
                              ELSE 3 END,
                            m.source_id) AS match_rank
-          FROM identified i
+          FROM cia_issue_rows i
           JOIN t_ias_cia_issue_nature_map m
             ON m.is_active = 'Y'
            AND ((m.source_type = 'VIOLATION_SUB'
@@ -1516,18 +1516,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                 OR (m.source_type = 'AUDIT_PORTFOLIO'
                     AND m.source_id = i.audited_by_id))
       ),
-      classified AS
+      nature_classified AS
       (
         SELECT i.observation_id, m.category_code
-          FROM identified i
-          LEFT JOIN matches m
+          FROM cia_issue_rows i
+          LEFT JOIN nature_matches m
             ON m.observation_id = i.observation_id
            AND m.match_rank = 1
       ),
-      grouped AS
+      nature_grouped AS
       (
         SELECT category_code, COUNT(*) AS issue_count
-          FROM classified
+          FROM nature_classified
          WHERE category_code IS NOT NULL
          GROUP BY category_code
       ),
@@ -1536,7 +1536,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT COUNT(*) AS total_issues,
                NVL(SUM(CASE WHEN category_code IS NULL
                             THEN 1 ELSE 0 END), 0) AS unmapped_issues
-          FROM classified
+          FROM nature_classified
       )
       SELECT c.category_code, c.category_name, c.display_order,
              NVL(g.issue_count, 0) AS issue_count,
@@ -1545,7 +1545,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                   WHEN t.unmapped_issues > 0 THEN 'PARTIAL'
                   ELSE 'COMPLETE' END AS mapping_status
         FROM categories c
-        LEFT JOIN grouped g ON g.category_code = c.category_code
+        LEFT JOIN nature_grouped g ON g.category_code = c.category_code
         CROSS JOIN totals t
        ORDER BY c.display_order;
   END P_GET_CIA_ISSUE_NATURE;
