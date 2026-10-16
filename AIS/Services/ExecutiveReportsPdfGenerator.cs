@@ -84,8 +84,10 @@ namespace AIS.Services
                             new Rectangle(26, size.GetHeight() - 38, 22, 22), false);
                     Put(canvas, bold, 10, 54, size.GetHeight() - 29,
                         "ZTBL  |  INTERNAL AUDIT SYSTEM", new DeviceRgb(15, 92, 77));
-                    Put(canvas, font, 8, size.GetWidth() - 205, size.GetHeight() - 29,
-                        "Report " + reportId + "  |  " + Title(reportId), new DeviceRgb(100, 116, 139));
+                    var heading = "Report " + reportId + "  |  " + Title(reportId);
+                    var headingX = Math.Max(230, size.GetWidth() - 26 - font.GetWidth(heading, 8));
+                    Put(canvas, font, 8, headingX, size.GetHeight() - 29,
+                        heading, new DeviceRgb(100, 116, 139));
                     canvas.SetStrokeColor(new DeviceRgb(226, 232, 240))
                         .MoveTo(26, size.GetHeight() - 44).LineTo(size.GetWidth() - 26, size.GetHeight() - 44).Stroke();
                     canvas.MoveTo(26, 34).LineTo(size.GetWidth() - 26, 34).Stroke();
@@ -154,7 +156,7 @@ namespace AIS.Services
                 var gm = rows.Where(r => r.RowKind == "SUBTOTAL").ToList();
                 var total = rows.FirstOrDefault(r => r.RowKind == "TOTAL");
                 if (total != null) gm.Add(total);
-                AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false);
+                AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false, true);
                 html.Append("<h2>GM / region paras position</h2>");
                 AddPosition(html, rows, r => r.ItemName, true);
             }
@@ -187,7 +189,7 @@ namespace AIS.Services
         }
 
         private static void AddPosition(StringBuilder html, IList<ExecutiveReportRow> rows,
-            Func<ExecutiveReportRow,string> label, bool group)
+            Func<ExecutiveReportRow,string> label, bool group, bool gmSummary = false)
         {
             html.Append("<table><thead><tr><th class='left'>Office / Region</th>");
             foreach (var col in Position)
@@ -207,7 +209,7 @@ namespace AIS.Services
                 }
                 html.Append("<tr class='").Append(kind == "TOTAL" ? "total" : kind == "SUBTOTAL" ? "subtotal" : "")
                     .Append("'><td>").Append(H(kind == "TOTAL" ? "Grand total"
-                        : kind == "SUBTOTAL" ? "Subtotal · " + Family(r.GroupName)
+                        : kind == "SUBTOTAL" ? (gmSummary ? Family(r.GroupName) : "Subtotal · " + Family(r.GroupName))
                         : label(r))).Append("</td>");
                 foreach (var col in Position)
                     html.Append("<td class='num'>").Append(H(V(r, col.Key))).Append("</td>");
