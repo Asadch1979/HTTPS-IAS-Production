@@ -1341,7 +1341,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           SELECT COUNT(DISTINCT k.com_id) AS detected_a1
           FROM v_exec_kpi_lifecycle k
           JOIN ais_t_au_post_compliance p ON p.com_id = k.com_id
-          JOIN t_audit_checklist_annexure a ON a.id = p.annex
+          LEFT JOIN t_au_observation o ON o.id = k.observation_id
+          JOIN t_audit_checklist_annexure a ON a.id = NVL(p.annex, o.annex)
           JOIN t_au_period per ON per.auditperiodid = k.period_id
           WHERE k.record_type = 'PARA'
             AND k.source_ind = 'A'
