@@ -64,11 +64,16 @@ namespace AIS.Services
             // iText pdfHTML writes real searchable text and paginates tables;
             // nothing is rasterized or taken from a browser screenshot.
             using (var pdfWriter = new PdfWriter(baseStream))
-            using (var layout = HtmlConverter.ConvertToDocument(html, pdfWriter))
+            using (var pdfDocument = new PdfDocument(pdfWriter))
             {
-                // iText pdfHTML 5.x accepts PdfWriter; Document exposes its PdfDocument.
-                // Set the default page size before closing and laying out content.
-                layout.GetPdfDocument().SetDefaultPageSize(PageSize.A4.Rotate());
+                pdfDocument.SetDefaultPageSize(PageSize.A4.Rotate());
+                // The three-argument overload supports PdfDocument (unlike
+                // ConvertToDocument(html, pdfDocument), which binds to PdfWriter).
+                using (var layout = HtmlConverter.ConvertToDocument(
+                    html, pdfDocument, new ConverterProperties()))
+                {
+                    // Render report as searchable text rather than an image.
+                }
             }
             var basePdf = baseStream.ToArray();
             using var input = new MemoryStream(basePdf);
