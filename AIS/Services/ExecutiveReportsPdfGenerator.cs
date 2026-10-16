@@ -130,6 +130,7 @@ namespace AIS.Services
               tr { page-break-inside:avoid; break-inside:avoid; }
               .left { text-align:left; width:22%; overflow-wrap:break-word; }
               .num { text-align:right; white-space:nowrap; }
+              .group { page-break-after:avoid; break-after:avoid; }
               .group td { background:#eaf3f1; font-weight:bold; }
               .subtotal td { background:#f1f5f9; font-weight:bold; border-top:1pt solid #94a3b8; }
               .total td { background:#dcebe5; font-weight:bold; border-top:1.2pt solid #0f5c4d; }
