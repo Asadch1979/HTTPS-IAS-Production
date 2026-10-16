@@ -1067,8 +1067,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           SELECT 10, 'IS AUDIT' FROM dual UNION ALL
           SELECT 11, 'OTHER / UNCLASSIFIED' FROM dual
       ),
-      eligible AS (
-          SELECT DISTINCT k.observation_id,
+      eligible_raw AS (
+          SELECT k.observation_id,
                  TRIM(UPPER(NVL(ch.heading, ''))) AS checklist_heading
           FROM v_exec_kpi_lifecycle k
           JOIN t_au_observation o ON o.id = k.observation_id
@@ -1090,6 +1090,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                  OR P_ENTITY_ID IN
                     (k.reporting_1, k.reporting_2, k.reporting_3,
                      k.reporting_4, k.reporting_5, k.reporting_6))
+      ),
+      eligible AS (
+          -- Exactly one row per observation. If corrupt/multiple headings
+          -- exist, do not allocate it to two categories: use OTHER.
+          SELECT observation_id,
+                 CASE WHEN COUNT(DISTINCT NVL(checklist_heading, '<MISSING>')) = 1
+                      THEN MAX(checklist_heading)
+                      ELSE CAST(NULL AS VARCHAR2(500)) END AS checklist_heading
+          FROM eligible_raw
+          GROUP BY observation_id
       ),
       classified AS (
           SELECT observation_id,
