@@ -3,6 +3,7 @@ using AIS.Session;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 
 namespace AIS.Controllers
@@ -47,9 +48,16 @@ namespace AIS.Controllers
             return rows;
         }
 
+        // Branch risk only: IAS currently recognizes entity types 6 and 28.
+        // Query both types with scoped Oracle predicates; never label office
+        // or division rows as branches. Each set is independently capped,
+        // then the combined results retain the top 250 by exposure.
         internal List<RoleEntityHeatmapRow> GetRoleEntityHeatmap(
             ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters, int maxRows = 250)
-            => ReadRoleDashboardCursor("PKG_EXEC_DASHBOARD.P_GET_ROLE_ENTITY_HEATMAP", scope,
+        {
+            if (maxRows < 1 || maxRows > 500) throw new ArgumentException("Invalid row cap.");
+            List<RoleEntityHeatmapRow> ReadType(int entityTypeId) =>
+                ReadRoleDashboardCursor("PKG_EXEC_DASHBOARD.P_GET_ROLE_ENTITY_HEATMAP", scope,
                 r => new RoleEntityHeatmapRow
                 {
                     EntityId = RoleRequiredInt(r, "ENTITY_ID"),
@@ -63,7 +71,15 @@ namespace AIS.Controllers
                     AgedOver365 = RoleLong(r, "AGED_OVER_365"),
                     Over3Cycles = RoleLong(r, "OVER_3_CYCLES"),
                     HighRiskSharePct = RoleDecimal(r, "HIGH_RISK_SHARE_PCT")
-                }, auditPeriod, filters?.SelectBy == "entityType" ? filters.DimensionId : null, maxRows);
+                }, auditPeriod, entityTypeId, maxRows);
+            var rows = ReadType(6);
+            rows.AddRange(ReadType(28));
+            return rows.OrderByDescending(r => r.HighRisk)
+                .ThenByDescending(r => r.AgedOver365)
+                .ThenByDescending(r => r.OpenParas)
+                .ThenBy(r => r.EntityId)
+                .Take(maxRows).ToList();
+        }
 
         internal List<RoleUnitComparisonRow> GetRoleUnitComparison(ExecutiveDashboardScope scope, string auditPeriod)
             => ReadRoleDashboardCursor("PKG_EXEC_DASHBOARD.P_GET_ROLE_UNIT_COMPARISON", scope,
