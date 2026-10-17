@@ -15,5 +15,6 @@ namespace AIS.Models
         public bool CanViewOrganization { get; set; }
         public ExecutiveDashboardFilterRequest Filters { get; set; }
         public ExecutiveDashboardFilterOptions FilterOptions { get; set; }
+        public List<OrganizationNode> ComparisonEntities { get; set; } = new();
     }
 }

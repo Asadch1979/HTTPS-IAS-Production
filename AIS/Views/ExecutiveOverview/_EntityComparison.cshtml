@@ -1,0 +1,20 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<article class="exec-panel" data-entity-comparison>
+    <h2>@(Model.SelectedView.Id == "regional" ? "Branch Risk Heatmap & Regional Comparison" : "Departmental Performance")</h2>
+    <p>Each tile shows a separately authorized entity and its reporting descendants. Risk is the highest recorded open-para risk: High (red), Medium (amber), Low (teal), Unrated or No open paras. The high-risk share uses all open paras as its denominator. Tiles do not sum to a portfolio total.</p>
+    <p>Open, over-365-day and settled balances use current records. Settled month-to-date is activity in the current Oracle calendar month; settlement ratio is settled ÷ (open + settled).</p>
+    <p data-comparison-status role="status" aria-live="polite">@Model.ComparisonEntities.Count authorized entities. Load up to six at a time.</p>
+    <div class="exec-entity-grid">
+        @foreach (var entity in Model.ComparisonEntities)
+        {
+            var route = Model.Filters.RouteValues(Model.SelectedView.Id, Model.IsSuperUser ? Model.GroupRootId : null);
+            route["entityId"] = entity.EntityId;
+            <article class="exec-entity-tile" data-entity-id="@entity.EntityId" hidden>
+                <h3><a href="@Url.Action(Model.DashboardType, "ExecutiveOverview", route)">@entity.EntityName</a></h3>
+                <p data-entity-values>Not loaded</p>
+            </article>
+        }
+    </div>
+    @if (Model.ComparisonEntities.Any()) { <button type="button" class="org-button" data-load-entities>Load comparisons</button> }
+    else { <p>No matching entities in this authorized selection. Choose a parent office to compare its subordinate entities.</p> }
+</article>

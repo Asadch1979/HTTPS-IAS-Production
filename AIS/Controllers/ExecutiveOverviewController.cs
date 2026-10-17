@@ -90,6 +90,11 @@ namespace AIS.Controllers
                     return StatusCode(403);
                 }
                 var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
+                var root = database.GetExecutiveDashboardRoot(scope);
+                var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
+                if (!regional) views.RemoveAll(v => v.Id == "regional");
+                if (regional && view == "glance") view = "regional";
+                filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;
@@ -116,6 +121,7 @@ namespace AIS.Controllers
                     Groups = groups,
                     Filters = filters,
                     FilterOptions = options,
+                    ComparisonEntities = view == "regional" ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
             }

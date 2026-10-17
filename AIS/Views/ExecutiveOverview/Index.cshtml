@@ -7,7 +7,9 @@
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
-<section class="org exec" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
+@if (Model.ComparisonEntities.Any()) { <link rel="stylesheet" href="~/css/executive-entity-comparison.css" asp-append-version="true" /> }
+@if (Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" /> }
+<section class="org exec @(Model.SelectedView.Id == "regional" ? "exec-regional" : "")" id="executive-dashboard" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
     <header class="org-header">
         <div class="exec-title"><h1>@Model.SelectedView.Title <span>· @Model.ScopeLabel</span></h1><button type="button" class="exec-info" aria-label="About this view" title="@roleName · @Model.SelectedView.Description">i</button></div>
         @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
@@ -43,5 +45,6 @@
     else
     {
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+        @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
     }
 }

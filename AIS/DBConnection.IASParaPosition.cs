@@ -19,7 +19,7 @@ namespace AIS.Controllers
             var rows = new List<IASParaPositionModel>();
             using var con = DatabaseConnection();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "R_IAS_PARA_POSITION";
+            cmd.CommandText = "pkg_rpt.R_IAS_PARA_POSITION";
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.BindByName = true;
             GuardAgainstDynamicSql(cmd);

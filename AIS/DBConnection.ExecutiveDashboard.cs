@@ -92,6 +92,29 @@ namespace AIS.Controllers
         private static bool IsExecutiveDashboardType(string type)
             => type == "TOP" || type == "GROUP" || type == "CCO" || type == "CIA";
 
+        internal OrganizationNode GetExecutiveDashboardRoot(ExecutiveDashboardScope scope)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "RLM" && scope.DashboardType != "GROUP") return null;
+            var rootId = scope.DashboardType == "GROUP" ? scope.GroupRootId : scope.SessionEntityId;
+            if (!rootId.HasValue) return null;
+            return GetOrganizationNodes(rootId).SingleOrDefault(n => n.EntityId == rootId && !n.HasTypeConflict);
+        }
+
+        internal List<OrganizationNode> GetExecutiveComparisonEntities(ExecutiveDashboardScope scope,
+            ExecutiveDashboardFilterRequest filters, ExecutiveDashboardFilterOptions options, bool branches)
+        {
+            ValidateExecutiveDashboardSession(scope);
+            RequireExecutiveGroupScope(scope);
+            var rootId = filters.EntityId ?? filters.ReportingOfficeId ?? scope.EntityId;
+            if (!rootId.HasValue) return new List<OrganizationNode>();
+            NarrowExecutiveDashboardScope(scope, rootId);
+            var allowed = options.Entities.Select(e => e.Id).ToHashSet();
+            return GetOrganizationNodes(rootId).Where(n => !n.HasTypeConflict && allowed.Contains(n.EntityId) &&
+                (branches ? n.EntityTypeId == 6 : n.ParentEntityId == rootId))
+                .OrderBy(n => n.EntityName).ToList();
+        }
+
         private void RequireExecutiveGroupRoot(int rootId)
         {
             if (rootId <= 0 || !GetOrganizationNodes(rootId).Any(n => n.EntityId == rootId && n.EntityTypeId == 18 && !n.HasTypeConflict))
