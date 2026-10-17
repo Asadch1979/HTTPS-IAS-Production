@@ -120,3 +120,14 @@
 @media print {
   #exec-reports[data-active-report] .exec-report-panel {background:#fff}
 }
+
+/* Super User: a compact authorized perspective switcher, not a root bypass. */
+.exec .exec-super-switcher {
+  display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:10px 12px;
+  border-radius:10px;background:#eaf0f4;margin-bottom:16px
+}
+.exec .exec-super-switcher>span {font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:#435969;font-weight:750;margin-right:6px}
+.exec .exec-super-switcher a {padding:7px 11px;border-radius:7px;font-size:.78rem;font-weight:650;text-decoration:none;color:#324f66;border:1px solid transparent}
+.exec .exec-super-switcher a:hover {background:#fff;border-color:#c8d5df}
+.exec .exec-super-switcher a[aria-current=page] {background:#173a52;color:#fff;border-color:#173a52}
+.exec .exec-super-switcher a:focus-visible {outline:3px solid #147d92;outline-offset:2px}
