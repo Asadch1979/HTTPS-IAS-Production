@@ -13,6 +13,8 @@ namespace AIS.Models
         public int? GroupRootId { get; set; }
         public List<OrganizationNode> Groups { get; set; }
         public bool CanViewOrganization { get; set; }
+        public bool RoleOracleEnabled { get; set; }
+        public bool IsManagementPerspective { get; set; }
         public ExecutiveDashboardFilterRequest Filters { get; set; }
         public ExecutiveDashboardFilterOptions FilterOptions { get; set; }
         public List<OrganizationNode> ComparisonEntities { get; set; } = new();
