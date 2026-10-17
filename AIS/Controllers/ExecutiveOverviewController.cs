@@ -36,6 +36,50 @@ namespace AIS.Controllers
             this.configuration = configuration;
         }
 
+        // Historical IAS menu entries may point to /ExecutiveOverview/Index.
+        // This is a route-only entry point: resolve from the authenticated IAS
+        // context, then reuse the existing perspective/page/API permission gates.
+        [HttpGet("")]
+        [HttpGet("Index")]
+        public IActionResult Index()
+        {
+            var user = session.GetUser();
+            if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
+                return RedirectToAction("Index", "Login");
+
+            if (user.UserRoleID == 1)
+                return session.IsSuperUser() ? RedirectToAction(nameof(TOP)) : StatusCode(403);
+
+            if (user.UserRoleID == 3) return RedirectToAction(nameof(CIA));
+            if (user.UserRoleID == 38) return RedirectToAction(nameof(CCO));
+
+            // TOP/GROUP users must have one explicit, verified role-to-page
+            // mapping. Do not select a bank-wide view based on entity posting.
+            var mappings = configuration.GetSection("ExecutiveDashboard:RoleMappings")
+                .Get<ExecutiveDashboardRoleMapping[]>() ?? Array.Empty<ExecutiveDashboardRoleMapping>();
+            var matches = mappings.Where(m => m != null && m.RoleId == user.UserRoleID).ToList();
+            if (matches.Count > 1) return StatusCode(403);
+            if (matches.Count == 1)
+            {
+                var m = matches[0];
+                var type = m.DashboardType?.Trim().ToUpperInvariant();
+                if (m.PagePath == "/ExecutiveOverview/TOP" && type == "TOP")
+                    return RedirectToAction(nameof(TOP));
+                if (m.PagePath == "/ExecutiveOverview/GROUP" && type == "GROUP")
+                    return RedirectToAction(nameof(GROUP));
+                return StatusCode(403);
+            }
+
+            // Reporting Line Management is not a bank-wide fallback.
+            // Require the same IAS organization page grant used by /RLM.
+            if (user.UserEntityID.GetValueOrDefault() <= 0) return StatusCode(403);
+            permissions.EnsurePermissionsCached(user);
+            var rlmPage = pageIds.ResolvePageId("/Dashboard/entity_wise_obs");
+            if (rlmPage <= 0 || !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(rlmPage))
+                return StatusCode(403);
+            return RedirectToAction(nameof(RLM));
+        }
+
         [HttpGet("TOP")]
         public IActionResult TOP(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("TOP", entityId, groupRootId, view, filters);
         [HttpGet("GROUP")]
