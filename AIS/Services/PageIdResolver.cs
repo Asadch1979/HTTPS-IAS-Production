@@ -290,6 +290,7 @@ namespace AIS.Services
                 ["/Reports/consolidated_outstanding_paras_pdf"] = 970107,
                 ["/Reports/monitoring_of_para_settlement"] = 249,
                 ["/Reports/IAS_PARA_POSITION"] = 1000400,
+                ["/ExecutiveOverview/AuditParaSnap"] = AIS.Models.AuditParaSnapPolicy.PageId,
                 ["/OutstandingParasPdf/GeneratePdf"] = 970107,
                 ["/OutstandingParasPdf/LoadEntities"] = 970107,
                 ["/OutstandingParasPdf/GeneratePdfByEngId"] = 970107,

@@ -1,0 +1,16 @@
+/* Scoped only to Audit Para Snap; existing executive/report palettes remain intact. */
+.exec.exec-snap { --exec-tone:#305779;--exec-tint:#eaf2fa;--exec-border:#a8c4dd;background:#f4f7fb;border:1px solid #cedce9;border-radius:14px;padding:20px; }
+.exec-snap .org-header { padding:6px 0 18px; }
+.exec-snap .snap-eyebrow { margin:0 0 6px;color:#5b7690;font-size:11px;letter-spacing:.13em;font-weight:700; }
+.exec-snap .snap-period-toolbar { display:flex;align-items:end;gap:14px;flex-wrap:wrap;background:#e8f0f8;border:1px solid #b8cde0;border-radius:10px;padding:18px; }
+.exec-snap .snap-period-toolbar label { display:block;color:#305779;font-weight:600;margin-bottom:6px; }
+.exec-snap .snap-period-toolbar input { padding:8px 10px;border:1px solid #a8bfd4;border-radius:6px;background:#fff;min-height:38px; }
+.exec-snap .snap-period-toolbar small { color:#536d84;align-self:center; }
+.exec-snap .snap-selected-period { color:#305779;font-weight:600;padding:10px 0;margin:0; }
+.exec-snap .snap-organization { padding:14px 0;margin:0;border:0;background:transparent; }
+.exec-snap .exec-lifecycle-kpis .exec-kpi { border-top-color:#a8c4dd;background:#fff; }
+.exec-snap .snap-quality { font-size:12px;color:#667789; }
+.exec-snap .snap-estimated { color:#92630e; }
+.exec-snap .snap-bucket-table { width:100%; }
+.exec-snap .snap-bucket-table td:last-child { text-align:right; }
+@media(max-width:600px) { .exec-snap .snap-period-toolbar>div { flex:1 1 100%; } .exec-snap .snap-period-toolbar input { width:100%; } }

@@ -1,0 +1,25 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    ViewData["Title"] = "CIA Audit Command Center · Executive Dashboard";
+    Layout = "_Layout";
+}
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
+<section class="org exec" id="executive-dashboard" data-perspective="CIA" data-view="command"
+         data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="CIA" aria-label="CIA Audit Command Center">
+    <header class="org-header">
+        <div class="exec-title"><h1>CIA Audit Command Center <span>· @Model.ScopeLabel</span></h1></div>
+        <a class="org-button" href="@Url.Action("AuditParaSnap","ExecutiveOverview")">Audit Para Snap →</a>
+        @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index","OrganizationStructure")">Organization Structure</a> }
+    </header>
+    <partial name="_Filters" model="Model" />
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading CIA Command Center…</p>
+    <div id="exec-results" class="exec-view-command">
+        <partial name="_CiaCommandCenter" model="Model" />
+    </div>
+    <noscript><p>Enable JavaScript to load CIA Command Center data.</p></noscript>
+</section>
+@section Scripts {
+    <script src="~/js/cia-command-center.js" asp-append-version="true"></script>
+}

@@ -1,4 +1,5 @@
 using AIS.Models;
+using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -62,6 +63,13 @@ namespace AIS.Controllers
                 });
             if (items.Count != 1)
                 throw new InvalidOperationException("CIA command KPI cursor must return exactly one row.");
+            if (!_configuration.GetValue<bool>("RoleDashboards:CiaWorkflowDefinitionsVerified"))
+            {
+                items[0].DelayedAuditReports = null;
+                items[0].TeamsConductingAudit = null;
+                items[0].WorkflowVerificationNote = "N/A until the reporting deadline and conducting-audit stages are approved against the live IAS workflow. Source proxy: audit end +15 days; conducting stages 4–11 (excludes draft/final reporting).";
+            }
+            else items[0].WorkflowVerificationNote = "Approved reporting deadline and conducting-audit stages; current operational position.";
             return items[0];
         }
 

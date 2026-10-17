@@ -87,12 +87,38 @@ namespace AIS.Controllers
         [HttpGet("CCO")]
         public IActionResult CCO(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CCO", entityId, groupRootId, view, filters);
         [HttpGet("CIA")]
-        public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CIA", entityId, groupRootId, view, filters);
+        public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "command", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+        {
+            if (view != "command")
+            {
+                if (!ModelState.IsValid || groupRootId.HasValue || !AuditParaSnapPolicy.Views.Contains(view))
+                    return BadRequest("Unknown CIA bookmark or invalid filters.");
+                try
+                {
+                    filters ??= new ExecutiveDashboardFilterRequest();
+                    filters.EntityId=entityId; filters.View=view;
+                    filters.Validate();
+                    var values=filters.RouteValues(view,null);
+                    var report=Request.Query["report"].ToString().ToUpperInvariant();
+                    if (view=="reports" && new[]{"A","B","C","D","E"}.Contains(report)) values["report"]=report;
+                    return RedirectToAction(nameof(AuditParaSnap),values);
+                }
+                catch (ArgumentException exception) { return BadRequest(exception.Message); }
+            }
+            // CIA has its own IAS period state. Snap date state stays on Snap URLs.
+            filters ??= new ExecutiveDashboardFilterRequest();
+            filters.StartDate=null; filters.EndDate=null;
+            return Dashboard("CIA",entityId,groupRootId,"command",filters);
+        }
+        [HttpGet("AuditParaSnap")]
+        public IActionResult AuditParaSnap(int? entityId=null,string view="glance",
+            [FromQuery] ExecutiveDashboardFilterRequest filters=null)
+            => Dashboard("CIA",entityId,null,view,filters,auditParaSnap:true);
         [HttpGet("RLM")]
         public IActionResult RLM(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
             => Dashboard("RLM", entityId, groupRootId, view, filters);
 
-        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view, ExecutiveDashboardFilterRequest filters)
+        private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view, ExecutiveDashboardFilterRequest filters, bool auditParaSnap=false)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -104,7 +130,8 @@ namespace AIS.Controllers
             try
             {
                 filters ??= new ExecutiveDashboardFilterRequest();
-                if (((requestedType == "TOP" && view == "glance") || view == "reports") &&
+                if (auditParaSnap) AuditParaSnapPolicy.ApplyDefault(filters);
+                if (!auditParaSnap && ((requestedType == "TOP" && view == "glance") || view == "reports") &&
                     string.IsNullOrEmpty(filters.StartDate) && string.IsNullOrEmpty(filters.EndDate))
                 {
                     // The reference Annual Field Audit report compares four calendar years.
@@ -124,19 +151,23 @@ namespace AIS.Controllers
                 filters.EntityId = entityId;
                 filters.View = view;
                 filters.Validate();
+                if (auditParaSnap) AuditParaSnapPolicy.Validate(filters);
                 if (requestedType == "RLM" && (filters.DimensionId.HasValue || filters.SelectBy != "entityType"))
                     return BadRequest("Reporting Line Management supports Reporting Office and Entity only.");
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
-                var scope = database.ResolveExecutiveDashboardScope(requestedType, groupRootId, allowGroupSelection: superUser);
+                var scope = auditParaSnap ? database.ResolveAuditParaSnapScope() :
+                    database.ResolveExecutiveDashboardScope(requestedType, groupRootId, allowGroupSelection: superUser);
                 if (!superUser) permissions.EnsurePermissionsCached(user);
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
+                if (auditParaSnap && pageId != AuditParaSnapPolicy.PageId) return StatusCode(403);
                 if (pageId <= 0 || (superUser ? !permissions.HasViewPermission(user, pageId) :
                     !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(pageId)))
                 {
                     LogDenial("PagePermission", user, requestedType);
                     return StatusCode(403);
                 }
-                var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
+                var views = auditParaSnap ? AuditParaSnapPolicy.Definitions() : ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
+                if (!auditParaSnap && requestedType=="CIA") views.RemoveAll(v => v.Id != "command");
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
                 // Divisional/Group RLM management eligibility requires an explicitly
@@ -152,7 +183,7 @@ namespace AIS.Controllers
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
                 if (!management) views.RemoveAll(v => v.Id == "management");
                 // Preserve explicitly chosen views; only replace the initial default.
-                if (view == "glance" && !Request.Query.ContainsKey("view"))
+                if (!auditParaSnap && view == "glance" && !Request.Query.ContainsKey("view"))
                 {
                     if (scope.DashboardType == "CIA") view = "command";
                     else if (regional) view = "regional";
@@ -190,7 +221,7 @@ namespace AIS.Controllers
                     : new System.Collections.Generic.List<OrganizationNode>();
                 ViewData["TopMenu"] = menus.GetTopMenus();
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
-                return View("Index", new ExecutiveDashboardPageModel
+                return View(auditParaSnap ? "AuditParaSnap" : requestedType=="CIA" ? "CIA" : "Index", new ExecutiveDashboardPageModel
                 {
                     Views = views,
                     SelectedView = selectedView,
@@ -209,6 +240,8 @@ namespace AIS.Controllers
                     FilterOptions = options,
                     RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
                     CiaCommandEnabled = configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"),
+                    IsAuditParaSnap = auditParaSnap,
+                    AuditParaSnapEnabled = configuration.GetValue<bool>("RoleDashboards:AuditParaSnapEnabled"),
                     CiaPeriods = ciaPeriods,
                     SelectedCiaPeriodId = selectedCiaPeriod,
                     IsManagementPerspective = management,

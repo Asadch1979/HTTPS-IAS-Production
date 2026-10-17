@@ -34,6 +34,8 @@
         main.querySelector('[data-cia-kpi="planCoveragePct"]').textContent = decimal(data.planCoveragePct);
         main.querySelector('[data-cia-plan]').textContent =
             `${number(data.auditedEntities)} audited of ${number(data.plannedEntities)} planned entities`;
+        for (const note of main.querySelectorAll('[data-cia-workflow-note]'))
+            note.textContent = data.workflowVerificationNote || 'Workflow definitions require verification.';
         main.querySelector('[data-cia-as-of]').textContent =
             `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
@@ -62,6 +64,7 @@
             mapped += count;
         }
         if (seen.size !== known.size) throw new Error('A required nature-of-issue category is missing.');
+        if (mapped + unmapped !== identified) throw new Error('IAS category counts do not reconcile.');
 
         for (const item of rows) {
             const card = known.get(item.categoryCode);
@@ -107,6 +110,7 @@
         if (app.dataset.dashboardType) qs.set('dashboardType',app.dataset.dashboardType);
         if (app.dataset.groupRootId) qs.set('groupRootId',app.dataset.groupRootId);
         status.textContent = 'Loading CIA Command Center…';
+        clearValues('Loading selected IAS period…');
         app.setAttribute('aria-busy', 'true');
         try {
             const [kpis, categories] = await Promise.all([
@@ -122,6 +126,7 @@
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             status.textContent = 'CIA Command Center data unavailable: ' + error.message;
+            clearValues('N/A · ' + error.message);
             const quality = main.querySelector('[data-cia-mapping-status]');
             if (quality) {
                 quality.textContent = 'Issue classification unavailable';
@@ -130,6 +135,18 @@
         } finally {
             if (current === version) app.setAttribute('aria-busy', 'false');
         }
+    }
+    function clearValues(note) {
+        for (const field of main.querySelectorAll('[data-cia-kpi], [data-cia-category-count], [data-cia-total], [data-cia-mapped], [data-cia-unmapped-total], [data-cia-mapped-pct]'))
+            field.textContent = 'N/A';
+        for (const fill of main.querySelectorAll('[data-cia-category-fill]')) fill.style.width = '0%';
+        for (const label of main.querySelectorAll('[data-cia-category-share]')) label.textContent = note;
+        main.querySelector('[data-cia-plan]').textContent = note;
+        main.querySelector('[data-cia-as-of]').textContent = note;
+        main.querySelector('[data-cia-unmapped]').textContent = note;
+        const quality = main.querySelector('[data-cia-mapping-status]');
+        quality.textContent = note; quality.dataset.complete = 'false';
+        main.querySelector('[data-cia-nature-ring]').style.setProperty('--cia-mapped-percent','0%');
     }
     period.addEventListener('change', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');
@@ -142,6 +159,14 @@
     form.addEventListener('submit', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');
         if (hidden) hidden.value = period.value;
+    });
+    for (const [id,children] of [
+        ['exec-select-by',['exec-dimension','exec-office','exec-entity']],
+        ['exec-dimension',['exec-office','exec-entity']],
+        ['exec-office',['exec-entity']]
+    ]) document.getElementById(id)?.addEventListener('change', () => {
+        for (const child of children) document.getElementById(child)?.replaceChildren(new Option('All matching options',''));
+        form.requestSubmit();
     });
     load();
 })();

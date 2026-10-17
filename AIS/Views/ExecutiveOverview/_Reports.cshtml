@@ -2,7 +2,7 @@
 @{
     var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
-<section id="exec-reports" data-api-url="@Url.Content("~/api/ExecutiveReports/")" data-perspective="@Model.DashboardType" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
+<section id="exec-reports" data-api-url="@Url.Content(Model.IsAuditParaSnap ? "~/api/AuditParaSnap/" : "~/api/ExecutiveReports/")" data-perspective="@Model.DashboardType" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
     @if (Model.SelectedView.Reports.Length == 0)
     {
         <p class="exec-empty">Executive reports are not yet supported for Reporting Line Management.</p>
