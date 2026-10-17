@@ -426,13 +426,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                               IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
-  
-  
+
+
     OPEN IO_CURSOR FOR
       SELECT COUNT(*) AS total_cases,
-             
+
              NVL(SUM(p.is_open), 0) AS open_paras,
-             
+
              NVL(SUM(CASE
                        WHEN p.is_open = 1 AND p.risk_id = 1 THEN
                         1
@@ -440,17 +440,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                         0
                      END),
                  0) AS high_risk_paras,
-             
+
              NVL(SUM(p.is_zero_cycle), 0) AS zero_cycle_paras,
-             
+
              NVL(SUM(p.is_over_3_cycle), 0) AS over_3_cycle_paras,
-             
+
              NVL(SUM(p.is_over_1_year), 0) AS over_1_year_paras,
-             
+
              NVL(SUM(p.is_critical), 0) AS critical_items,
-             
+
              NVL(SUM(p.is_settled), 0) AS settled_total,
-             
+
              NVL(SUM(CASE
                        WHEN p.is_settled = 1 AND
                             p.setteled_on >= TRUNC(SYSDATE, 'MM') AND
@@ -460,7 +460,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                         0
                      END),
                  0) AS settled_mtd,
-             
+
              ROUND(CASE
                      WHEN NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0) = 0 THEN
                       0
@@ -469,16 +469,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       (NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0)) * 100
                    END,
                    2) AS settlement_ratio
-      
+
         FROM V_EXEC_PARA_BASE p
-      
+
        WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
              AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
              AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
              AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
                   P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
                                             p.reporting_4,p.reporting_5,p.reporting_6))
-            
+
          AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
                    (p.entity_id = P_ENTITY_ID OR
@@ -488,7 +488,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                     p.reporting_4 = P_ENTITY_ID OR
                     p.reporting_5 = P_ENTITY_ID OR
                     p.reporting_6 = P_ENTITY_ID)));
-  
+
   END P_GET_KPI_SUMMARY;
 
   -------------------------------------------------------------------
@@ -503,10 +503,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
-  
-  
+
+
     OPEN IO_CURSOR FOR
-    
+
       WITH risk_categories AS
        (SELECT 1 AS risk_id, 'High' AS risk_name, 1 AS display_order
           FROM dual
@@ -527,18 +527,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                   0
                END AS risk_id,
                COUNT(*) AS para_count
-        
+
           FROM V_EXEC_PARA_BASE p
-        
+
          WHERE p.is_open = 1
-              
+
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
              AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
              AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
              AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
                   P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
                                             p.reporting_4,p.reporting_5,p.reporting_6))
-              
+
            AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
                    (p.entity_id = P_ENTITY_ID OR
@@ -548,7 +548,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                     p.reporting_4 = P_ENTITY_ID OR
                     p.reporting_5 = P_ENTITY_ID OR
                     p.reporting_6 = P_ENTITY_ID)))
-        
+
          GROUP BY CASE
                     WHEN p.risk_id IN (1, 2, 3) THEN
                      p.risk_id
@@ -563,11 +563,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           FROM risk_categories r
           LEFT JOIN risk_data d
             ON d.risk_id = r.risk_id)
-      
+
       SELECT risk_id,
              risk_name,
              para_count,
-             
+
              ROUND(CASE
                      WHEN SUM(para_count) OVER() = 0 THEN
                       0
@@ -575,10 +575,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       para_count / SUM(para_count) OVER() * 100
                    END,
                    2) AS percentage
-      
+
         FROM result_data
        ORDER BY display_order;
-  
+
   END P_GET_RISK_SUMMARY;
 
   -------------------------------------------------------------------
@@ -593,58 +593,58 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
-  
-  
+
+
     OPEN IO_CURSOR FOR
-    
+
       WITH age_categories AS
        (SELECT '0_90' AS bucket_code,
                '0-90 DAYS' AS bucket_name,
                1 AS display_order
           FROM dual
-        
+
         UNION ALL
         SELECT '91_180', '91-180 DAYS', 2
           FROM dual
-        
+
         UNION ALL
         SELECT '181_365', '181-365 DAYS', 3
           FROM dual
-        
+
         UNION ALL
         SELECT '1_3_YEARS', '1-3 YEARS', 4
           FROM dual
-        
+
         UNION ALL
         SELECT 'OVER_3_YEARS', 'OVER 3 YEARS', 5
           FROM dual
-        
+
         UNION ALL
         SELECT 'UNKNOWN', 'UNKNOWN', 6
           FROM dual),
       age_data AS
        (SELECT p.aging_bucket,
-               
+
                COUNT(*) AS para_count,
-               
+
                SUM(CASE
                      WHEN p.risk_id = 1 THEN
                       1
                      ELSE
                       0
                    END) AS high_risk_count
-        
+
           FROM V_EXEC_PARA_BASE p
-        
+
          WHERE p.is_open = 1
-              
+
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
              AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
              AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
              AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
                   P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
                                             p.reporting_4,p.reporting_5,p.reporting_6))
-              
+
            AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
                    (p.entity_id = P_ENTITY_ID OR
@@ -654,20 +654,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                     p.reporting_4 = P_ENTITY_ID OR
                     p.reporting_5 = P_ENTITY_ID OR
                     p.reporting_6 = P_ENTITY_ID)))
-        
+
          GROUP BY p.aging_bucket)
-      
+
       SELECT a.bucket_code,
              a.bucket_name,
              NVL(d.para_count, 0) AS para_count,
              NVL(d.high_risk_count, 0) AS high_risk_count
-      
+
         FROM age_categories a
         LEFT JOIN age_data d
           ON d.aging_bucket = a.bucket_name
-      
+
        ORDER BY a.display_order;
-  
+
   END P_GET_AGING_SUMMARY;
 
   -------------------------------------------------------------------
@@ -682,37 +682,37 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                 IO_CURSOR        OUT SYS_REFCURSOR) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
   BEGIN
-  
-  
+
+
     ---------------------------------------------------------------
     -- CCO and CIA require finer cycle breakup
     ---------------------------------------------------------------
     IF V_TYPE IN ('CCO', 'CIA') THEN
-    
+
       OPEN IO_CURSOR FOR
-      
+
         WITH cycle_categories AS
          (SELECT 'ZERO' AS bucket_code,
                  'Cycle 0' AS bucket_name,
                  1 AS display_order
             FROM dual
-          
+
           UNION ALL
           SELECT 'ONE', 'Cycle 1', 2
             FROM dual
-          
+
           UNION ALL
           SELECT 'TWO', 'Cycle 2', 3
             FROM dual
-          
+
           UNION ALL
           SELECT 'THREE', 'Cycle 3', 4
             FROM dual
-          
+
           UNION ALL
           SELECT 'FOUR_FIVE', 'Cycle 4-5', 5
             FROM dual
-          
+
           UNION ALL
           SELECT 'OVER_FIVE', 'Over 5 Cycles', 6
             FROM dual),
@@ -731,20 +731,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    ELSE
                     'OVER_FIVE'
                  END AS bucket_code,
-                 
+
                  COUNT(*) AS para_count,
-                 
+
                  SUM(CASE
                        WHEN p.risk_id = 1 THEN
                         1
                        ELSE
                         0
                      END) AS high_risk_count
-          
+
             FROM V_EXEC_PARA_BASE p
-          
+
            WHERE p.is_open = 1
-                
+
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
              AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
              AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
@@ -773,39 +773,39 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       ELSE
                        'OVER_FIVE'
                     END)
-        
+
         SELECT c.bucket_code,
                c.bucket_name,
                NVL(d.para_count, 0) AS para_count,
                NVL(d.high_risk_count, 0) AS high_risk_count
-        
+
           FROM cycle_categories c
           LEFT JOIN cycle_data d
             ON d.bucket_code = c.bucket_code
-        
+
          ORDER BY c.display_order;
-    
+
       ---------------------------------------------------------------
       -- TOP and GROUP use simpler management breakup
       ---------------------------------------------------------------
     ELSE
-    
+
       OPEN IO_CURSOR FOR
-      
+
         WITH cycle_categories AS
          (SELECT 'ZERO' AS bucket_code,
                  'No Compliance / Cycle 0' AS bucket_name,
                  1 AS display_order
             FROM dual
-          
+
           UNION ALL
           SELECT 'ONE', 'Cycle 1', 2
             FROM dual
-          
+
           UNION ALL
           SELECT 'TWO_THREE', 'Cycle 2-3', 3
             FROM dual
-          
+
           UNION ALL
           SELECT 'OVER_THREE', 'Over 3 Cycles', 4
             FROM dual),
@@ -820,27 +820,27 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    ELSE
                     'OVER_THREE'
                  END AS bucket_code,
-                 
+
                  COUNT(*) AS para_count,
-                 
+
                  SUM(CASE
                        WHEN p.risk_id = 1 THEN
                         1
                        ELSE
                         0
                      END) AS high_risk_count
-          
+
             FROM V_EXEC_PARA_BASE p
-          
+
            WHERE p.is_open = 1
-                
+
              AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
              AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
              AND (P_AUDITED_BY_ID IS NULL OR p.audited_by = P_AUDITED_BY_ID)
              AND (P_REPORTING_OFFICE_ID IS NULL OR p.entity_id = P_REPORTING_OFFICE_ID OR
                   P_REPORTING_OFFICE_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
                                             p.reporting_4,p.reporting_5,p.reporting_6))
-                
+
              AND ((V_TYPE IN ('TOP', 'CCO', 'CIA') AND P_ENTITY_ID IS NULL)
                OR (P_ENTITY_ID IS NOT NULL AND
                    (p.entity_id = P_ENTITY_ID OR
@@ -850,7 +850,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                     p.reporting_4 = P_ENTITY_ID OR
                     p.reporting_5 = P_ENTITY_ID OR
                     p.reporting_6 = P_ENTITY_ID)))
-          
+
            GROUP BY CASE
                       WHEN p.com_cycle = 0 THEN
                        'ZERO'
@@ -861,20 +861,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       ELSE
                        'OVER_THREE'
                     END)
-        
+
         SELECT c.bucket_code,
                c.bucket_name,
                NVL(d.para_count, 0) AS para_count,
                NVL(d.high_risk_count, 0) AS high_risk_count
-        
+
           FROM cycle_categories c
           LEFT JOIN cycle_data d
             ON d.bucket_code = c.bucket_code
-        
+
          ORDER BY c.display_order;
-    
+
     END IF;
-  
+
   END P_GET_CYCLE_SUMMARY;
 
 
@@ -1457,7 +1457,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- Mapping priority handles potentially overlapping match sources.
   -- An unmapped total is returned to prevent misleading zero charts.
   -------------------------------------------------------------------
-  PROCEDURE P_GET_CIA_ISSUE_NATURE(
+ PROCEDURE P_GET_CIA_ISSUE_NATURE(
       P_DASHBOARD_TYPE IN VARCHAR2,
       P_ENTITY_ID IN NUMBER,
       P_AUDIT_PERIOD_ID IN NUMBER,
@@ -1489,7 +1489,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         UNION ALL SELECT 9, 'MANAGEMENT_AUDIT', 'Management Audit' FROM dual
         UNION ALL SELECT 10, 'IS_AUDIT', 'IS Audit' FROM dual
       ),
-      identified AS
+      cia_issue_rows AS
       (
         SELECT k.observation_id, o.annex AS annex_id,
                o.v_cat_nature_id AS violation_sub_id,
@@ -1514,7 +1514,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    (k.reporting_1, k.reporting_2, k.reporting_3,
                     k.reporting_4, k.reporting_5, k.reporting_6))
       ),
-      matches AS
+      nature_matches AS
       (
         SELECT i.observation_id, m.category_code,
                ROW_NUMBER() OVER
@@ -1525,7 +1525,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                              WHEN 'ANNEX' THEN 2
                              ELSE 3 END,
                            m.source_id) AS match_rank
-          FROM identified i
+          FROM cia_issue_rows i
           JOIN t_ias_cia_issue_nature_map m
             ON m.is_active = 'Y'
            AND ((m.source_type = 'VIOLATION_SUB'
@@ -1535,18 +1535,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                 OR (m.source_type = 'AUDIT_PORTFOLIO'
                     AND m.source_id = i.audited_by_id))
       ),
-      classified AS
+      nature_classified AS
       (
         SELECT i.observation_id, m.category_code
-          FROM identified i
-          LEFT JOIN matches m
+          FROM cia_issue_rows i
+          LEFT JOIN nature_matches m
             ON m.observation_id = i.observation_id
            AND m.match_rank = 1
       ),
-      grouped AS
+      nature_grouped AS
       (
         SELECT category_code, COUNT(*) AS issue_count
-          FROM classified
+          FROM nature_classified
          WHERE category_code IS NOT NULL
          GROUP BY category_code
       ),
@@ -1555,7 +1555,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT COUNT(*) AS total_issues,
                NVL(SUM(CASE WHEN category_code IS NULL
                             THEN 1 ELSE 0 END), 0) AS unmapped_issues
-          FROM classified
+          FROM nature_classified
       )
       SELECT c.category_code, c.category_name, c.display_order,
              NVL(g.issue_count, 0) AS issue_count,
@@ -1564,7 +1564,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                   WHEN t.unmapped_issues > 0 THEN 'PARTIAL'
                   ELSE 'COMPLETE' END AS mapping_status
         FROM categories c
-        LEFT JOIN grouped g ON g.category_code = c.category_code
+        LEFT JOIN nature_grouped g ON g.category_code = c.category_code
         CROSS JOIN totals t
        ORDER BY c.display_order;
   END P_GET_CIA_ISSUE_NATURE;
