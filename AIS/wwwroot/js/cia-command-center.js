@@ -38,35 +38,65 @@
             `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
     function renderNature(rows) {
-        if (rows.length !== 10) throw new Error('Issue nature must return exactly ten categories.');
-        const holder = main.querySelector('[data-cia-nature-bars]');
-        holder.replaceChildren();
-        const totals = rows[0], complete = rows.every(r =>
-            r.mappingStatus === 'COMPLETE' || r.mappingStatus === 'NO_ISSUES');
-        const identified = Number(totals.totalIssues || 0);
-        const unmapped = Number(totals.unmappedIssues || 0);
-        const mapped = rows.reduce((sum, r) => sum + Number(r.issueCount || 0), 0);
-        const quality = main.querySelector('[data-cia-mapping-status]');
-        quality.textContent = complete && mapped + unmapped === identified
-            ? `Classification verified · ${number(identified)} issues`
-            : `Partial mapping · ${number(unmapped)} unmapped of ${number(identified)} issues`;
-        quality.dataset.complete = String(complete && mapped + unmapped === identified);
-        const denominator = Math.max(identified, 1);
+        // Preserve the approved ten labels in Razor even when Oracle is disabled
+        // or fails. Render only verified numeric results from the CIA cursor.
+        if (rows.length !== 10) throw new Error('The Nature of Issue cursor did not return all ten categories.');
+        const cards = [...main.querySelectorAll('[data-cia-category]')];
+        if (cards.length !== 10) throw new Error('The CIA nature-of-issue design is incomplete.');
+        const known = new Map(cards.map(card => [card.dataset.ciaCategory, card]));
+        const seen = new Set();
+        const totals = rows[0];
+        const identified = Number(totals.totalIssues);
+        const unmapped = Number(totals.unmappedIssues);
+        if (!Number.isSafeInteger(identified) || identified < 0 || !Number.isSafeInteger(unmapped) ||
+            unmapped < 0 || unmapped > identified)
+            throw new Error('Invalid IAS issue-classification totals.');
+        let mapped = 0;
         for (const item of rows) {
-            const row = document.createElement('div'); row.className = 'cia-nature-row';
-            const label = document.createElement('span'); label.textContent = item.categoryName;
-            const track = document.createElement('div'); track.className = 'cia-nature-track';
-            const fill = document.createElement('span'); fill.className = 'cia-nature-fill';
-            fill.style.width = (Number(item.issueCount || 0) / denominator * 100).toFixed(2) + '%';
-            track.append(fill);
-            const value = document.createElement('strong'); value.textContent = number(item.issueCount);
-            row.append(label, track, value);
-            holder.append(row);
+            const card = known.get(item.categoryCode);
+            const count = Number(item.issueCount);
+            if (!card || seen.has(item.categoryCode) || !Number.isSafeInteger(count) || count < 0 ||
+                Number(item.totalIssues) !== identified || Number(item.unmappedIssues) !== unmapped)
+                throw new Error('IAS category mapping returned inconsistent or unknown rows.');
+            seen.add(item.categoryCode);
+            mapped += count;
         }
-        main.querySelector('[data-cia-unmapped]').textContent =
-            !complete || mapped + unmapped !== identified
-                ? `Only ${number(mapped)} mapped observations are classified; ${number(unmapped)} remain unmapped or require reconciliation. This is not a complete distribution.`
-                : 'All eligible issues are classified in the ten approved categories.';
+        if (seen.size !== known.size) throw new Error('A required nature-of-issue category is missing.');
+
+        for (const item of rows) {
+            const card = known.get(item.categoryCode);
+            const share = identified > 0 ? item.issueCount / identified * 100 : 0;
+            card.querySelector('[data-cia-category-count]').textContent = number(item.issueCount);
+            card.querySelector('[data-cia-category-fill]').style.width = Math.min(100, share).toFixed(2) + '%';
+            card.querySelector('[data-cia-category-share]').textContent =
+                identified > 0 ? share.toFixed(1) + '% of issues identified' : 'No identified issues';
+            card.setAttribute('aria-label', `${item.categoryName}: ${number(item.issueCount)} identified issues`);
+        }
+        const complete = rows.every(r => r.mappingStatus === 'COMPLETE' || r.mappingStatus === 'NO_ISSUES') &&
+            mapped + unmapped === identified && unmapped === 0;
+        const consistent = mapped + unmapped === identified;
+        const quality = main.querySelector('[data-cia-mapping-status]');
+        quality.textContent = !consistent
+            ? 'Classification totals require reconciliation'
+            : complete ? 'All issues categorized' :
+                'Partial mapping · ' + number(unmapped) + ' unmapped';
+        quality.dataset.complete = String(complete);
+        const pct = identified > 0 ? mapped / identified * 100 : null;
+        const ring = main.querySelector('[data-cia-nature-ring]');
+        ring.style.setProperty('--cia-mapped-percent', pct == null ? '0%' : Math.min(100,pct).toFixed(2) + '%');
+        ring.setAttribute('aria-label', pct == null ? 'No identified issues to classify' :
+            pct.toFixed(1) + ' percent of identified IAS issues assigned to an approved category');
+        main.querySelector('[data-cia-mapped-pct]').textContent = pct == null ? 'N/A' : pct.toFixed(1) + '%';
+        main.querySelector('[data-cia-total]').textContent = number(identified);
+        main.querySelector('[data-cia-mapped]').textContent = number(mapped);
+        main.querySelector('[data-cia-unmapped-total]').textContent = number(unmapped);
+        main.querySelector('[data-cia-unmapped]').textContent = !consistent
+            ? 'Category counts do not reconcile to the IAS identified-issue total; review the Oracle mapping.'
+            : unmapped > 0
+                ? `${number(unmapped)} issues remain unmapped. The bars exclude these records and must not be treated as a complete classification.`
+                : identified === 0
+                    ? 'No eligible issues were identified in the selected IAS audit period.'
+                    : 'All identified issues are assigned to one of the ten approved IAS categories.';
     }
     async function load() {
         if (!period.value) return;
@@ -92,6 +122,11 @@
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             status.textContent = 'CIA Command Center data unavailable: ' + error.message;
+            const quality = main.querySelector('[data-cia-mapping-status]');
+            if (quality) {
+                quality.textContent = 'Issue classification unavailable';
+                quality.dataset.complete = 'false';
+            }
         } finally {
             if (current === version) app.setAttribute('aria-busy', 'false');
         }
