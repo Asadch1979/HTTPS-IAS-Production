@@ -63,3 +63,16 @@
 @media(max-width:1400px){.exec.exec-regional .role-heatmap{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:1000px){.exec.exec-regional .exec-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.exec.exec-regional .role-heatmap{grid-template-columns:repeat(3,minmax(0,1fr))}.exec.exec-regional .exec-charts{grid-template-columns:1fr}}
 @media(max-width:620px){.exec.exec-regional .regional-hero{padding:17px}.exec.exec-regional .role-heatmap{grid-template-columns:repeat(2,minmax(0,1fr))}.exec.exec-regional .exec-kpis{grid-template-columns:1fr}.exec.exec-regional .regional-footer{display:block}}
+
+/* Preserve the same visual risk semantics in the legacy six-branch fallback,
+   without introducing additional Oracle calls while bulk cursors are disabled. */
+.exec.exec-regional .exec-entity-tile[data-risk=high]{background:#492431;border-color:#bd5867}
+.exec.exec-regional .exec-entity-tile[data-risk=medium]{background:#4a3524;border-color:#b68a4b}
+.exec.exec-regional .exec-entity-tile[data-risk=low]{background:#153a3c;border-color:#4e978f}
+.exec.exec-regional .exec-entity-tile[data-risk=unrated],.exec.exec-regional .exec-entity-tile[data-risk=none]{background:#263247;border-color:#67758e}
+.exec.exec-regional [data-entity-comparison] .exec-entity-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.exec.exec-regional [data-entity-comparison] .exec-entity-tile{min-height:136px}
+.exec.exec-regional [data-entity-comparison] .exec-entity-tile h3{font-size:.86rem}
+.exec.exec-regional [data-entity-comparison] .exec-entity-tile [data-entity-values]{font-size:.75rem;line-height:1.6;color:#cbd9e9}
+@media(max-width:900px){.exec.exec-regional [data-entity-comparison] .exec-entity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.exec.exec-regional [data-entity-comparison] .exec-entity-grid{grid-template-columns:1fr}}
