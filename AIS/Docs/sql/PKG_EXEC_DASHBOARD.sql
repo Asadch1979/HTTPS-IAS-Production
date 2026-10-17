@@ -375,6 +375,29 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       IO_CURSOR OUT SYS_REFCURSOR);
 
 
+
+  -- Audit Para Snap: non-KPI date-aware analysis only.
+  -- Nine KPIs MUST use the existing P_GET_KPI_LIFECYCLE.
+  PROCEDURE P_GET_SNAP_DISTRIBUTION(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_SNAP_CRITICAL(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      P_MAX_ROWS IN NUMBER DEFAULT 100,
+      IO_CURSOR OUT SYS_REFCURSOR);
+
   -- Additional read-only cursors for Group, Division, GM and Region views.
   -- P_ROOT_ENTITY_ID must be a server-authorized hierarchy root.
   PROCEDURE P_GET_ROLE_ENTITY_HEATMAP(
@@ -1304,7 +1327,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   --                  ENTEREDDATE inside selected audit period dates.
   -- Awaiting reply:  T_AU_OBSERVATION.STATUS=2, current state,
   --                  includes outstanding responses from prior years.
-  -- Active teams:    distinct assigned teams in active stages 4..12,
+  -- Active teams:    distinct assigned teams in active stages 4..11,
   --                  work commenced and audit not concluded, all years.
   --
   -- NOTE: Delay SLA and active stage range must be reconciled with
@@ -1407,6 +1430,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           JOIN engagement_scope e ON e.eng_id = o.engplanid
          WHERE o.annex = 1
            AND o.status IN (8, 9)
+           AND e.status = 14
+           AND e.period_id = P_AUDIT_PERIOD_ID
            AND o.entereddate >= V_FROM
            AND o.entereddate < V_TO_EXCLUSIVE
       ),
@@ -1422,7 +1447,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT COUNT(DISTINCT e.team_id) AS teams_conducting_audit
           FROM engagement_scope e
          WHERE e.team_id IS NOT NULL
-           AND e.status BETWEEN 4 AND 12
+           AND e.status BETWEEN 4 AND 11
            AND TRUNC(NVL(e.operation_startdate, e.audit_startdate))
                <= TRUNC(SYSDATE)
            AND NOT EXISTS
@@ -1491,13 +1516,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       ),
       cia_issue_rows AS
       (
-        SELECT k.observation_id, o.annex AS annex_id,
+        SELECT DISTINCT k.observation_id, o.annex AS annex_id,
                o.v_cat_nature_id AS violation_sub_id,
                k.audited_by_id
           FROM v_exec_kpi_lifecycle k
           JOIN t_au_observation o ON o.id = k.observation_id
          WHERE k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
+           AND k.period_id = P_AUDIT_PERIOD_ID
            AND k.issue_identified_on >= V_FROM
            AND k.issue_identified_on < V_TO_EXCLUSIVE
            AND (P_ENTITY_TYPE_ID IS NULL
@@ -1524,10 +1550,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                              WHEN 'VIOLATION_SUB' THEN 1
                              WHEN 'ANNEX' THEN 2
                              ELSE 3 END,
-                           m.source_id) AS match_rank
+                           m.source_id, m.category_code) AS match_rank
           FROM cia_issue_rows i
           JOIN t_ias_cia_issue_nature_map m
             ON m.is_active = 'Y'
+           AND m.category_code IN (SELECT category_code FROM categories)
            AND ((m.source_type = 'VIOLATION_SUB'
                  AND m.source_id = i.violation_sub_id)
                 OR (m.source_type = 'ANNEX'
@@ -1570,6 +1597,209 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   END P_GET_CIA_ISSUE_NATURE;
 
 
+
+
+  -------------------------------------------------------------------
+  -- Snap historical basis deliberately matches lifecycle estimates:
+  -- latest settlement/master state, current risk and organization.
+  -- T_AU_PARAS_STATUS_CHANGE_LOG has authorized events, but no proven
+  -- complete baseline; COM_STATUS is a workflow stage, not para status.
+  -- Historical cycle distributions are N/A, never today's distribution.
+  -- Historical risk/age/critical lists are explicitly Estimated.
+  -- Settlement trend uses qualifying lifecycle event timestamps.
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_SNAP_DISTRIBUTION(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+    V_FROM DATE;
+    V_TO DATE;
+    V_TODAY NUMBER;
+  BEGIN
+    IF V_TYPE <> 'CIA' THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Audit Para Snap requires CIA scope.');
+    END IF;
+    IF P_START_DATE IS NULL OR P_END_DATE IS NULL
+       OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
+       OR TRUNC(P_END_DATE) > TRUNC(SYSDATE)
+       OR MONTHS_BETWEEN(TRUNC(P_END_DATE, 'MM'), TRUNC(P_START_DATE, 'MM')) >= 1200 THEN
+      RAISE_APPLICATION_ERROR(-20046, 'Provide ordered non-future Snap dates spanning fewer than 1200 months.');
+    END IF;
+    V_FROM := TRUNC(P_START_DATE);
+    V_TO := TRUNC(P_END_DATE) + 1;
+    V_TODAY := CASE WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+
+    OPEN IO_CURSOR FOR
+      WITH scoped AS
+      (
+        SELECT k.*,
+               CASE WHEN V_TODAY = 1 THEN k.current_open
+                    WHEN k.para_added_on < V_TO
+                     AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
+                          OR k.report_concluded_on < V_TO)
+                     AND (k.para_status = 8 OR
+                          (k.para_status = 9 AND k.para_settled_on >= V_TO))
+                    THEN 1 ELSE 0 END AS snap_open,
+               TRUNC(P_END_DATE) - TRUNC(k.para_added_on) AS snap_age
+          FROM V_EXEC_KPI_LIFECYCLE k
+         WHERE k.record_type = 'PARA'
+           AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
+           AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+           AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
+                OR P_REPORTING_OFFICE_ID IN
+                   (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
+           AND (P_ENTITY_ID IS NULL OR k.entity_id = P_ENTITY_ID
+                OR P_ENTITY_ID IN
+                   (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
+      ),
+      categories AS
+      (
+        SELECT 'risk' dataset, '1' bucket_code, 'High' bucket_name, 1 ord FROM dual
+        UNION ALL SELECT 'risk','2','Medium',2 FROM dual
+        UNION ALL SELECT 'risk','3','Low',3 FROM dual
+        UNION ALL SELECT 'risk','0','Unrated',4 FROM dual
+        UNION ALL SELECT 'aging','1','0-90 days',1 FROM dual
+        UNION ALL SELECT 'aging','2','91-180 days',2 FROM dual
+        UNION ALL SELECT 'aging','3','181-365 days',3 FROM dual
+        UNION ALL SELECT 'aging','4','1-3 years',4 FROM dual
+        UNION ALL SELECT 'aging','5','Over 3 years',5 FROM dual
+        UNION ALL SELECT 'aging','0','Unknown date',6 FROM dual
+        UNION ALL SELECT 'cycle','0','Zero cycles',1 FROM dual
+        UNION ALL SELECT 'cycle','1','1-3 cycles',2 FROM dual
+        UNION ALL SELECT 'cycle','4','Over 3 cycles',3 FROM dual
+      ),
+      position_rows AS
+      (
+        SELECT 'risk' dataset,
+               CASE WHEN risk_id IN (1,2,3) THEN TO_CHAR(risk_id) ELSE '0' END bucket_code
+          FROM scoped WHERE snap_open = 1
+        UNION ALL
+        SELECT 'aging',
+               CASE WHEN snap_age IS NULL THEN '0' WHEN snap_age <= 90 THEN '1'
+                    WHEN snap_age <= 180 THEN '2' WHEN snap_age <= 365 THEN '3'
+                    WHEN snap_age <= 1095 THEN '4' ELSE '5' END
+          FROM scoped WHERE snap_open = 1
+        UNION ALL
+        SELECT 'cycle', CASE WHEN NVL(com_cycle,0) = 0 THEN '0'
+                            WHEN com_cycle <= 3 THEN '1' ELSE '4' END
+          FROM scoped WHERE snap_open = 1 AND V_TODAY = 1
+      ),
+      counts AS
+      (
+        SELECT dataset, bucket_code, COUNT(*) para_count FROM position_rows
+         GROUP BY dataset, bucket_code
+      ),
+      months AS
+      (
+        SELECT ADD_MONTHS(TRUNC(V_FROM, 'MM'), LEVEL - 1) month_start
+          FROM dual
+        CONNECT BY LEVEL <= MONTHS_BETWEEN(TRUNC(P_END_DATE,'MM'),TRUNC(V_FROM,'MM')) + 1
+      ),
+      results AS
+      (
+        SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
+               CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN CAST(NULL AS NUMBER)
+                    ELSE NVL(n.para_count,0) END para_count,
+               CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN 'N'
+                    WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+          FROM categories c LEFT JOIN counts n
+            ON n.dataset = c.dataset AND n.bucket_code = c.bucket_code
+        UNION ALL
+        SELECT 'trend', TO_CHAR(m.month_start,'YYYY-MM'), TO_CHAR(m.month_start,'YYYY-MM'),
+               ROW_NUMBER() OVER(ORDER BY m.month_start),
+               COUNT(s.com_id), 'E'
+          FROM months m LEFT JOIN scoped s
+            ON s.para_settled_on >= GREATEST(m.month_start,V_FROM)
+           AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
+         GROUP BY m.month_start
+      )
+      SELECT dataset, bucket_code, bucket_name, para_count, quality_code
+        FROM results ORDER BY dataset, ord;
+  END P_GET_SNAP_DISTRIBUTION;
+
+  PROCEDURE P_GET_SNAP_CRITICAL(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_START_DATE IN DATE,
+      P_END_DATE IN DATE,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      P_MAX_ROWS IN NUMBER DEFAULT 100,
+      IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
+    V_FROM DATE;
+    V_TO DATE;
+    V_TODAY NUMBER;
+  BEGIN
+    IF V_TYPE <> 'CIA' THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Audit Para Snap requires CIA scope.');
+    END IF;
+    IF P_START_DATE IS NULL OR P_END_DATE IS NULL
+       OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
+       OR TRUNC(P_END_DATE) > TRUNC(SYSDATE)
+       OR MONTHS_BETWEEN(TRUNC(P_END_DATE, 'MM'), TRUNC(P_START_DATE, 'MM')) >= 1200 THEN
+      RAISE_APPLICATION_ERROR(-20046, 'Provide ordered non-future Snap dates spanning fewer than 1200 months.');
+    END IF;
+    V_FROM := TRUNC(P_START_DATE);
+    V_TO := TRUNC(P_END_DATE) + 1;
+    V_TODAY := CASE WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+
+    IF P_MAX_ROWS IS NULL OR P_MAX_ROWS < 1 OR P_MAX_ROWS > 250
+       OR P_MAX_ROWS <> TRUNC(P_MAX_ROWS) THEN
+      RAISE_APPLICATION_ERROR(-20047, 'Snap critical limit must be 1..250.');
+    END IF;
+    OPEN IO_CURSOR FOR
+      WITH scoped AS
+      (
+        SELECT k.*,
+               CASE WHEN V_TODAY = 1 THEN k.current_open
+                    WHEN k.para_added_on < V_TO
+                     AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
+                          OR k.report_concluded_on < V_TO)
+                     AND (k.para_status = 8 OR
+                          (k.para_status = 9 AND k.para_settled_on >= V_TO))
+                    THEN 1 ELSE 0 END AS snap_open,
+               TRUNC(P_END_DATE) - TRUNC(k.para_added_on) AS snap_age
+          FROM V_EXEC_KPI_LIFECYCLE k
+         WHERE k.record_type = 'PARA'
+           AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
+           AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+           AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
+                OR P_REPORTING_OFFICE_ID IN
+                   (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
+           AND (P_ENTITY_ID IS NULL OR k.entity_id = P_ENTITY_ID
+                OR P_ENTITY_ID IN
+                   (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
+      ),
+      ranked AS
+      (
+        SELECT k.com_id, k.entity_id, e.name AS entity_name,
+               p.para_no, SUBSTR(p.gist_of_paras,1,1000) AS gist_of_paras,
+               CASE k.risk_id WHEN 1 THEN 'High' WHEN 2 THEN 'Medium'
+                              WHEN 3 THEN 'Low' ELSE 'Unrated' END risk_name,
+               k.snap_age AS aging_days,
+               CASE WHEN V_TODAY = 1 THEN k.com_cycle END AS com_cycle,
+               ROW_NUMBER() OVER(ORDER BY CASE WHEN k.risk_id = 1 THEN 0 ELSE 1 END,
+                                          k.snap_age DESC NULLS LAST,k.com_id) rn
+          FROM scoped k
+          LEFT JOIN t_auditee_entities e ON e.entity_id = k.entity_id
+          LEFT JOIN ais_t_au_post_compliance p ON p.com_id = k.com_id
+         WHERE k.snap_open = 1
+           AND (k.risk_id = 1 OR k.snap_age > 365
+                OR (V_TODAY = 1 AND NVL(k.com_cycle,0) > 3))
+      )
+      SELECT com_id, entity_id, entity_name, para_no, gist_of_paras,
+             risk_name, aging_days, com_cycle,
+             CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+        FROM ranked WHERE rn <= P_MAX_ROWS ORDER BY rn;
+  END P_GET_SNAP_CRITICAL;
 
   -- These calls are read-only. The application must derive the root
   -- from the logged-in user's authorized org hierarchy, never from

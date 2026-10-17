@@ -39,3 +39,8 @@ Update existing CIA procedures and add dated Snap non-KPI cursors to canonical P
 
 ## Continuation / usage
 Use supported get_usage_limits (primary window = 300 minutes); latest check 95% remaining. Prepare checkpoint at 5%; stop substantive work before 2%; commit all useful work. On continuation read this file, verify branch/HEAD, check allowance, and resume only the next incomplete task. Never deploy Oracle or merge.
+
+## SQL milestone
+Completed: corrected CIA A1 finalization/period, distinct mapped observations and deterministic approved-category matching; conducting proxy excludes reporting stages 12/13. Added P_GET_SNAP_DISTRIBUTION and P_GET_SNAP_CRITICAL only; existing lifecycle and other executive procedure bodies/signatures unchanged. New cursors validate dates/CIA scope, use consistent historical estimates, return N/A historical cycle breakdown, bound critical results, and cover selected months. Added manual verify_audit_para_snap.sql. Oracle compilation still pending (no live connection).
+Next exact step: add Snap-specific C# date policy, readers and exact page/API authorization; default all new APIs disabled until Oracle approval.
+Preceding commit: ba663c8.
