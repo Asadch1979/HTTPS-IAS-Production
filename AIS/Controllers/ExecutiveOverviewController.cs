@@ -92,8 +92,9 @@ namespace AIS.Controllers
                 var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
+                if (view == "regional" && !regional) return StatusCode(403);
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
-                if (regional && view == "glance") view = "regional";
+                if (regional && view == "glance" && !Request.Query.ContainsKey("view")) view = "regional";
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");

@@ -1,5 +1,8 @@
+var iasParaPositionRequest = null;
+var iasParaPositionVersion = 0;
     $(document).ready(function () {
         $('#entityTypeSelectionField').select2();
+        $('#entityTypeSelectionField, #periodStartModalField, #periodEndModalField').on('change', function () { clearIASParaPosition(); });
 
     });
 
@@ -38,6 +41,7 @@
         $('#totalHighRisk').text('0');
         $('#totalMediumRisk').text('0');
         $('#totalLowRisk').text('0');
+        $('[data-ias-total]').text('0');
     }
 
     function updateTotals(totals) {
@@ -52,13 +56,31 @@
         $('#totalHighRisk').text(formatNumber(totals.highRisk));
         $('#totalMediumRisk').text(formatNumber(totals.mediumRisk));
         $('#totalLowRisk').text(formatNumber(totals.lowRisk));
+        $('[data-ias-total]').each(function () {
+            $(this).text(formatNumber(totals[$(this).attr('data-ias-total')]));
+        });
     }
 
     function escapeCell(value) {
         return $('<span>').text(value == null ? '' : String(value)).html();
     }
 
+    function clearIASParaPosition() {
+        ++iasParaPositionVersion;
+        if (iasParaPositionRequest) { iasParaPositionRequest.abort(); iasParaPositionRequest = null; }
+        destroyDatatable('iasParaPositionGrid');
+        $('#iasParaPositionGrid tbody').empty();
+        $('#iasParaPositionSummary, #iasParaPositionTableContainer').prop('hidden', true);
+        $('#iasParaPositionError').addClass('d-none').text('');
+        $('#iasParaPositionStatus').text('Choose Search to load this selection.');
+        $('#iasParaPositionSearch').prop('disabled', false);
+        resetTotals();
+    }
+
     function entityTypeSelectionChangeEvent() {
+        clearIASParaPosition();
+        var currentVersion = iasParaPositionVersion;
+        var allEntities = $('#entityTypeSelectionField').val() === '-1';
         var errorBox = $('#iasParaPositionError').addClass('d-none').text('');
         var startDate = $('#periodStartModalField').val();
         var endDate = $('#periodEndModalField').val();
@@ -69,13 +91,10 @@
         }
         if ($('#entityTypeSelectionField').val() != 0) {
             var showReportingOffice = $('#iasParaPositionGrid').data('show-reporting-office') === true;
-            destroyDatatable('iasParaPositionGrid');
-
-            $('#iasParaPositionGrid tbody').empty();
-            resetTotals();
             $('#iasParaPositionSearch').prop('disabled', true);
 
-            $.ajax({
+            $('#iasParaPositionStatus').text('Loading IAS Para Position…');
+            iasParaPositionRequest = $.ajax({
                 url: g_asiBaseURL + "/ApiCalls/get_ias_para_position_for_entity_type_id",
                 type: "POST",
                 data: {
@@ -85,6 +104,16 @@
                 },
                 cache: false,
                 success: function (data) {
+                    if (currentVersion !== iasParaPositionVersion) return;
+                    if (!Array.isArray(data)) {
+                        errorBox.removeClass('d-none').text('Unexpected report response. Please try again.');
+                        $('#iasParaPositionStatus').text('Report unavailable.');
+                        return;
+                    }
+                    if (!data.length) {
+                        $('#iasParaPositionStatus').text('No data for the selected entity type and report period.');
+                        return;
+                    }
                     var totals = {
                         openingBalance: 0,
                         issueIdentified: 0,
@@ -129,6 +158,7 @@
                             ? '<td>' + escapeCell(record.reportinG_OFFICE) + '</td>'
                             : '';
 
+                        if (!allEntities) {
                         $('#iasParaPositionGrid tbody').append(
                             '<tr>' +
                             '<td>' + rowNumber + '</td>' +
@@ -148,15 +178,27 @@
                             '<td class="text-end">' + formatNumber(lowRisk) + '</td>' +
                             '</tr>'
                         );
+                        }
                     });
 
                     updateTotals(totals);
-                    initializeDataTable('iasParaPositionGrid');
+                    if (allEntities) {
+                        $('#iasParaSummaryPeriod').text(startDate + ' to ' + endDate);
+                        $('#iasParaPositionSummary').prop('hidden', false);
+                    } else {
+                        $('#iasParaPositionTableContainer').prop('hidden', false);
+                        initializeDataTable('iasParaPositionGrid');
+                    }
+                    $('#iasParaPositionStatus').text(allEntities ? 'Summary of all returned report figures.' : data.length + ' report rows loaded.');
                 },
-                error: function () {
+                error: function (_, status) {
+                    if (currentVersion !== iasParaPositionVersion || status === 'abort') return;
+                    $('#iasParaPositionStatus').text('Report unavailable.');
                     errorBox.removeClass('d-none').text('Unable to load IAS Para Position. Please try again.');
                 },
                 complete: function () {
+                    if (currentVersion !== iasParaPositionVersion) return;
+                    iasParaPositionRequest = null;
                     $('#iasParaPositionSearch').prop('disabled', false);
                 },
                 dataType: "json",

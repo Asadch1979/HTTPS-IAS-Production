@@ -1,6 +1,7 @@
 -- Oracle 18c. Compile revised V_EXEC_KPI_SRC_A first (F8), then this view.
 -- Legacy SRC_O/SRC_C are intentionally unchanged.
--- Status 14 audit conclusion is the only report cutoff for these KPIs.
+-- ISSUE uses the latest conclusion of the current cycle and its persisted flag.
+-- PARA source recognition remains unchanged in V_EXEC_KPI_SRC_A.
 -- Existing column names and order are preserved.
 -- One ISSUE per modern T_AU_OBSERVATION.ID (with matching engagement).
 -- One PARA per post-compliance COM_ID across the three recognized indicators.
@@ -10,9 +11,11 @@ CREATE OR REPLACE VIEW V_EXEC_KPI_LIFECYCLE AS
 WITH report_events AS
 (
     SELECT l.e_id AS eng_id,
-           MIN(l.created_on) AS concluded_on
+           MAX(l.created_on) AS concluded_on
       FROM t_au_plan_eng_log l
      WHERE l.status_id = 14
+       AND NOT EXISTS (SELECT 1 FROM t_au_plan_eng_log r
+                        WHERE r.e_id = l.e_id AND r.status_id = 10 AND r.id > l.id)
      GROUP BY l.e_id
 ),
 issues AS
@@ -38,7 +41,8 @@ issues AS
            o.entereddate AS issue_identified_on,
            CASE
              WHEN e.status = 14
-              AND o.status IN (4, 9, 23)
+              AND o.status IN (4, 9)
+              AND NVL(o.issue_rectified, 0) = 1
               AND o.stelled_on IS NOT NULL
               AND ev.concluded_on IS NOT NULL
               AND o.stelled_on < ev.concluded_on

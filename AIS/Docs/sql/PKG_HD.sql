@@ -1969,7 +1969,7 @@ create or replace package body PKG_HD is
                                end)
                             end) as c_stage,
                             o.status,
-                            NVL(o.issue_rectified, 0) AS issue_rectified,
+                            CASE WHEN o.status = 9 THEN NVL(o.issue_rectified, 0) ELSE 0 END AS issue_rectified,
                             o.final_para_no,
                             t.headings,
                             o.entereddate,
@@ -2113,6 +2113,14 @@ create or replace package body PKG_HD is
            where j.eng_plan_id = engid;
           commit;
 
+          -- Re-conclusion skips existing modern paras in the insert loop. Refresh
+          -- only their copied flag, preserving existing para balances and statuses.
+          UPDATE ais_t_au_post_compliance c
+             SET c.issue_rectified = (SELECT CASE WHEN o.status = 9 THEN NVL(o.issue_rectified,0) ELSE 0 END
+                                       FROM t_au_observation o WHERE o.id = c.new_para_id)
+           WHERE c.ind = 'A' AND EXISTS (SELECT 1 FROM t_au_observation o
+                                        WHERE o.id = c.new_para_id AND o.engplanid = engid);
+          commit;
           update T_AU_AUDIT_TEAM_TASKLIST t
              set t.status_id = 6
            where t.eng_plan_id = engid;
@@ -2122,10 +2130,7 @@ create or replace package body PKG_HD is
              set ep.status = 14, ep.lastupdateddate = sysdate
            where ep.eng_id = engid;
           commit;
-          pkg_sm.P_Store_Sample_data(engid, 'N', P_NO, ENT_ID, R_ID);
-          open io_cursor for
-            select r.ref, r.remarks from t_au_remarks r where r.id = 20;
-        end if;
+          -- Log status 14 only after the engagement actually reaches conclusion.
         insert into t_au_plan_eng_log
           (id, e_id, status_id, createdby_id, created_on, remarks)
         VALUES
@@ -2136,6 +2141,11 @@ create or replace package body PKG_HD is
            sysdate,
            'AUDIT CONCLUDED');
         commit;
+          pkg_sm.P_Store_Sample_data(engid, 'N', P_NO, ENT_ID, R_ID);
+          open io_cursor for
+            select r.ref, r.remarks from t_au_remarks r where r.id = 20;
+        end if;
+
       else
         open io_cursor for
           select 'Audit Already Concluded' as remarks from dual;

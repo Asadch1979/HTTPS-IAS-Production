@@ -65,7 +65,7 @@ namespace AIS.Models
         public List<ExecutiveFilterOption> Entities { get; set; } = new();
 
         // Input is already intersected with the authenticated organizational scope.
-        public static ExecutiveDashboardFilterOptions FromScopedEntities(IEnumerable<ExecutiveFilterEntity> entities, ExecutiveDashboardFilterRequest filters)
+        public static ExecutiveDashboardFilterOptions FromScopedEntities(IEnumerable<ExecutiveFilterEntity> entities, ExecutiveDashboardFilterRequest filters, Func<int, int, bool> withinReportingOffice = null)
         {
             filters.Validate();
             var rows = entities.ToList();
@@ -77,7 +77,7 @@ namespace AIS.Models
             if (filters.DimensionId.HasValue) rows = rows.Where(e => (filters.SelectBy == "entityType" ? e.EntityTypeId : e.AuditedById) == filters.DimensionId).ToList();
             result.ReportingOffices = Options(rows.Select(e => new ExecutiveFilterOption { Id = e.ReportingOfficeId ?? 0, Name = e.ReportingOfficeName }));
             RequireOption(result.ReportingOffices, filters.ReportingOfficeId);
-            if (filters.ReportingOfficeId.HasValue) rows = rows.Where(e => e.ReportingOfficeId == filters.ReportingOfficeId).ToList();
+            if (filters.ReportingOfficeId.HasValue) rows = rows.Where(e => withinReportingOffice == null ? e.ReportingOfficeId == filters.ReportingOfficeId : withinReportingOffice(e.EntityId, filters.ReportingOfficeId.Value)).ToList();
             result.Entities = Options(rows.Select(e => new ExecutiveFilterOption { Id = e.EntityId, Name = e.EntityName }));
             RequireOption(result.Entities, filters.EntityId);
             return result;
