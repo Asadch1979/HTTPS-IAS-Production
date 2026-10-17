@@ -95,9 +95,14 @@ namespace AIS.Controllers
                 var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
+                // Divisional/Group RLM management eligibility requires an explicitly
+                // approved IAS role ID in addition to posting type and page grant.
+                var allowedManagementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
+                    .Get<int[]>() ?? Array.Empty<int>();
                 var management = (scope.DashboardType == "GROUP" && root?.EntityTypeId == 18) ||
-                    (scope.DashboardType == "RLM" && (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
-                if (view == "regional" && !regional || view == "management" && !management) return StatusCode(403);
+                    (scope.DashboardType == "RLM" && allowedManagementRoles.Contains(scope.RoleId) &&
+                     (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
+                if ((view == "regional" && !regional) || (view == "management" && !management)) return StatusCode(403);
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
                 if (!management) views.RemoveAll(v => v.Id == "management");
                 // Preserve explicitly chosen views; only replace the initial default.
