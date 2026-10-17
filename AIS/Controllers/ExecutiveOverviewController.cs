@@ -3,6 +3,7 @@ using AIS.Services;
 using AIS.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -20,10 +21,11 @@ namespace AIS.Controllers
         private readonly IPageIdResolver pageIds;
         private readonly TopMenus menus;
         private readonly ILogger<ExecutiveOverviewController> logger;
+        private readonly IConfiguration configuration;
 
         public ExecutiveOverviewController(DBConnection database, SessionHandler session,
             IPermissionService permissions, IPageIdResolver pageIds, TopMenus menus,
-            ILogger<ExecutiveOverviewController> logger)
+            ILogger<ExecutiveOverviewController> logger, IConfiguration configuration)
         {
             this.database = database;
             this.session = session;
@@ -31,6 +33,7 @@ namespace AIS.Controllers
             this.pageIds = pageIds;
             this.menus = menus;
             this.logger = logger;
+            this.configuration = configuration;
         }
 
         [HttpGet("TOP")]
@@ -92,9 +95,17 @@ namespace AIS.Controllers
                 var views = ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
-                if (view == "regional" && !regional) return StatusCode(403);
+                var management = (scope.DashboardType == "GROUP" && root?.EntityTypeId == 18) ||
+                    (scope.DashboardType == "RLM" && (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
+                if (view == "regional" && !regional || view == "management" && !management) return StatusCode(403);
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
-                if (regional && view == "glance" && !Request.Query.ContainsKey("view")) view = "regional";
+                if (!management) views.RemoveAll(v => v.Id == "management");
+                // Preserve explicitly chosen views; only replace the initial default.
+                if (view == "glance" && !Request.Query.ContainsKey("view"))
+                {
+                    if (regional) view = "regional";
+                    else if (management) view = "management";
+                }
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
@@ -122,7 +133,10 @@ namespace AIS.Controllers
                     Groups = groups,
                     Filters = filters,
                     FilterOptions = options,
-                    ComparisonEntities = view == "regional" ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
+                    RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
+                    IsManagementPerspective = management,
+                    ComparisonEntities = view == "regional" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
+                        ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
             }
