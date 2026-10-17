@@ -97,7 +97,6 @@
             dots.append(element('span', `${number.format(item.over3Cycles || 0)} >3 cycles`));
             tile.append(dots); target.append(tile);
         }
-        target.after(); // Heatmap is an overview of returned rows, not a total across nested roots.
         status('[data-role-units-status]', `${rows.length} authorized branch rows returned (displaying the 36 highest ranked exposures).`);
     }
     async function units() {
