@@ -43,6 +43,10 @@
     {
         <script src="~/js/executive-reports.js" asp-append-version="true"></script>
     }
+    else if (Model.SelectedView.Id == "command")
+    {
+        <script src="~/js/cia-command-center.js" asp-append-version="true"></script>
+    }
     else
     {
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
