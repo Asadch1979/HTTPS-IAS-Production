@@ -54,7 +54,7 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult AR_Dashboard(string stepCode = null, int? engId = null)
+        public IActionResult AR_Dashboard(string stepCode = null, int? engId = null, bool workbench = false)
             {
             ViewData["TopMenu"] = _topMenus.GetTopMenus();
             ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
@@ -71,6 +71,19 @@ namespace AIS.Controllers
                 }
 
             var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true);
+            if (workbench)
+            {
+                if (_sessionHandler.IsSessionRevoked(user)) return Unauthorized();
+                model.AvailableEngagements = model.AvailableEngagements
+                    .Where(e => string.Equals(e.IsTeamLead?.Trim(), "Y", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (!model.AvailableEngagements.Any()) return StatusCode(403);
+                if (engId.HasValue && !model.AvailableEngagements.Any(e => e.EngagementId == engId)) return StatusCode(403);
+                model.WorkbenchTasks = _dbConnection.GetTaskList().Where(t =>
+                    t.TEAMMEMBER_PPNO.ToString() == user.PPNumber &&
+                    model.AvailableEngagements.Any(e => e.EngagementId == t.ENG_PLAN_ID)).ToList();
+                ViewData["WorkbenchManagement"] = false;
+                return View("~/Views/Shared/EngagementWorkbench.cshtml", model);
+            }
             return View("~/Views/FieldAudit/AR_Dashboard.cshtml", model);
             }
 

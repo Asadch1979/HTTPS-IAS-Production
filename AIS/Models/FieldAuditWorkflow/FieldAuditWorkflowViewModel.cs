@@ -10,6 +10,7 @@ namespace AIS.Models.FieldAuditWorkflow
         public string CurrentStepCode { get; set; }
         public List<FieldAuditWorkflowStepModel> Steps { get; set; } = new List<FieldAuditWorkflowStepModel>();
         public FieldAuditStepContextViewModel CurrentStepContext { get; set; }
+        public List<TaskListModel> WorkbenchTasks { get; set; } = new List<TaskListModel>();
 
         public IEnumerable<FieldAuditWorkflowStepModel> VisibleSteps => Steps.Where(step => step.IsVisible);
         public FieldAuditWorkflowStepModel CurrentStep => VisibleSteps.FirstOrDefault(step => step.StepCode == CurrentStepCode);
