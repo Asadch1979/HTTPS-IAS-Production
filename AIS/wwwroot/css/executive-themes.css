@@ -1,0 +1,122 @@
+/* IAS: isolated executive-perspective palettes and report A-E identities.
+   Risk severity remains semantic (high red / medium amber / low teal).
+   None of these rules affect the global shell or operational workflow pages. */
+.exec[data-perspective="TOP"]:not(.exec-regional):not(.exec-management) {
+  --exec-tone:#243c59;--exec-tint:#eaf0f8;--exec-border:#bacce1;
+  background:#f3f6fb;border:1px solid #ccd8e7;padding:20px;border-radius:14px;
+}
+.exec[data-perspective="CIA"]:not(.exec-regional):not(.exec-management) {
+  --exec-tone:#122d47;--exec-tint:#e8f1f5;--exec-border:#8ba8bf;
+  background:#f2f6fa;border:1px solid #cfdeea;padding:20px;border-radius:14px;
+}
+.exec[data-perspective="CCO"]:not(.exec-regional):not(.exec-management) {
+  --exec-tone:#79511c;--exec-tint:#fbf3e7;--exec-border:#e5cfa7;
+  background:#fcf9f3;border:1px solid #e8dbc8;padding:20px;border-radius:14px;
+}
+.exec[data-perspective="GROUP"]:not(.exec-management):not(.exec-regional) {
+  --exec-tone:#0f5c4d;--exec-tint:#eaf4ee;--exec-border:#b7d4c5;
+  background:#f1f7f3;border:1px solid #cbded0;padding:20px;border-radius:14px;
+}
+.exec[data-perspective="RLM"]:not(.exec-regional):not(.exec-management) {
+  --exec-tone:#3e4b78;--exec-tint:#edf0fa;--exec-border:#c1c9e1;
+  background:#f4f5fb;border:1px solid #d2d8eb;padding:20px;border-radius:14px;
+}
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-title h1,
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-panel h2 {
+  color:var(--exec-tone);
+}
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-navigation .org-button[aria-current="page"] {
+  color:var(--exec-tone);border-bottom-color:var(--exec-tone);background:var(--exec-tint);
+}
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-kpi {
+  border-top:4px solid var(--exec-border);background:#fff;
+}
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-kpi strong {
+  color:var(--exec-tone);
+}
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-kpi:hover,
+.exec[data-perspective]:not(.exec-regional):not(.exec-management) .exec-panel:focus-within {
+  border-color:var(--exec-border);
+}
+/* CIA separate command-center composition: navy + teal assurance interface. */
+.exec[data-perspective="CIA"] .cia-command-center {--cia-teal:#137c93;--cia-navy:#122d47}
+.exec[data-perspective="CIA"] .cia-command-heading {
+  display:flex;align-items:end;justify-content:space-between;gap:22px;flex-wrap:wrap;
+  border-radius:12px;padding:23px 26px;margin:12px 0 22px;
+  background:linear-gradient(120deg,#122d47,#1b4f65);color:#fff;
+}
+.exec[data-perspective="CIA"] .cia-command-heading h2 {color:#fff;margin:3px 0 8px;font-size:1.45rem}
+.exec[data-perspective="CIA"] .cia-command-heading .exec-note,
+.exec[data-perspective="CIA"] .cia-command-heading .cia-command-eyebrow {color:#d6eaf2}
+.exec[data-perspective="CIA"] .cia-command-heading>div:first-child {flex:2 1 370px}
+.exec[data-perspective="CIA"] .cia-command-heading>div:last-child {flex:1 1 300px}
+.exec[data-perspective="CIA"] .cia-command-heading label {display:block;font-size:.78rem;margin-bottom:7px;font-weight:650}
+.exec[data-perspective="CIA"] .cia-command-heading select {
+  width:100%;min-height:44px;border:1px solid #93b9ca;border-radius:7px;
+  padding:10px;background:#fff;color:#122d47
+}
+.exec[data-perspective="CIA"] .cia-command-eyebrow {
+  font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:#137c93;margin:0 0 5px
+}
+.exec[data-perspective="CIA"] .cia-command-scorecard {
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0 22px
+}
+.exec[data-perspective="CIA"] .cia-command-scorecard article {
+  background:#fff;border:1px solid #c9d8e1;border-top:5px solid #137c93;
+  box-shadow:0 4px 18px #102d4612;padding:18px 16px;border-radius:11px;min-width:0
+}
+.exec[data-perspective="CIA"] .cia-command-scorecard article:nth-child(2){border-top-color:#ce8523}
+.exec[data-perspective="CIA"] .cia-command-scorecard article:nth-child(3){border-top-color:#9d4657}
+.exec[data-perspective="CIA"] .cia-command-scorecard article:nth-child(4){border-top-color:#925eaa}
+.exec[data-perspective="CIA"] .cia-command-scorecard article:nth-child(5){border-top-color:#247d67}
+.exec[data-perspective="CIA"] .cia-command-scorecard span {font-size:.83rem;font-weight:650;color:#304a5d}
+.exec[data-perspective="CIA"] .cia-command-scorecard strong {
+  display:block;font-size:2rem;line-height:1.2;color:#122d47;margin:11px 0
+}
+.exec[data-perspective="CIA"] .cia-command-scorecard small {font-size:.75rem;color:#617588;line-height:1.5}
+.exec[data-perspective="CIA"] .cia-command-section-heading {
+  display:flex;justify-content:space-between;gap:15px;align-items:start;flex-wrap:wrap
+}
+.exec[data-perspective="CIA"] .cia-command-data-quality {
+  font-size:.8rem;border-radius:20px;background:#fff1e4;color:#77520d;padding:6px 10px;margin:0
+}
+.exec[data-perspective="CIA"] .cia-command-data-quality[data-complete=true] {background:#e6f5ef;color:#14563b}
+.exec[data-perspective="CIA"] .cia-command-nature-bars {display:grid;gap:10px;margin:20px 0}
+.exec[data-perspective="CIA"] .cia-nature-row {
+  display:grid;grid-template-columns:minmax(160px,260px) minmax(80px,1fr) 70px;
+  align-items:center;gap:13px;font-size:.84rem
+}
+.exec[data-perspective="CIA"] .cia-nature-track {height:15px;border-radius:9px;background:#e7eef4;overflow:hidden}
+.exec[data-perspective="CIA"] .cia-nature-fill {display:block;height:100%;background:linear-gradient(90deg,#147d92,#46b9bf);border-radius:9px}
+.exec[data-perspective="CIA"] .cia-nature-row strong {text-align:right;color:#122d47}
+.exec[data-perspective="CIA"] .cia-command-secondary {display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0}
+.exec[data-perspective="CIA"] .cia-command-secondary p {font-size:.86rem;color:#455b68;line-height:1.6}
+@media(max-width:1300px){.exec[data-perspective="CIA"] .cia-command-scorecard{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.exec[data-perspective="CIA"] .cia-command-scorecard{grid-template-columns:repeat(2,minmax(0,1fr))}.exec[data-perspective="CIA"] .cia-command-secondary{grid-template-columns:1fr}}
+@media(max-width:520px){.exec[data-perspective="CIA"] .cia-command-scorecard{grid-template-columns:1fr}.exec[data-perspective="CIA"] .cia-nature-row{grid-template-columns:1fr 3fr 40px;gap:8px;font-size:.74rem}}
+
+/* Report A-E: five distinct visual palettes. Palette selection is bound to
+   the already-rendered report ID, never affects filtering/authorization/data. */
+#exec-reports[data-active-report="A"]{--report-accent:#4346a8;--report-tint:#edf0ff;--report-total:#dfe3ff}
+#exec-reports[data-active-report="B"]{--report-accent:#9e4e11;--report-tint:#fff1e5;--report-total:#ffe0c6}
+#exec-reports[data-active-report="C"]{--report-accent:#087b80;--report-tint:#e4f6f5;--report-total:#d2ecea}
+#exec-reports[data-active-report="D"]{--report-accent:#793e9c;--report-tint:#f4eafa;--report-total:#e9d6f3}
+#exec-reports[data-active-report="E"]{--report-accent:#116649;--report-tint:#e8f5ed;--report-total:#d6eade}
+#exec-reports[data-active-report] .exec-report-panel {
+  border-top:5px solid var(--report-accent);
+  background:linear-gradient(to bottom,var(--report-tint) 0,white 72px);
+}
+#exec-reports[data-active-report] .exec-report-table thead th{background:var(--report-tint);color:#223344}
+#exec-reports[data-active-report] .exec-report-series-0{background:var(--report-accent)!important}
+#exec-reports[data-active-report] .exec-report-series-1{background:color-mix(in srgb,var(--report-accent) 55%,white)!important}
+#exec-reports[data-active-report] .exec-report-series-2{background:#cf8b24!important}
+#exec-reports .exec-report-selector [data-report="A"]{border-top:3px solid #4346a8}
+#exec-reports .exec-report-selector [data-report="B"]{border-top:3px solid #9e4e11}
+#exec-reports .exec-report-selector [data-report="C"]{border-top:3px solid #087b80}
+#exec-reports .exec-report-selector [data-report="D"]{border-top:3px solid #793e9c}
+#exec-reports .exec-report-selector [data-report="E"]{border-top:3px solid #116649}
+#exec-reports .exec-report-selector [aria-pressed=true]{box-shadow:inset 0 2px 0 var(--report-accent)}
+@media print {
+  #exec-reports[data-active-report] .exec-report-panel {background:#fff}
+}
