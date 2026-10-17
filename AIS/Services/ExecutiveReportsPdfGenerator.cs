@@ -120,6 +120,16 @@ namespace AIS.Services
         {
             var rows = data.Rows;
             var html = new StringBuilder();
+            // Per-report visual identity. Numbers, rows and PDF structure are unchanged.
+            // Colors intentionally match the on-screen report A-E palettes.
+            var colors = id switch
+            {
+                "A" => ("#4346a8", "#edf0ff", "#dfe3ff"),
+                "B" => ("#9e4e11", "#fff1e5", "#ffe0c6"),
+                "C" => ("#087b80", "#e4f6f5", "#d2ecea"),
+                "D" => ("#793e9c", "#f4eafa", "#e9d6f3"),
+                _ => ("#116649", "#e8f5ed", "#d6eade")
+            };
             html.Append(@"<!doctype html><html><head><meta charset='utf-8'><style>
               @page { size: A4 landscape; margin: 57pt 26pt 45pt; }
               body { font-family: Arial, sans-serif; color: #1f2933; font-size: 8pt; }
@@ -143,7 +153,13 @@ namespace AIS.Services
               .bar { height:9pt; display:inline-block; background:#2e7d32; }
               .bar-bottom { background:#c62828; }
               .benchmark { border-left:1pt dashed #e39b1b; }
-              </style></head><body>");
+              ");
+            html.Append("h1,h2 {color:").Append(colors.Item1)
+                .Append(";} th,.group td {background:").Append(colors.Item2)
+                .Append(";} .total td {background:").Append(colors.Item3)
+                .Append(";border-top-color:").Append(colors.Item1)
+                .Append(";} .bar {background:").Append(colors.Item1)
+                .Append(";}</style></head><body>");
             html.Append("<h1>Report ").Append(H(id)).Append(" · ").Append(H(Title(id))).Append("</h1>");
             html.Append("<p class='meta'>").Append(data.Filters == null ? "" :
                 H(data.Filters.StartDate) + " to " + H(data.Filters.EndDate))
