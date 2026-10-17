@@ -1,0 +1,61 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
+         data-command-enabled="@(Model.CiaCommandEnabled ? "true" : "false")">
+    <div class="cia-command-heading">
+        <div>
+            <p class="cia-command-eyebrow">INTERNAL AUDIT GROUP · COMMAND CENTER</p>
+            <h2>Audit assurance and execution</h2>
+            <p class="exec-note">Plan and A1 issue detection use the selected IAS audit period; overdue reporting, auditee responses and active audit teams show the latest current-state position.</p>
+        </div>
+        <div>
+            <label for="cia-period">Selected audit year / period</label>
+            <select id="cia-period" aria-label="Select audit period" disabled="@(Model.CiaPeriods.Count == 0)">
+                @foreach (var period in Model.CiaPeriods)
+                {
+                    <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.SelectedCiaPeriodId)">
+                        @period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))
+                    </option>
+                }
+            </select>
+        </div>
+    </div>
+    @if (Model.CiaPeriods.Count == 0)
+    {
+        <p class="exec-empty">IAS has not returned any authorized audit periods. Verify audit-period permissions and the existing PKG_PG lookup.</p>
+    }
+    else if (!Model.CiaCommandEnabled)
+    {
+        <p class="exec-empty">The CIA Command Center layout is restored. The five approved live KPI procedures and issue-nature classification will activate after Oracle compilation, category mapping and authorized API rollout.</p>
+    }
+    <section class="cia-command-scorecard" aria-label="CIA execution KPIs">
+        <article><span>Audit Plan Coverage</span><strong data-cia-kpi="planCoveragePct">N/A</strong><small data-cia-plan>Planned versus audited entities</small></article>
+        <article><span>Delayed Audit Reports</span><strong data-cia-kpi="delayedAuditReports">N/A</strong><small>Unconcluded audit engagements beyond the approved 15-day reporting threshold</small></article>
+        <article><span>A1 Observations Detected</span><strong data-cia-kpi="fraudA1Paras">N/A</strong><small>Annexure A1 · identified within the selected audit period; not established fraud</small></article>
+        <article><span>Awaiting Auditee Response</span><strong data-cia-kpi="awaitingAuditeeResponse">N/A</strong><small>Observation status 2 · current state (not a due-date calculation)</small></article>
+        <article><span>Teams Conducting Audit</span><strong data-cia-kpi="teamsConductingAudit">N/A</strong><small>Active audit team assignments · current state</small></article>
+    </section>
+    <section class="cia-command-nature exec-panel" aria-labelledby="cia-nature-title">
+        <div class="cia-command-section-heading">
+            <div>
+                <p class="cia-command-eyebrow">ISSUES IDENTIFIED</p>
+                <h2 id="cia-nature-title">Nature of Issue Identified</h2>
+                <p class="exec-note">AML/CFT, Accounts, Loan and Advances, Cash Management, Record Management, Banking Operations, Branch General Controls, Accounting / Reporting / Reconciliation, Management Audit and IS Audit.</p>
+            </div>
+            <p class="cia-command-data-quality" data-cia-mapping-status>Awaiting category mapping verification</p>
+        </div>
+        <div class="cia-command-nature-bars" data-cia-nature-bars aria-label="Issue classification"></div>
+        <p class="exec-note" data-cia-unmapped></p>
+    </section>
+    <section class="cia-command-secondary">
+        <article class="exec-panel">
+            <h2>Leadership Review Priorities</h2>
+            <p><strong>Reporting delays:</strong> investigate the engagements exceeding the approved reporting threshold. Open the existing authorized engagement/report workflow for details.</p>
+            <p><strong>Remediation follow-up:</strong> status 2 means awaiting an auditee response; no unsupported remediation due date is inferred.</p>
+        </article>
+        <article class="exec-panel">
+            <h2>Data Quality &amp; Scope</h2>
+            <p>All figures are retrieved from scoped IAS Oracle records. Incomplete ten-category mappings are disclosed instead of reporting unclassified observations as zero.</p>
+            <p data-cia-as-of>Current-state totals and audit period are displayed when data becomes available.</p>
+        </article>
+    </section>
+</section>

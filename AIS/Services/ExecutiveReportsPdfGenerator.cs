@@ -23,6 +23,15 @@ namespace AIS.Services
     public static class ExecutiveReportsPdfGenerator
     {
         private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
+        private static DeviceRgb ReportHeaderColor(string reportId) => reportId switch
+        {
+            "A" => new DeviceRgb(67, 70, 168),
+            "B" => new DeviceRgb(158, 78, 17),
+            "C" => new DeviceRgb(8, 123, 128),
+            "D" => new DeviceRgb(121, 62, 156),
+            _ => new DeviceRgb(17, 102, 73)
+        };
+
         private static string H(object v) => WebUtility.HtmlEncode(Convert.ToString(v, Culture) ?? "");
         private static string N(long v) => v.ToString("N0", Culture);
         private static string P(decimal? v) => v.HasValue ? v.Value.ToString("0.00", Culture) + "%" : "N/A";
@@ -94,11 +103,11 @@ namespace AIS.Services
                         canvas.AddImageFittedIntoRectangle(data,
                             new Rectangle(26, size.GetHeight() - 38, 22, 22), false);
                     Put(canvas, bold, 10, 54, size.GetHeight() - 29,
-                        "ZTBL  |  INTERNAL AUDIT SYSTEM", new DeviceRgb(15, 92, 77));
+                        "ZTBL  |  INTERNAL AUDIT SYSTEM", ReportHeaderColor(reportId));
                     var heading = "Report " + reportId + "  |  " + Title(reportId);
                     var headingX = Math.Max(230, size.GetWidth() - 26 - font.GetWidth(heading, 8));
                     Put(canvas, font, 8, headingX, size.GetHeight() - 29,
-                        heading, new DeviceRgb(100, 116, 139));
+                        heading, ReportHeaderColor(reportId));
                     canvas.SetStrokeColor(new DeviceRgb(226, 232, 240))
                         .MoveTo(26, size.GetHeight() - 44).LineTo(size.GetWidth() - 26, size.GetHeight() - 44).Stroke();
                     canvas.MoveTo(26, 34).LineTo(size.GetWidth() - 26, 34).Stroke();
@@ -120,6 +129,16 @@ namespace AIS.Services
         {
             var rows = data.Rows;
             var html = new StringBuilder();
+            // Per-report visual identity. Numbers, rows and PDF structure are unchanged.
+            // Colors intentionally match the on-screen report A-E palettes.
+            var colors = id switch
+            {
+                "A" => ("#4346a8", "#edf0ff", "#dfe3ff"),
+                "B" => ("#9e4e11", "#fff1e5", "#ffe0c6"),
+                "C" => ("#087b80", "#e4f6f5", "#d2ecea"),
+                "D" => ("#793e9c", "#f4eafa", "#e9d6f3"),
+                _ => ("#116649", "#e8f5ed", "#d6eade")
+            };
             html.Append(@"<!doctype html><html><head><meta charset='utf-8'><style>
               @page { size: A4 landscape; margin: 57pt 26pt 45pt; }
               body { font-family: Arial, sans-serif; color: #1f2933; font-size: 8pt; }
@@ -143,7 +162,13 @@ namespace AIS.Services
               .bar { height:9pt; display:inline-block; background:#2e7d32; }
               .bar-bottom { background:#c62828; }
               .benchmark { border-left:1pt dashed #e39b1b; }
-              </style></head><body>");
+              ");
+            html.Append("h1,h2 {color:").Append(colors.Item1)
+                .Append(";} th,.group td {background:").Append(colors.Item2)
+                .Append(";} .total td {background:").Append(colors.Item3)
+                .Append(";border-top-color:").Append(colors.Item1)
+                .Append(";} .bar {background:").Append(colors.Item1)
+                .Append(";}</style></head><body>");
             html.Append("<h1>Report ").Append(H(id)).Append(" · ").Append(H(Title(id))).Append("</h1>");
             html.Append("<p class='meta'>").Append(data.Filters == null ? "" :
                 H(data.Filters.StartDate) + " to " + H(data.Filters.EndDate))

@@ -24,6 +24,22 @@ namespace AIS.Controllers
             // It always starts at the entity assigned to the authenticated user.
             if (requested == "RLM")
             {
+                // Explicit Super User preview is bounded to an approved
+                // organizational reporting root. Never impersonate an IAS user.
+                if (user.UserRoleID == 1 && session.IsSuperUser())
+                {
+                    if (groupRootId.HasValue)
+                    {
+                        var roots = GetOrganizationNodes(groupRootId.Value).Where(n =>
+                            n.EntityId == groupRootId.Value && !n.HasTypeConflict &&
+                            (n.EntityTypeId == 3 || n.EntityTypeId == 18 ||
+                             n.EntityTypeId == 5 || n.EntityTypeId == 21)).ToList();
+                        if (roots.Count != 1)
+                            throw new ExecutiveDashboardAccessException("EntityScope", "Super User must select one verified Group, Division, GM or Region root.");
+                    }
+                    return new ExecutiveDashboardScope(user, "RLM", "/Dashboard/entity_wise_obs",
+                        groupRootId, groupRootId);
+                }
                 if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0 ||
                     !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID && !n.HasTypeConflict && n.EntityTypeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Reporting Line Management requires the authenticated entity.");
@@ -98,7 +114,9 @@ namespace AIS.Controllers
         {
             ValidateExecutiveDashboardSession(scope);
             if (scope.DashboardType != "RLM" && scope.DashboardType != "GROUP") return null;
-            var rootId = scope.DashboardType == "GROUP" ? scope.GroupRootId : scope.SessionEntityId;
+            var rootId = scope.DashboardType == "GROUP" ||
+                (scope.DashboardType == "RLM" && scope.RoleId == 1)
+                    ? scope.GroupRootId : scope.SessionEntityId;
             if (!rootId.HasValue) return null;
             return GetOrganizationNodes(rootId).SingleOrDefault(n => n.EntityId == rootId && !n.HasTypeConflict);
         }
@@ -123,6 +141,19 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires a valid Group Head entity (category 18).");
         }
 
+        internal List<OrganizationNode> GetExecutiveDashboardRlmRoots(ExecutiveDashboardScope scope)
+        {
+            var user = ValidateExecutiveDashboardSession(scope);
+            if (scope.DashboardType != "RLM" || user.UserRoleID != 1 ||
+                !CreateSessionHandler().IsSuperUser())
+                throw new ExecutiveDashboardAccessException("RoleMapping", "Super User selection only.");
+            return GetOrganizationNodes(null).Where(n => !n.HasTypeConflict &&
+                (n.EntityTypeId == 3 || n.EntityTypeId == 18 ||
+                 n.EntityTypeId == 5 || n.EntityTypeId == 21))
+                .GroupBy(n => n.EntityId).Where(g => g.Count() == 1)
+                .Select(g => g.Single()).OrderBy(n => n.EntityName).ToList();
+        }
+
         internal List<OrganizationNode> GetExecutiveDashboardGroups(ExecutiveDashboardScope scope)
         {
             var user = ValidateExecutiveDashboardSession(scope);
@@ -135,6 +166,9 @@ namespace AIS.Controllers
         {
             if (scope.DashboardType == "GROUP" && (scope.GroupRootId.GetValueOrDefault() <= 0 || scope.EntityId.GetValueOrDefault() <= 0))
                 throw new ExecutiveDashboardAccessException("EntityScope", "GROUP data always requires a selected Group root.");
+            if (scope.DashboardType == "RLM" && scope.RoleId == 1 &&
+                (scope.GroupRootId.GetValueOrDefault() <= 0 || scope.EntityId.GetValueOrDefault() <= 0))
+                throw new ExecutiveDashboardAccessException("EntityScope", "Super User RLM data requires a selected verified organizational root.");
         }
 
         internal ExecutiveDashboardScope NarrowExecutiveDashboardScope(ExecutiveDashboardScope scope, int? entityId)
@@ -152,9 +186,15 @@ namespace AIS.Controllers
         {
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
-            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.GroupRootId :
-                scope.DashboardType == "RLM" ? scope.SessionEntityId : null);
-            var root = scope.DashboardType == "GROUP" ? scope.GroupRootId : scope.SessionEntityId;
+            var root = scope.DashboardType == "GROUP" ||
+                (scope.DashboardType == "RLM" && scope.RoleId == 1)
+                    ? scope.GroupRootId : scope.SessionEntityId;
+            // Fail closed: Super User's RLM selector without a root must NOT
+            // become a bank-wide, null-root query.
+            if (scope.DashboardType == "RLM" && !root.HasValue)
+                return new List<OrganizationNode>();
+            var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ||
+                scope.DashboardType == "RLM" ? root : null);
             return scope.DashboardType != "GROUP" && scope.DashboardType != "RLM" ? nodes : nodes.Where(n => (scope.DashboardType != "RLM" || !n.HasTypeConflict) &&
                 (n.EntityId == root || n.Reporting1 == root || n.Reporting2 == root ||
                  n.Reporting3 == root || n.Reporting4 == root || n.Reporting5 == root || n.Reporting6 == root)).ToList();
