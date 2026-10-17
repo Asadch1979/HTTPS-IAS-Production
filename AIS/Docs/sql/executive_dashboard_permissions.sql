@@ -132,6 +132,8 @@ DECLARE
       GRANT_API_ROLE(V_GROUP_ROLE,V_API_ID);
     ELSIF P_KIND='CIA' THEN
       GRANT_API_ROLE(3,V_API_ID);
+    ELSIF P_KIND='TOP' THEN
+      GRANT_API_ROLE(V_TOP_ROLE,V_API_ID);
     ELSIF P_KIND='MANAGEMENT' THEN
       GRANT_API_ROLE(V_GROUP_ROLE,V_API_ID);
     END IF;
@@ -171,7 +173,7 @@ BEGIN
   REGISTER_API('GetCycleSummary','COMMON');
   REGISTER_API('GetSettlementTrend','COMMON');
   REGISTER_API('GetCriticalItems','COMMON');
-  REGISTER_API('GetKpiLifecycle','COMMON');
+  REGISTER_API('GetKpiLifecycle','TOP');
   REGISTER_API('GetCiaCommandKpis','CIA');
   REGISTER_API('GetCiaIssueNature','CIA');
   REGISTER_API('GetRoleEntityHeatmap','REGIONAL');
