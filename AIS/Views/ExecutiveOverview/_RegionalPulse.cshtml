@@ -1,5 +1,12 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 <p class="exec-note">Current outstanding balances · audit end dates are not remediation deadlines. Settlement trend shows activity in the returned calendar months.</p>
 <partial name="_Sections" model="Model" />
-<partial name="_EntityComparison" model="Model" />
+@if (Model.RoleOracleEnabled)
+{
+    <partial name="_RoleReporting" model="Model" />
+}
+else
+{
+    <partial name="_EntityComparison" model="Model" />
+}
 <article class="exec-panel"><h2>Follow-up Priorities</h2><p>Use the critical observation list above for high-risk, over-365-day and over-three-cycle paras. Ages are exact days where IAS records a para-added date. Pending auditee-response assignments are not available from this dataset.</p></article>
