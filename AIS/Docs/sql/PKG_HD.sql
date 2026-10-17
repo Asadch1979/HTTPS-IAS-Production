@@ -1969,6 +1969,7 @@ create or replace package body PKG_HD is
                                end)
                             end) as c_stage,
                             o.status,
+                            NVL(o.issue_rectified, 0) AS issue_rectified,
                             o.final_para_no,
                             t.headings,
                             o.entereddate,
@@ -2021,6 +2022,7 @@ create or replace package body PKG_HD is
                com_status,
                com_stage,
                para_status,
+               issue_rectified,
                para_no,
                gist_of_paras,
                setteled_on,
@@ -2044,6 +2046,7 @@ create or replace package body PKG_HD is
                ee.status,
                ee.c_stage,
                ee.status,
+               ee.issue_rectified,
                cast(ee.final_para_no as varchar2(100)),
                ee.headings,
                (CASE WHEN EE.status = 9 AND ee.stelled_on IS NOT NULL THEN

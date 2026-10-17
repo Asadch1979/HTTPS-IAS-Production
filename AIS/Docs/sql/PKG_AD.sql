@@ -4561,7 +4561,13 @@ create or replace package body PKG_AD is
       into S_F
       from t_au_observation_status s
      where s.statusid = S_ID;
-    update t_au_observation o set o.status = S_ID where o.id = obs_id;
+    update t_au_observation o
+       set o.status = S_ID,
+           o.issue_rectified = CASE
+                                 WHEN S_ID IN (1, 2, 3, 5, 8, 23) THEN 0
+                                 ELSE o.issue_rectified
+                               END
+     where o.id = obs_id;
     commit;
     if (S_ID = 1) then
       delete from t_au_observation_assignedto o where o.obs_id = O_B;

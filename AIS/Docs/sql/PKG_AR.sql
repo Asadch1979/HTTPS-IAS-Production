@@ -2130,7 +2130,8 @@ create or replace package body PKG_AR is
       UPDATE t_au_observation
          SET STATUS     = C_STATUS_DROPPED,
              STELLED_ON = NULL,
-             SETTLED_BY = NULL
+             SETTLED_BY = NULL,
+             ISSUE_RECTIFIED = 0
        WHERE ID = OBS_ID
          AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED);
     
@@ -2538,7 +2539,9 @@ create or replace package body PKG_AR is
                                P_NO
                               ELSE
                                NULL
-                            END
+                            END,
+             o.issue_rectified = CASE WHEN NEW_STATUS_ID = C_STATUS_SETTLED
+                                      THEN 1 ELSE 0 END
        WHERE o.id = OBS_ID;
       COMMIT;
       open io_cursor for
@@ -2593,7 +2596,8 @@ create or replace package body PKG_AR is
                  o.final_para_no       = TO_NUMBER(TRIM(D_PARA_NO)),
                  o.final_para_added_on = SYSDATE,
                  o.stelled_on          = NULL,
-                 o.settled_by          = NULL
+                 o.settled_by          = NULL,
+                 o.issue_rectified     = 0
            WHERE o.id = OBS_ID;
         
           COMMIT;
@@ -2650,7 +2654,8 @@ create or replace package body PKG_AR is
                                               NULL
                                            END,
                    o.stelled_on          = sysdate,
-                   o.settled_by          = p_no
+                   o.settled_by          = p_no,
+                   o.issue_rectified     = 1
              WHERE o.id = OBS_ID;
             COMMIT;
           end if;
@@ -7008,7 +7013,8 @@ create or replace package body PKG_AR is
            O.DRAFT_PARA_NO       = TO_NUMBER(TRIM(P_DRAFT_PARA_NO)),
            O.DRAFT_PARA_ADDED_ON = SYSDATE,
            O.STELLED_ON          = NULL,
-           O.SETTLED_BY          = NULL
+           O.SETTLED_BY          = NULL,
+           O.ISSUE_RECTIFIED     = 0
      WHERE O.ID = P_OBS_ID;
   
     -- Call common activity-log routine here.
@@ -7119,7 +7125,11 @@ create or replace package body PKG_AR is
                              P_NO
                             ELSE
                              NULL
-                          END
+                          END,
+           O.ISSUE_RECTIFIED = CASE
+                                 WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED
+                                 THEN 1 ELSE 0
+                               END
     
      WHERE O.ID = P_OBS_ID;
   
