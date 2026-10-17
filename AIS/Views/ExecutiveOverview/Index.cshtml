@@ -41,9 +41,11 @@
             <button type="submit" class="org-button">Open Scoped Dashboard</button>
         </form>
     }
-    @if (Model.NeedsRlmRoot)
+    @if (Model.NeedsRlmRoot || needsGroup)
     {
-        <p class="exec-note">Choose an organizational reporting root above. No dashboard data is queried until you select a verified Group, Division, GM or Region. This is a scoped Super User preview, not user impersonation.</p>
+        <p class="exec-note">@(Model.NeedsRlmRoot
+            ? "Choose a verified Group, Division, GM or Region root. No RLM data is queried before selection; this is a scoped Super User preview, not user impersonation."
+            : "Select a Group Head entity above before loading management data. No unscoped data is queried.")</p>
     }
     else
     {
@@ -62,9 +64,9 @@
     }
 </section>
 @section Scripts {
-    @if (Model.NeedsRlmRoot)
+    @if (Model.NeedsRlmRoot || needsGroup)
     {
-        // No data queries while Super User has not selected a reporting root.
+        // No data queries before the authorized reporting root is selected.
     }
     else if (Model.SelectedView.Id == "reports")
     {
