@@ -261,6 +261,11 @@
                 if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
                 critical(criticalRows, criticalCount);
             }
+            // Share the already-authorized Oracle response with role-specific
+            // presentation only. No duplicate KPI API request or new access path.
+            app.dispatchEvent(new CustomEvent('ias:executive-data', {
+                detail: { datasets }
+            }));
             $('results').hidden = false;
             const entity = $('entity').selectedOptions[0].textContent;
             $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;

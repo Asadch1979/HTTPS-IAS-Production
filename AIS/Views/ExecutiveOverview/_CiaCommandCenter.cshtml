@@ -1,4 +1,21 @@
 @model AIS.Models.ExecutiveDashboardPageModel
+@{
+    // These are the ten approved category labels, not mock results.
+    // The source of every actual count remains PKG_EXEC_DASHBOARD.P_GET_CIA_ISSUE_NATURE.
+    var natureCategories = new[]
+    {
+        new { Code = "AML_CFT", Label = "AML/CFT" },
+        new { Code = "ACCOUNTS", Label = "Accounts" },
+        new { Code = "LOAN_ADVANCES", Label = "Loan and Advances" },
+        new { Code = "CASH_MANAGEMENT", Label = "Cash Management" },
+        new { Code = "RECORD_MANAGEMENT", Label = "Record Management" },
+        new { Code = "BANKING_OPERATIONS", Label = "Banking Operations" },
+        new { Code = "BRANCH_GENERAL_CONTROLS", Label = "Branch General Controls" },
+        new { Code = "ACCOUNTING_REPORTING_RECON", Label = "Accounting / Reporting / Reconciliation" },
+        new { Code = "MANAGEMENT_AUDIT", Label = "Management Audit" },
+        new { Code = "IS_AUDIT", Label = "IS Audit" }
+    };
+}
 <section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
          data-command-enabled="@(Model.CiaCommandEnabled ? "true" : "false")">
     <div class="cia-command-heading">
@@ -36,15 +53,35 @@
     </section>
     <section class="cia-command-nature exec-panel" aria-labelledby="cia-nature-title">
         <div class="cia-command-section-heading">
-            <div>
-                <p class="cia-command-eyebrow">ISSUES IDENTIFIED</p>
+            <div><span class="cia-command-eyebrow">02 / AUDIT ISSUES BY CATEGORY</span>
                 <h2 id="cia-nature-title">Nature of Issue Identified</h2>
-                <p class="exec-note">AML/CFT, Accounts, Loan and Advances, Cash Management, Record Management, Banking Operations, Branch General Controls, Accounting / Reporting / Reconciliation, Management Audit and IS Audit.</p>
-            </div>
-            <p class="cia-command-data-quality" data-cia-mapping-status>Awaiting category mapping verification</p>
+                <p class="exec-note">The complete set of ten approved audit categories. Figures are sourced solely from the authorized IAS observation mapping procedure.</p></div>
+            <p class="cia-command-data-quality" data-cia-mapping-status>IAS classification pending</p>
         </div>
-        <div class="cia-command-nature-bars" data-cia-nature-bars aria-label="Issue classification"></div>
-        <p class="exec-note" data-cia-unmapped></p>
+        <div class="cia-nature-display">
+            <div class="cia-nature-main">
+                <div class="cia-nature-matrix" data-cia-nature-bars role="list" aria-label="Ten Nature of Issue Identified categories">
+                    @foreach (var category in natureCategories)
+                    {
+                        <article class="cia-nature-card" role="listitem" data-cia-category="@category.Code">
+                            <div class="cia-nature-card-top"><span>@category.Label</span><strong data-cia-category-count>N/A</strong></div>
+                            <div class="cia-nature-card-track" aria-hidden="true"><span data-cia-category-fill></span></div>
+                            <small data-cia-category-share>Awaiting verified issue data</small>
+                        </article>
+                    }
+                </div>
+                <p class="exec-note cia-nature-quality-note" data-cia-unmapped>Issue counts are unavailable until the CIA category mapping and Oracle cursor have been verified. No illustrative counts are presented.</p>
+            </div>
+            <aside class="cia-nature-summary" aria-label="Issue mapping diagnostics">
+                <div class="cia-nature-ring" data-cia-nature-ring role="img" aria-label="Classified issue proportion not yet available">
+                    <div><strong data-cia-mapped-pct>N/A</strong><small>Classified issues</small></div>
+                </div>
+                <div class="cia-nature-summary-row"><span>Issues identified</span><strong data-cia-total>N/A</strong></div>
+                <div class="cia-nature-summary-row"><span>Assigned to categories</span><strong data-cia-mapped>N/A</strong></div>
+                <div class="cia-nature-summary-row"><span>Unmapped / review</span><strong data-cia-unmapped-total>N/A</strong></div>
+                <p>Coverage is based on the approved ten-category IAS mapping. Unmapped observations are disclosed rather than silently excluded.</p>
+            </aside>
+        </div>
     </section>
     <section class="cia-command-secondary">
         <article class="exec-panel">

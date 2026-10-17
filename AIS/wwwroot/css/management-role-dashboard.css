@@ -1,1 +1,80 @@
 .exec.exec-management{--management-green:#0f5c4d;background:#f4f8f5;border:1px solid #cddfd5;border-radius:14px;padding:22px}.exec.exec-management .org-header{border-bottom-color:#0f5c4d}.exec.exec-management .exec-panel,.exec.exec-management .exec-kpi{background:#fff;border-color:#d1e4d9}.exec.exec-management .exec-title h1,.exec.exec-management .exec-panel h2{color:#103b35}.exec.exec-management .exec-kpi strong{color:#0f5c4d}.exec.exec-management .org-button[aria-current=page]{background:#0f5c4d;color:#fff}.exec .exec-role-reporting{display:grid;grid-template-columns:1fr;gap:18px;margin:20px 0}.exec .exec-role-table{overflow-x:auto;max-height:640px;overflow-y:auto}.exec .exec-role-table table{width:100%;min-width:640px}.exec .exec-role-table th,.exec .exec-role-table td{vertical-align:top;padding:10px 12px}.exec .exec-role-table .role-entity-name{font-weight:650}.exec .exec-role-table .role-detail{display:block;font-size:.82rem;color:#62766a}.exec .exec-role-table td[data-risk=high]{font-weight:700;color:#ab322e}.exec .exec-role-table td[data-risk=medium]{font-weight:600;color:#91651c}.exec .exec-role-table .role-empty{font-style:italic;color:#63766a}.exec .exec-role-reporting [role=status]{margin:0 0 10px;font-size:.88rem}.exec.exec-regional .exec-role-table .role-detail,.exec.exec-regional .exec-role-table .role-empty{color:#bacbe1}.exec.exec-regional .exec-role-table td[data-risk=high]{color:#ff938c}.exec.exec-regional .exec-role-table td[data-risk=medium]{color:#f3c777}@media(max-width:640px){.exec.exec-management{padding:12px}.exec .exec-role-table th,.exec .exec-role-table td{padding:8px}}
+/* Approved ZTBL management-scorecard layout. Scoped to management view. */
+.exec.exec-management{--mg-ink:#153e36;--mg-forest:#0f5c4d;--mg-teal:#1c8b81;background:#f3f7f3;border:1px solid #d1e0d8;padding:21px;border-radius:16px}
+.exec.exec-management .management-command{color:#213e35}
+.exec.exec-management .mgmt-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;padding:23px 27px;margin:3px 0 22px;border-radius:14px;background:linear-gradient(110deg,#103b35,#155f54 80%,#238272);box-shadow:0 12px 25px #0e49301a;color:#fff}
+.exec.exec-management .mgmt-hero-label{display:flex;align-items:center;gap:18px;flex:2 1 380px}
+.exec.exec-management .mgmt-symbol{display:grid;place-items:center;min-width:68px;height:68px;border:2px solid #ffffff7d;border-radius:50%;color:#fff;font-size:.88rem;font-weight:850;letter-spacing:.035em}
+.exec.exec-management .mgmt-hero h2{font-size:1.65rem;color:#fff;margin:4px 0 7px}
+.exec.exec-management .mgmt-hero p{font-size:.87rem;color:#ddf1e8;line-height:1.55;margin:0;max-width:610px}
+.exec.exec-management .mgmt-eyebrow{font-size:.67rem;font-weight:840;letter-spacing:.11em;color:#3b8879}
+.exec.exec-management .mgmt-hero .mgmt-eyebrow{color:#b6e7d9}
+.exec.exec-management .mgmt-hero-scope{flex:1 1 235px;max-width:360px;padding:15px 18px;background:#ffffff12;border:1px solid #ffffff40;border-radius:11px;line-height:1.5}
+.exec.exec-management .mgmt-hero-scope strong,.exec.exec-management .mgmt-hero-scope span,.exec.exec-management .mgmt-hero-scope small{display:block}
+.exec.exec-management .mgmt-hero-scope strong{font-size:.67rem;letter-spacing:.1em;color:#bce4d6}
+.exec.exec-management .mgmt-hero-scope span{font-size:1rem;font-weight:750;line-height:1.5;overflow-wrap:anywhere}
+.exec.exec-management .mgmt-hero-scope small{font-size:.71rem;color:#d7eee4}
+.exec.exec-management .mgmt-section-title{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:2px 0 14px}
+.exec.exec-management .mgmt-section-title h3{font-size:1.18rem;color:#174b3d;margin:5px 0}
+.exec.exec-management .mgmt-context{color:#688477;font-size:.76rem}
+.exec.exec-management .exec-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.exec.exec-management .exec-kpi{position:relative;border:1px solid #d9e7df;border-top:4px solid #187d63;background:#fff;box-shadow:0 5px 16px #164c3410;padding:18px;border-radius:12px;min-height:121px}
+.exec.exec-management .exec-kpi:nth-child(2){border-top-color:#bf6236}
+.exec.exec-management .exec-kpi:nth-child(3){border-top-color:#3472ad}
+.exec.exec-management .exec-kpi:nth-child(4){border-top-color:#b7822a}
+.exec.exec-management .exec-kpi span{font-size:.77rem;font-weight:680;color:#516f62}
+.exec.exec-management .exec-kpi strong{color:#174e40;font-size:1.85rem}
+.exec.exec-management .exec-kpi small{color:#698177;font-size:.7rem}
+.exec.exec-management .exec-charts{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:17px;margin:17px 0 20px}
+.exec.exec-management .exec-panel{border:1px solid #d8e7dd;border-radius:12px;box-shadow:0 5px 17px #0c3c2810}
+.exec.exec-management .exec-charts .exec-panel{min-width:0;background:#fff;padding:19px}
+.exec.exec-management .exec-panel h2,.exec.exec-management .exec-panel h3{color:#154839}
+.exec.exec-management .mgmt-gauge-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin:0 0 22px}
+.exec.exec-management .mgmt-gauge-panel{display:flex;align-items:center;gap:16px;min-width:0;padding:19px}
+.exec.exec-management .mgmt-ring{--ring-accent:#188468;--ring-progress:0%;display:grid;place-items:center;position:relative;flex:0 0 100px;width:100px;height:100px;border-radius:50%;background:conic-gradient(var(--ring-accent) var(--ring-progress),#dce8e1 var(--ring-progress))}
+.exec.exec-management .mgmt-ring::before{content:"";position:absolute;inset:12px;background:#fff;border-radius:50%}
+.exec.exec-management .mgmt-ring span{z-index:1;color:#124436;font-size:1.25rem;font-weight:850;font-variant-numeric:tabular-nums}
+.exec.exec-management .mgmt-ring[data-mgmt-ring=risk]{--ring-accent:#c8653b}
+.exec.exec-management .mgmt-ring[data-mgmt-ring=aging]{--ring-accent:#b8892d}
+.exec.exec-management .mgmt-gauge-panel h3{font-size:.97rem;margin:4px 0 5px}
+.exec.exec-management .mgmt-gauge-panel p{font-size:.76rem;line-height:1.5;color:#61766b;margin:0}
+.exec.exec-management .mgmt-preview{min-height:210px;overflow:hidden}
+.exec.exec-management .mgmt-preview h3{margin:7px 0}
+.exec.exec-management .mgmt-preview p{font-size:.83rem;max-width:680px;line-height:1.6}
+.exec.exec-management .mgmt-pending-bars{display:grid;gap:9px;margin:17px 0;max-width:560px}
+.exec.exec-management .mgmt-pending-bars span{height:12px;border-radius:10px;background:linear-gradient(90deg,#bbdbca 0 70%,#eef3ee 70%);opacity:.7}
+.exec.exec-management .mgmt-pending-bars span:nth-child(2){background:linear-gradient(90deg,#c0dcce 0 50%,#eef3ee 50%)}
+.exec.exec-management .mgmt-pending-bars span:nth-child(3){background:linear-gradient(90deg,#c0dcce 0 83%,#eef3ee 83%)}
+.exec.exec-management .mgmt-pending-bars span:nth-child(4){background:linear-gradient(90deg,#c0dcce 0 35%,#eef3ee 35%)}
+.exec.exec-management .mgmt-footer-note{padding:13px 16px;background:#e7f1ea;border-left:4px solid #2a8267;border-radius:7px}
+.exec.exec-management .exec-role-reporting{grid-template-columns:minmax(0,1fr);gap:17px}
+.exec.exec-management .role-unit-panel,.exec.exec-management .role-followup-panel{padding:20px}
+.exec .role-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:9px}
+.exec .role-eyebrow{display:block;font-size:.66rem;letter-spacing:.11em;font-weight:830;color:#25896c;margin-bottom:6px}
+.exec .role-panel-heading h2{font-size:1.11rem;margin:0}
+.exec .role-panel-chip{background:#e3f0e9;color:#276649;font-size:.69rem;font-weight:770;border-radius:20px;padding:6px 10px}
+.exec.exec-management .role-comparison-bars{display:grid;gap:13px;margin:19px 0}
+.exec.exec-management .role-rank-row{display:grid;grid-template-columns:minmax(185px,260px) minmax(100px,1fr) 75px;gap:14px;align-items:center}
+.exec.exec-management .role-rank-label{min-width:0}
+.exec.exec-management .role-rank-label span,.exec.exec-management .role-rank-label small{display:block;overflow-wrap:anywhere}
+.exec.exec-management .role-rank-label span{font-size:.83rem;font-weight:730;color:#2c5545}
+.exec.exec-management .role-rank-label small{font-size:.7rem;color:#799084;margin-top:3px}
+.exec.exec-management .role-rank-track{background:#e5efe9;border-radius:6px;height:17px;overflow:hidden}
+.exec.exec-management .role-rank-bar{display:block;height:100%;min-width:0;background:linear-gradient(90deg,#2a9176,#8cbd73);border-radius:6px}
+.exec.exec-management .role-rank-row strong{font-size:.86rem;text-align:right;color:#1b624a}
+.exec.exec-management .role-chart-note{font-size:.72rem;color:#657d70;line-height:1.5}
+.exec.exec-management .exec-role-table{max-height:500px;background:#fff;border:1px solid #dde9e0;border-radius:9px}
+.exec.exec-management .exec-role-table th{background:#eaf2eb;color:#2a5947;font-size:.75rem}
+.exec.exec-management .exec-role-table tbody tr:nth-child(even){background:#fafcf9}
+.exec.exec-management .exec-role-table tbody tr:hover{background:#f1f8f2}
+.exec.exec-management .role-priority{font-weight:740;color:#a16b1b}
+@media(max-width:1160px){.exec.exec-management .mgmt-gauge-grid{grid-template-columns:1fr 1fr}.exec.exec-management .exec-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){.exec.exec-management .exec-charts,.exec.exec-management .mgmt-gauge-grid{grid-template-columns:1fr}.exec.exec-management .mgmt-ring{width:90px;height:90px;flex-basis:90px}}
+@media(max-width:600px){.exec.exec-management{padding:12px}.exec.exec-management .mgmt-hero{padding:18px}.exec.exec-management .mgmt-hero-label{align-items:start;flex-direction:column}.exec.exec-management .exec-kpis{grid-template-columns:1fr}.exec.exec-management .role-rank-row{grid-template-columns:minmax(100px,1fr) 1fr 54px;gap:6px}.exec.exec-management .role-rank-label span{font-size:.72rem}}
+
+/* A pending view uses neutral skeletons, never simulated comparison lengths. */
+.exec.exec-management .mgmt-pending-bars span,
+.exec.exec-management .mgmt-pending-bars span:nth-child(n){
+  background:repeating-linear-gradient(115deg,#e7efea,#e7efea 10px,#d8e8de 10px,#d8e8de 20px);
+  width:100%;opacity:.65
+}

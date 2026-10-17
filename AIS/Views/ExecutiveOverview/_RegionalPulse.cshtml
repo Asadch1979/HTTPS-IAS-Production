@@ -1,12 +1,28 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<p class="exec-note">Current outstanding balances · audit end dates are not remediation deadlines. Settlement trend shows activity in the returned calendar months.</p>
-<partial name="_Sections" model="Model" />
-@if (Model.RoleOracleEnabled)
-{
-    <partial name="_RoleReporting" model="Model" />
-}
-else
-{
-    <partial name="_EntityComparison" model="Model" />
-}
-<article class="exec-panel"><h2>Follow-up Priorities</h2><p>Use the critical observation list above for high-risk, over-365-day and over-three-cycle paras. Ages are exact days where IAS records a para-added date. Pending auditee-response assignments are not available from this dataset.</p></article>
+<section class="regional-command" aria-label="Dark Regional Audit Pulse dashboard">
+    <div class="regional-hero">
+        <div><span class="regional-eyebrow"><span class="regional-live-dot" aria-hidden="true"></span> REGIONAL AUDIT INTELLIGENCE</span>
+            <h2>Regional Audit Pulse</h2>
+            <p>@Model.ScopeLabel · Authorized reporting descendants only</p></div>
+        <div class="regional-hero-meta"><span>RISK &amp; COMPLIANCE</span><strong>Branch oversight</strong>
+            <small>Live current-state IAS figures</small></div>
+    </div>
+    <div class="regional-section-label"><h3>Regional risk overview</h3>
+        <span>Open paras · high-risk exposure · aging days · compliance cycles</span></div>
+    <partial name="_Sections" model="Model" />
+    @if (Model.RoleOracleEnabled)
+    {
+        <partial name="_RoleReporting" model="Model" />
+    }
+    else
+    {
+        <div class="regional-section-label"><h3>Branch Risk Heatmap</h3>
+            <span>Up to six authorized branches per batch</span></div>
+        <partial name="_EntityComparison" model="Model" />
+    }
+    <section class="regional-footer exec-panel">
+        <div><span class="regional-eyebrow">PRIORITY MONITORING</span>
+            <h3>Observations requiring leadership attention</h3></div>
+        <p>The bounded critical list and follow-up data identify high-risk, over-365-day or over-three-cycle paras. Audit end dates are not remediation deadlines. Branch exposure is not a prediction of losses.</p>
+    </section>
+</section>

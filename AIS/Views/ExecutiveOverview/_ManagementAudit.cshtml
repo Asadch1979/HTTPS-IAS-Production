@@ -1,13 +1,38 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<p class="exec-note">Current open, risk and aging balances in your authorized Group/Division hierarchy. Month-to-date settlement uses the current Oracle calendar month; these are not historical-period snapshots.</p>
-<partial name="_Sections" model="Model" />
-@if (Model.RoleOracleEnabled)
-{
-    <partial name="_RoleReporting" model="Model" />
-}
-else
-{
-    <article class="exec-panel"><h2>Unit comparison and management follow-ups</h2>
-        <p>Detailed management reporting is awaiting approval and compilation of the new Oracle role-dashboard procedures. The existing scoped position and risk figures above remain available.</p>
-    </article>
-}
+<section class="management-command" aria-label="ZTBL Group and Divisional Management Audit dashboard">
+    <div class="mgmt-hero">
+        <div class="mgmt-hero-label"><span class="mgmt-symbol" aria-hidden="true">ZTBL</span>
+            <div><span class="mgmt-eyebrow">MANAGEMENT AUDIT · EXECUTIVE INTELLIGENCE</span>
+                <h2>Management Audit Dashboard</h2>
+                <p>Accountability, risk exposure and follow-up across your authorized Group/Division hierarchy.</p></div>
+        </div>
+        <div class="mgmt-hero-scope"><strong>AUTHORIZED MANAGEMENT SCOPE</strong>
+            <span>@Model.ScopeLabel</span><small>Current audit para position · month-to-date settlement</small></div>
+    </div>
+    <div class="mgmt-section-title"><div><span class="mgmt-eyebrow">EXECUTIVE SCORECARD</span>
+        <h3>Portfolio position &amp; settlement</h3></div>
+        <span class="mgmt-context">Four independently sourced IAS indicators</span></div>
+    <partial name="_Sections" model="Model" />
+    <div class="mgmt-gauge-grid" aria-label="Portfolio risk and settlement indicators">
+        <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="settlement" role="img" aria-label="Settlement ratio awaiting IAS data"><span data-mgmt-ring-value="settlement">N/A</span></div>
+            <div><span class="mgmt-eyebrow">SETTLEMENT PERFORMANCE</span><h3>Settlement ratio</h3><p>Settled ÷ (open + settled). Source: current IAS para position.</p></div></article>
+        <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="risk" role="img" aria-label="High-risk exposure awaiting IAS data"><span data-mgmt-ring-value="risk">N/A</span></div>
+            <div><span class="mgmt-eyebrow">EXPOSURE</span><h3>High-risk share</h3><p>Open high-risk paras as a share of all open paras.</p></div></article>
+        <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="aging" role="img" aria-label="Over-365-day share awaiting IAS data"><span data-mgmt-ring-value="aging">N/A</span></div>
+            <div><span class="mgmt-eyebrow">AGING PRESSURE</span><h3>Over 365 days</h3><p>Aged open paras as a share of current open paras.</p></div></article>
+    </div>
+    @if (Model.RoleOracleEnabled)
+    {
+        <partial name="_RoleReporting" model="Model" />
+    }
+    else
+    {
+        <section class="exec-panel mgmt-preview">
+            <span class="mgmt-eyebrow">SUBORDINATE OFFICE PERFORMANCE</span>
+            <h3>Department and Division comparisons</h3>
+            <p>The approved visual scorecard is ready. Detailed organizational comparisons and follow-up priorities require the verified read-only role-dashboard Oracle procedures. Existing scoped KPIs and risk/trend graphs above remain available.</p>
+            <div class="mgmt-pending-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        </section>
+    }
+    <p class="exec-note mgmt-footer-note">Management actions are displayed as open-para follow-up priorities, not unverified approvals or remediation due dates. Capped tables are not portfolio totals.</p>
+</section>

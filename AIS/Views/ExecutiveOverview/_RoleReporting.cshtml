@@ -4,11 +4,25 @@
 }
 <section class="exec-role-reporting" data-role-reporting data-role-mode="@(regional ? "regional" : "management")"
          aria-label="@(regional ? "Branch risk and follow-up" : "Management audit comparisons")">
-    <article class="exec-panel">
-        <h2>@(regional ? "Branch Risk Heatmap" : "Unit Performance Comparison")</h2>
-        <p class="exec-note">Each row represents one organizational unit, counted within its authorized reporting scope. This is not an audit coverage percentage. Risk share uses open paras as its denominator. Branch results are capped at 250; no capped subtotal is presented as a portfolio total.</p>
-        <p role="status" data-role-units-status>Loading authorized comparison data…</p>
-        <div class="exec-role-table" role="region" aria-label="Organizational comparison" tabindex="0">
+    <article class="exec-panel role-unit-panel">
+        <div class="role-panel-heading">
+            <div><span class="role-eyebrow">@(regional ? "EXPOSURE BY BRANCH" : "PERFORMANCE BY UNIT")</span>
+                <h2>@(regional ? "Branch Risk Heatmap" : "Department / Division Comparison")</h2></div>
+            <span class="role-panel-chip">@(regional ? "Authorized branches" : "Authorized reporting units")</span>
+        </div>
+        @if (regional)
+        {
+            <p class="exec-note">Color bands show the proportion of each branch's open paras rated High (red: ≥20%, amber: 10–19.9%, teal: under 10%). These are presentation thresholds, not formal IAS risk grades; zero-open branches are neutral. Counts and percentages remain visible as text.</p>
+            <div class="role-heatmap-legend"><span><i class="role-heat-strong"></i>≥20% high-risk share</span><span><i class="role-heat-watch"></i>10–19.9%</span><span><i class="role-heat-low"></i>Under 10%</span><span><i class="role-heat-empty"></i>No open paras</span></div>
+            <div class="role-heatmap" data-region-heatmap aria-label="Risk exposure by verified branch"><p>Loading authorized branch heatmap…</p></div>
+        }
+        else
+        {
+            <p class="exec-note">Top reporting units by current open para volume (maximum eight bars). Bars share the same maximum for comparison, and are not additive to the portfolio total.</p>
+            <div class="role-comparison-bars" data-management-bars aria-label="Open paras by authorized organizational unit"><p>Loading unit comparisons…</p></div>
+        }
+        <p role="status" data-role-units-status>Loading authorized unit comparison…</p>
+        <div class="exec-role-table" role="region" aria-label="Organizational comparison data" tabindex="0">
             <table class="exec-table"><thead><tr>
                 <th scope="col">Unit</th><th scope="col">Open paras</th><th scope="col">High risk</th>
                 <th scope="col">Over 365 days</th><th scope="col">Over 3 cycles</th>
@@ -16,9 +30,11 @@
             </tr></thead><tbody data-role-unit-rows></tbody></table>
         </div>
     </article>
-    <article class="exec-panel">
-        <h2>Management Follow-up Priorities</h2>
-        <p class="exec-note">Up to 100 open paras, prioritized by high risk, age and compliance cycles. Status and stage are source codes; this does not imply a verified auditee-response deadline or management decision queue.</p>
+    <article class="exec-panel role-followup-panel">
+        <div class="role-panel-heading"><div><span class="role-eyebrow">PRIORITY REGISTER</span>
+            <h2>@(regional ? "High-Risk & Aging Follow-ups" : "Outstanding Management Follow-ups")</h2></div>
+            <span class="role-panel-chip">Up to 100 open paras</span></div>
+        <p class="exec-note">Ordered by the Oracle priority procedure: high-risk, age and compliance cycles. Status and stage are source codes, not an inferred management decision or overdue-action deadline.</p>
         <p role="status" data-role-followups-status>Loading authorized follow-ups…</p>
         <div class="exec-role-table" role="region" aria-label="Priority audit follow-ups" tabindex="0">
             <table class="exec-table"><thead><tr>

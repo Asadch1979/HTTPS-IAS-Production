@@ -68,7 +68,7 @@
     </nav>
     <partial name="_Filters" model="Model" />
     <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
-    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
+    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports" && Model.SelectedView.Id != "command")">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
     <noscript><p>Enable JavaScript to load your Executive Dashboard.</p></noscript>
@@ -90,6 +90,7 @@
     else
     {
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+        @if (Model.SelectedView.Id == "management") { <script src="~/js/executive-role-visuals.js" asp-append-version="true"></script> }
         @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
         @if (Model.RoleOracleEnabled && (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional")) { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
     }
