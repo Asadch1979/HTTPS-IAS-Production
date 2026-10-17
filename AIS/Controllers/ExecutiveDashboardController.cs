@@ -145,7 +145,9 @@ namespace AIS.Controllers
                 var managementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
                     .Get<int[]>() ?? Array.Empty<int>();
                 var isManagement = scope.DashboardType == "GROUP" && root?.EntityTypeId == 18 ||
-                    scope.DashboardType == "RLM" && managementRoles.Contains(scope.RoleId) &&
+                    scope.DashboardType == "RLM" &&
+                    (managementRoles.Contains(scope.RoleId) ||
+                     (scope.RoleId == 1 && scope.GroupRootId.HasValue && session.IsSuperUser())) &&
                     (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
                 var isRegional = scope.DashboardType == "RLM" &&
                     (root?.EntityTypeId == 5 || root?.EntityTypeId == 21);
