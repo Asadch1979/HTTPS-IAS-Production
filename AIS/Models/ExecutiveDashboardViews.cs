@@ -20,7 +20,8 @@ namespace AIS.Models
                 _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
         // Separate endpoints, fetched only by the scoped role-dashboard UI.
         // Keep them out of Datasets so the existing executive charts are untouched.
-        public string[] RoleDatasets => Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
+        public string[] RoleDatasets => Id == "command" ? new[] { "GetCiaCommandKpis", "GetCiaIssueNature" }
+            : Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
             : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();
         public string[] Reports { get; set; } = Array.Empty<string>();
     }
@@ -58,6 +59,10 @@ namespace AIS.Models
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             views[0].UseLifecycleKpis = perspective == "TOP";
+            if (perspective == "CIA")
+                views.Insert(0, View("command", "CIA Audit Command Center", "_CiaCommandCenter",
+                    "Plan coverage, delayed reports, A1 observations, pending auditee response, audit teams and ten issue categories.",
+                    Array.Empty<string>(), Array.Empty<string>()));
             if (perspective == "GROUP" || perspective == "RLM")
                 views.Insert(0, View("management", "ZTBL | Management Audit Dashboard", "_ManagementAudit",
                     "Current management para position, subordinate unit comparisons and bounded follow-up priorities.",
