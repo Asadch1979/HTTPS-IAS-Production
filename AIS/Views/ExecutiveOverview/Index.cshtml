@@ -26,6 +26,27 @@
             <button type="submit" class="org-button">Load Group</button>
         </form>
     }
+    @if (Model.IsSuperUser && Model.DashboardType == "RLM")
+    {
+        <form class="exec-filters" method="get" action="@Url.Action("RLM", "ExecutiveOverview")">
+            <div><label for="exec-rlm-root">Super User: reporting hierarchy to review</label>
+                <select id="exec-rlm-root" name="groupRootId" required>
+                    <option value="">Select an authorized Group, Division, GM or Region</option>
+                    @foreach (var root in Model.RlmRoots)
+                    {
+                        <option value="@root.EntityId" selected="@(root.EntityId == Model.GroupRootId)">@root.EntityName (@root.EntityId)</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="org-button">Open Scoped Dashboard</button>
+        </form>
+    }
+    @if (Model.NeedsRlmRoot)
+    {
+        <p class="exec-note">Choose an organizational reporting root above. No dashboard data is queried until you select a verified Group, Division, GM or Region. This is a scoped Super User preview, not user impersonation.</p>
+    }
+    else
+    {
     <nav class="exec-navigation" data-view-navigation aria-label="Executive Dashboard views">
         @foreach (var view in Model.Views)
         {
@@ -38,9 +59,14 @@
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
     <noscript><p>Enable JavaScript to load your Executive Dashboard.</p></noscript>
+    }
 </section>
 @section Scripts {
-    @if (Model.SelectedView.Id == "reports")
+    @if (Model.NeedsRlmRoot)
+    {
+        // No data queries while Super User has not selected a reporting root.
+    }
+    else if (Model.SelectedView.Id == "reports")
     {
         <script src="~/js/executive-reports.js" asp-append-version="true"></script>
     }
