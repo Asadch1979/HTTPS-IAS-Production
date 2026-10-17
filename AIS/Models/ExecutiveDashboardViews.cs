@@ -18,7 +18,11 @@ namespace AIS.Models
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
                 _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
-        // Separate endpoints, fetched only by the scoped role-dashboard UI.\n        // Keep them out of Datasets so the existing executive charts are untouched.\n        public string[] RoleDatasets => Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }\n            : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();\n        public string[] Reports { get; set; } = Array.Empty<string>();
+        // Separate endpoints, fetched only by the scoped role-dashboard UI.
+        // Keep them out of Datasets so the existing executive charts are untouched.
+        public string[] RoleDatasets => Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
+            : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();
+        public string[] Reports { get; set; } = Array.Empty<string>();
     }
 
     // Presentation definitions are chosen only after resolving the authorized perspective.
