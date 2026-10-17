@@ -17,13 +17,15 @@ namespace AIS.Controllers
             var session = CreateSessionHandler();
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new UnauthenticatedException();
+            if (user.UserRoleID <= 0 || (user.UserRoleID == 1 && !session.IsSuperUser()))
+                throw new ExecutiveDashboardAccessException("RoleMapping", "An active verified IAS role is required.");
             var requested = requestedType?.Trim().ToUpperInvariant();
             // Reporting Line Management never accepts a browser-supplied root.
             // It always starts at the entity assigned to the authenticated user.
             if (requested == "RLM")
             {
                 if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0 ||
-                    !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID))
+                    !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID && !n.HasTypeConflict && n.EntityTypeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Reporting Line Management requires the authenticated entity.");
                 return new ExecutiveDashboardScope(user, "RLM", "/Dashboard/entity_wise_obs", user.UserEntityID);
             }
@@ -111,7 +113,7 @@ namespace AIS.Controllers
             NarrowExecutiveDashboardScope(scope, rootId);
             var allowed = options.Entities.Select(e => e.Id).ToHashSet();
             return GetOrganizationNodes(rootId).Where(n => !n.HasTypeConflict && allowed.Contains(n.EntityId) &&
-                (branches ? n.EntityTypeId == 6 : n.ParentEntityId == rootId))
+                (branches ? n.EntityTypeId == 6 || n.EntityTypeId == 28 : n.ParentEntityId == rootId))
                 .OrderBy(n => n.EntityName).ToList();
         }
 
@@ -152,12 +154,11 @@ namespace AIS.Controllers
             RequireExecutiveGroupScope(scope);
             var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ? scope.GroupRootId :
                 scope.DashboardType == "RLM" ? scope.SessionEntityId : null);
-            return scope.DashboardType != "GROUP" ? nodes : nodes.Where(n => n.EntityId == scope.GroupRootId ||
-                n.Reporting1 == scope.GroupRootId || n.Reporting2 == scope.GroupRootId ||
-                n.Reporting3 == scope.GroupRootId || n.Reporting4 == scope.GroupRootId ||
-                n.Reporting5 == scope.GroupRootId || n.Reporting6 == scope.GroupRootId).ToList();
+            var root = scope.DashboardType == "GROUP" ? scope.GroupRootId : scope.SessionEntityId;
+            return scope.DashboardType != "GROUP" && scope.DashboardType != "RLM" ? nodes : nodes.Where(n => (scope.DashboardType != "RLM" || !n.HasTypeConflict) &&
+                (n.EntityId == root || n.Reporting1 == root || n.Reporting2 == root ||
+                 n.Reporting3 == root || n.Reporting4 == root || n.Reporting5 == root || n.Reporting6 == root)).ToList();
         }
-
         internal List<ExecutiveSettlementTrend> GetExecutiveSettlementTrend(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
             => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_SETTLEMENT_TREND", scope, auditPeriod,
                 reader => new ExecutiveSettlementTrend {

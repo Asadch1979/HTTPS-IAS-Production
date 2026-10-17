@@ -102,6 +102,14 @@ namespace AIS.Controllers
                 }
                 filters ??= new ExecutiveDashboardFilterRequest();
                 filters.EntityId = entityId;
+                if (scope.DashboardType == "RLM" && (filters.DimensionId.HasValue || filters.SelectBy != "entityType"))
+                    return Error(400, "invalid_request", "Reporting Line Management supports Reporting Office and Entity only.");
+                if (filters.View == "regional")
+                {
+                    var root = database.GetExecutiveDashboardRoot(scope);
+                    if (scope.DashboardType != "RLM" || (root?.EntityTypeId != 21 && root?.EntityTypeId != 5))
+                        throw new ExecutiveDashboardAccessException("RoleMapping", "The regional view requires a verified GM or region posting.");
+                }
                 var dates = filters.Validate();
                 if (lifecycle && dates == null) throw new ArgumentException("Both KPI dates are required.");
                 if (filters.View != null)

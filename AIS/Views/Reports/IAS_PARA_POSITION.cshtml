@@ -10,7 +10,8 @@
 
 
 
-<div class="row col-md-12">
+<link rel="stylesheet" href="~/css/ias-para-position.css" asp-append-version="true" />
+<div class="row col-md-12 ias-para-position">
 
     <div class="row col-md-12 mt-3">
         <h3 style=" display:block;color: #be0e43">IAS Para Position</h3>
@@ -49,9 +50,24 @@
         <button id="iasParaPositionSearch" data-onclick="entityTypeSelectionChangeEvent();" class="btn btn-danger col-md-2 offset-md-10">Search</button>
 
     </div>
-    <div class="row col-md-12 mt-3 table-responsive">
+    <div class="row col-md-12 mt-3">
         <p class="text-muted">Issue Rectified counts issues resolved before audit conclusion and excludes dropped issues. Total = Opening Balance + Para Added. Historical balances are estimates based on recorded addition and settlement dates.</p>
         <div id="iasParaPositionError" class="alert alert-danger d-none" role="alert"></div>
+        <p id="iasParaPositionStatus" class="text-muted mb-0" role="status" aria-live="polite">Select an entity type and report period.</p>
+    </div>
+    <section id="iasParaPositionSummary" class="ias-para-summary" aria-labelledby="iasParaSummaryTitle" hidden>
+        <header><h4 id="iasParaSummaryTitle">All Entities · IAS Para Position</h4><p id="iasParaSummaryPeriod"></p></header>
+        <div class="ias-para-summary-grid">
+            <article><h5>Opening Balance</h5><strong data-ias-total="openingBalance">0</strong></article>
+            <article><h5>Issues</h5><dl><div><dt>Identified</dt><dd data-ias-total="issueIdentified">0</dd></div><div><dt>Rectified</dt><dd data-ias-total="issueRectified">0</dd></div></dl></article>
+            <article><h5>Para Added</h5><strong data-ias-total="paraAdded">0</strong></article>
+            <article><h5>Total Paras</h5><strong data-ias-total="totalCombined">0</strong><small>Opening Balance + Para Added</small></article>
+            <article><h5>Settled Paras</h5><dl><div><dt>By Audit</dt><dd data-ias-total="settledAudit">0</dd></div><div><dt>By Compliance</dt><dd data-ias-total="settledCompliance">0</dd></div></dl></article>
+            <article class="ias-para-outstanding"><h5>Outstanding Paras</h5><strong data-ias-total="outstanding">0</strong></article>
+            <article class="ias-para-risk"><h5>Outstanding Risk</h5><dl><div><dt>High</dt><dd data-ias-total="highRisk">0</dd></div><div><dt>Medium</dt><dd data-ias-total="mediumRisk">0</dd></div><div><dt>Low</dt><dd data-ias-total="lowRisk">0</dd></div></dl></article>
+        </div>
+    </section>
+    <div id="iasParaPositionTableContainer" class="row col-md-12 mt-3 table-responsive" hidden>
         <table id="iasParaPositionGrid" class="table table-hover table-bordered table-hover mt-3 table-striped"
                data-show-reporting-office="@(showReportingOffice.ToString().ToLowerInvariant())">
             <thead style="background-color: #19875478 !important; ">

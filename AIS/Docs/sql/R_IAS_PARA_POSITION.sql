@@ -1,3 +1,7 @@
+-- LEGACY STANDALONE REFERENCE ONLY. This is not the production deployment target.
+-- IAS calls PKG_RPT.R_IAS_PARA_POSITION. Do not run this file to replace or "fix"
+-- that package. Verify its live ALL_ARGUMENTS signature and approved package body.
+-- Preserved below solely for calculation/history comparison.
 -- Oracle 18c. Compile V_EXEC_KPI_SRC_A/O/C and V_EXEC_KPI_LIFECYCLE first.
 -- Standalone procedure: leaves PKG_RPT.R_FAD_MONTHLY_REVIEW unchanged.
 CREATE OR REPLACE PROCEDURE R_IAS_PARA_POSITION(

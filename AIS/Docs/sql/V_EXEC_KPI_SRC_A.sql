@@ -1,5 +1,7 @@
 -- Modern audit observations: linked by IND='A', NEW_PARA_ID -> T_AU_OBSERVATION.ID.
--- Business rule: Status 14 (audit concluded) is the ONLY cutoff milestone.
+-- Business rule: the FIRST status-14 event retains original PARA recognition.
+-- Re-conclusion must not silently re-date existing para balances. ISSUE events
+-- use the latest current-cycle conclusion and flag in V_EXEC_KPI_LIFECYCLE.
 -- Observation statuses 4, 9 and 23 with STELLED_ON < CONCLUDED_ON are
 -- dispositions before conclusion. They must NOT contribute to the A-source
 -- Para Added or Paras Settled KPIs (regardless of current PARA_STATUS).

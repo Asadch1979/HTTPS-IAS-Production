@@ -7,18 +7,21 @@
     const tiles = [...panel.querySelectorAll('[data-entity-id]')];
     let position = 0;
     const number = value => Number(value).toLocaleString();
-    async function dataset(action, entityId) {
-        const query = new URLSearchParams(new FormData(document.getElementById('exec-filters')));
+    async function dataset(action, entityId, selection) {
+        const query = new URLSearchParams(selection);
         query.set('entityId', entityId);
         if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
-        const response = await fetch(`${app.dataset.apiUrl}${action}?${query}`, {credentials: 'same-origin', headers: {'Accept': 'application/json'}});
+        const response = await fetch(`${app.dataset.apiUrl}${action}?${query}`, {credentials: 'same-origin', cache: 'no-store', headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}});
+        if (response.redirected || !(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Session or dashboard access changed');
         if (!response.ok) throw new Error(`Request failed (${response.status})`);
         const result = await response.json();
         if (!result.success || result.data == null) throw new Error('Data unavailable');
         return result.data;
     }
     button?.addEventListener('click', async () => {
+        if (button.disabled) return;
+        const selection = new URLSearchParams(new FormData(document.getElementById('exec-filters')));
         button.disabled = true;
         const batch = tiles.slice(position, position + 6);
         let failures = 0;
@@ -28,7 +31,7 @@
             const target = tile.querySelector('[data-entity-values]');
             target.textContent = 'Loading verified summaries…';
             try {
-                const [kpi, risk] = await Promise.all([dataset('GetKpiSummary', tile.dataset.entityId), dataset('GetRiskSummary', tile.dataset.entityId)]);
+                const [kpi, risk] = await Promise.all([dataset('GetKpiSummary', tile.dataset.entityId, selection), dataset('GetRiskSummary', tile.dataset.entityId, selection)]);
                 const count = id => risk.filter(r => r.riskId === id).reduce((sum, r) => sum + r.paraCount, 0);
                 const high = count(1), medium = count(2), low = count(3);
                 const level = !kpi.openParas ? 'none' : high ? 'high' : medium ? 'medium' : low ? 'low' : 'unrated';

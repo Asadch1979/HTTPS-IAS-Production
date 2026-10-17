@@ -71,17 +71,27 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             }
 
-            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true);
+            List<TaskListModel> leadTasks = null;
+            List<FieldAuditEngagementOptionModel> leadEngagements = null;
             if (workbench)
             {
                 if (_sessionHandler.IsSessionRevoked(user)) return Unauthorized();
-                model.AvailableEngagements = model.AvailableEngagements
-                    .Where(e => string.Equals(e.IsTeamLead?.Trim(), "Y", StringComparison.OrdinalIgnoreCase)).ToList();
-                if (!model.AvailableEngagements.Any()) return StatusCode(403);
-                if (engId.HasValue && !model.AvailableEngagements.Any(e => e.EngagementId == engId)) return StatusCode(403);
-                model.WorkbenchTasks = _dbConnection.GetTaskList().Where(t =>
-                    t.TEAMMEMBER_PPNO.ToString() == user.PPNumber &&
-                    model.AvailableEngagements.Any(e => e.EngagementId == t.ENG_PLAN_ID)).ToList();
+                if (!ModelState.IsValid || engId <= 0) return BadRequest();
+                if (!int.TryParse(user.PPNumber, out var ppNumber) || ppNumber <= 0) return StatusCode(403);
+                leadTasks = _dbConnection.GetTaskList().Where(t => t.TEAMMEMBER_PPNO == ppNumber &&
+                    t.ISACTIVE == "Y" && t.ISCLOSE == "Z").ToList();
+                leadEngagements = _dbConnection.GetArDashboardDropdownOptions().Where(e =>
+                    string.Equals(e.IsTeamLead?.Trim(), "Y", StringComparison.OrdinalIgnoreCase) &&
+                    leadTasks.Any(t => t.ENG_PLAN_ID == e.EngagementId && t.STATUS_ID == e.StatusId))
+                    .GroupBy(e => e.EngagementId).Select(g => g.First()).ToList();
+                if (!leadEngagements.Any() || (engId.HasValue && !leadEngagements.Any(e => e.EngagementId == engId)))
+                    return StatusCode(403);
+            }
+            // Validate workbench assignment before the workflow builder changes active context.
+            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true, authorizedEngagements: leadEngagements);
+            if (workbench)
+            {
+                model.WorkbenchTasks = leadTasks;
                 ViewData["WorkbenchManagement"] = true;
                 return View("~/Views/Shared/EngagementWorkbench.cshtml", model);
             }
@@ -257,9 +267,9 @@ namespace AIS.Controllers
             return RedirectToAction("Home", "MANReport");
         }
 
-        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId, bool autoSelectDefaultSelection = false)
+        private FieldAuditWorkflowViewModel BuildWorkflowViewModel(SessionUser user, string requestedStepCode, int? engId, bool autoSelectDefaultSelection = false, List<FieldAuditEngagementOptionModel> authorizedEngagements = null)
         {
-            var engagementOptions = _dbConnection.GetArDashboardDropdownOptions()
+            var engagementOptions = (authorizedEngagements ?? _dbConnection.GetArDashboardDropdownOptions())
                 .Where(item => item.EngagementId > 0)
                 .GroupBy(item => item.EngagementId)
                 .Select(group => group.First())

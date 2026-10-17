@@ -1,53 +1,14 @@
 # IAS Para Position
 
-Open `/Reports/IAS_PARA_POSITION` after deployment. This is a separate copy of
-the FAD Monthly Review report; the original report and package are unchanged.
+Production entry point: `pkg_rpt.R_IAS_PARA_POSITION`. DBConnection retains named bindings:
+`P_NO NUMBER`, `ENT_ID NUMBER`, `R_ID NUMBER`, `R_T NUMBER`, `S_DATE DATE`, `E_DATE DATE`, `IO_CURSOR OUT REF CURSOR`.
 
-## Deployment
+The packaged IAS procedure is not present in the checked-in PKG_RPT snapshot. The old standalone `sql/R_IAS_PARA_POSITION.sql` is a reference, not a replacement for the working production package. Do not compile it as the deployment step. Verify ALL_ARGUMENTS (including owner/overload), live package source and returned cursor aliases with `sql/IAS_corrective_review_F8.sql` before deployment. The configured Oracle connection was unavailable during this corrective review; signature compatibility is not certified.
 
-1. Compile the approved `V_EXEC_KPI_SRC_A.sql`, `V_EXEC_KPI_SRC_O.sql`,
-   `V_EXEC_KPI_SRC_C.sql`, then `V_EXEC_KPI_LIFECYCLE.sql`. Their existing
-   `V_EXEC_ENTITY_SCOPE` dependency must already be installed.
-2. Compile `sql/R_IAS_PARA_POSITION.sql` in the application's Oracle schema.
-3. Run `sql/ias_para_position_permissions.sql`. It registers page ID 1000400
-   and copies the original report's menu groups and active POST API role grants.
-   It rejects conflicting page registrations. Run it without concurrent menu edits.
-4. Deploy the app and sign in again to refresh cached menu/API permissions.
+The existing page/API permissions, AJAX contract and numeric calculations are unchanged. For Entity Type -1 the page sums the same returned rows into a compact summary; individual types retain the detailed DataTable. Total remains Opening Balance + Para Added. Empty/error/loading states hide both result layouts. Switching filters destroys any old DataTable and cancels stale AJAX results.
 
-## Counting rules
+Issue Rectified excludes dropped status 23. Its persisted flag records settlement during the active audit, is copied at successful conclusion and cleared on applicable observation reversal. ISSUE lifecycle dates use the latest current-cycle conclusion; modern PARA balances retain their existing first-conclusion recognition logic. No other executive KPI formulas were changed. Historic reopened/re-concluded or missing-log cases require manual reconciliation rather than an unconditional backfill from MAX(created_on).
 
-- Issue Identified: one eligible ISSUE row whose identification date falls in
-  the selected period (`issue_eligible = 1` from the lifecycle view).
-- Issue Rectified: ISSUE rows in status 4 or 9 whose lifecycle rectification
-  date falls in the period. The lifecycle view requires settlement before
-  status-14 audit conclusion. Dropped issues (status 23) are excluded, matching
-  `P_GET_KPI_LIFECYCLE`.
-- Para Added: PARA rows whose lifecycle `para_added_on` falls in the period,
-  including modern A and legacy O/C sources as defined by the supplied views. Modern
-  pre-conclusion dispositions have no effective addition date and do not count.
-- Total remains Opening Balance + Para Added. Issues are separate activity
-  measures and are not added to para balances.
-- Opening and outstanding use the lifecycle addition/settlement dates and
-  current para status (8 open, 9 settled). End dates include the entire day.
-  Historical balances are estimates because current status/latest settlement
-  cannot reconstruct unlogged reopenings.
-- Settlement follows the lifecycle settled date. Compliance stages 41 and 45
-  count under compliance; other stages, including missing stages, count under audit.
-  Risk buckets use lifecycle risk 1/2/0-or-3 for outstanding paras.
+Manual database work is described in `IAS_Corrective_Review_2026-10-17.md`. Do not run historical DML, replace packages/views or change grants automatically. Existing menu/API grants need no new registration for the summary UI. For an initial report installation, separately review the existing permission script and current production grants.
 
-Auditor/reviewer restrictions follow the original monthly-review procedure.
-Roles 1/3/5 selecting -1 receive entity-type summary rows; roles 6/7 see their
-audited entities; roles 43/44 see their assigned compliance entities; roles
-15/16 are restricted to their audit office. Other selections follow active
-entity category mappings. Reporting-office visibility matches the copied page.
-Entities with issues alone are included so they are not lost from the totals.
-
-## Database verification
-
-Verify compilation in `USER_ERRORS` for `R_IAS_PARA_POSITION`, then run the
-report for an authorized auditor and compliance reviewer. Reconcile eligible
-issues by observation ID and additions by COM_ID against the lifecycle view,
-including a status-23 dropped issue, pre-conclusion dispositions, legacy O/C
-paras, end-day events, and an entity with issues but no compliance paras.
-Live Oracle execution is required to validate environment-specific schema
-dependencies and grants.
+Live validation must reconcile the package result aliases P_NAME, CHILD_CODE, C_NAME, OPENING_BAL, ISSUE_IDENTIFIED, ISSUE_RECTIFIED, PARA_ADDED, SETTLED_COM, SETTLED_AUD, OUTSTANDING and R1/R2/R3 with the existing model and the selected entity/date scopes. Validate All Entities, individual types, zero rows, request failure, switching during a request, dropped/reversed observations, first conclusion and re-conclusion. Historical opening/closing balances retain their existing estimation limitations.

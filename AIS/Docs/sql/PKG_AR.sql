@@ -2448,6 +2448,7 @@ create or replace package body PKG_AR is
     Z_B         NUMBER := 0;
     V_DUP_COUNT NUMBER := 0;
     V_ENGPLANID NUMBER := 0;
+    V_ENG_STATUS NUMBER;
   
   BEGIN
   
@@ -2473,6 +2474,11 @@ create or replace package body PKG_AR is
       FROM t_au_observation o
      WHERE o.id = OBS_ID;
   
+    SELECT MAX(eg.status) INTO V_ENG_STATUS FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLANID;
+    IF V_ENG_STATUS = 14 THEN
+      RAISE_APPLICATION_ERROR(-20037, 'Finalization requires an active audit; reverse the concluded audit through the authorized workflow first.');
+    END IF;
+
     IF R_D = 'Y' THEN
     
       IF NEW_STATUS_ID = C_STATUS_DRAFT AND TRIM(D_PARA_NO) IS NULL THEN
@@ -2541,6 +2547,7 @@ create or replace package body PKG_AR is
                                NULL
                             END,
              o.issue_rectified = CASE WHEN NEW_STATUS_ID = C_STATUS_SETTLED
+                                      AND EXISTS (SELECT 1 FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
                                       THEN 1 ELSE 0 END
        WHERE o.id = OBS_ID;
       COMMIT;
@@ -2655,7 +2662,9 @@ create or replace package body PKG_AR is
                                            END,
                    o.stelled_on          = sysdate,
                    o.settled_by          = p_no,
-                   o.issue_rectified     = 1
+                   o.issue_rectified     = CASE WHEN EXISTS (SELECT 1 FROM t_au_plan_eng eg
+                                           WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
+                                           THEN 1 ELSE 0 END
              WHERE o.id = OBS_ID;
             COMMIT;
           end if;
@@ -7045,6 +7054,7 @@ create or replace package body PKG_AR is
                                              P_R_ID          IN NUMBER,
                                              IO_CURSOR       OUT T_CURSOR) IS
     V_ENGPLAN_ID NUMBER;
+    V_ENG_STATUS NUMBER;
     V_DUP_COUNT  NUMBER := 0;
   BEGIN
     IF P_NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
@@ -7072,6 +7082,11 @@ create or replace package body PKG_AR is
       FROM T_AU_OBSERVATION O
      WHERE O.ID = P_OBS_ID
        FOR UPDATE;
+
+    SELECT eg.status INTO V_ENG_STATUS FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLAN_ID;
+    IF V_ENG_STATUS = 14 THEN
+      RAISE_APPLICATION_ERROR(-20037, 'Finalization requires an active audit; reverse the concluded audit through the authorized workflow first.');
+    END IF;
   
     IF P_NEW_STATUS_ID = C_STATUS_FINAL THEN
       SELECT COUNT(*)
@@ -7128,6 +7143,8 @@ create or replace package body PKG_AR is
                           END,
            O.ISSUE_RECTIFIED = CASE
                                  WHEN P_NEW_STATUS_ID = C_STATUS_SETTLED
+                                  AND EXISTS (SELECT 1 FROM t_au_plan_eng eg
+                                               WHERE eg.eng_id = V_ENGPLAN_ID AND eg.status BETWEEN 4 AND 13)
                                  THEN 1 ELSE 0
                                END
     

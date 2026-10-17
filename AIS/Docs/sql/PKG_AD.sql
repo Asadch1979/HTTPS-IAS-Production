@@ -4564,10 +4564,13 @@ create or replace package body PKG_AD is
     update t_au_observation o
        set o.status = S_ID,
            o.issue_rectified = CASE
-                                 WHEN S_ID IN (1, 2, 3, 5, 8, 23) THEN 0
-                                 ELSE o.issue_rectified
+                                 WHEN S_ID IN (4, 9) THEN o.issue_rectified
+                                 ELSE 0
                                END
      where o.id = obs_id;
+    -- Reversal invalidates the copied rectification flag as well as the source flag.
+    UPDATE ais_t_au_post_compliance c SET c.issue_rectified = 0
+     WHERE c.ind = 'A' AND c.new_para_id = obs_id AND S_ID NOT IN (4, 9);
     commit;
     if (S_ID = 1) then
       delete from t_au_observation_assignedto o where o.obs_id = O_B;
