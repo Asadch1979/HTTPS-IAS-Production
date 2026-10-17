@@ -1,0 +1,66 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@{
+    var snapshot = Model.TeamLeadSnapshot;
+    var summary = snapshot?.Summary;
+    var visibleIds = Model.AvailableEngagements.Select(e => (long)e.EngagementId).ToHashSet();
+    var engagements = snapshot?.Engagements.Where(e => visibleIds.Contains(e.EngId)).ToList()
+        ?? new List<AIS.Models.TeamLeadEngagementRow>();
+    var workpapers = snapshot?.Workpapers.Where(w => visibleIds.Contains(w.EngId)).ToList()
+        ?? new List<AIS.Models.TeamLeadWorkpaperRow>();
+    var observations = snapshot?.Observations.Where(o => visibleIds.Contains(o.EngId)).ToList()
+        ?? new List<AIS.Models.TeamLeadObservationRow>();
+}
+<section class="wb-oracle" aria-label="Verified Team Lead reporting">
+    <p>Oracle snapshot as of @(summary?.CurrentStateAsOf.ToString("dd MMM yyyy") ?? "N/A").
+       Counts in the four KPI tiles include all eligible Team Lead assignments; detailed records below are limited to the authorized engagements on this workbench.
+       Review/Reporting workflow lanes remain pending an approved stage mapping.</p>
+    <div class="wb-secondary">
+        <article class="wb-panel"><h2>Additional Audit Workload</h2>
+            <p><strong>@(summary?.ObservationsAwaitingAuditeeResponse.ToString("N0") ?? "N/A")</strong> observations awaiting auditee response (status 2)</p>
+            <p><strong>@(summary?.WorkpapersDueNext7Days.ToString("N0") ?? "N/A")</strong> latest-version workpapers due in the next seven days</p>
+        </article>
+        <article class="wb-panel"><h2>Engagement Details</h2>
+            @if (engagements.Count == 0) { <p>No active engagement details returned for this workbench.</p> }
+            else
+            {
+                <div class="wb-table"><table><thead><tr><th>Engagement</th><th>Task status</th><th>Review observations</th><th>Auditee response</th><th>Audit end</th></tr></thead><tbody>
+                @foreach (var row in engagements.Take(30))
+                {
+                    <tr><td>@row.EntityName (@row.EngId)</td><td>@row.TaskStatusDescription (@row.TaskStatusId)</td>
+                        <td>@row.AwaitingAuditorReview</td><td>@row.AwaitingAuditeeResponse</td>
+                        <td>@(row.AuditEndDate?.ToString("dd MMM yyyy") ?? "Unknown")</td></tr>
+                }
+                </tbody></table></div>
+            }
+        </article>
+    </div>
+    <div class="wb-secondary">
+        <article class="wb-panel"><h2>Assigned Working Papers (V2)</h2>
+            <p>Latest paper versions only. Item counts are recorded test items, not a certified engagement completion percentage.</p>
+            @if (workpapers.Count == 0) { <p>No V2 workpapers returned for these engagements.</p> }
+            else
+            {
+                <div class="wb-table"><table><thead><tr><th>Paper</th><th>Engagement</th><th>Status</th><th>Passed / Items</th><th>Due</th></tr></thead><tbody>
+                @foreach (var paper in workpapers.Take(30))
+                {
+                    <tr><td>@paper.ReferenceNo (@paper.PaperType)</td><td>@paper.EngId</td><td>@paper.Status</td>
+                        <td>@paper.PassedItems / @paper.TotalItems</td><td>@(paper.DueDate?.ToString("dd MMM yyyy") ?? "Unscheduled")</td></tr>
+                }
+                </tbody></table></div>
+            }
+        </article>
+        <article class="wb-panel"><h2>Observations Requiring Action</h2>
+            <p>Showing at most 100 items returned by Oracle. Status 3 is auditor review; status 2 is auditee response. These are not finalized-para totals.</p>
+            @if (observations.Count == 0) { <p>No pending observations returned for these engagements.</p> }
+            else
+            {
+                <div class="wb-table"><table><thead><tr><th>Observation ID</th><th>Engagement</th><th>Status</th><th>Risk ID</th></tr></thead><tbody>
+                @foreach (var item in observations.Take(40))
+                {
+                    <tr><td>@item.ObservationId</td><td>@item.EngId</td><td>@(item.ObservationStatusId == 3 ? "Auditor review" : item.ObservationStatusId == 2 ? "Auditee response" : item.ObservationStatusId.ToString())</td><td>@(item.RiskId?.ToString() ?? "Unrated")</td></tr>
+                }
+                </tbody></table></div>
+            }
+        </article>
+    </div>
+</section>
