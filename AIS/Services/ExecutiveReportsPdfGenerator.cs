@@ -23,6 +23,15 @@ namespace AIS.Services
     public static class ExecutiveReportsPdfGenerator
     {
         private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
+        private static DeviceRgb ReportHeaderColor(string reportId) => reportId switch
+        {
+            "A" => new DeviceRgb(67, 70, 168),
+            "B" => new DeviceRgb(158, 78, 17),
+            "C" => new DeviceRgb(8, 123, 128),
+            "D" => new DeviceRgb(121, 62, 156),
+            _ => new DeviceRgb(17, 102, 73)
+        };
+
         private static string H(object v) => WebUtility.HtmlEncode(Convert.ToString(v, Culture) ?? "");
         private static string N(long v) => v.ToString("N0", Culture);
         private static string P(decimal? v) => v.HasValue ? v.Value.ToString("0.00", Culture) + "%" : "N/A";
@@ -94,11 +103,11 @@ namespace AIS.Services
                         canvas.AddImageFittedIntoRectangle(data,
                             new Rectangle(26, size.GetHeight() - 38, 22, 22), false);
                     Put(canvas, bold, 10, 54, size.GetHeight() - 29,
-                        "ZTBL  |  INTERNAL AUDIT SYSTEM", new DeviceRgb(15, 92, 77));
+                        "ZTBL  |  INTERNAL AUDIT SYSTEM", ReportHeaderColor(reportId));
                     var heading = "Report " + reportId + "  |  " + Title(reportId);
                     var headingX = Math.Max(230, size.GetWidth() - 26 - font.GetWidth(heading, 8));
                     Put(canvas, font, 8, headingX, size.GetHeight() - 29,
-                        heading, new DeviceRgb(100, 116, 139));
+                        heading, ReportHeaderColor(reportId));
                     canvas.SetStrokeColor(new DeviceRgb(226, 232, 240))
                         .MoveTo(26, size.GetHeight() - 44).LineTo(size.GetWidth() - 26, size.GetHeight() - 44).Stroke();
                     canvas.MoveTo(26, 34).LineTo(size.GetWidth() - 26, 34).Stroke();
