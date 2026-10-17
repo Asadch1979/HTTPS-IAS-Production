@@ -5,6 +5,7 @@
     var management = ViewData["WorkbenchManagement"] as bool? == true;
     var controller = management ? "ManagementAudit" : "FieldAudit";
     var action = management ? "MA_Dashboard" : "AR_Dashboard";
+    var summary = Model.TeamLeadSnapshot?.Summary;
     var today = DateTime.UtcNow.AddHours(5).Date;
     var dueSoon = Model.WorkbenchTasks.Where(t => DateTime.TryParseExact(t.AUDIT_END_DATE, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var due) && due >= today && due <= today.AddDays(7)).Select(t => t.ENG_PLAN_ID).Distinct().Count();
 }
@@ -12,10 +13,10 @@
 <section class="engagement-workbench" aria-labelledby="workbench-title">
     <header><p>IAS · Audit Team Leader</p><h1 id="workbench-title">My Engagement Workbench</h1><p>Engagements assigned to you as Team Leader. Select an engagement to open its authorized workflow.</p></header>
     <div class="wb-kpis">
-        <article><span>Active Engagements</span><strong>@Model.AvailableEngagements.Count(e => e.StatusId == 2)</strong><small>Joined assignments · task status 2</small></article>
-        @foreach (var label in new[] { "Pending Reviews", "Observations Awaiting Finalization" })
-        { <article><span>@label</span><strong>N/A</strong><small>Verified dataset not available</small></article> }
-        <article><span>Upcoming Deadlines</span><strong>@dueSoon</strong><small>Recorded audit end dates · today through next 7 days (Pakistan time)</small></article>
+        <article><span>Active Engagements</span><strong>@(summary != null ? summary.ActiveEngagements.ToString("N0") : Model.AvailableEngagements.Count(e => e.StatusId == 2).ToString("N0"))</strong><small>@(summary != null ? "All eligible Team Lead assignments · Oracle" : "Joined assignments · task status 2")</small></article>
+        <article><span>Workpapers Awaiting My Review</span><strong>@(summary != null ? summary.AwaitingMyWorkpaperReview.ToString("N0") : "N/A")</strong><small>Latest V2 version · IN_REVIEW · all eligible assignments</small></article>
+        <article><span>Observations Awaiting Auditor Review</span><strong>@(summary != null ? summary.ObservationsAwaitingAuditorReview.ToString("N0") : "N/A")</strong><small>Observation status 3 · not finalized paras</small></article>
+        <article><span>Upcoming Audit End Dates</span><strong>@(summary != null ? summary.EngagementsEndingNext7Days.ToString("N0") : dueSoon.ToString("N0"))</strong><small>Next 7 days · recorded audit end, not remediation due date</small></article>
     </div>
     <div class="wb-board" aria-label="Engagement workflow">
         @foreach (var stage in new[] { "Planning", "Fieldwork", "Review", "Reporting" })
@@ -51,8 +52,15 @@
         </tbody></table></div>
         @if (!Model.AvailableEngagements.Any()) { <p>No Team Leader assignments returned by IAS.</p> }
     </article>
-    <div class="wb-secondary">
-        <article class="wb-panel"><h2>Assigned Workpapers</h2><p>Completion %, pending submissions and review status: <strong>N/A</strong>. Open a selected engagement’s Working Paper step where authorized.</p></article>
-        <article class="wb-panel"><h2>Observations</h2><p>Draft, pending review, finalized and outstanding action counts: <strong>N/A</strong>. Manage observations through the existing authorized engagement workflow.</p></article>
-    </div>
+    @if (Model.TeamLeadSnapshot != null)
+    {
+        <partial name="_TeamLeadOracle" model="Model" />
+    }
+    else
+    {
+        <div class="wb-secondary">
+            <article class="wb-panel"><h2>Assigned Workpapers</h2><p>Verified V2 package is not enabled. Use your authorized engagement workflow.</p></article>
+            <article class="wb-panel"><h2>Observations</h2><p>Review and auditee-response counts are not available until verified Oracle deployment.</p></article>
+        </div>
+    }
 </section>

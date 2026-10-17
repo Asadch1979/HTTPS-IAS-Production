@@ -1,0 +1,13 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<p class="exec-note">Current open, risk and aging balances in your authorized Group/Division hierarchy. Month-to-date settlement uses the current Oracle calendar month; these are not historical-period snapshots.</p>
+<partial name="_Sections" model="Model" />
+@if (Model.RoleOracleEnabled)
+{
+    <partial name="_RoleReporting" model="Model" />
+}
+else
+{
+    <article class="exec-panel"><h2>Unit comparison and management follow-ups</h2>
+        <p>Detailed management reporting is awaiting approval and compilation of the new Oracle role-dashboard procedures. The existing scoped position and risk figures above remain available.</p>
+    </article>
+}

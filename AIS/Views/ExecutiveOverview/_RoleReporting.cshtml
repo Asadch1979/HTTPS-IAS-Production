@@ -1,0 +1,31 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    var regional = Model.SelectedView.Id == "regional";
+}
+<section class="exec-role-reporting" data-role-reporting data-role-mode="@(regional ? "regional" : "management")"
+         aria-label="@(regional ? "Branch risk and follow-up" : "Management audit comparisons")">
+    <article class="exec-panel">
+        <h2>@(regional ? "Branch Risk Heatmap" : "Unit Performance Comparison")</h2>
+        <p class="exec-note">Each row represents one organizational unit, counted within its authorized reporting scope. This is not an audit coverage percentage. Risk share uses open paras as its denominator. Branch results are capped at 250; no capped subtotal is presented as a portfolio total.</p>
+        <p role="status" data-role-units-status>Loading authorized comparison data…</p>
+        <div class="exec-role-table" role="region" aria-label="Organizational comparison" tabindex="0">
+            <table class="exec-table"><thead><tr>
+                <th scope="col">Unit</th><th scope="col">Open paras</th><th scope="col">High risk</th>
+                <th scope="col">Over 365 days</th><th scope="col">Over 3 cycles</th>
+                <th scope="col">@(regional ? "High-risk share" : "Settled MTD")</th>
+            </tr></thead><tbody data-role-unit-rows></tbody></table>
+        </div>
+    </article>
+    <article class="exec-panel">
+        <h2>Management Follow-up Priorities</h2>
+        <p class="exec-note">Up to 100 open paras, prioritized by high risk, age and compliance cycles. Status and stage are source codes; this does not imply a verified auditee-response deadline or management decision queue.</p>
+        <p role="status" data-role-followups-status>Loading authorized follow-ups…</p>
+        <div class="exec-role-table" role="region" aria-label="Priority audit follow-ups" tabindex="0">
+            <table class="exec-table"><thead><tr>
+                <th scope="col">Entity / Para</th><th scope="col">Risk</th>
+                <th scope="col">Age (days)</th><th scope="col">Cycles</th>
+                <th scope="col">Priority</th><th scope="col">Observation</th>
+            </tr></thead><tbody data-role-followup-rows></tbody></table>
+        </div>
+    </article>
+</section>

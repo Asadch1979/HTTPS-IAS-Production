@@ -4,6 +4,7 @@ using AIS.Services;
 using AIS.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using System;
@@ -21,15 +22,18 @@ namespace AIS.Controllers
         private readonly IPermissionService permissions;
         private readonly IPageIdResolver pageIds;
         private readonly ILogger<ExecutiveDashboardController> logger;
+        private readonly IConfiguration configuration;
 
         public ExecutiveDashboardController(DBConnection database, SessionHandler session,
-            IPermissionService permissions, IPageIdResolver pageIds, ILogger<ExecutiveDashboardController> logger)
+            IPermissionService permissions, IPageIdResolver pageIds, ILogger<ExecutiveDashboardController> logger,
+            IConfiguration configuration)
         {
             this.database = database;
             this.session = session;
             this.permissions = permissions;
             this.pageIds = pageIds;
             this.logger = logger;
+            this.configuration = configuration;
         }
 
         [HttpGet]
@@ -67,6 +71,65 @@ namespace AIS.Controllers
         public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100,
             [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
             => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f));
+
+
+        // The new role datasets use separate, typed Oracle cursors.
+        // Their API permission grants must be registered by IAS before rollout.
+        [HttpGet]
+        public IActionResult GetRoleEntityHeatmap([FromQuery] int? entityId = null,
+            [FromQuery] string auditPeriod = null, [FromQuery] string dashboardType = null,
+            [FromQuery] int? groupRootId = null, [FromQuery] int maxRows = 250,
+            [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteRoleSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, "regional",
+                (scope, f) => database.GetRoleEntityHeatmap(scope, auditPeriod, f, maxRows));
+
+        [HttpGet]
+        public IActionResult GetRoleUnitComparison([FromQuery] int? entityId = null,
+            [FromQuery] string auditPeriod = null, [FromQuery] string dashboardType = null,
+            [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteRoleSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, "management",
+                (scope, f) => database.GetRoleUnitComparison(scope, auditPeriod));
+
+        [HttpGet]
+        public IActionResult GetRoleFollowups([FromQuery] int? entityId = null,
+            [FromQuery] string auditPeriod = null, [FromQuery] string dashboardType = null,
+            [FromQuery] int? groupRootId = null, [FromQuery] int maxRows = 100,
+            [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteRoleSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, null,
+                (scope, f) => database.GetRoleFollowups(scope, auditPeriod, maxRows));
+
+        private IActionResult ExecuteRoleSummary<T>(int? entityId, string auditPeriod, string dashboardType,
+            int? groupRootId, ExecutiveDashboardFilterRequest filters, string requiredPerspective,
+            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> read)
+        {
+            if (!configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"))
+                return StatusCode(503, new { success = false, error = "not_deployed",
+                    message = "Role reporting awaits verified Oracle deployment." });
+            return ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) =>
+            {
+                var root = database.GetExecutiveDashboardRoot(scope);
+                var managementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
+                    .Get<int[]>() ?? Array.Empty<int>();
+                var isManagement = scope.DashboardType == "GROUP" && root?.EntityTypeId == 18 ||
+                    scope.DashboardType == "RLM" && managementRoles.Contains(scope.RoleId) &&
+                    (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
+                var isRegional = scope.DashboardType == "RLM" &&
+                    (root?.EntityTypeId == 5 || root?.EntityTypeId == 21);
+                if ((!isManagement && !isRegional) ||
+                    (requiredPerspective == "management" && !isManagement) ||
+                    (requiredPerspective == "regional" && !isRegional) ||
+                    (f.View == "management" && !isManagement) ||
+                    (f.View == "regional" && !isRegional))
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "Role dashboard scope is not authorized.");
+                if (f.DimensionId.HasValue && requiredPerspective != "regional")
+                    throw new ArgumentException("This aggregate cursor does not accept a dimension filter.");
+                // The Oracle role cursors do not accept a separate office ID.
+                // Narrow the validated root so office selection is never ignored.
+                if (!f.EntityId.HasValue && f.ReportingOfficeId.HasValue)
+                    scope = database.NarrowExecutiveDashboardScope(scope, f.ReportingOfficeId);
+                return read(scope, f);
+            });
+        }
 
         private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId, ExecutiveDashboardFilterRequest filters,
             Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false)
@@ -116,7 +179,8 @@ namespace AIS.Controllers
                 {
                     var definition = System.Linq.Enumerable.FirstOrDefault(ExecutiveDashboardViews.ForPerspective(scope.DashboardType), v => v.Id == filters.View);
                     var action = Convert.ToString(RouteData.Values["action"]);
-                    if (definition == null || !System.Linq.Enumerable.Contains(definition.Datasets, action))
+                    if (definition == null || (!System.Linq.Enumerable.Contains(definition.Datasets, action) &&
+                        !System.Linq.Enumerable.Contains(definition.RoleDatasets, action)))
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.

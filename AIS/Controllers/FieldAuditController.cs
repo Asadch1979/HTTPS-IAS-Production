@@ -3,6 +3,7 @@ using AIS.Models.FieldAuditWorkflow;
 using AIS.Models.Requests;
 using AIS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace AIS.Controllers
         private readonly IPermissionService _permissionService;
         private readonly IPageIdResolver _pageIdResolver;
         private readonly FieldAuditDashboardProgressStore _progressStore;
+        private readonly IConfiguration _configuration;
 
         public FieldAuditController(
             ILogger<FieldAuditController> logger,
@@ -42,7 +44,8 @@ namespace AIS.Controllers
             TopMenus topMenus,
             IPermissionService permissionService,
             IPageIdResolver pageIdResolver,
-            FieldAuditDashboardProgressStore progressStore)
+            FieldAuditDashboardProgressStore progressStore,
+            IConfiguration configuration)
             {
             _logger = logger;
             _sessionHandler = sessionHandler;
@@ -51,6 +54,7 @@ namespace AIS.Controllers
             _permissionService = permissionService;
             _pageIdResolver = pageIdResolver;
             _progressStore = progressStore;
+            _configuration = configuration;
             }
 
         [HttpGet]
@@ -91,6 +95,18 @@ namespace AIS.Controllers
             if (workbench)
             {
                 model.WorkbenchTasks = leadTasks;
+                if (_configuration.GetValue<bool>("RoleDashboards:TeamLeadOracleEnabled"))
+                {
+                    // Authenticated membership was verified before the workflow
+                    // context was changed. The DB reader resolves PPNO from IAS
+                    // session again, and the package independently checks it.
+                    var snapshot = _dbConnection.GetTeamLeadDashboardSnapshot(engId);
+                    var allowed = model.AvailableEngagements.Select(e => (long)e.EngagementId).ToHashSet();
+                    snapshot.Engagements = snapshot.Engagements.Where(e => allowed.Contains(e.EngId)).ToList();
+                    snapshot.Workpapers = snapshot.Workpapers.Where(w => allowed.Contains(w.EngId)).ToList();
+                    snapshot.Observations = snapshot.Observations.Where(o => allowed.Contains(o.EngId)).ToList();
+                    model.TeamLeadSnapshot = snapshot;
+                }
                 ViewData["WorkbenchManagement"] = false;
                 return View("~/Views/Shared/EngagementWorkbench.cshtml", model);
             }

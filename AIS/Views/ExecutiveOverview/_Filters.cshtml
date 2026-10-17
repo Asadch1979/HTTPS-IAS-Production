@@ -15,7 +15,7 @@
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
     <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" /></div>
     }
-    @if (Model.DashboardType == "RLM")
+    @if (Model.DashboardType == "RLM" || Model.SelectedView.Id == "management")
     {
         <input type="hidden" name="selectBy" value="entityType" />
     }

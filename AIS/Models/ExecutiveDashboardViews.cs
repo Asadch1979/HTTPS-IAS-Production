@@ -18,6 +18,10 @@ namespace AIS.Models
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
                 _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
+        // Separate endpoints, fetched only by the scoped role-dashboard UI.
+        // Keep them out of Datasets so the existing executive charts are untouched.
+        public string[] RoleDatasets => Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
+            : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();
         public string[] Reports { get; set; } = Array.Empty<string>();
     }
 
@@ -54,6 +58,11 @@ namespace AIS.Models
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             views[0].UseLifecycleKpis = perspective == "TOP";
+            if (perspective == "GROUP" || perspective == "RLM")
+                views.Insert(0, View("management", "ZTBL | Management Audit Dashboard", "_ManagementAudit",
+                    "Current management para position, subordinate unit comparisons and bounded follow-up priorities.",
+                    new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas" },
+                    new[] { "risk", "trend" }));
             if (perspective == "RLM")
                 views.Insert(0, View("regional", "Regional Audit Pulse", "_RegionalPulse", "Current branch risk and follow-up priorities within your reporting descendants.",
                     new[] { "openParas", "highRiskParas", "over1YearParas", "over3CycleParas" }, new[] { "risk", "aging", "cycle", "trend", "critical" }));
