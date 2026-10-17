@@ -15,6 +15,8 @@ namespace AIS.Models
         public bool CanViewOrganization { get; set; }
         public bool RoleOracleEnabled { get; set; }
         public bool IsManagementPerspective { get; set; }
+        public bool NeedsRlmRoot { get; set; }
+        public List<OrganizationNode> RlmRoots { get; set; } = new();
         public bool CiaCommandEnabled { get; set; }
         public int? SelectedCiaPeriodId { get; set; }
         public List<AuditPeriodModel> CiaPeriods { get; set; } = new();
