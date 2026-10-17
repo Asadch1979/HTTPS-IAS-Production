@@ -108,13 +108,18 @@ namespace AIS.Controllers
             return ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) =>
             {
                 var root = database.GetExecutiveDashboardRoot(scope);
+                var managementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
+                    .Get<int[]>() ?? Array.Empty<int>();
                 var isManagement = scope.DashboardType == "GROUP" && root?.EntityTypeId == 18 ||
-                    scope.DashboardType == "RLM" && (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
+                    scope.DashboardType == "RLM" && managementRoles.Contains(scope.RoleId) &&
+                    (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
                 var isRegional = scope.DashboardType == "RLM" &&
                     (root?.EntityTypeId == 5 || root?.EntityTypeId == 21);
-                if (!isManagement && !isRegional ||
-                    requiredPerspective == "management" && !isManagement ||
-                    requiredPerspective == "regional" && !isRegional)
+                if ((!isManagement && !isRegional) ||
+                    (requiredPerspective == "management" && !isManagement) ||
+                    (requiredPerspective == "regional" && !isRegional) ||
+                    (f.View == "management" && !isManagement) ||
+                    (f.View == "regional" && !isRegional))
                     throw new ExecutiveDashboardAccessException("RoleMapping", "Role dashboard scope is not authorized.");
                 if (f.DimensionId.HasValue && requiredPerspective != "regional")
                     throw new ArgumentException("This aggregate cursor does not accept a dimension filter.");
