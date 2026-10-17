@@ -4,6 +4,10 @@
 }
 <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
     <input type="hidden" name="view" value="@Model.SelectedView.Id" />
+    @if (Model.SelectedView.Id == "command" && Model.SelectedCiaPeriodId.HasValue)
+    {
+        <input type="hidden" name="auditPeriodId" value="@Model.SelectedCiaPeriodId" />
+    }
     @if (Model.SelectedView.Id == "reports")
     {
         var requestedReport = Context.Request.Query["report"].ToString();
