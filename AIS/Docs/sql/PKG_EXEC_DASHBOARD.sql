@@ -374,6 +374,25 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
       IO_CURSOR OUT SYS_REFCURSOR);
 
+
+  -- Additional read-only cursors for Group, Division, GM and Region views.
+  -- P_ROOT_ENTITY_ID must be a server-authorized hierarchy root.
+  PROCEDURE P_GET_ROLE_ENTITY_HEATMAP(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+    P_MAX_ROWS IN NUMBER DEFAULT 250, IO_CURSOR OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_ROLE_UNIT_COMPARISON(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    IO_CURSOR OUT SYS_REFCURSOR);
+
+  PROCEDURE P_GET_ROLE_FOLLOWUPS(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    P_MAX_ROWS IN NUMBER DEFAULT 100, IO_CURSOR OUT SYS_REFCURSOR);
+
 END PKG_EXEC_DASHBOARD;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
@@ -1550,5 +1569,140 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
        ORDER BY c.display_order;
   END P_GET_CIA_ISSUE_NATURE;
 
+
+
+  -- These calls are read-only. The application must derive the root
+  -- from the logged-in user's authorized org hierarchy, never from
+  -- an untrusted browser request.
+  PROCEDURE REQUIRE_ROLE_DASHBOARD(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_MAX_ROWS IN NUMBER DEFAULT NULL) AS
+    V_TYPE VARCHAR2(20);
+  BEGIN
+    V_TYPE := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ROOT_ENTITY_ID);
+    IF V_TYPE NOT IN ('GROUP','RLM') THEN
+      RAISE_APPLICATION_ERROR(-20061,'GROUP or RLM perspective required');
+    END IF;
+    IF P_MAX_ROWS IS NOT NULL AND
+       (P_MAX_ROWS < 1 OR P_MAX_ROWS > 500 OR P_MAX_ROWS <> TRUNC(P_MAX_ROWS)) THEN
+      RAISE_APPLICATION_ERROR(-20062,'Max rows must be between 1 and 500');
+    END IF;
+  END REQUIRE_ROLE_DASHBOARD;
+
+  -- "Heatmap" shows observed open risk counts, not invented
+  -- branch risk ratings. High-risk share denominator = open paras.
+  PROCEDURE P_GET_ROLE_ENTITY_HEATMAP(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+    P_MAX_ROWS IN NUMBER DEFAULT 250, IO_CURSOR OUT SYS_REFCURSOR) AS
+  BEGIN
+    REQUIRE_ROLE_DASHBOARD(P_DASHBOARD_TYPE,P_ROOT_ENTITY_ID,P_MAX_ROWS);
+    IF P_MAX_ROWS IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20062,'Max rows is required');
+    END IF;
+    OPEN IO_CURSOR FOR
+      SELECT * FROM (
+        SELECT p.entity_id, MAX(p.entity_name) AS entity_name,
+               MAX(p.entity_type_id) AS entity_type_id,
+               COUNT(*) AS open_paras,
+               SUM(CASE WHEN p.risk_id = 1 THEN 1 ELSE 0 END) AS high_risk,
+               SUM(CASE WHEN p.risk_id = 2 THEN 1 ELSE 0 END) AS medium_risk,
+               SUM(CASE WHEN p.risk_id = 3 THEN 1 ELSE 0 END) AS low_risk,
+               SUM(CASE WHEN p.risk_id IS NULL OR p.risk_id NOT IN (1,2,3)
+                        THEN 1 ELSE 0 END) AS unrated,
+               SUM(CASE WHEN p.aging_days > 365 THEN 1 ELSE 0 END) AS aged_over_365,
+               SUM(CASE WHEN p.com_cycle > 3 THEN 1 ELSE 0 END) AS over_3_cycles,
+               ROUND(100 * SUM(CASE WHEN p.risk_id = 1 THEN 1 ELSE 0 END)
+                     / NULLIF(COUNT(*),0),2) AS high_risk_share_pct
+          FROM V_EXEC_PARA_BASE p
+         WHERE p.is_open = 1
+           AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
+           AND (p.entity_id = P_ROOT_ENTITY_ID
+                OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                        p.reporting_4,p.reporting_5,p.reporting_6))
+         GROUP BY p.entity_id
+         ORDER BY high_risk DESC, aged_over_365 DESC, open_paras DESC, p.entity_id
+      ) WHERE ROWNUM <= P_MAX_ROWS;
+  END P_GET_ROLE_ENTITY_HEATMAP;
+
+  -- Compare direct children of selected org root. A record directly
+  -- against the root is retained in its own group.
+  PROCEDURE P_GET_ROLE_UNIT_COMPARISON(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    IO_CURSOR OUT SYS_REFCURSOR) AS
+  BEGIN
+    REQUIRE_ROLE_DASHBOARD(P_DASHBOARD_TYPE,P_ROOT_ENTITY_ID);
+    OPEN IO_CURSOR FOR
+      WITH scoped AS (
+        SELECT p.*,
+               CASE
+                 WHEN p.entity_id = P_ROOT_ENTITY_ID THEN p.entity_id
+                 WHEN p.reporting_1 = P_ROOT_ENTITY_ID THEN p.entity_id
+                 WHEN p.reporting_2 = P_ROOT_ENTITY_ID THEN p.reporting_1
+                 WHEN p.reporting_3 = P_ROOT_ENTITY_ID THEN p.reporting_2
+                 WHEN p.reporting_4 = P_ROOT_ENTITY_ID THEN p.reporting_3
+                 WHEN p.reporting_5 = P_ROOT_ENTITY_ID THEN p.reporting_4
+                 WHEN p.reporting_6 = P_ROOT_ENTITY_ID THEN p.reporting_5
+               END AS unit_id
+          FROM V_EXEC_PARA_BASE p
+         WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND (p.entity_id = P_ROOT_ENTITY_ID
+                OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                        p.reporting_4,p.reporting_5,p.reporting_6))
+      )
+      SELECT s.unit_id, MAX(u.name) AS unit_name,
+             SUM(CASE WHEN s.is_open = 1 THEN 1 ELSE 0 END) AS open_paras,
+             SUM(CASE WHEN s.is_open = 1 AND s.risk_id = 1 THEN 1 ELSE 0 END) AS high_risk_open,
+             SUM(CASE WHEN s.is_open = 1 AND s.aging_days > 365 THEN 1 ELSE 0 END) AS aged_over_365,
+             SUM(CASE WHEN s.is_open = 1 AND s.com_cycle > 3 THEN 1 ELSE 0 END) AS over_3_cycles,
+             SUM(CASE WHEN s.is_settled = 1 THEN 1 ELSE 0 END) AS settled_total,
+             SUM(CASE WHEN s.is_settled = 1
+                       AND s.setteled_on >= TRUNC(SYSDATE,'MM')
+                       AND s.setteled_on < ADD_MONTHS(TRUNC(SYSDATE,'MM'),1)
+                      THEN 1 ELSE 0 END) AS settled_mtd
+        FROM scoped s
+        LEFT JOIN t_auditee_entities u ON u.entity_id = s.unit_id
+       WHERE s.unit_id IS NOT NULL
+       GROUP BY s.unit_id
+       ORDER BY high_risk_open DESC, aged_over_365 DESC, open_paras DESC, s.unit_id;
+  END P_GET_ROLE_UNIT_COMPARISON;
+
+  -- Factual status IDs returned. Rejected/referred-back and response
+  -- labels require separately verified workflow status mapping.
+  PROCEDURE P_GET_ROLE_FOLLOWUPS(
+    P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
+    P_MAX_ROWS IN NUMBER DEFAULT 100, IO_CURSOR OUT SYS_REFCURSOR) AS
+  BEGIN
+    REQUIRE_ROLE_DASHBOARD(P_DASHBOARD_TYPE,P_ROOT_ENTITY_ID,P_MAX_ROWS);
+    IF P_MAX_ROWS IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20062,'Max rows is required');
+    END IF;
+    OPEN IO_CURSOR FOR
+      SELECT * FROM (
+        SELECT p.com_id, p.para_no, p.audit_period, p.gist_of_paras,
+               p.entity_id, p.entity_name, p.division_id, p.division_name,
+               p.business_group_id, p.business_group_name,
+               p.risk_id, p.risk_name, p.para_status,
+               p.com_status, p.com_stage, p.com_cycle,
+               p.para_added_on, p.aging_days, p.last_movement_date,
+               p.days_since_last_movement,
+               CASE WHEN p.risk_id = 1 THEN 'HIGH_RISK'
+                    WHEN p.aging_days > 365 THEN 'AGED_OVER_365'
+                    WHEN p.com_cycle > 3 THEN 'REPEATED_COMPLIANCE'
+                    ELSE 'NORMAL' END AS priority_reason
+          FROM V_EXEC_PARA_BASE p
+         WHERE p.is_open = 1
+           AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND (p.entity_id = P_ROOT_ENTITY_ID
+                OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                        p.reporting_4,p.reporting_5,p.reporting_6))
+         ORDER BY CASE WHEN p.risk_id = 1 THEN 0 ELSE 1 END,
+                  p.aging_days DESC NULLS LAST, p.com_cycle DESC, p.com_id
+      ) WHERE ROWNUM <= P_MAX_ROWS;
+  END P_GET_ROLE_FOLLOWUPS;
 
 END PKG_EXEC_DASHBOARD;
