@@ -1,0 +1,58 @@
+@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Engagement Workbench";
+    var management = ViewData["WorkbenchManagement"] as bool? == true;
+    var controller = management ? "ManagementAudit" : "FieldAudit";
+    var action = management ? "MA_Dashboard" : "AR_Dashboard";
+    var today = DateTime.UtcNow.AddHours(5).Date;
+    var dueSoon = Model.WorkbenchTasks.Where(t => DateTime.TryParseExact(t.AUDIT_END_DATE, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var due) && due >= today && due <= today.AddDays(7)).Select(t => t.ENG_PLAN_ID).Distinct().Count();
+}
+<link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
+<section class="engagement-workbench" aria-labelledby="workbench-title">
+    <header><p>IAS · Audit Team Leader</p><h1 id="workbench-title">My Engagement Workbench</h1><p>Engagements assigned to you as Team Leader. Select an engagement to open its authorized workflow.</p></header>
+    <div class="wb-kpis">
+        <article><span>Active Engagements</span><strong>@Model.AvailableEngagements.Count(e => e.StatusId == 2)</strong><small>Joined assignments · task status 2</small></article>
+        @foreach (var label in new[] { "Pending Reviews", "Observations Awaiting Finalization" })
+        { <article><span>@label</span><strong>N/A</strong><small>Verified dataset not available</small></article> }
+        <article><span>Upcoming Deadlines</span><strong>@dueSoon</strong><small>Recorded audit end dates · today through next 7 days (Pakistan time)</small></article>
+    </div>
+    <div class="wb-board" aria-label="Engagement workflow">
+        @foreach (var stage in new[] { "Planning", "Fieldwork", "Review", "Reporting" })
+        {
+            var assignments = Model.AvailableEngagements.Where(e => stage == "Planning" ? e.StatusId == 1 : stage == "Fieldwork" && e.StatusId == 2).ToList();
+            <article class="wb-lane"><h2>@stage</h2>
+                @if (stage == "Review" || stage == "Reporting")
+                { <p>Stage mapping awaits verification. Use the engagement workflow for current availability.</p> }
+                else if (!assignments.Any()) { <p>No assigned engagements at this verified task stage.</p> }
+                @foreach (var engagement in assignments)
+                {
+                    <div class="wb-assignment"><h3>@engagement.Label</h3><p>Engagement @engagement.EngagementId · Task status @engagement.StatusId</p>
+                        <a href="@Url.Action(action, controller, new { engId = engagement.EngagementId })">Open Engagement →</a>
+                    </div>
+                }
+            </article>
+        }
+    </div>
+    <article class="wb-panel"><h2>Engagement Progress &amp; Quick Actions</h2><p>Audit end dates are planned engagement dates, not remediation deadlines. Completion percentages and full team responsibilities await a verified dataset.</p>
+        <div class="wb-table"><table><thead><tr><th>Assigned engagement</th><th>Recorded task status</th><th>Audit dates / responsible member</th><th>Actions</th></tr></thead><tbody>
+        @foreach (var engagement in Model.AvailableEngagements)
+        {
+            var task = Model.WorkbenchTasks.FirstOrDefault(t => t.ENG_PLAN_ID == engagement.EngagementId);
+            <tr><td>@engagement.Label</td><td>@engagement.StatusId · @task?.ENG_STATUS</td><td>@(task?.AUDIT_START_DATE ?? "N/A") → @(task?.AUDIT_END_DATE ?? "N/A")<br />@task?.EMP_NAME · @task?.TEAM_NAME</td><td><a href="@Url.Action(action, controller, new { engId = engagement.EngagementId })">Open Engagement</a>
+                @if (engagement.EngagementId == Model.SelectedEngagementId)
+                {
+                    @foreach (var step in Model.VisibleSteps.Where(s => s.IsEnabled && new[] { "WORKING_PAPER", "MANAGE_OBSERVATION_BRANCHES", "MANAGE_OBSERVATIONS", "AUDIT_REPORT", "MANAGEMENT_REPORT", "QUALITY_REVIEW_HO" }.Contains(s.StepCode)))
+                    { <a href="@Url.Action(action, controller, new { engId = engagement.EngagementId, stepCode = step.StepCode })">@step.StepTitle</a> }
+                }
+                <a href="@Url.Action(action, controller, new { engId = engagement.EngagementId, workbench = true })">Select for quick actions</a>
+            </td></tr>
+        }
+        </tbody></table></div>
+        @if (!Model.AvailableEngagements.Any()) { <p>No Team Leader assignments returned by IAS.</p> }
+    </article>
+    <div class="wb-secondary">
+        <article class="wb-panel"><h2>Assigned Workpapers</h2><p>Completion %, pending submissions and review status: <strong>N/A</strong>. Open a selected engagement’s Working Paper step where authorized.</p></article>
+        <article class="wb-panel"><h2>Observations</h2><p>Draft, pending review, finalized and outstanding action counts: <strong>N/A</strong>. Manage observations through the existing authorized engagement workflow.</p></article>
+    </div>
+</section>
