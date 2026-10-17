@@ -45,8 +45,8 @@ namespace AIS.Controllers
         [HttpGet("CIA")]
         public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null) => Dashboard("CIA", entityId, groupRootId, view, filters);
         [HttpGet("RLM")]
-        public IActionResult RLM(int? entityId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
-            => Dashboard("RLM", entityId, null, view, filters);
+        public IActionResult RLM(int? entityId = null, int? groupRootId = null, string view = "glance", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => Dashboard("RLM", entityId, groupRootId, view, filters);
 
         private IActionResult Dashboard(string requestedType, int? entityId, int? groupRootId, string view, ExecutiveDashboardFilterRequest filters)
         {
@@ -100,7 +100,9 @@ namespace AIS.Controllers
                 var allowedManagementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
                     .Get<int[]>() ?? Array.Empty<int>();
                 var management = (scope.DashboardType == "GROUP" && root?.EntityTypeId == 18) ||
-                    (scope.DashboardType == "RLM" && allowedManagementRoles.Contains(scope.RoleId) &&
+                    (scope.DashboardType == "RLM" &&
+                     (allowedManagementRoles.Contains(scope.RoleId) ||
+                      (superUser && scope.GroupRootId.HasValue)) &&
                      (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
                 if ((view == "regional" && !regional) || (view == "management" && !management)) return StatusCode(403);
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
@@ -116,11 +118,14 @@ namespace AIS.Controllers
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;
+                var needsRlmRoot = scope.DashboardType == "RLM" && superUser && !scope.GroupRootId.HasValue;
                 // The selector page may open without a root; reporting queries may not.
-                if (!needsGroup || entityId.HasValue) database.NarrowExecutiveDashboardScope(scope, entityId);
+                if ((!needsGroup && !needsRlmRoot) || entityId.HasValue)
+                    database.NarrowExecutiveDashboardScope(scope, entityId);
                 if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
-                var options = needsGroup ? new ExecutiveDashboardFilterOptions() : database.GetExecutiveDashboardFilterOptions(scope, filters);
+                var options = needsGroup || needsRlmRoot ? new ExecutiveDashboardFilterOptions() :
+                    database.GetExecutiveDashboardFilterOptions(scope, filters);
                 // Fetch the actual IAS audit period IDs; a calendar year is not
                 // interchangeable with T_AU_PERIOD.AUDITPERIODID.
                 var ciaPeriods = scope.DashboardType == "CIA" && view == "command"
@@ -136,6 +141,9 @@ namespace AIS.Controllers
                     : ciaPeriods.FirstOrDefault()?.AUDITPERIODID;
                 var groups = superUser && scope.DashboardType == "GROUP" ?
                     database.GetExecutiveDashboardGroups(scope).OrderBy(n => n.EntityName).ToList() : new System.Collections.Generic.List<OrganizationNode>();
+                var rlmRoots = superUser && scope.DashboardType == "RLM"
+                    ? database.GetExecutiveDashboardRlmRoots(scope)
+                    : new System.Collections.Generic.List<OrganizationNode>();
                 ViewData["TopMenu"] = menus.GetTopMenus();
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
                 return View("Index", new ExecutiveDashboardPageModel
@@ -143,13 +151,16 @@ namespace AIS.Controllers
                     Views = views,
                     SelectedView = selectedView,
                     DashboardType = scope.DashboardType,
-                    ScopeLabel = needsGroup ? "Select a Group Head entity to load its authorized hierarchy" :
+                    ScopeLabel = needsRlmRoot ? "Select a Group, Division, GM or Region reporting root" :
+                        needsGroup ? "Select a Group Head entity to load its authorized hierarchy" :
                         scope.DashboardType == "GROUP" ? (superUser ? groups.First(n => n.EntityId == scope.GroupRootId).EntityName : user.UserEntityName) + " and descendants" :
-                        scope.DashboardType == "RLM" ? user.UserEntityName + " and all reporting descendants" : "Authorized bank-wide perspective",
+                        scope.DashboardType == "RLM" ? (superUser && root != null ? root.EntityName : user.UserEntityName) + " and all reporting descendants" : "Authorized bank-wide perspective",
                     SelectedEntityId = entityId,
                     IsSuperUser = superUser,
                     GroupRootId = scope.GroupRootId,
                     Groups = groups,
+                    RlmRoots = rlmRoots,
+                    NeedsRlmRoot = needsRlmRoot,
                     Filters = filters,
                     FilterOptions = options,
                     RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
