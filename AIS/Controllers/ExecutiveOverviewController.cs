@@ -108,7 +108,8 @@ namespace AIS.Controllers
                 // Preserve explicitly chosen views; only replace the initial default.
                 if (view == "glance" && !Request.Query.ContainsKey("view"))
                 {
-                    if (regional) view = "regional";
+                    if (scope.DashboardType == "CIA") view = "command";
+                    else if (regional) view = "regional";
                     else if (management) view = "management";
                 }
                 filters.View = view;
@@ -120,6 +121,19 @@ namespace AIS.Controllers
                 if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
                 var options = needsGroup ? new ExecutiveDashboardFilterOptions() : database.GetExecutiveDashboardFilterOptions(scope, filters);
+                // Fetch the actual IAS audit period IDs; a calendar year is not
+                // interchangeable with T_AU_PERIOD.AUDITPERIODID.
+                var ciaPeriods = scope.DashboardType == "CIA" && view == "command"
+                    ? database.GetAuditPeriods().Where(p => p.AUDITPERIODID > 0)
+                        .OrderByDescending(p => p.START_DATE).ToList()
+                    : new System.Collections.Generic.List<AuditPeriodModel>();
+                int parsedPeriod;
+                var requestedCiaPeriod = int.TryParse(Request.Query["auditPeriodId"].ToString(), out parsedPeriod)
+                    ? parsedPeriod : (int?)null;
+                var selectedCiaPeriod = requestedCiaPeriod.HasValue &&
+                    ciaPeriods.Any(p => p.AUDITPERIODID == requestedCiaPeriod.Value)
+                    ? requestedCiaPeriod
+                    : ciaPeriods.FirstOrDefault()?.AUDITPERIODID;
                 var groups = superUser && scope.DashboardType == "GROUP" ?
                     database.GetExecutiveDashboardGroups(scope).OrderBy(n => n.EntityName).ToList() : new System.Collections.Generic.List<OrganizationNode>();
                 ViewData["TopMenu"] = menus.GetTopMenus();
@@ -139,6 +153,9 @@ namespace AIS.Controllers
                     Filters = filters,
                     FilterOptions = options,
                     RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
+                    CiaCommandEnabled = configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"),
+                    CiaPeriods = ciaPeriods,
+                    SelectedCiaPeriodId = selectedCiaPeriod,
                     IsManagementPerspective = management,
                     ComparisonEntities = view == "regional" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
                         ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
