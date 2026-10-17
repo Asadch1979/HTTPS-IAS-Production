@@ -1396,7 +1396,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       ),
       completed_plan_ids AS
       (
-        SELECT DISTINCT e.plan_id
+        SELECT DISTINCT e.plan_id, e.entity_id
           FROM engagement_scope e
          WHERE e.plan_id IS NOT NULL
            AND e.period_id = P_AUDIT_PERIOD_ID
@@ -1411,7 +1411,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                                    THEN p.entity_id END)
                  AS audited_entities
           FROM plan_scope p
-          LEFT JOIN completed_plan_ids cp ON cp.plan_id = p.plan_id
+          LEFT JOIN completed_plan_ids cp
+            ON cp.plan_id = p.plan_id AND cp.entity_id = p.entity_id
       ),
       delayed AS
       (

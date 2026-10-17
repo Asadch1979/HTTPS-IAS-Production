@@ -4,6 +4,7 @@
 SET SERVEROUTPUT ON;
 SELECT type, line, position, text FROM user_errors
  WHERE name = 'PKG_EXEC_DASHBOARD' ORDER BY sequence;
+SELECT SYSDATE, SYSTIMESTAMP, CURRENT_DATE, SESSIONTIMEZONE, DBTIMEZONE FROM dual;
 SELECT auditperiodid, description, start_date, end_date
  FROM t_au_period ORDER BY start_date DESC;
 -- Reconcile live workflow before setting CiaWorkflowDefinitionsVerified=true:
@@ -31,6 +32,30 @@ END;
 PRINT rc;
 -- Expect exactly 10 distinct approved category codes; one shared TOTAL_ISSUES.
 -- Verify SUM(ISSUE_COUNT)+UNMAPPED_ISSUES=TOTAL_ISSUES, even with empty mapping.
+DECLARE
+  c SYS_REFCURSOR;
+  code VARCHAR2(40); label VARCHAR2(200); ord NUMBER;
+  issues NUMBER; total NUMBER; unmapped NUMBER; quality VARCHAR2(24);
+  rows_seen NUMBER := 0; mapped_sum NUMBER := 0;
+  expected_total NUMBER; expected_unmapped NUMBER;
+BEGIN
+  PKG_EXEC_DASHBOARD.P_GET_CIA_ISSUE_NATURE('CIA',:entity_id,:period_id,IO_CURSOR=>c);
+  LOOP
+    FETCH c INTO code,label,ord,issues,total,unmapped,quality;
+    EXIT WHEN c%NOTFOUND;
+    IF rows_seen=0 THEN expected_total:=total; expected_unmapped:=unmapped; END IF;
+    IF total<>expected_total OR unmapped<>expected_unmapped OR issues<0 THEN
+      RAISE_APPLICATION_ERROR(-20990,'Inconsistent nature cursor totals');
+    END IF;
+    rows_seen:=rows_seen+1; mapped_sum:=mapped_sum+issues;
+  END LOOP;
+  CLOSE c;
+  IF rows_seen<>10 OR mapped_sum+expected_unmapped<>expected_total THEN
+    RAISE_APPLICATION_ERROR(-20991,'Nature count/total reconciliation failed');
+  END IF;
+  DBMS_OUTPUT.PUT_LINE('Ten categories and mapped + unmapped = total verified.');
+END;
+/
 -- Confirm audited <= planned and no duplicate entity contribution from engagements.
 -- Compare delayed to PKG_RPT.P_DELAY_AUDITS + conclusion exclusion.
 -- Verify 15 calendar days and conducting stages 4..11 with business owner.

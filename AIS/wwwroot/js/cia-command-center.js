@@ -34,8 +34,12 @@
         main.querySelector('[data-cia-kpi="planCoveragePct"]').textContent = decimal(data.planCoveragePct);
         main.querySelector('[data-cia-plan]').textContent =
             `${number(data.auditedEntities)} audited of ${number(data.plannedEntities)} planned entities`;
-        for (const note of main.querySelectorAll('[data-cia-workflow-note]'))
-            note.textContent = data.workflowVerificationNote || 'Workflow definitions require verification.';
+        for (const note of main.querySelectorAll('[data-cia-workflow-note]')) {
+            note.textContent = data.delayedAuditReports == null || data.teamsConductingAudit == null
+                ? 'N/A · IAS deadline and active-stage verification pending.'
+                : 'Current state · Verified IAS reporting deadline and audit stages.';
+            note.title = data.workflowVerificationNote || 'Workflow definitions require verification.';
+        }
         main.querySelector('[data-cia-as-of]').textContent =
             `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
@@ -141,12 +145,16 @@
             field.textContent = 'N/A';
         for (const fill of main.querySelectorAll('[data-cia-category-fill]')) fill.style.width = '0%';
         for (const label of main.querySelectorAll('[data-cia-category-share]')) label.textContent = note;
+        for (const card of main.querySelectorAll('[data-cia-category]'))
+            card.setAttribute('aria-label',card.dataset.ciaCategory + ': ' + note);
         main.querySelector('[data-cia-plan]').textContent = note;
         main.querySelector('[data-cia-as-of]').textContent = note;
         main.querySelector('[data-cia-unmapped]').textContent = note;
         const quality = main.querySelector('[data-cia-mapping-status]');
         quality.textContent = note; quality.dataset.complete = 'false';
-        main.querySelector('[data-cia-nature-ring]').style.setProperty('--cia-mapped-percent','0%');
+        const ring = main.querySelector('[data-cia-nature-ring]');
+        ring.style.setProperty('--cia-mapped-percent','0%');
+        ring.setAttribute('aria-label',note);
     }
     period.addEventListener('change', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');
