@@ -2,7 +2,10 @@
 
 Working branch: `codex/cia-audit-para-snap`.
 Worktree: `C:/Users/Asad/.codex/worktrees/audit-para-snap/HTTPS-IAS-Production`.
-Latest local commit before this checkpoint milestone: `388e3217bdf6d1a99d0988cc0c7f8d0020d51586`.
+Latest local implementation/verification commit: `45dd296ce5cd43232f3f9d095ca320407586e4ff`.
+Published implementation/verification commit: `4d8e4dbd8bccdf8d0b8f5efc52660d0abb05f215`.
+Reviewable draft PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/318 (open, unmerged).
+Source implementation and requested PR delivery are complete; remaining work is approved-environment verification.
 Run `git log -1` for the commit containing this file: a commit cannot record its own SHA. Main baseline is `255f466f70e5ab5e512d8464b910c638c2b06f93`, PR #317, confirmed through GitHub.
 
 ## Completed modifications
@@ -12,12 +15,15 @@ Run `git log -1` for the commit containing this file: a commit cannot record its
 - CIA workflow proxies remain N/A until live definitions are approved. All five cards and ten categories remain visible. Mapping and stale-result safeguards retained/improved.
 - Collision-safe Snap page 1000304 and eight new inactive GET APIs; new grants only roles 1/3. Report A-E readers/SQL/JS/styles/PDF generator and existing executive Index remain unchanged.
 - Focused verification and manual Oracle script added. Handoff/activation details: AIS/Docs/AuditParaSnapImplementation.md.
+- Published all four milestones through supported GitHub Git-object tools. Each remote tree SHA matches the corresponding committed local tree exactly. Git HTTPS is unavailable, so local and remote commit identities differ; both histories are retained on the same named feature branch in their respective repositories.
+- Local → published milestone identities: ba663c8 → bf4e557; f511f22 → ea16fce; 388e321 → 4a25076; 45dd296 → 4d8e4db. Implementation tree: abe4ba01b3e7e251bdd40f378a550dc48668dc6e.
+- PR #318 attached to this chat. Remote comparison: four commits ahead of main, zero behind at verification. This final delivery checkpoint will add one documentation-only commit locally and remotely.
 
 ## Remaining tasks, priority order
-1. Commit this verification milestone and checkpoint (all useful work must be committed).
-2. Publish the feature branch through the supported GitHub connector, because native Git HTTPS cannot reach github.com. Keep all publication confined to the feature branch. Open exactly one reviewable PR against main; attach it to this chat.
-3. Record published branch/PR/commit in this file and commit the delivery checkpoint. If connector commit identities differ from local Git identities, document both clearly; do not overwrite local milestone history.
-4. Disable heartbeat after delivery and complete the persistent goal. Do not deploy Oracle, activate APIs/flags or merge.
+1. DBA/user: compile reviewed canonical Oracle spec/body in an approved test schema; execute verify_audit_para_snap.sql and reconcile actual dates/scopes/events and all CIA definitions/mappings.
+2. DBA/user: approve page/API registration and live definitions. Keep new APIs inactive and feature flags false until verification and approval.
+3. With approved IAS test sessions, run real CIA/Super User browser/page/date/filter/drill-down/report/PDF/responsive checks and denied-role regressions.
+4. Address any findings on this same feature branch/PR, then request deployment/merge approval separately. Do not deploy, activate APIs/flags or merge automatically.
 
 ## Oracle procedures modified
 - Corrected P_GET_CIA_EXEC_KPIS: finalization and selected-period match for A1; entity-matched concluded plan coverage; conducting proxy excludes reporting stages 12/13.
@@ -48,8 +54,8 @@ Pending:
 - Final git diff from 255f466, particularly PKG_EXEC_DASHBOARD.sql, AuditParaSnapController.cs, ExecutiveOverviewController.cs, DBConnection.AuditParaSnap.cs, AuditParaSnapData.cs, new Razor/JS and permission registration.
 
 ## Next exact implementation step
-Commit verification files and this checkpoint, then publish the existing reviewed trees via the GitHub connector and create one draft PR (Oracle approval is deliberately pending).
+No further source implementation is known to be required. Next exact step is manual Oracle compilation and AIS/Docs/sql/verify_audit_para_snap.sql in an approved test schema, followed by real IAS role/browser checks. Read AIS/Docs/AuditParaSnapImplementation.md before any activation. If given findings or an approved test connection, first compare local and published branch trees/commits; do not repeat completed implementation or create another PR.
 
 ## Continuation and allowance
-Persistent goal active. Supported hourly thread heartbeat: `resume-cia-and-audit-para-snap-implementation`.
-Read this file, verify local branch/HEAD and check get_usage_limits before resuming. Latest observed five-hour allowance: 87% remaining. Prepare checkpoint at 5%; stop substantive work before 2%; commit completed work. Stay quiet while unchanged/non-actionable. Disable heartbeat once source delivery/PR is complete. Never merge or deploy without approval.
+Supported hourly thread heartbeat `resume-cia-and-audit-para-snap-implementation` is now PAUSED because source delivery and PR are complete; it must not repeatedly attempt unavailable Oracle/browser verification. Persistent goal will be marked complete after this delivery checkpoint is committed/published. The source task completed with 77% of the five-hour allowance remaining, without reaching checkpoint/stop thresholds.
+If implementation must resume later, read this file, verify local branch/HEAD and published PR head, then check get_usage_limits. Prepare checkpoint at 5%; stop substantive work before 2%; commit all completed work. A supported heartbeat was established during implementation; no invented background process exists. Never merge or deploy without approval.
