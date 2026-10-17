@@ -71,3 +71,10 @@
 @media(max-width:1160px){.exec.exec-management .mgmt-gauge-grid{grid-template-columns:1fr 1fr}.exec.exec-management .exec-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.exec.exec-management .exec-charts,.exec.exec-management .mgmt-gauge-grid{grid-template-columns:1fr}.exec.exec-management .mgmt-ring{width:90px;height:90px;flex-basis:90px}}
 @media(max-width:600px){.exec.exec-management{padding:12px}.exec.exec-management .mgmt-hero{padding:18px}.exec.exec-management .mgmt-hero-label{align-items:start;flex-direction:column}.exec.exec-management .exec-kpis{grid-template-columns:1fr}.exec.exec-management .role-rank-row{grid-template-columns:minmax(100px,1fr) 1fr 54px;gap:6px}.exec.exec-management .role-rank-label span{font-size:.72rem}}
+
+/* A pending view uses neutral skeletons, never simulated comparison lengths. */
+.exec.exec-management .mgmt-pending-bars span,
+.exec.exec-management .mgmt-pending-bars span:nth-child(n){
+  background:repeating-linear-gradient(115deg,#e7efea,#e7efea 10px,#d8e8de 10px,#d8e8de 20px);
+  width:100%;opacity:.65
+}
