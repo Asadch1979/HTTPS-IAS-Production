@@ -12,6 +12,17 @@
 @if (Model.SelectedView.Id == "management" || Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
 <link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
 <section class="org exec @(Model.SelectedView.Id == "regional" ? "exec-regional" : Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Executive Dashboard">
+    @if (Model.IsSuperUser)
+    {
+        <nav class="exec-super-switcher" aria-label="Super User executive dashboard perspectives">
+            <span>Super User dashboards</span>
+            <a href="@Url.Action("TOP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "TOP" ? "page" : null)">Top Management</a>
+            <a href="@Url.Action("CIA", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CIA" ? "page" : null)">CIA Command Center</a>
+            <a href="@Url.Action("CCO", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CCO" ? "page" : null)">Compliance</a>
+            <a href="@Url.Action("GROUP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "GROUP" ? "page" : null)">Group Management</a>
+            <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
+        </nav>
+    }
     <header class="org-header">
         <div class="exec-title"><h1>@Model.SelectedView.Title <span>· @Model.ScopeLabel</span></h1><button type="button" class="exec-info" aria-label="About this view" title="@roleName · @Model.SelectedView.Description">i</button></div>
         @if (Model.CanViewOrganization) { <a class="org-button" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure</a> }
