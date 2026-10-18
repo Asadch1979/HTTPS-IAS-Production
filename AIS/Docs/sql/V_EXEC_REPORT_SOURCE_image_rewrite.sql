@@ -45,7 +45,16 @@ SELECT
     k.com_cycle,
     CASE WHEN k.para_status = 9 THEN k.para_settled_on END AS close_on,
     h.history_close_on,
-    h.history_close_stage,
+    -- A historic closure stage must not be exposed as this para's
+    -- actual current closure unless the recorded settlement day agrees.
+    -- Report A-E already makes this date-match check when attributing
+    -- compliance versus audit settlements; this also protects other readers.
+    CASE WHEN k.para_status = 9
+               AND k.para_settled_on IS NOT NULL
+               AND h.history_close_on IS NOT NULL
+               AND TRUNC(h.history_close_on) = TRUNC(k.para_settled_on)
+         THEN h.history_close_stage
+    END AS history_close_stage,
     h.last_movement_on,
     s.reporting_office_id,
     s.gm_office_id,
@@ -72,7 +81,31 @@ SELECT
       WHEN t6.c_type_id = 5 THEN s.reporting_6
     END AS region_id,
     CASE WHEN NVL(k.audited_by_id, -1) = NVL(ae.auditby_id, -1)
-         THEN 0 ELSE 1 END AS auditor_assignment_mismatch
+         THEN 0 ELSE 1 END AS auditor_assignment_mismatch,
+    -- Explicit QA fields; neither is an extra ISSUE event or report count.
+    -- Source-A copied flags reflect PKG_HD's audit-conclusion transfer.
+    CASE WHEN k.source_ind = 'A' THEN
+       (SELECT NVL(MAX(pc.issue_rectified), 0)
+          FROM ais_t_au_post_compliance pc
+         WHERE pc.com_id = k.com_id AND pc.ind = 'A')
+    END AS issue_rectified_copy,
+    CASE
+      WHEN k.source_ind = 'A' AND k.report_concluded_on IS NULL
+        THEN 'MISSING_CONCLUSION'
+      WHEN k.para_status = 9 AND k.para_settled_on IS NULL
+        THEN 'MISSING_SETTLEMENT_DATE'
+      WHEN k.para_status = 9 AND k.para_settled_on <
+           CASE WHEN k.source_ind = 'A' AND k.report_concluded_on IS NOT NULL
+                     AND k.report_concluded_on > k.para_added_on
+                THEN k.report_concluded_on ELSE k.para_added_on END
+        THEN 'SETTLED_BEFORE_RECOGNITION'
+      WHEN k.para_status = 9 AND h.history_close_on IS NULL
+        THEN 'MISSING_CLOSE_HISTORY'
+      WHEN k.para_status = 9 AND
+           TRUNC(h.history_close_on) <> TRUNC(k.para_settled_on)
+        THEN 'CLOSE_HISTORY_DATE_MISMATCH'
+      ELSE 'OK'
+    END AS report_movement_quality
 FROM v_exec_kpi_lifecycle k
 LEFT JOIN v_exec_entity_scope s ON s.entity_id = k.entity_id
 LEFT JOIN t_auditee_ent_types et ON et.autid = k.entity_type_id
