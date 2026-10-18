@@ -299,7 +299,7 @@
         query.set('dashboardType', root.dataset.perspective);
         if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
         $('report-title').textContent = `Report ${selection.value} · ${selected.dataset.title}`;
-        $('report-period').textContent = `${date(query.get('startDate'))} – ${date(query.get('endDate'))} · ${$('entity').selectedOptions[0].textContent}`;
+        $('report-period').textContent = `${date(query.get('startDate'))} – ${date(query.get('endDate'))} · ${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}`;
         $('report-content').replaceChildren(); $('report-cautions').replaceChildren(); $('report-panel').hidden = false;
         $('status').textContent = `Loading Report ${selection.value}…`; app.setAttribute('aria-busy','true');
         try {

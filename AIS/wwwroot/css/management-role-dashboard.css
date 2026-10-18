@@ -5,7 +5,7 @@
 .exec.exec-management .mgmt-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;padding:23px 27px;margin:3px 0 22px;border-radius:14px;background:linear-gradient(110deg,#103b35,#155f54 80%,#238272);box-shadow:0 12px 25px #0e49301a;color:#fff}
 .exec.exec-management .mgmt-hero-label{display:flex;align-items:center;gap:18px;flex:2 1 380px}
 .exec.exec-management .mgmt-symbol{display:grid;place-items:center;min-width:68px;height:68px;border:2px solid #ffffff7d;border-radius:50%;color:#fff;font-size:.88rem;font-weight:850;letter-spacing:.035em}
-.exec.exec-management .mgmt-hero h2{font-size:1.65rem;color:#fff;margin:4px 0 7px}
+.exec.exec-management .mgmt-hero h1{font-size:1.65rem;color:#fff;margin:4px 0 7px}
 .exec.exec-management .mgmt-hero p{font-size:.87rem;color:#ddf1e8;line-height:1.55;margin:0;max-width:610px}
 .exec.exec-management .mgmt-eyebrow{font-size:.67rem;font-weight:840;letter-spacing:.11em;color:#3b8879}
 .exec.exec-management .mgmt-hero .mgmt-eyebrow{color:#b6e7d9}

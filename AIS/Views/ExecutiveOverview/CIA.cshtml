@@ -7,7 +7,19 @@
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard-parents.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/cia-command-center.css" asp-append-version="true" />
+    @if (Model.IsSuperUser)
+    {
+        <nav class="exec-super-switcher" aria-label="Super User executive dashboard perspectives">
+            <span>Super User dashboards</span>
+            <a href="@Url.Action("TOP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "TOP" ? "page" : null)">Top Management</a>
+            <a href="@Url.Action("CIA", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CIA" ? "page" : null)">CIA Command Center</a>
+            <a href="@Url.Action("CCO", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CCO" ? "page" : null)">Compliance</a>
+            <a href="@Url.Action("GROUP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "GROUP" ? "page" : null)">Group Management</a>
+            <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
+        </nav>
+    }
 <section class="org exec exec-cia" id="executive-dashboard" data-perspective="CIA" data-view="command"
          data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="CIA" aria-label="CIA Audit Command Center">
     <header class="cia-executive-header">
