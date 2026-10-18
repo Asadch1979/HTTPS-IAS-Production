@@ -15,7 +15,7 @@ test('distinct Razor parents match the page registrations', () => {
     assert.match(permissions, new RegExp("REGISTER_PAGE\\("+id+",'"+route+"'"));
     assert.ok(fs.existsSync(path.join(root,'AIS/Views/ExecutiveOverview',route+'.cshtml')));
   }
-  assert.match(routes, /return View\(auditParaSnap \? "AuditParaSnap" : scope\.DashboardType, model\);/);
+  assert.match(routes, /return View\(auditParaSnap \? "AuditParaSnap" : scope\.DashboardType, new ExecutiveDashboardPageModel/);
   assert.doesNotMatch(permissions, /REGISTER_PAGE\([^\n]*'RLM'/);
   assert.match(permissions, /PageIdResolver\.AddAlias/);
 });
