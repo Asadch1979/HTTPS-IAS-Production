@@ -14,9 +14,7 @@
         <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(requestedReport) ? requestedReport : Model.SelectedView.Reports.FirstOrDefault())" />
     }
     @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
-    @* Keep the Start/End fields visible throughout CIA, even where the
-       current Oracle cursor is not historically date-filtered. *@
-    @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports" || Model.DashboardType == "CIA")
+    @if (Model.SelectedView.UseLifecycleKpis || Model.SelectedView.Id == "reports")
     {
     <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" /></div>
     <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" /></div>
@@ -39,15 +37,7 @@
 {
     <p class="exec-note" id="exec-filter-note">Dates filter lifecycle KPIs only. Charts and observations show current data. N/A indicates unavailable history.</p>
 }
-else if (Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance")
-{
-    <p class="exec-note" id="exec-filter-note">Dates are optional for CIA Issue Identified and Issue Rectified. Leave both blank to count all eligible historical issues. Other KPI cards, charts and critical observations show current-state information.</p>
-}
 else if (Model.DashboardType == "CIA" && Model.SelectedView.Id == "command")
 {
-    <p class="exec-note" id="exec-filter-note">The CIA Command Center's plan coverage, A1 issues and nature categories use the selected IAS audit period above, not the Start/End dates. These date fields remain visible to preserve your selections between CIA tabs. Operational KPIs show current-state information.</p>
-}
-else if (Model.DashboardType == "CIA" && Model.SelectedView.Id != "reports")
-{
-    <p class="exec-note" id="exec-filter-note">Dates are retained when moving between CIA dashboard tabs. This view's open paras, risks, aging, compliance cycles and settlements show current-state data; changing the dates does not recalculate them as historical snapshots. Use At a Glance for dated issue events and Reports for date-filtered reporting.</p>
+    <p class="exec-note" id="exec-filter-note">Plan coverage, A1 observations and issue categories use the selected IAS audit period. Delayed reports, awaiting responses and conducting teams are current operational measures. Audit Para Snap has its own Start Date / End Date selection.</p>
 }

@@ -1,0 +1,27 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    var cards=new[] {
+        new { Key="openingOpenParas", Label="Opening Balance" },
+        new { Key="issueIdentified", Label="Issue Identified" },
+        new { Key="issueRectified", Label="Issue Rectified" },
+        new { Key="paraAdded", Label="Para Added" },
+        new { Key="parasSettled", Label="Paras Settled" },
+        new { Key="closingOpenParas", Label="Closing Balance" },
+        new { Key="highRiskOpenParas", Label="High-Risk Open" },
+        new { Key="over1YearParas", Label="Over One Year" },
+        new { Key="over3ComplianceCycles", Label="Over Three Compliance Cycles" }
+    };
+}
+<div class="exec-kpis exec-lifecycle-kpis" aria-label="Date-aware lifecycle KPIs">
+    @foreach (var card in cards)
+    {
+        <article class="exec-kpi" data-snap-card="@card.Key"><span>@card.Label</span><strong data-snap-kpi="@card.Key">N/A</strong><small data-snap-kpi-note>Awaiting verified Oracle response</small></article>
+    }
+</div>
+<div class="exec-charts">
+    @foreach (var section in Model.SelectedView.Sections)
+    {
+        <partial name="_Chart" model="section" />
+    }
+</div>
+<partial name="_Critical" />

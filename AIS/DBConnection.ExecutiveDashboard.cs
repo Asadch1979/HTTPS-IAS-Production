@@ -365,6 +365,13 @@ namespace AIS.Controllers
             ValidateExecutiveDashboardSession(scope);
             if (scope.DashboardType != "TOP")
                 throw new ExecutiveDashboardAccessException("RoleMapping", "Lifecycle KPIs require the TOP perspective.");
+            return ReadExecutiveKpiLifecycle(scope, filters);
+        }
+
+        // One typed reader and one Oracle lifecycle procedure; public entry points
+        // independently enforce their existing TOP or dedicated Snap permissions.
+        private ExecutiveKpiLifecycle ReadExecutiveKpiLifecycle(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
+        {
             var dates = filters.Validate() ?? throw new ArgumentException("Both KPI dates are required.");
             using (var connection = DatabaseConnection())
             using (var command = connection.CreateCommand())

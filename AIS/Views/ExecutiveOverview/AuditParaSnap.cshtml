@@ -1,0 +1,46 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    ViewData["Title"] = "ZTBL | Audit Para Snap";
+    Layout = "_Layout";
+}
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/audit-para-snap.css" asp-append-version="true" />
+<section class="org exec exec-snap" id="executive-dashboard" data-perspective="SNAP"
+         data-view="@Model.SelectedView.Id" data-enabled="@(Model.AuditParaSnapEnabled ? "true" : "false")"
+         data-api-url="@Url.Content("~/api/AuditParaSnap/")" aria-label="ZTBL Audit Para Snap">
+    <header class="org-header">
+        <div class="exec-title"><p class="snap-eyebrow">ZTBL · INTERNAL AUDIT REPORTING</p><h1>Audit Para Snap <span>· @Model.ScopeLabel</span></h1></div>
+        <a class="org-button" href="@Url.Action("CIA","ExecutiveOverview")">← CIA Command Center</a>
+    </header>
+    <partial name="_AuditParaSnapFilters" model="Model" />
+    <p class="snap-selected-period" data-snap-period>Selected period: @Model.Filters.StartDate – @Model.Filters.EndDate (inclusive, Pakistan calendar dates)</p>
+    <nav class="exec-navigation" data-view-navigation aria-label="Audit Para Snap views">
+        @foreach (var view in Model.Views)
+        {
+            <a class="org-button" aria-current="@(view.Id==Model.SelectedView.Id ? "page" : null)"
+               href="@Url.Action("AuditParaSnap","ExecutiveOverview",Model.Filters.RouteValues(view.Id,null))">@view.Title</a>
+        }
+    </nav>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.AuditParaSnapEnabled ? "Loading selected reporting period…" : "Oracle activation pending compilation, verification and approval. Values are N/A.")</p>
+    <div id="exec-results">
+        @if (Model.SelectedView.Id=="reports")
+        {
+            <p class="exec-note">Report A–E balances and settlement attribution remain indicative and use present organization mapping. The selected dates apply to reports and exports.</p>
+        }
+        else
+        {
+            <p class="exec-note" data-snap-quality>Activity uses qualifying lifecycle event dates. Historical balances, risk and aging are estimated from latest status, settlement dates and present organization/risk. Reopenings, transfers and missing events can change past figures. Historical compliance-cycle distribution is N/A; the lifecycle over-three-cycle KPI remains an explicitly marked estimate using present cycles. Today means as of now, not a completed end-of-day snapshot.</p>
+        }
+        <partial name="@Model.SelectedView.Partial" model="Model" />
+    </div>
+    <noscript><p>Enable JavaScript to load Audit Para Snap results.</p></noscript>
+</section>
+@section Scripts {
+    <script src="~/js/audit-para-snap.js" asp-append-version="true"></script>
+    @if (Model.SelectedView.Id=="reports" && Model.AuditParaSnapEnabled)
+    {
+        <script src="~/js/executive-reports.js" asp-append-version="true"></script>
+    }
+}

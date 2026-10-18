@@ -1,7 +1,8 @@
 -- IAS Executive Dashboards / Command Center permission registration
 -- SOURCE ONLY: DBA review and approval required before executing in production.
 -- Super User is verified IAS role 1. Never guess other role IDs.
--- New dashboard views are perspective-specific tabs, not new bank-wide page grants.
+-- Audit Para Snap is an independent CIA/Super User page, ID 1000304.
+-- All its new GET APIs are inactive until Oracle verification and approval.
 -- Group/Division and Region datasets remain enforced by authenticated C# role/root checks.
 -- Execute as IAS owner; inspect existing page IDs and registered group IDs first.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
@@ -56,6 +57,7 @@ DECLARE
       p.PAGE_NAME = CASE P_TYPE
                        WHEN 'CIA' THEN 'CIA Audit Command Center'
                        WHEN 'GROUP' THEN 'Group / Divisional Management Audit'
+                       WHEN 'AuditParaSnap' THEN 'ZTBL | Audit Para Snap'
                        ELSE 'Executive Dashboard ' || P_TYPE END,
       p.PAGE_PATH = 'ExecutiveOverview/' || P_TYPE,
       p.PAGE_URL = '/ExecutiveOverview/' || P_TYPE,
@@ -67,6 +69,7 @@ DECLARE
       (P_ID, V_MENU_ID,
        CASE P_TYPE WHEN 'CIA' THEN 'CIA Audit Command Center'
          WHEN 'GROUP' THEN 'Group / Divisional Management Audit'
+         WHEN 'AuditParaSnap' THEN 'ZTBL | Audit Para Snap'
          ELSE 'Executive Dashboard ' || P_TYPE END,
        'ExecutiveOverview/' || P_TYPE, 80 + P_ID - 1000300,
        'A', 0, 'EXECUTIVE_' || P_TYPE,
@@ -139,7 +142,39 @@ DECLARE
     END IF;
     DBMS_OUTPUT.PUT_LINE('Registered GET API: '||P_ACTION||' ['||P_KIND||']');
   END;
+
+  PROCEDURE REGISTER_SNAP_API(P_ACTION VARCHAR2) IS
+  BEGIN
+    SELECT COUNT(*) INTO V_FOUND FROM T_AU_API_MASTER
+     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
+           LOWER('api/AuditParaSnap/'||P_ACTION) AND UPPER(HTTP_METHOD)='GET';
+    IF V_FOUND > 1 THEN
+      RAISE_APPLICATION_ERROR(-20025,'Duplicate Snap API: '||P_ACTION);
+    END IF;
+    IF V_FOUND = 0 THEN
+      INSERT INTO T_AU_API_MASTER
+        (ACTION_NAME,PAGE_ID,CONTROLLER_NAME,API_PATH,HTTP_METHOD,IS_ACTIVE,CREATED_ON)
+      VALUES(P_ACTION,1000304,'AuditParaSnap','/api/AuditParaSnap/'||P_ACTION,'GET','N',SYSDATE);
+    END IF;
+    SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
+     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
+           LOWER('api/AuditParaSnap/'||P_ACTION) AND UPPER(HTTP_METHOD)='GET';
+    SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
+     WHERE API_ID=V_API_ID AND
+       (NVL(PAGE_ID,-1)<>1000304 OR NVL(CONTROLLER_NAME,'#')<>'AuditParaSnap'
+        OR NVL(ACTION_NAME,'#')<>P_ACTION);
+    IF V_COLLISIONS>0 THEN
+      RAISE_APPLICATION_ERROR(-20026,'Snap API page/controller collision: '||P_ACTION);
+    END IF;
+    -- Preserve existing activation decisions. New records remain N.
+    GRANT_API_ROLE(1,V_API_ID);
+    GRANT_API_ROLE(3,V_API_ID);
+  END;
 BEGIN
+  -- Serialize MAX+1 menu map allocation and path collision checks.
+  LOCK TABLE T_MENU_PAGES IN EXCLUSIVE MODE;
+  LOCK TABLE T_MENU_PAGES_GROUPMAP IN EXCLUSIVE MODE;
+  LOCK TABLE T_AU_API_MASTER IN EXCLUSIVE MODE;
   -- NULL optional roles are intentional: Super User provisioning MUST NOT
   -- silently fail or invent organizational role IDs.
   IF V_TOP_ROLE IS NOT NULL AND (V_TOP_ROLE <= 0 OR V_TOP_ROLE IN (1,3,38)) THEN
@@ -161,6 +196,20 @@ BEGIN
   REGISTER_EXEC_PAGE(1000302,'CCO',38);
   REGISTER_EXEC_PAGE(1000303,'CIA',3);
 
+  -- Reserved ID must match runtime AuditParaSnapPolicy/PageIdResolver.
+  -- Fail on ID, normalized path or key conflicts; never borrow another page.
+  SELECT COUNT(*) INTO V_COLLISIONS FROM T_MENU_PAGES
+   WHERE (ID=1000304 AND
+          (NVL(PAGE_KEY,'#')<>'EXECUTIVE_AuditParaSnap'
+           OR NVL(LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))),'#')<>'executiveoverview/auditparasnap'))
+      OR (ID<>1000304 AND
+          (LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH)))='executiveoverview/auditparasnap'
+           OR PAGE_KEY='EXECUTIVE_AuditParaSnap'));
+  IF V_COLLISIONS>0 THEN
+    RAISE_APPLICATION_ERROR(-20027,'Audit Para Snap reserved page ID/path/key collision.');
+  END IF;
+  REGISTER_EXEC_PAGE(1000304,'AuditParaSnap',3);
+
   -- RLM uses the existing organization-dashboard page alias in PageIdResolver.
   -- Team Leader workbench requires live assigned-engagement scope even as Super User.
   GRANT_EXISTING_SUPERUSER_PAGE('Dashboard/entity_wise_obs');
@@ -179,6 +228,15 @@ BEGIN
   REGISTER_API('GetRoleEntityHeatmap','REGIONAL');
   REGISTER_API('GetRoleUnitComparison','MANAGEMENT');
   REGISTER_API('GetRoleFollowups','MANAGEMENT');
+
+  REGISTER_SNAP_API('GetKpis');
+  REGISTER_SNAP_API('GetDistribution');
+  REGISTER_SNAP_API('GetCriticalItems');
+  REGISTER_SNAP_API('GetReportA');
+  REGISTER_SNAP_API('GetReportB');
+  REGISTER_SNAP_API('GetReportC');
+  REGISTER_SNAP_API('GetReportD');
+  REGISTER_SNAP_API('GetReportE');
 
   -- Report A-E endpoints are governed by executive_reports_permissions.sql.
   -- Do not override its inactive-by-default rollout or grant broad RLM access.
