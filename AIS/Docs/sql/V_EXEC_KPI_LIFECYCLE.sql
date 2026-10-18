@@ -10,8 +10,12 @@
 CREATE OR REPLACE VIEW V_EXEC_KPI_LIFECYCLE AS
 WITH report_events AS
 (
+    -- STATUS=14 is only valid in the active, unreversed engagement cycle.
+    -- Take the latest surviving log event by monotonic log ID, not MAX(date):
+    -- corrected/backfilled CREATED_ON values need not be ordered by timestamp.
     SELECT l.e_id AS eng_id,
-           MAX(l.created_on) AS concluded_on
+           MAX(l.created_on) KEEP
+             (DENSE_RANK LAST ORDER BY l.id) AS concluded_on
       FROM t_au_plan_eng_log l
      WHERE l.status_id = 14
        AND NOT EXISTS (SELECT 1 FROM t_au_plan_eng_log r
