@@ -376,6 +376,18 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
 
 
 
+  -- Development reconciliation of persisted ISSUE_RECTIFIED flags.
+  -- One row; no change to existing executive KPI cursor signatures.
+  -- Source ISSUE events are authoritative; IND='A' compliance flags are copies.
+  PROCEDURE P_GET_CIA_RECTIFICATION_RECON(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_AUDIT_PERIOD_ID IN NUMBER,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR);
+
   -- Audit Para Snap: non-KPI date-aware analysis only.
   -- Nine KPIs MUST use the existing P_GET_KPI_LIFECYCLE.
   PROCEDURE P_GET_SNAP_DISTRIBUTION(
@@ -1315,6 +1327,70 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     WHEN NO_DATA_FOUND THEN
       RAISE_APPLICATION_ERROR(-20044, 'Audit period was not found.');
   END RESOLVE_CIA_COMMAND_PERIOD;
+
+  -------------------------------------------------------------------
+  -- Reconcile rectification at conclusion without double counting events.
+  -- V_EXEC_ISSUE_RECTIFIED_RECON aggregates IND='A' post-compliance copies
+  -- before joining, preserving one observation per issue.
+  -- Compile that view before compiling this package body.
+  -------------------------------------------------------------------
+  PROCEDURE P_GET_CIA_RECTIFICATION_RECON(
+      P_DASHBOARD_TYPE IN VARCHAR2,
+      P_ENTITY_ID IN NUMBER,
+      P_AUDIT_PERIOD_ID IN NUMBER,
+      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+      IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_FROM DATE;
+    V_TO_EXCLUSIVE DATE;
+  BEGIN
+    RESOLVE_CIA_COMMAND_PERIOD(
+      P_DASHBOARD_TYPE, P_ENTITY_ID, P_AUDIT_PERIOD_ID,
+      V_FROM, V_TO_EXCLUSIVE);
+
+    OPEN IO_CURSOR FOR
+      SELECT P_AUDIT_PERIOD_ID AS audit_period_id,
+             NVL(SUM(CASE
+               WHEN r.rectified_before_conclusion = 1
+                AND r.issue_rectified_on >= V_FROM
+                AND r.issue_rectified_on < V_TO_EXCLUSIVE
+               THEN 1 ELSE 0 END), 0) AS issue_rectified,
+             NVL(SUM(CASE
+               WHEN r.post_copy_count > 0 AND r.min_post_rectified = 1
+                AND r.max_post_rectified = 1
+               THEN 1 ELSE 0 END), 0) AS post_rectified_copies,
+             NVL(SUM(CASE
+               WHEN r.post_copy_status = 'MISMATCH' THEN 1 ELSE 0 END), 0)
+               AS mismatch_observations,
+             NVL(SUM(CASE
+               WHEN r.post_copy_status = 'INCONSISTENT_COPIES'
+               THEN 1 ELSE 0 END), 0) AS inconsistent_copy_observations,
+             NVL(SUM(CASE
+               WHEN r.engagement_status = 14
+                AND r.observation_status IN (8, 9)
+                AND r.post_copy_count = 0
+               THEN 1 ELSE 0 END), 0) AS final_observations_not_transferred,
+             NVL(SUM(r.post_copy_count), 0) AS modern_post_copy_rows,
+             V_FROM AS audit_period_from,
+             V_TO_EXCLUSIVE - 1 AS audit_period_to
+        FROM V_EXEC_ISSUE_RECTIFIED_RECON r
+        LEFT JOIN V_EXEC_ENTITY_SCOPE s ON s.entity_id = r.entity_id
+       WHERE r.audit_period_id = P_AUDIT_PERIOD_ID
+         AND (P_ENTITY_TYPE_ID IS NULL
+              OR r.entity_type_id = P_ENTITY_TYPE_ID)
+         AND (P_AUDITED_BY_ID IS NULL
+              OR r.audited_by_id = P_AUDITED_BY_ID)
+         AND (P_REPORTING_OFFICE_ID IS NULL
+              OR r.entity_id = P_REPORTING_OFFICE_ID
+              OR P_REPORTING_OFFICE_ID IN
+                 (s.reporting_1,s.reporting_2,s.reporting_3,
+                  s.reporting_4,s.reporting_5,s.reporting_6))
+         AND (P_ENTITY_ID IS NULL OR r.entity_id = P_ENTITY_ID
+              OR P_ENTITY_ID IN
+                 (s.reporting_1,s.reporting_2,s.reporting_3,
+                  s.reporting_4,s.reporting_5,s.reporting_6));
+  END P_GET_CIA_RECTIFICATION_RECON;
 
   -------------------------------------------------------------------
   -- CIA EXECUTIVE KPIs
