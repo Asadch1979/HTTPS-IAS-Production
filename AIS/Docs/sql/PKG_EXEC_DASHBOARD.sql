@@ -156,13 +156,23 @@ SELECT
 
     h.last_movement_date,
 
+    -- Missing settlement dates and negative/future ages are UNKNOWN,
+    -- never misleadingly classified as a valid 0-90-day para.
     CASE
         WHEN c.para_added_on IS NOT NULL
-        THEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on)
+         AND (c.para_status <> 9 OR c.setteled_on IS NOT NULL)
+         AND TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
+             >= TRUNC(c.para_added_on)
+        THEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
+             - TRUNC(c.para_added_on)
     END AS aging_days,
 
     CASE
-        WHEN c.para_added_on IS NULL THEN 'UNKNOWN'
+        WHEN c.para_added_on IS NULL
+          OR (c.para_status = 9 AND c.setteled_on IS NULL)
+          OR TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
+             < TRUNC(c.para_added_on)
+        THEN 'UNKNOWN'
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 90
             THEN '0-90 DAYS'
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 180
@@ -222,7 +232,17 @@ SELECT
         ELSE 0
     END AS is_critical,
 
-    c.no_of_instances
+    c.no_of_instances,
+    -- Copy made at audit conclusion, NOT a new lifecycle ISSUE event.
+    CASE WHEN c.ind = 'A' THEN NVL(c.issue_rectified, 0)
+    END AS issue_rectified_copy,
+    CASE
+      WHEN c.para_added_on IS NULL THEN 'MISSING_ADDED_ON'
+      WHEN c.para_status = 9 AND c.setteled_on IS NULL THEN 'MISSING_SETTLEMENT_DATE'
+      WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
+           < TRUNC(c.para_added_on) THEN 'NEGATIVE_AGE'
+      ELSE 'OK'
+    END AS aging_quality
 
 FROM ais_t_au_post_compliance c
 
@@ -1061,7 +1081,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     V_TODAY_SNAPSHOT NUMBER(1);
   BEGIN
     IF P_START_DATE IS NULL OR P_END_DATE IS NULL
-       OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE) THEN
+       OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
+       OR TRUNC(P_END_DATE) >= DATE '9999-12-31' THEN
       RAISE_APPLICATION_ERROR(-20005,
         'Both KPI reporting dates are required; Start Date cannot exceed End Date.');
     END IF;
@@ -1091,11 +1112,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND k.issue_rectified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_rectified,
 
+        -- ISSUE_RECTIFIED_ON is necessarily NULL for STATUS=23.
+        -- A dropped observation is a separate pre-conclusion disposition.
         NVL(SUM(CASE
           WHEN k.record_type = 'ISSUE'
+           AND k.issue_eligible = 1
            AND k.observation_status = 23
-           AND k.issue_rectified_on >= V_FROM
-           AND k.issue_rectified_on < V_TO_EXCLUSIVE
+           AND dropped_o.stelled_on >= V_FROM
+           AND dropped_o.stelled_on < V_TO_EXCLUSIVE
+           AND k.report_concluded_on IS NOT NULL
+           AND dropped_o.stelled_on < k.report_concluded_on
           THEN 1 ELSE 0 END), 0) AS issue_dropped,
 
         NVL(SUM(CASE
@@ -1207,6 +1233,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           AS closing_asof_verified
 
       FROM V_EXEC_KPI_LIFECYCLE k
+      -- Observation ID is the modern source primary key. Join only ISSUE
+      -- rows so legacy PARA rows cannot contribute to the drop diagnostic.
+      LEFT JOIN t_au_observation dropped_o
+        ON dropped_o.id = k.observation_id AND k.record_type = 'ISSUE'
       WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
         AND (P_REPORTING_OFFICE_ID IS NULL
