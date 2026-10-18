@@ -102,7 +102,8 @@ DECLARE
     MERGE INTO T_AU_ROLE_API_PERMISSION p
     USING (SELECT P_ROLE role_id, P_API_ID api_id FROM dual) s
       ON (p.ROLE_ID=s.role_id AND p.API_ID=s.api_id)
-    WHEN MATCHED THEN UPDATE SET p.IS_ACTIVE='Y'
+    -- Never override an administrator's existing disabled API role grant.
+    -- The development-only CIA activation is in cia_command_debug_permissions.sql.
     WHEN NOT MATCHED THEN INSERT
       (ROLE_ID, API_ID, IS_ACTIVE, CREATED_BY)
     VALUES (s.role_id,s.api_id,'Y',NULL);
@@ -121,13 +122,28 @@ DECLARE
     IF V_COLLISIONS=0 THEN
       INSERT INTO T_AU_API_MASTER
         (ACTION_NAME,PAGE_ID,CONTROLLER_NAME,API_PATH,HTTP_METHOD,IS_ACTIVE,CREATED_ON)
-      VALUES (P_ACTION,1000300,'ExecutiveDashboard',
+      VALUES (P_ACTION,CASE WHEN P_KIND='CIA' THEN 1000303 ELSE 1000300 END,
+              'ExecutiveDashboard',
               '/api/ExecutiveDashboard/'||P_ACTION,'GET','Y',SYSDATE);
     END IF;
     SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
      WHERE LOWER(API_PATH)=LOWER('/api/ExecutiveDashboard/'||P_ACTION)
        AND UPPER(HTTP_METHOD)='GET';
 
+    -- CIA endpoints belong to CIA page 1000303, not TOP page 1000300.
+    -- Correct only the two explicitly CIA actions if registered previously.
+    IF P_KIND='CIA' THEN
+      SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
+       WHERE API_ID=V_API_ID
+         AND (NVL(PAGE_ID,-1) NOT IN (1000300,1000303)
+              OR NVL(CONTROLLER_NAME,'#')<>'ExecutiveDashboard'
+              OR NVL(ACTION_NAME,'#')<>P_ACTION);
+      IF V_COLLISIONS>0 THEN
+        RAISE_APPLICATION_ERROR(-20028,'CIA API mapping conflict: '||P_ACTION);
+      END IF;
+      UPDATE T_AU_API_MASTER SET PAGE_ID=1000303
+       WHERE API_ID=V_API_ID AND PAGE_ID=1000300;
+    END IF;
     GRANT_API_ROLE(1,V_API_ID);
     IF P_KIND='COMMON' THEN
       GRANT_API_ROLE(3,V_API_ID); GRANT_API_ROLE(38,V_API_ID);
