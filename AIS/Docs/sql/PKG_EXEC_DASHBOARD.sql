@@ -1504,11 +1504,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                    (s.reporting_1, s.reporting_2, s.reporting_3,
                     s.reporting_4, s.reporting_5, s.reporting_6))
       ),
-      completed_plan_ids AS
+      -- Planned/audited are ENTITY counts, not plan-row counts. A valid
+      -- concluded engagement may have a different or NULL PLAN_ID while
+      -- matching the same entity and selected IAS audit period.
+      completed_entities AS
       (
-        SELECT DISTINCT e.plan_id, e.entity_id
+        SELECT DISTINCT e.entity_id
           FROM engagement_scope e
-         WHERE e.plan_id IS NOT NULL
+         WHERE e.entity_id IS NOT NULL
            AND e.period_id = P_AUDIT_PERIOD_ID
            AND (e.status = 14 OR EXISTS
                (SELECT 1 FROM t_au_plan_eng_log l
@@ -1517,12 +1520,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       coverage AS
       (
         SELECT COUNT(DISTINCT p.entity_id) AS planned_entities,
-               COUNT(DISTINCT CASE WHEN cp.plan_id IS NOT NULL
+               COUNT(DISTINCT CASE WHEN ce.entity_id IS NOT NULL
                                    THEN p.entity_id END)
                  AS audited_entities
           FROM plan_scope p
-          LEFT JOIN completed_plan_ids cp
-            ON cp.plan_id = p.plan_id AND cp.entity_id = p.entity_id
+          LEFT JOIN completed_entities ce
+            ON ce.entity_id = p.entity_id
       ),
       delayed AS
       (
