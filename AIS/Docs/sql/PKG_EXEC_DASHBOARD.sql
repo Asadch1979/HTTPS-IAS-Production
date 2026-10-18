@@ -160,7 +160,8 @@ SELECT
     -- never misleadingly classified as a valid 0-90-day para.
     CASE
         WHEN c.para_added_on IS NOT NULL
-         AND (c.para_status <> 9 OR c.setteled_on IS NOT NULL)
+         AND (c.para_status = 8 OR
+              (c.para_status = 9 AND c.setteled_on IS NOT NULL))
          AND TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
              >= TRUNC(c.para_added_on)
         THEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
@@ -169,6 +170,7 @@ SELECT
 
     CASE
         WHEN c.para_added_on IS NULL
+          OR c.para_status NOT IN (8, 9) OR c.para_status IS NULL
           OR (c.para_status = 9 AND c.setteled_on IS NULL)
           OR TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
              < TRUNC(c.para_added_on)
@@ -238,6 +240,8 @@ SELECT
     END AS issue_rectified_copy,
     CASE
       WHEN c.para_added_on IS NULL THEN 'MISSING_ADDED_ON'
+      WHEN c.para_status NOT IN (8, 9) OR c.para_status IS NULL
+        THEN 'UNKNOWN_STATUS'
       WHEN c.para_status = 9 AND c.setteled_on IS NULL THEN 'MISSING_SETTLEMENT_DATE'
       WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE))
            < TRUNC(c.para_added_on) THEN 'NEGATIVE_AGE'
