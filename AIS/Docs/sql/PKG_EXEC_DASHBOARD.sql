@@ -1630,11 +1630,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       ),
       cia_issue_rows AS
       (
-        SELECT DISTINCT k.observation_id, o.annex AS annex_id,
+        -- The IAS checklist root is the primary Nature of Issue.
+        -- Missing checklist links remain NULL; preserve all ISSUE rows.
+        SELECT DISTINCT k.observation_id, croot.checklist_root_id,
+               o.annex AS annex_id,
                o.v_cat_nature_id AS violation_sub_id,
                k.audited_by_id
           FROM v_exec_kpi_lifecycle k
           JOIN t_au_observation o ON o.id = k.observation_id
+          LEFT JOIN v_ias_cia_issue_checklist_root croot
+            ON croot.observation_id = k.observation_id
          WHERE k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
            AND k.period_id = P_AUDIT_PERIOD_ID
@@ -1659,17 +1664,24 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT i.observation_id, m.category_code,
                ROW_NUMBER() OVER
                  (PARTITION BY i.observation_id
-                  ORDER BY m.match_priority,
+                  -- Checklist-root decisions take precedence over legacy
+                  -- fallback classifications for the same observation.
+                  ORDER BY CASE m.source_type
+                             WHEN 'CHECKLIST_ROOT' THEN 0 ELSE 1 END,
+                           m.match_priority,
                            CASE m.source_type
                              WHEN 'VIOLATION_SUB' THEN 1
                              WHEN 'ANNEX' THEN 2
-                             ELSE 3 END,
+                             WHEN 'AUDIT_PORTFOLIO' THEN 3
+                             ELSE 0 END,
                            m.source_id, m.category_code) AS match_rank
           FROM cia_issue_rows i
           JOIN t_ias_cia_issue_nature_map m
             ON m.is_active = 'Y'
            AND m.category_code IN (SELECT category_code FROM categories)
-           AND ((m.source_type = 'VIOLATION_SUB'
+           AND ((m.source_type = 'CHECKLIST_ROOT'
+                 AND m.source_id = i.checklist_root_id)
+                OR (m.source_type = 'VIOLATION_SUB'
                  AND m.source_id = i.violation_sub_id)
                 OR (m.source_type = 'ANNEX'
                     AND m.source_id = i.annex_id)
