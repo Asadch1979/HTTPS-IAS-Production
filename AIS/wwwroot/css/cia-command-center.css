@@ -1,0 +1,39 @@
+/* Isolated CIA composition: shared executive themes and other perspectives stay unchanged. */
+.exec.exec-cia { padding:18px;background:#f2f6fa; }
+.exec-cia .cia-executive-header { display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);align-items:center;gap:24px;padding:22px 24px;border-radius:12px;background:linear-gradient(115deg,#122d47,#1b4f65);color:#fff; }
+.exec-cia .cia-executive-header h1 { margin:3px 0 5px;font-size:clamp(1.35rem,2vw,1.85rem);line-height:1.2;color:#fff; }
+.exec-cia .cia-executive-header p { margin:5px 0;font-size:.8rem;color:#d6eaf2; }
+.exec-cia .cia-executive-header .cia-command-eyebrow { color:#9fdddd;font-size:.67rem;letter-spacing:.13em; }
+.exec-cia .cia-executive-header nav { display:flex;gap:16px;flex-wrap:wrap;margin-top:12px; }
+.exec-cia .cia-executive-header a { color:#c4f2f0;font-size:.8rem;font-weight:650; }
+.exec-cia .cia-period-selection { min-width:0; }
+.exec-cia .cia-period-selection label { display:block;font-size:.78rem;font-weight:700;margin-bottom:7px; }
+.exec-cia .cia-period-selection select { width:100%;min-height:42px;background:#fff;color:#122d47;border:1px solid #a7cedb;border-radius:7px;padding:9px 10px;font-size:.84rem; }
+.exec-cia .cia-organization-filters { display:grid;grid-template-columns:.8fr 1.1fr 1.3fr 1.3fr auto;gap:12px;align-items:end;padding:16px 0 12px; }
+.exec-cia .cia-organization-filters>div { min-width:0; }
+.exec-cia .cia-organization-filters label { display:block;font-size:.74rem;font-weight:650;color:#425f74;margin-bottom:5px; }
+.exec-cia .cia-organization-filters select { width:100%;min-width:0;height:38px;padding:7px;border:1px solid #c2d3df;border-radius:6px;background:#fff;color:#24465c;font-size:.78rem;text-overflow:ellipsis; }
+.exec-cia .cia-filter-actions { display:flex;gap:7px;align-items:center; }
+.exec-cia .cia-filter-actions .org-button { white-space:nowrap;padding:9px 12px;font-size:.76rem; }
+.exec-cia #exec-status { margin:2px 0 12px;padding:7px 11px;border-left:3px solid #137c93;background:#e8f1f6;font-size:.78rem; }
+.exec-cia .cia-kpi-heading { display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.exec-cia .cia-kpi-heading h2 { margin:0;font-size:1.05rem;color:#173d56; }
+.exec-cia .cia-section-status { margin:5px 0;font-size:.76rem;color:#536f83;overflow-wrap:anywhere; }
+.exec-cia .cia-section-status[data-state=error] { color:#943e43; }
+.exec-cia .cia-section-status[data-state=success] { color:#286958; }
+.exec.exec-cia .cia-command-scorecard { grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:10px 0 18px;align-items:stretch; }
+.exec.exec-cia .cia-command-scorecard article { display:flex;flex-direction:column;padding:16px 14px;min-height:168px; }
+.exec.exec-cia .cia-command-scorecard article>span { display:block;min-height:2.7em;line-height:1.35;font-size:.82rem; }
+.exec.exec-cia .cia-command-scorecard strong { font-size:clamp(1.75rem,2.5vw,2.4rem);font-variant-numeric:tabular-nums;margin:10px 0; }
+.exec.exec-cia .cia-command-scorecard small { margin-top:auto;line-height:1.4;font-size:.72rem; }
+.exec-cia [data-state=loading] [data-cia-kpi],.exec-cia [data-state=loading] [data-cia-category-count] { opacity:.55; }
+.exec.exec-cia .cia-command-nature { padding:19px 21px;margin:16px 0; }
+.exec.exec-cia .cia-nature-display { margin-top:12px;gap:18px; }
+.exec.exec-cia .cia-command-secondary { gap:14px;margin:16px 0 0; }
+.exec-cia .cia-command-secondary .exec-panel { padding:15px 17px; }
+.exec-cia .cia-command-secondary h2 { font-size:1rem;margin:0 0 9px; }
+.exec-cia .cia-command-secondary p { margin:6px 0;font-size:.79rem; }
+.exec-cia a:focus-visible,.exec-cia select:focus-visible,.exec-cia button:focus-visible { outline:3px solid #55bcbc;outline-offset:3px; }
+@media(max-width:1150px) { .exec-cia .cia-organization-filters { grid-template-columns:repeat(4,minmax(0,1fr)); }.exec-cia .cia-filter-actions { grid-column:1/-1;justify-content:flex-end; }.exec.exec-cia .cia-command-scorecard { gap:9px; }.exec.exec-cia .cia-command-scorecard article { padding:14px 10px; } }
+@media(max-width:900px) { .exec-cia .cia-executive-header { grid-template-columns:1fr;gap:14px;padding:18px; }.exec-cia .cia-organization-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }.exec.exec-cia .cia-command-scorecard { grid-template-columns:repeat(2,minmax(0,1fr)); }.exec.exec-cia .cia-command-scorecard article:last-child { grid-column:1/-1; }.exec.exec-cia .cia-command-scorecard article { min-height:150px; } }
+@media(max-width:520px) { .exec.exec-cia { padding:12px; }.exec-cia .cia-organization-filters { grid-template-columns:1fr; }.exec.exec-cia .cia-command-scorecard { grid-template-columns:1fr; }.exec.exec-cia .cia-command-scorecard article { min-height:140px; }.exec.exec-cia .cia-command-nature { padding:15px; } }

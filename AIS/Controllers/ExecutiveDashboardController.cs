@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace AIS.Controllers
@@ -80,32 +82,41 @@ namespace AIS.Controllers
         public IActionResult GetCiaCommandKpis([FromQuery] int auditPeriodId,
             [FromQuery] int? entityId = null, [FromQuery] string dashboardType = null,
             [FromQuery] ExecutiveDashboardFilterRequest filters = null)
-        {
-            if (!configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"))
-                return Error(503, "not_deployed", "CIA Command Center Oracle cursors are not yet enabled.");
-            if (auditPeriodId <= 0) return Error(400, "invalid_request", "Select a valid IAS audit period.");
-            return ExecuteSummary(entityId, null, dashboardType, null, filters, (scope, f) =>
-            {
-                if (scope.DashboardType != "CIA" || f.View != "command")
-                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA Command Center perspective is required.");
-                return database.GetCiaCommandKpis(scope, f, auditPeriodId);
-            });
-        }
+            => ExecuteCiaCommand(nameof(GetCiaCommandKpis), auditPeriodId, entityId, dashboardType, filters,
+                (scope, f) => database.GetCiaCommandKpis(scope, f, auditPeriodId));
 
         [HttpGet]
         public IActionResult GetCiaIssueNature([FromQuery] int auditPeriodId,
             [FromQuery] int? entityId = null, [FromQuery] string dashboardType = null,
             [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteCiaCommand(nameof(GetCiaIssueNature), auditPeriodId, entityId, dashboardType, filters,
+                (scope, f) => database.GetCiaIssueNature(scope, f, auditPeriodId));
+
+        private IActionResult ExecuteCiaCommand<T>(string action, int auditPeriodId, int? entityId,
+            string dashboardType, ExecutiveDashboardFilterRequest filters,
+            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query)
         {
-            if (!configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"))
-                return Error(503, "not_deployed", "CIA Command Center Oracle cursors are not yet enabled.");
-            if (auditPeriodId <= 0) return Error(400, "invalid_request", "Select a valid IAS audit period.");
-            return ExecuteSummary(entityId, null, dashboardType, null, filters, (scope, f) =>
-            {
-                if (scope.DashboardType != "CIA" || f.View != "command")
-                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA Command Center perspective is required.");
-                return database.GetCiaIssueNature(scope, f, auditPeriodId);
+            filters ??= new ExecutiveDashboardFilterRequest();
+            filters.View ??= "command";
+            var traceId = HttpContext.TraceIdentifier;
+            Response.Headers["X-CIA-Request-Id"] = traceId;
+            using var logScope = logger.BeginScope(new Dictionary<string, object> {
+                ["CiaAction"] = action, ["AuditPeriodId"] = auditPeriodId, ["TraceId"] = traceId,
+                ["EntityId"] = entityId, ["SelectBy"] = filters.SelectBy,
+                ["DimensionId"] = filters.DimensionId, ["ReportingOfficeId"] = filters.ReportingOfficeId
             });
+            var timer = Stopwatch.StartNew();
+            logger.LogInformation("CIA {Action} requested for audit period {AuditPeriodId}; enabled {Enabled}; request {TraceId}.",
+                action, auditPeriodId, configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"), traceId);
+            var result = ExecuteSummary(entityId, null, dashboardType ?? "CIA", null, filters, query,
+                ciaCommand: true, ciaAuditPeriodId: auditPeriodId);
+            var statusCode = (result as ObjectResult)?.StatusCode ?? 200;
+            if (statusCode >= 400)
+                logger.LogWarning("CIA {Action} returned HTTP {StatusCode} for audit period {AuditPeriodId} in {ElapsedMs} ms; request {TraceId}. Check session, page/API grants, configuration and Oracle exception logs.",
+                    action, statusCode, auditPeriodId, timer.ElapsedMilliseconds, traceId);
+            else logger.LogInformation("CIA {Action} loaded audit period {AuditPeriodId} in {ElapsedMs} ms; request {TraceId}.",
+                action, auditPeriodId, timer.ElapsedMilliseconds, traceId);
+            return result;
         }
 
         // The new role datasets use separate, typed Oracle cursors.
@@ -169,7 +180,8 @@ namespace AIS.Controllers
         }
 
         private IActionResult ExecuteSummary<T>(int? entityId, string auditPeriod, string dashboardType, int? groupRootId, ExecutiveDashboardFilterRequest filters,
-            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false)
+            Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> query, bool lifecycle = false,
+            bool ciaCommand = false, int? ciaAuditPeriodId = null)
         {
             var user = session.GetUser();
             if (User.Identity?.IsAuthenticated != true || user == null || session.IsSessionRevoked(user))
@@ -183,6 +195,8 @@ namespace AIS.Controllers
             try
             {
                 var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
+                if (ciaCommand && scope.DashboardType != "CIA")
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA Command Center perspective is required.");
                 if (lifecycle && scope.DashboardType != "TOP")
                     throw new ExecutiveDashboardAccessException("RoleMapping", "Lifecycle KPIs require the TOP perspective.");
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);
@@ -211,6 +225,8 @@ namespace AIS.Controllers
                         throw new ExecutiveDashboardAccessException("RoleMapping", "The regional view requires a verified GM or region posting.");
                 }
                 var dates = filters.Validate();
+                if (ciaCommand && (ciaAuditPeriodId.GetValueOrDefault() <= 0 || filters.View != "command"))
+                    return Error(400, "invalid_request", "Select a valid IAS audit period and the Command Center view.");
                 if (lifecycle && dates == null) throw new ArgumentException("Both KPI dates are required.");
                 if (filters.View != null)
                 {
@@ -221,6 +237,8 @@ namespace AIS.Controllers
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.
+                if (ciaCommand && !configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"))
+                    return Error(503, "not_deployed", "CIA Command Center loading is disabled in this environment.");
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);

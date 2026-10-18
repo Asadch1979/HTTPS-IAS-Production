@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AIS.Controllers
@@ -210,10 +211,8 @@ namespace AIS.Controllers
                 int parsedPeriod;
                 var requestedCiaPeriod = int.TryParse(Request.Query["auditPeriodId"].ToString(), out parsedPeriod)
                     ? parsedPeriod : (int?)null;
-                var selectedCiaPeriod = requestedCiaPeriod.HasValue &&
-                    ciaPeriods.Any(p => p.AUDITPERIODID == requestedCiaPeriod.Value)
-                    ? requestedCiaPeriod
-                    : ciaPeriods.FirstOrDefault()?.AUDITPERIODID;
+                var selectedCiaPeriod = SelectCiaAuditPeriod(ciaPeriods, requestedCiaPeriod,
+                    DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(5)).Date);
                 var groups = superUser && scope.DashboardType == "GROUP" ?
                     database.GetExecutiveDashboardGroups(scope).OrderBy(n => n.EntityName).ToList() : new System.Collections.Generic.List<OrganizationNode>();
                 var rlmRoots = superUser && scope.DashboardType == "RLM"
@@ -262,6 +261,18 @@ namespace AIS.Controllers
                 logger.LogError(exception, "Unable to open executive dashboard for user {UserId}.", user.ID);
                 return StatusCode(503, "Executive Dashboard is temporarily unavailable. Please refresh to retry.");
             }
+        }
+
+        // Explicit selections may be future periods. Automatic selection must
+        // prefer a current IAS period, then the latest period already started.
+        internal static int? SelectCiaAuditPeriod(IEnumerable<AuditPeriodModel> periods, int? requested, DateTime today)
+        {
+            var valid = periods.Where(p => p.AUDITPERIODID > 0 && p.START_DATE.Date <= p.END_DATE.Date).ToList();
+            if (requested.HasValue && valid.Any(p => p.AUDITPERIODID == requested)) return requested;
+            var started = valid.Where(p => p.START_DATE.Date <= today.Date)
+                .OrderByDescending(p => p.START_DATE).ThenByDescending(p => p.AUDITPERIODID).ToList();
+            return started.FirstOrDefault(p => p.END_DATE.Date >= today.Date)?.AUDITPERIODID
+                ?? started.FirstOrDefault()?.AUDITPERIODID;
         }
 
         private void LogDenial(string reason, SessionUser user, string perspective)
