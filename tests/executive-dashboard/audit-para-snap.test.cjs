@@ -107,13 +107,21 @@ test('independent pages preserve dates on navigation and isolate report routes',
 test('protected dashboard and Report A-E artifacts remain byte-equivalent to PR317',() => {
     for (const p of [
         'AIS/Views/ExecutiveOverview/Index.cshtml','AIS/Models/ExecutiveDashboardViews.cs',
-        'AIS/Controllers/ExecutiveDashboardController.cs','AIS/Controllers/ExecutiveReportsController.cs',
+        'AIS/Controllers/ExecutiveReportsController.cs',
         'AIS/DBConnection.ExecutiveDashboardReports.cs','AIS/Docs/sql/PKG_EXEC_REPORTS.sql',
         'AIS/wwwroot/js/executive-reports.js','AIS/wwwroot/js/executive-dashboard.js',
         'AIS/wwwroot/css/executive-themes.css','AIS/wwwroot/css/executive-dashboard.css',
         'AIS/Views/Shared/EngagementWorkbench.cshtml','AIS/wwwroot/css/engagement-workbench.css',
         'AIS/Views/ExecutiveOverview/_ManagementAudit.cshtml','AIS/Views/ExecutiveOverview/_RegionalPulse.cshtml'
     ]) assert.equal(read(p),baseline(p),'protected artifact: ' + p);
+    // CIA request wiring is intentionally maintained independently. Continue
+    // protecting every unrelated endpoint in the shared controller.
+    const p='AIS/Controllers/ExecutiveDashboardController.cs', now=read(p), old=baseline(p);
+    for (const [start,end] of [
+        ['        [HttpGet]\n        public IActionResult GetKpiLifecycle','        // CIA Command Center'],
+        ['        // The new role datasets','        private IActionResult ExecuteSummary']
+    ]) assert.equal(now.slice(now.indexOf(start),now.indexOf(end)),
+        old.slice(old.indexOf(start),old.indexOf(end)),'non-CIA endpoints changed');
 });
 test('new/changed JavaScript parses and clears stale data on date/access failures',() => {
     for (const p of ['AIS/wwwroot/js/audit-para-snap.js','AIS/wwwroot/js/cia-command-center.js']) new Script(read(p));
@@ -124,5 +132,7 @@ test('new/changed JavaScript parses and clears stale data on date/access failure
     assert.match(js,/request\?\.abort\(\)/);
     assert.match(js,/if \(!request.signal.aborted\) render\(data\)/);
     assert.match(js,/Historical evidence unavailable/);
-    assert.match(read('AIS/wwwroot/js/cia-command-center.js'),/clearValues\('N\/A/);
+    const cia=read('AIS/wwwroot/js/cia-command-center.js');
+    assert.match(cia,/clearKpis\('KPI data unavailable/);
+    assert.match(cia,/clearNature\('Issue classification unavailable/);
 });

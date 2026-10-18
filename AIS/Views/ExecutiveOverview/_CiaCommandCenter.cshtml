@@ -18,46 +18,22 @@
 }
 <section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
          data-command-enabled="@(Model.CiaCommandEnabled ? "true" : "false")">
-    <div class="cia-command-heading">
-        <div>
-            <p class="cia-command-eyebrow">INTERNAL AUDIT GROUP · COMMAND CENTER</p>
-            <h2>Audit assurance and execution</h2>
-            <p class="exec-note">Plan and A1 issue detection use the selected IAS audit period; overdue reporting, auditee responses and active audit teams show the latest current-state position.</p>
-        </div>
-        <div>
-            <label for="cia-period">Selected audit year / period</label>
-            <select id="cia-period" aria-label="Select audit period" disabled="@(Model.CiaPeriods.Count == 0)">
-                @foreach (var period in Model.CiaPeriods)
-                {
-                    <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.SelectedCiaPeriodId)">
-                        @period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))
-                    </option>
-                }
-            </select>
-        </div>
-    </div>
-    @if (Model.CiaPeriods.Count == 0)
-    {
-        <p class="exec-empty">IAS has not returned any authorized audit periods. Verify audit-period permissions and the existing PKG_PG lookup.</p>
-    }
-    else if (!Model.CiaCommandEnabled)
-    {
-        <p class="exec-empty">The CIA Command Center layout is restored. The five approved live KPI procedures and issue-nature classification will activate after Oracle compilation, category mapping and authorized API rollout.</p>
-    }
-    <section class="cia-command-scorecard" aria-label="CIA execution KPIs">
+    <div class="cia-kpi-heading"><h2>Audit assurance and execution</h2><p class="cia-section-status" data-cia-kpi-status role="status">Waiting for KPI data</p></div>
+    <section class="cia-command-scorecard" data-cia-kpi-section aria-label="CIA execution KPIs">
         <article><span>Audit Plan Coverage</span><strong data-cia-kpi="planCoveragePct">N/A</strong><small data-cia-plan>Planned versus audited entities</small></article>
         <article><span>Delayed Audit Reports</span><strong data-cia-kpi="delayedAuditReports">N/A</strong><small data-cia-workflow-note>Reporting deadline pending live workflow verification</small></article>
-        <article><span>A1 Observations Detected</span><strong data-cia-kpi="fraudA1Paras">N/A</strong><small>Annexure A1 · identified within the selected audit period; not established fraud</small></article>
-        <article><span>Awaiting Auditee Response</span><strong data-cia-kpi="awaitingAuditeeResponse">N/A</strong><small>Observation status 2 · current state (not a due-date calculation)</small></article>
+        <article><span>A1 Observations Detected</span><strong data-cia-kpi="fraudA1Paras">N/A</strong><small>Annexure A1 · selected audit period</small></article>
+        <article><span>Awaiting Auditee Response</span><strong data-cia-kpi="awaitingAuditeeResponse">N/A</strong><small>Status 2 · current operational position</small></article>
         <article><span>Teams Conducting Audit</span><strong data-cia-kpi="teamsConductingAudit">N/A</strong><small data-cia-workflow-note>Conducting-audit stages pending live workflow verification</small></article>
     </section>
     <section class="cia-command-nature exec-panel" aria-labelledby="cia-nature-title">
         <div class="cia-command-section-heading">
             <div><span class="cia-command-eyebrow">02 / AUDIT ISSUES BY CATEGORY</span>
                 <h2 id="cia-nature-title">Nature of Issue Identified</h2>
-                <p class="exec-note">The complete set of ten approved audit categories. Figures are sourced solely from the authorized IAS observation mapping procedure.</p></div>
+                <p class="exec-note">Selected IAS audit period · ten approved categories</p></div>
             <p class="cia-command-data-quality" data-cia-mapping-status>IAS classification pending</p>
         </div>
+        <p class="cia-section-status" data-cia-nature-status role="status">Waiting for issue classification</p>
         <div class="cia-nature-display">
             <div class="cia-nature-main">
                 <div class="cia-nature-matrix" data-cia-nature-bars role="list" aria-label="Ten Nature of Issue Identified categories">
@@ -70,7 +46,7 @@
                         </article>
                     }
                 </div>
-                <p class="exec-note cia-nature-quality-note" data-cia-unmapped>Issue counts are unavailable until the CIA category mapping and Oracle cursor have been verified. No illustrative counts are presented.</p>
+                <p class="exec-note cia-nature-quality-note" data-cia-unmapped>Mapping coverage will appear with the returned issue counts.</p>
             </div>
             <aside class="cia-nature-summary" aria-label="Issue mapping diagnostics">
                 <div class="cia-nature-ring" data-cia-nature-ring role="img" aria-label="Classified issue proportion not yet available">
@@ -86,12 +62,12 @@
     <section class="cia-command-secondary">
         <article class="exec-panel">
             <h2>Leadership Review Priorities</h2>
-            <p><strong>Reporting delays:</strong> investigate the engagements exceeding the approved reporting threshold. Open the existing authorized engagement/report workflow for details.</p>
+            <p><strong>Reporting delays and conducting teams:</strong> N/A until workflow definitions are verified. Then review the existing authorized engagement/report workflow.</p>
             <p><strong>Remediation follow-up:</strong> status 2 means awaiting an auditee response; no unsupported remediation due date is inferred.</p>
         </article>
         <article class="exec-panel">
             <h2>Data Quality &amp; Scope</h2>
-            <p>All figures are retrieved from scoped IAS Oracle records. Incomplete ten-category mappings are disclosed instead of reporting unclassified observations as zero.</p>
+            <p>Plan coverage, A1 and issue categories use the selected period. Response, delay and conducting-team measures are current state. Unmapped issues are disclosed.</p>
             <p data-cia-as-of>Current-state totals and audit period are displayed when data becomes available.</p>
         </article>
     </section>

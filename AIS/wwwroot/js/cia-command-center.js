@@ -6,15 +6,10 @@
     const period = document.getElementById('cia-period');
     const status = document.getElementById('exec-status');
     const results = document.getElementById('exec-results');
-    if (!main || !form || !status || !results) return;
+    if (!main || !form || !status || !results || !period) return;
     results.hidden = false;
-    if (main.dataset.commandEnabled !== 'true' || !period?.value) {
-        status.textContent = main.dataset.commandEnabled !== 'true'
-            ? 'CIA Command Center · Oracle activation pending verification.'
-            : 'No authorized audit period is available.';
-        return;
-    }
     let controller = null, version = 0;
+    const states = { kpi: 'idle', nature: 'idle' };
     const number = value => value == null ? 'N/A' : Number(value).toLocaleString('en-GB');
     const decimal = value => value == null ? 'N/A' : Number(value).toFixed(1) + '%';
     async function query(action, params, signal) {
@@ -22,13 +17,37 @@
             credentials: 'same-origin', cache: 'no-store', signal,
             headers: {Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest'}
         });
-        if (response.redirected || !String(response.headers.get('content-type') || '').includes('application/json'))
-            throw new Error('IAS session or dashboard access changed.');
-        const data = await response.json();
-        if (!response.ok || data.success !== true) throw new Error(data.message || 'Oracle reporting unavailable.');
+        const reference = response.headers.get('X-CIA-Request-Id');
+        const suffix = reference ? ' Request: ' + reference + '.' : '';
+        const messages = {
+            400: 'The selected audit period or filters were rejected.',
+            401: 'Your IAS session expired. Sign in again.',
+            403: 'CIA page or API permission is missing.',
+            500: 'The server could not load this section.',
+            503: 'Reporting is unavailable or disabled in this environment.'
+        };
+        if (response.redirected) throw new Error('IAS session changed. Sign in and reload.' + suffix);
+        const failure = messages[response.status] || 'Reporting request failed.';
+        if (!String(response.headers.get('content-type') || '').includes('application/json'))
+            throw new Error('HTTP ' + response.status + ' · ' + failure + ' Expected a JSON response.' + suffix);
+        let data;
+        try { data = await response.json(); }
+        catch { throw new Error('HTTP ' + response.status + ' · Invalid JSON response.' + suffix); }
+        if (!response.ok || data?.success !== true)
+            throw new Error('HTTP ' + response.status + ' · ' + (data?.message || failure) + suffix);
+        if (data.data == null) throw new Error('The section returned no data.' + suffix);
         return data.data;
     }
-    function renderKpis(data) {
+    function renderKpis(data, selectedPeriod) {
+        if (!data || Number(data.auditPeriodId) !== Number(selectedPeriod))
+            throw new Error('The KPI result does not match the selected IAS period.');
+        for (const field of ['plannedEntities','auditedEntities','delayedAuditReports','fraudA1Paras','awaitingAuditeeResponse','teamsConductingAudit']) {
+            if (!(field in data) || data[field] != null && (!Number.isSafeInteger(data[field]) || data[field] < 0))
+                throw new Error('Invalid KPI count returned by IAS.');
+        }
+        if (!('planCoveragePct' in data) || data.planCoveragePct != null &&
+            (!Number.isFinite(data.planCoveragePct) || data.planCoveragePct < 0 || data.planCoveragePct > 100))
+            throw new Error('Invalid plan coverage returned by IAS.');
         for (const field of ['delayedAuditReports','fraudA1Paras','awaitingAuditeeResponse','teamsConductingAudit'])
             main.querySelector('[data-cia-kpi="' + field + '"]').textContent = number(data[field]);
         main.querySelector('[data-cia-kpi="planCoveragePct"]').textContent = decimal(data.planCoveragePct);
@@ -46,23 +65,23 @@
     function renderNature(rows) {
         // Preserve the approved ten labels in Razor even when Oracle is disabled
         // or fails. Render only verified numeric results from the CIA cursor.
-        if (rows.length !== 10) throw new Error('The Nature of Issue cursor did not return all ten categories.');
+        if (!Array.isArray(rows) || rows.length !== 10) throw new Error('The Nature of Issue cursor did not return all ten categories.');
         const cards = [...main.querySelectorAll('[data-cia-category]')];
         if (cards.length !== 10) throw new Error('The CIA nature-of-issue design is incomplete.');
         const known = new Map(cards.map(card => [card.dataset.ciaCategory, card]));
         const seen = new Set();
         const totals = rows[0];
-        const identified = Number(totals.totalIssues);
-        const unmapped = Number(totals.unmappedIssues);
+        const identified = totals.totalIssues;
+        const unmapped = totals.unmappedIssues;
         if (!Number.isSafeInteger(identified) || identified < 0 || !Number.isSafeInteger(unmapped) ||
             unmapped < 0 || unmapped > identified)
             throw new Error('Invalid IAS issue-classification totals.');
         let mapped = 0;
         for (const item of rows) {
             const card = known.get(item.categoryCode);
-            const count = Number(item.issueCount);
+            const count = item.issueCount;
             if (!card || seen.has(item.categoryCode) || !Number.isSafeInteger(count) || count < 0 ||
-                Number(item.totalIssues) !== identified || Number(item.unmappedIssues) !== unmapped)
+                item.totalIssues !== identified || item.unmappedIssues !== unmapped)
                 throw new Error('IAS category mapping returned inconsistent or unknown rows.');
             seen.add(item.categoryCode);
             mapped += count;
@@ -106,49 +125,76 @@
                     : 'All identified issues are assigned to one of the ten approved IAS categories.';
     }
     async function load() {
-        if (!period.value) return;
         controller?.abort(); controller = new AbortController();
+        const request = controller;
         const current = ++version, selectedPeriod = period.value;
+        if (main.dataset.commandEnabled !== 'true' || !selectedPeriod) {
+            const reason = main.dataset.commandEnabled !== 'true'
+                ? 'Data loading is disabled in this environment.'
+                : 'Select an IAS audit period to load results.';
+            clearKpis(reason); clearNature(reason);
+            setSectionState('kpi','unavailable',reason);
+            setSectionState('nature','unavailable',reason);
+            app.setAttribute('aria-busy','false');
+            return;
+        }
         const qs = new URLSearchParams(new FormData(form));
         qs.set('view','command'); qs.set('auditPeriodId',selectedPeriod);
         if (app.dataset.dashboardType) qs.set('dashboardType',app.dataset.dashboardType);
         if (app.dataset.groupRootId) qs.set('groupRootId',app.dataset.groupRootId);
-        status.textContent = 'Loading CIA Command Center…';
-        clearValues('Loading selected IAS period…');
+        clearKpis('Loading selected IAS period…');
+        clearNature('Loading issue classification…');
+        setSectionState('kpi','loading','Loading KPI cards…');
+        setSectionState('nature','loading','Loading issue categories…');
         app.setAttribute('aria-busy', 'true');
-        try {
-            const [kpis, categories] = await Promise.all([
-                query('GetCiaCommandKpis',qs,controller.signal),
-                query('GetCiaIssueNature',qs,controller.signal)
-            ]);
-            if (current !== version || !kpis || !Array.isArray(categories))
-                throw new Error('Incomplete CIA command data.');
-            renderKpis(kpis);
-            renderNature(categories);
-            status.textContent = 'CIA Command Center · Approved IAS audit period · Updated ' +
-                new Date().toLocaleTimeString();
-        } catch (error) {
-            if (current !== version || error.name === 'AbortError') return;
-            status.textContent = 'CIA Command Center data unavailable: ' + error.message;
-            clearValues('N/A · ' + error.message);
-            const quality = main.querySelector('[data-cia-mapping-status]');
-            if (quality) {
-                quality.textContent = 'Issue classification unavailable';
-                quality.dataset.complete = 'false';
+        async function section(name, action, render) {
+            try {
+                const data = await query(action,qs,request.signal);
+                if (current !== version || request.signal.aborted) return;
+                render(data,selectedPeriod);
+                const empty = name === 'nature' && data[0].totalIssues === 0;
+                setSectionState(name,empty ? 'empty' : 'success',
+                    empty ? 'No eligible issues in this audit period.' : name === 'kpi' ? 'KPI cards loaded' : 'Issue categories loaded');
+            } catch (error) {
+                if (current !== version || request.signal.aborted || error.name === 'AbortError') return;
+                if (name === 'kpi') clearKpis('KPI data unavailable.');
+                else {
+                    clearNature('Issue classification unavailable');
+                    main.querySelector('[data-cia-mapping-status]').textContent = 'Issue classification unavailable';
+                }
+                setSectionState(name,'error',(name === 'kpi' ? 'KPI cards: ' : 'Issue categories: ') + error.message);
             }
-        } finally {
-            if (current === version) app.setAttribute('aria-busy', 'false');
         }
+        await Promise.allSettled([
+            section('kpi','GetCiaCommandKpis',renderKpis),
+            section('nature','GetCiaIssueNature',renderNature)
+        ]);
+        if (current === version) app.setAttribute('aria-busy','false');
     }
-    function clearValues(note) {
-        for (const field of main.querySelectorAll('[data-cia-kpi], [data-cia-category-count], [data-cia-total], [data-cia-mapped], [data-cia-unmapped-total], [data-cia-mapped-pct]'))
+    function setSectionState(name, state, message) {
+        states[name] = state;
+        const label = main.querySelector('[data-cia-' + name + '-status]');
+        label.textContent = message; label.dataset.state = state;
+        const section = name === 'kpi' ? main.querySelector('[data-cia-kpi-section]') : main.querySelector('.cia-command-nature');
+        section.dataset.state = state;
+        section.setAttribute('aria-busy',String(state === 'loading'));
+        const describe = (key, title) => title + (states[key] === 'loading' ? ' loading' :
+            states[key] === 'success' || states[key] === 'empty' ? ' loaded' : ' unavailable');
+        status.textContent = describe('kpi','KPI cards') + ' · ' + describe('nature','Issue categories');
+    }
+    function clearKpis(note) {
+        for (const field of main.querySelectorAll('[data-cia-kpi]'))
+            field.textContent = 'N/A';
+        main.querySelector('[data-cia-plan]').textContent = note;
+        main.querySelector('[data-cia-as-of]').textContent = note;
+    }
+    function clearNature(note) {
+        for (const field of main.querySelectorAll('[data-cia-category-count], [data-cia-total], [data-cia-mapped], [data-cia-unmapped-total], [data-cia-mapped-pct]'))
             field.textContent = 'N/A';
         for (const fill of main.querySelectorAll('[data-cia-category-fill]')) fill.style.width = '0%';
         for (const label of main.querySelectorAll('[data-cia-category-share]')) label.textContent = note;
         for (const card of main.querySelectorAll('[data-cia-category]'))
             card.setAttribute('aria-label',card.dataset.ciaCategory + ': ' + note);
-        main.querySelector('[data-cia-plan]').textContent = note;
-        main.querySelector('[data-cia-as-of]').textContent = note;
         main.querySelector('[data-cia-unmapped]').textContent = note;
         const quality = main.querySelector('[data-cia-mapping-status]');
         quality.textContent = note; quality.dataset.complete = 'false';
@@ -159,6 +205,14 @@
     period.addEventListener('change', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');
         if (hidden) hidden.value = period.value;
+        const selected = app.querySelector('[data-cia-selected-period]');
+        if (selected) selected.textContent = 'Selected: ' + (period.selectedOptions[0]?.textContent || '');
+        const reset = app.querySelector('[data-cia-reset]');
+        if (reset) {
+            const resetUrl = new URL(reset.href);
+            resetUrl.searchParams.set('auditPeriodId',period.value);
+            reset.href = resetUrl.href;
+        }
         const url = new URL(location.href);
         url.searchParams.set('auditPeriodId',period.value);
         history.replaceState(null,'',url);
