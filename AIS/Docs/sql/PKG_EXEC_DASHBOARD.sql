@@ -1359,7 +1359,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
              NVL(SUM(CASE
                WHEN r.post_copy_count > 0 AND r.min_post_rectified = 1
                 AND r.max_post_rectified = 1
-               THEN 1 ELSE 0 END), 0) AS post_rectified_copies,
+               THEN 1 ELSE 0 END), 0) AS post_rectified_observations,
              NVL(SUM(CASE
                WHEN r.post_copy_status = 'MISMATCH' THEN 1 ELSE 0 END), 0)
                AS mismatch_observations,
