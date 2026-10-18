@@ -13,7 +13,8 @@
         <nav class="exec-super-switcher" aria-label="Super User executive dashboard perspectives">
             <span>Super User dashboards</span>
             <a href="@Url.Action("TOP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "TOP" ? "page" : null)">Top Management</a>
-            <a href="@Url.Action("CIA", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CIA" ? "page" : null)">CIA Command Center</a>
+            <a href="@Url.Action("CIA", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CIA" && !Model.IsAuditParaSnap ? "page" : null)">CIA Command Center</a>
+            <a href="@Url.Action("AuditParaSnap", "ExecutiveOverview")" aria-current="@(Model.IsAuditParaSnap ? "page" : null)">Audit Para Snap</a>
             <a href="@Url.Action("CCO", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CCO" ? "page" : null)">Compliance</a>
             <a href="@Url.Action("GROUP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "GROUP" ? "page" : null)">Group Management</a>
             <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>

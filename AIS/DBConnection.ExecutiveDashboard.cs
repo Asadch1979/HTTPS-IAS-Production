@@ -89,7 +89,7 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("RoleMapping", "The executive role mapping is not supported.");
             if (requested != null && requested != type)
                 throw new ExecutiveDashboardAccessException("RoleMapping", "The requested perspective does not match the authenticated IAS role.");
-            if (groupRootId.HasValue && (type != "GROUP" || groupRootId != user.UserEntityID))
+            if (groupRootId.HasValue)
                 throw new ExecutiveDashboardAccessException("EntityScope", "An ordinary user cannot override the authenticated Group root.");
             if (!string.Equals(mapping.PagePath, "/ExecutiveOverview/" + type, StringComparison.Ordinal))
                 throw new ExecutiveDashboardAccessException("RoleMapping", "A dedicated role permission page is required.");
