@@ -21,7 +21,7 @@ test('CIA checklist dimension preserves outer-join path and one observation key'
   assert.match(rootView, /LEFT JOIN t_audit_checklist_details/);
 });
 test('CIA procedure keeps 10 categories and reconciled ISSUE eligibility and scope',()=>{
-  const body = pkg.slice(pkg.lastIndexOf('  PROCEDURE P_GET_CIA_ISSUE_NATURE('));
+  const body = pkg.slice(pkg.lastIndexOf('PROCEDURE P_GET_CIA_ISSUE_NATURE('));
   const nature=body.slice(0,body.indexOf('END P_GET_CIA_ISSUE_NATURE;'));
   assert.equal((nature.match(/UNION ALL SELECT/g)||[]).length,9);
   assert.match(nature,/croot\.checklist_root_id/);
