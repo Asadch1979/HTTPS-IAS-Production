@@ -1,262 +1,296 @@
--- IAS Executive Dashboards / Command Center permission registration
--- SOURCE ONLY: DBA review and approval required before executing in production.
--- Super User is verified IAS role 1. Never guess other role IDs.
--- Audit Para Snap is an independent CIA/Super User page, ID 1000304.
--- All its new GET APIs are inactive until Oracle verification and approval.
--- Group/Division and Region datasets remain enforced by authenticated C# role/root checks.
--- Execute as IAS owner; inspect existing page IDs and registered group IDs first.
+-- IAS executive dashboard page/API registration (separate parent Razor views).
+-- PR #321 SQL lifecycle/view fixes and PR #322 parent routes are already on main.
+--
+-- SOURCE-ONLY, MANUAL DBA REVIEW. Do not run automatically on application startup.
+-- Existing page STATUS/HIDE_MENU and API/role IS_ACTIVE values are preserved.
+-- New API records and new API-role grants default INACTIVE (N).
+-- No production permission changes are authorized by this source commit.
+--
+-- Independent parent routes:
+--   TOP 1000300, GROUP 1000301, CCO 1000302, CIA 1000303,
+--   AuditParaSnap 1000304.
+-- RLM deliberately uses the existing /Dashboard/entity_wise_obs page grant
+-- through PageIdResolver.AddAlias. Index is a route resolver, not a new page.
+-- Common executive GET API paths must be registered ONCE; PAGE_ID=1000300
+-- is their legacy registration anchor, NOT permission to access TOP. MVC
+-- checks authenticated perspective/page and the independent API role grant.
+--
+-- Verified fixed IAS role/group IDs: 1 Super User, 3 CIA, 38 CCO.
+-- Configure optional roles only after checking real IAS roles/group IDs and
+-- ExecutiveDashboard:RoleMappings / RoleDashboards:ManagementRlmRoleIds.
+-- Do NOT guess Group, Top, GM, Regional or Division role IDs.
+--
+-- Execute as a whole SQL Developer F5/SQL*Plus script AFTER review.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 SET SERVEROUTPUT ON;
 DECLARE
-  V_TOP_ROLE NUMBER := NULL;    -- optional verified additional TOP role
-  V_GROUP_ROLE NUMBER := NULL;  -- optional verified additional GROUP role
+  V_TOP_ROLE NUMBER := NULL;                -- verified TOP role/group, optional
+  V_GROUP_ROLE NUMBER := NULL;              -- verified GROUP role/group, optional
+  V_RLM_REGIONAL_ROLES SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
+  V_RLM_MANAGEMENT_ROLES SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
+  V_NEW_API_ACTIVE CHAR(1) := 'N';
+  V_NEW_GRANT_ACTIVE CHAR(1) := 'N';
   V_MENU_ID NUMBER;
-  V_API_ID NUMBER;
-  V_PAGE_ID NUMBER;
+  V_RLM_PAGE_ID NUMBER;
   V_FOUND NUMBER;
-  V_COLLISIONS NUMBER;
+  V_CONFLICTS NUMBER;
+  V_API_ID NUMBER;
+  V_OLD_PAGE NUMBER;
+  V_EXISTING_KEY VARCHAR2(500);
 
-  PROCEDURE GRANT_SUPERUSER_PAGE(P_PAGE_ID NUMBER) IS
+  PROCEDURE CHECK_OPTIONAL_ROLE(P_ROLE NUMBER, P_LABEL VARCHAR2) IS
   BEGIN
-    -- T_MENU_PAGES_GROUPMAP.GROUP_ID=1 follows current IAS Super User mapping.
-    -- Confirm role/group correspondence in the target IAS before execution.
-    INSERT INTO T_MENU_PAGES_GROUPMAP (GROUPMAP_ID, GROUP_ID, PAGE_ID)
-    SELECT (SELECT NVL(MAX(GROUPMAP_ID), 0) + 1 FROM T_MENU_PAGES_GROUPMAP),
-           1, P_PAGE_ID
+    IF P_ROLE IS NOT NULL AND
+       (P_ROLE <= 0 OR P_ROLE <> TRUNC(P_ROLE) OR P_ROLE IN (1,3,38)) THEN
+      RAISE_APPLICATION_ERROR(-20081,'Invalid unverified IAS role for '||P_LABEL);
+    END IF;
+  END;
+
+  PROCEDURE CHECK_OPTIONAL_LIST(
+      P_ROLES SYS.ODCINUMBERLIST, P_LABEL VARCHAR2) IS
+  BEGIN
+    FOR i IN 1..P_ROLES.COUNT LOOP
+      IF P_ROLES(i) IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20081,'Null role in '||P_LABEL);
+      END IF;
+      CHECK_OPTIONAL_ROLE(P_ROLES(i),P_LABEL);
+    END LOOP;
+  END;
+
+  PROCEDURE GRANT_PAGE(P_PAGE_ID NUMBER, P_GROUP_ID NUMBER) IS
+  BEGIN
+    IF P_GROUP_ID IS NULL THEN RETURN; END IF;
+    INSERT INTO T_MENU_PAGES_GROUPMAP (GROUPMAP_ID,GROUP_ID,PAGE_ID)
+    SELECT (SELECT NVL(MAX(GROUPMAP_ID),0)+1 FROM T_MENU_PAGES_GROUPMAP),
+           P_GROUP_ID,P_PAGE_ID
       FROM dual
      WHERE NOT EXISTS
-           (SELECT 1 FROM T_MENU_PAGES_GROUPMAP
-             WHERE GROUP_ID = 1 AND PAGE_ID = P_PAGE_ID);
+       (SELECT 1 FROM T_MENU_PAGES_GROUPMAP
+         WHERE GROUP_ID=P_GROUP_ID AND PAGE_ID=P_PAGE_ID);
   END;
 
-  PROCEDURE GRANT_PAGE_GROUP(P_PAGE_ID NUMBER, P_GROUP_ID NUMBER) IS
+  PROCEDURE REGISTER_PAGE(
+      P_PAGE_ID NUMBER,P_SUFFIX VARCHAR2,P_NAME VARCHAR2,
+      P_ROLE_ID NUMBER DEFAULT NULL) IS
+    V_PATH VARCHAR2(150) := 'ExecutiveOverview/'||P_SUFFIX;
+    V_KEY VARCHAR2(150) := 'EXECUTIVE_'||P_SUFFIX;
   BEGIN
-    IF P_GROUP_ID IS NOT NULL THEN
-      INSERT INTO T_MENU_PAGES_GROUPMAP (GROUPMAP_ID, GROUP_ID, PAGE_ID)
-      SELECT (SELECT NVL(MAX(GROUPMAP_ID),0)+1 FROM T_MENU_PAGES_GROUPMAP),
-             P_GROUP_ID, P_PAGE_ID
-        FROM dual WHERE NOT EXISTS
-          (SELECT 1 FROM T_MENU_PAGES_GROUPMAP
-            WHERE GROUP_ID = P_GROUP_ID AND PAGE_ID = P_PAGE_ID);
-    END IF;
-  END;
-
-  PROCEDURE REGISTER_EXEC_PAGE(P_ID NUMBER, P_TYPE VARCHAR2, P_ROLE NUMBER) IS
-  BEGIN
-    SELECT COUNT(*) INTO V_COLLISIONS
+    SELECT COUNT(*) INTO V_CONFLICTS
       FROM T_MENU_PAGES
-     WHERE (ID = P_ID AND NVL(PAGE_KEY,'#') <> 'EXECUTIVE_' || P_TYPE)
-        OR (LOWER(TRIM(PAGE_PATH)) = LOWER('ExecutiveOverview/' || P_TYPE)
-            AND ID <> P_ID);
-    IF V_COLLISIONS > 0 THEN
-      RAISE_APPLICATION_ERROR(-20020, 'Executive page ID/path collision: ' || P_TYPE);
+     WHERE (ID=P_PAGE_ID AND
+             (NVL(PAGE_KEY,'#')<>V_KEY
+              OR NVL(LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))),'#')
+                 <>LOWER(V_PATH)))
+        OR (ID<>P_PAGE_ID AND
+            (LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH)))=LOWER(V_PATH)
+             OR PAGE_KEY=V_KEY));
+    IF V_CONFLICTS>0 THEN
+      RAISE_APPLICATION_ERROR(-20082,'Executive page key/path/ID collision: '||V_PATH);
     END IF;
-    MERGE INTO T_MENU_PAGES p USING (SELECT P_ID id FROM dual) s
-      ON (p.ID = s.id)
-    WHEN MATCHED THEN UPDATE SET
-      p.PAGE_NAME = CASE P_TYPE
-                       WHEN 'CIA' THEN 'CIA Audit Command Center'
-                       WHEN 'GROUP' THEN 'Group / Divisional Management Audit'
-                       WHEN 'AuditParaSnap' THEN 'ZTBL | Audit Para Snap'
-                       ELSE 'Executive Dashboard ' || P_TYPE END,
-      p.PAGE_PATH = 'ExecutiveOverview/' || P_TYPE,
-      p.PAGE_URL = '/ExecutiveOverview/' || P_TYPE,
-      p.STATUS = 'A', p.HIDE_MENU = 0
-    WHEN NOT MATCHED THEN INSERT
-      (ID, MENU_ID, PAGE_NAME, PAGE_PATH, PAGE_ORDER,
-       STATUS, HIDE_MENU, PAGE_KEY, PAGE_URL)
-    VALUES
-      (P_ID, V_MENU_ID,
-       CASE P_TYPE WHEN 'CIA' THEN 'CIA Audit Command Center'
-         WHEN 'GROUP' THEN 'Group / Divisional Management Audit'
-         WHEN 'AuditParaSnap' THEN 'ZTBL | Audit Para Snap'
-         ELSE 'Executive Dashboard ' || P_TYPE END,
-       'ExecutiveOverview/' || P_TYPE, 80 + P_ID - 1000300,
-       'A', 0, 'EXECUTIVE_' || P_TYPE,
-       '/ExecutiveOverview/' || P_TYPE);
-    GRANT_SUPERUSER_PAGE(P_ID);
-    GRANT_PAGE_GROUP(P_ID,P_ROLE);
+
+    SELECT COUNT(*) INTO V_FOUND FROM T_MENU_PAGES WHERE ID=P_PAGE_ID;
+    IF V_FOUND=0 THEN
+      INSERT INTO T_MENU_PAGES
+        (ID,MENU_ID,PAGE_NAME,PAGE_PATH,PAGE_ORDER,
+         STATUS,HIDE_MENU,PAGE_KEY,PAGE_URL)
+      VALUES
+        (P_PAGE_ID,V_MENU_ID,P_NAME,V_PATH,80+P_PAGE_ID-1000300,
+         'A',0,V_KEY,'/'||V_PATH);
+    END IF;
+    -- Existing status/visibility/name/URL are not rewritten by re-registration.
+    GRANT_PAGE(P_PAGE_ID,1);
+    GRANT_PAGE(P_PAGE_ID,P_ROLE_ID);
+    DBMS_OUTPUT.PUT_LINE('Validated page: '||V_PATH||' ['||P_PAGE_ID||']');
   END;
 
-  -- Preserve existing routes: RLM and Team Leader workbenches do NOT
-  -- receive invented page IDs or unscoped impersonation privileges.
-  PROCEDURE GRANT_EXISTING_SUPERUSER_PAGE(P_PATH VARCHAR2) IS
-  BEGIN
-    SELECT COUNT(*), MIN(ID) INTO V_FOUND, V_PAGE_ID
-      FROM T_MENU_PAGES
-     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))) =
-           LOWER(TRIM(BOTH '/' FROM P_PATH));
-    IF V_FOUND > 1 THEN
-      RAISE_APPLICATION_ERROR(-20022,'Ambiguous existing IAS page: '||P_PATH);
-    ELSIF V_FOUND = 1 THEN
-      GRANT_SUPERUSER_PAGE(V_PAGE_ID);
-      DBMS_OUTPUT.PUT_LINE('Super User linked to existing page: '||P_PATH);
-    ELSE
-      DBMS_OUTPUT.PUT_LINE('CHECK MANUALLY: existing page not registered: '||P_PATH);
-    END IF;
-  END;
-
-  PROCEDURE GRANT_API_ROLE(P_ROLE NUMBER, P_API_ID NUMBER) IS
+  PROCEDURE GRANT_API(P_ROLE NUMBER,P_API NUMBER) IS
   BEGIN
     IF P_ROLE IS NULL THEN RETURN; END IF;
-    MERGE INTO T_AU_ROLE_API_PERMISSION p
-    USING (SELECT P_ROLE role_id, P_API_ID api_id FROM dual) s
-      ON (p.ROLE_ID=s.role_id AND p.API_ID=s.api_id)
-    -- Never override an administrator's existing disabled API role grant.
-    -- The development-only CIA activation is in cia_command_debug_permissions.sql.
+    MERGE INTO T_AU_ROLE_API_PERMISSION t
+    USING (SELECT P_ROLE role_id,P_API api_id FROM dual) s
+       ON (t.ROLE_ID=s.role_id AND t.API_ID=s.api_id)
+    -- CRITICAL: do not change existing IS_ACTIVE decisions on rerun.
     WHEN NOT MATCHED THEN INSERT
-      (ROLE_ID, API_ID, IS_ACTIVE, CREATED_BY)
-    VALUES (s.role_id,s.api_id,'Y',NULL);
+       (ROLE_ID,API_ID,IS_ACTIVE,CREATED_BY)
+    VALUES (s.role_id,s.api_id,V_NEW_GRANT_ACTIVE,NULL);
   END;
 
-  PROCEDURE REGISTER_API(P_ACTION VARCHAR2, P_KIND VARCHAR2) IS
+  PROCEDURE REGISTER_GET(
+      P_CONTROLLER VARCHAR2,P_ACTION VARCHAR2,
+      P_PAGE_ID NUMBER,P_CLASS VARCHAR2) IS
+    V_PATH VARCHAR2(300) :=
+      '/api/'||P_CONTROLLER||'/'||P_ACTION;
   BEGIN
-    -- CIA command actions are CIA/Super User only; role reporting actions
-    -- are Super User and manually approved IAS Group/RLM roles only.
-    SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
-     WHERE LOWER(API_PATH)=LOWER('/api/ExecutiveDashboard/'||P_ACTION)
-       AND UPPER(HTTP_METHOD)='GET';
-    IF V_COLLISIONS>1 THEN
-      RAISE_APPLICATION_ERROR(-20023,'Duplicate executive API path: '||P_ACTION);
-    END IF;
-    IF V_COLLISIONS=0 THEN
+    SELECT COUNT(*),MIN(API_ID) INTO V_FOUND,V_API_ID
+      FROM T_AU_API_MASTER
+     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
+           LOWER(TRIM(BOTH '/' FROM V_PATH))
+       AND UPPER(TRIM(HTTP_METHOD))='GET';
+    IF V_FOUND>1 THEN
+      RAISE_APPLICATION_ERROR(-20083,'Duplicate GET API registrations: '||V_PATH);
+    ELSIF V_FOUND=0 THEN
       INSERT INTO T_AU_API_MASTER
-        (ACTION_NAME,PAGE_ID,CONTROLLER_NAME,API_PATH,HTTP_METHOD,IS_ACTIVE,CREATED_ON)
-      VALUES (P_ACTION,CASE WHEN P_KIND='CIA' THEN 1000303 ELSE 1000300 END,
-              'ExecutiveDashboard',
-              '/api/ExecutiveDashboard/'||P_ACTION,'GET','Y',SYSDATE);
-    END IF;
-    SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
-     WHERE LOWER(API_PATH)=LOWER('/api/ExecutiveDashboard/'||P_ACTION)
-       AND UPPER(HTTP_METHOD)='GET';
-
-    -- CIA endpoints belong to CIA page 1000303, not TOP page 1000300.
-    -- Correct only the two explicitly CIA actions if registered previously.
-    IF P_KIND='CIA' THEN
-      SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
+        (ACTION_NAME,PAGE_ID,CONTROLLER_NAME,API_PATH,
+         HTTP_METHOD,IS_ACTIVE,CREATED_ON)
+      VALUES
+        (P_ACTION,P_PAGE_ID,P_CONTROLLER,V_PATH,
+         'GET',V_NEW_API_ACTIVE,SYSDATE);
+      SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
+       WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
+             LOWER(TRIM(BOTH '/' FROM V_PATH))
+         AND UPPER(TRIM(HTTP_METHOD))='GET';
+    ELSE
+      SELECT PAGE_ID INTO V_OLD_PAGE
+        FROM T_AU_API_MASTER WHERE API_ID=V_API_ID;
+      SELECT COUNT(*) INTO V_CONFLICTS
+        FROM T_AU_API_MASTER
        WHERE API_ID=V_API_ID
-         AND (NVL(PAGE_ID,-1) NOT IN (1000300,1000303)
-              OR NVL(CONTROLLER_NAME,'#')<>'ExecutiveDashboard'
-              OR NVL(ACTION_NAME,'#')<>P_ACTION);
-      IF V_COLLISIONS>0 THEN
-        RAISE_APPLICATION_ERROR(-20028,'CIA API mapping conflict: '||P_ACTION);
+         AND (UPPER(NVL(CONTROLLER_NAME,'#'))<>UPPER(P_CONTROLLER)
+              OR UPPER(NVL(ACTION_NAME,'#'))<>UPPER(P_ACTION)
+              OR (NVL(PAGE_ID,-1)<>P_PAGE_ID
+                  AND NOT(P_CLASS='CIA'
+                          AND PAGE_ID=1000300 AND P_PAGE_ID=1000303)));
+      IF V_CONFLICTS>0 THEN
+        RAISE_APPLICATION_ERROR(-20084,'Existing API metadata conflict: '||V_PATH);
       END IF;
-      UPDATE T_AU_API_MASTER SET PAGE_ID=1000303
-       WHERE API_ID=V_API_ID AND PAGE_ID=1000300;
+      -- Correct only the legacy TOP-page mapping of CIA command actions.
+      IF P_CLASS='CIA' AND V_OLD_PAGE=1000300 THEN
+        UPDATE T_AU_API_MASTER SET PAGE_ID=1000303
+         WHERE API_ID=V_API_ID;
+      END IF;
     END IF;
-    GRANT_API_ROLE(1,V_API_ID);
-    IF P_KIND='COMMON' THEN
-      GRANT_API_ROLE(3,V_API_ID); GRANT_API_ROLE(38,V_API_ID);
-      GRANT_API_ROLE(V_TOP_ROLE,V_API_ID);
-      GRANT_API_ROLE(V_GROUP_ROLE,V_API_ID);
-    ELSIF P_KIND='CIA' THEN
-      GRANT_API_ROLE(3,V_API_ID);
-    ELSIF P_KIND='TOP' THEN
-      GRANT_API_ROLE(V_TOP_ROLE,V_API_ID);
-    ELSIF P_KIND='MANAGEMENT' THEN
-      GRANT_API_ROLE(V_GROUP_ROLE,V_API_ID);
-    END IF;
-    DBMS_OUTPUT.PUT_LINE('Registered GET API: '||P_ACTION||' ['||P_KIND||']');
-  END;
 
-  PROCEDURE REGISTER_SNAP_API(P_ACTION VARCHAR2) IS
-  BEGIN
-    SELECT COUNT(*) INTO V_FOUND FROM T_AU_API_MASTER
-     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
-           LOWER('api/AuditParaSnap/'||P_ACTION) AND UPPER(HTTP_METHOD)='GET';
-    IF V_FOUND > 1 THEN
-      RAISE_APPLICATION_ERROR(-20025,'Duplicate Snap API: '||P_ACTION);
+    IF P_CLASS='CIA' OR P_CLASS='SNAP' THEN
+      -- These expose authorized bank-wide CIA data. Fail closed if any
+      -- other IAS role currently has an ACTIVE grant; no silent removal.
+      SELECT COUNT(*) INTO V_CONFLICTS
+        FROM T_AU_ROLE_API_PERMISSION
+       WHERE API_ID=V_API_ID AND ROLE_ID NOT IN (1,3)
+         AND NVL(IS_ACTIVE,'N')='Y';
+      IF V_CONFLICTS>0 THEN
+        RAISE_APPLICATION_ERROR(-20085,
+          'Unexpected active bank-wide CIA/Snap API role: '||V_PATH);
+      END IF;
     END IF;
-    IF V_FOUND = 0 THEN
-      INSERT INTO T_AU_API_MASTER
-        (ACTION_NAME,PAGE_ID,CONTROLLER_NAME,API_PATH,HTTP_METHOD,IS_ACTIVE,CREATED_ON)
-      VALUES(P_ACTION,1000304,'AuditParaSnap','/api/AuditParaSnap/'||P_ACTION,'GET','N',SYSDATE);
+
+    GRANT_API(1,V_API_ID);
+    IF P_CLASS='COMMON' THEN
+      GRANT_API(3,V_API_ID);
+      GRANT_API(38,V_API_ID);
+      GRANT_API(V_TOP_ROLE,V_API_ID);
+      GRANT_API(V_GROUP_ROLE,V_API_ID);
+      FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
+        GRANT_API(V_RLM_REGIONAL_ROLES(i),V_API_ID);
+      END LOOP;
+      FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
+        GRANT_API(V_RLM_MANAGEMENT_ROLES(i),V_API_ID);
+      END LOOP;
+    ELSIF P_CLASS='TOP' THEN
+      GRANT_API(V_TOP_ROLE,V_API_ID);
+    ELSIF P_CLASS='CIA' OR P_CLASS='SNAP' THEN
+      GRANT_API(3,V_API_ID);
+    ELSIF P_CLASS='REGIONAL' THEN
+      FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
+        GRANT_API(V_RLM_REGIONAL_ROLES(i),V_API_ID);
+      END LOOP;
+    ELSIF P_CLASS='MANAGEMENT' THEN
+      GRANT_API(V_GROUP_ROLE,V_API_ID);
+      FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
+        GRANT_API(V_RLM_MANAGEMENT_ROLES(i),V_API_ID);
+      END LOOP;
+    ELSE
+      RAISE_APPLICATION_ERROR(-20086,'Unknown API class: '||P_CLASS);
     END IF;
-    SELECT API_ID INTO V_API_ID FROM T_AU_API_MASTER
-     WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH))) =
-           LOWER('api/AuditParaSnap/'||P_ACTION) AND UPPER(HTTP_METHOD)='GET';
-    SELECT COUNT(*) INTO V_COLLISIONS FROM T_AU_API_MASTER
-     WHERE API_ID=V_API_ID AND
-       (NVL(PAGE_ID,-1)<>1000304 OR NVL(CONTROLLER_NAME,'#')<>'AuditParaSnap'
-        OR NVL(ACTION_NAME,'#')<>P_ACTION);
-    IF V_COLLISIONS>0 THEN
-      RAISE_APPLICATION_ERROR(-20026,'Snap API page/controller collision: '||P_ACTION);
-    END IF;
-    -- Preserve existing activation decisions. New records remain N.
-    GRANT_API_ROLE(1,V_API_ID);
-    GRANT_API_ROLE(3,V_API_ID);
+    DBMS_OUTPUT.PUT_LINE('Validated GET '||V_PATH||' / class '||P_CLASS);
   END;
 BEGIN
-  -- Serialize MAX+1 menu map allocation and path collision checks.
+  -- Keep all idempotent MAX+1 allocations serialized in this transaction.
   LOCK TABLE T_MENU_PAGES IN EXCLUSIVE MODE;
   LOCK TABLE T_MENU_PAGES_GROUPMAP IN EXCLUSIVE MODE;
   LOCK TABLE T_AU_API_MASTER IN EXCLUSIVE MODE;
-  -- NULL optional roles are intentional: Super User provisioning MUST NOT
-  -- silently fail or invent organizational role IDs.
-  IF V_TOP_ROLE IS NOT NULL AND (V_TOP_ROLE <= 0 OR V_TOP_ROLE IN (1,3,38)) THEN
-    RAISE_APPLICATION_ERROR(-20021,'Invalid additional TOP role.');
-  END IF;
-  IF V_GROUP_ROLE IS NOT NULL AND (V_GROUP_ROLE <= 0 OR V_GROUP_ROLE IN (1,3,38)
-       OR V_GROUP_ROLE=V_TOP_ROLE) THEN
-    RAISE_APPLICATION_ERROR(-20021,'Invalid additional GROUP role.');
+  LOCK TABLE T_AU_ROLE_API_PERMISSION IN EXCLUSIVE MODE;
+
+  IF V_NEW_API_ACTIVE <> 'N' OR V_NEW_GRANT_ACTIVE <> 'N' THEN
+    RAISE_APPLICATION_ERROR(-20087,
+      'Permission registration must leave newly created API access inactive.');
   END IF;
 
-  SELECT MIN(MENU_ID) INTO V_MENU_ID FROM T_MENU_PAGES
-   WHERE LOWER(TRIM(BOTH '/' FROM PAGE_PATH))='dashboard/entity_wise_obs';
-  IF V_MENU_ID IS NULL THEN
-    RAISE_APPLICATION_ERROR(-20024,'Organization dashboard menu must exist before registration.');
+  CHECK_OPTIONAL_ROLE(V_TOP_ROLE,'TOP');
+  CHECK_OPTIONAL_ROLE(V_GROUP_ROLE,'GROUP');
+  CHECK_OPTIONAL_LIST(V_RLM_REGIONAL_ROLES,'RLM regional');
+  CHECK_OPTIONAL_LIST(V_RLM_MANAGEMENT_ROLES,'RLM management');
+  IF V_TOP_ROLE IS NOT NULL AND V_TOP_ROLE=V_GROUP_ROLE THEN
+    RAISE_APPLICATION_ERROR(-20081,'TOP and GROUP cannot share optional role.');
   END IF;
 
-  REGISTER_EXEC_PAGE(1000300,'TOP',V_TOP_ROLE);
-  REGISTER_EXEC_PAGE(1000301,'GROUP',V_GROUP_ROLE);
-  REGISTER_EXEC_PAGE(1000302,'CCO',38);
-  REGISTER_EXEC_PAGE(1000303,'CIA',3);
-
-  -- Reserved ID must match runtime AuditParaSnapPolicy/PageIdResolver.
-  -- Fail on ID, normalized path or key conflicts; never borrow another page.
-  SELECT COUNT(*) INTO V_COLLISIONS FROM T_MENU_PAGES
-   WHERE (ID=1000304 AND
-          (NVL(PAGE_KEY,'#')<>'EXECUTIVE_AuditParaSnap'
-           OR NVL(LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))),'#')<>'executiveoverview/auditparasnap'))
-      OR (ID<>1000304 AND
-          (LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH)))='executiveoverview/auditparasnap'
-           OR PAGE_KEY='EXECUTIVE_AuditParaSnap'));
-  IF V_COLLISIONS>0 THEN
-    RAISE_APPLICATION_ERROR(-20027,'Audit Para Snap reserved page ID/path/key collision.');
+  SELECT COUNT(DISTINCT MENU_ID),MIN(MENU_ID)
+    INTO V_FOUND,V_MENU_ID
+    FROM T_MENU_PAGES
+   WHERE LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))) =
+         'dashboard/entity_wise_obs';
+  IF V_FOUND<>1 OR V_MENU_ID IS NULL THEN
+    RAISE_APPLICATION_ERROR(-20088,
+      'Existing organization dashboard menu is missing or ambiguous.');
   END IF;
-  REGISTER_EXEC_PAGE(1000304,'AuditParaSnap',3);
+  SELECT COUNT(*),MIN(ID) INTO V_FOUND,V_RLM_PAGE_ID
+    FROM T_MENU_PAGES
+   WHERE LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))) =
+         'dashboard/entity_wise_obs';
+  IF V_FOUND<>1 THEN
+    RAISE_APPLICATION_ERROR(-20089,
+      'RLM alias requires one existing Dashboard/entity_wise_obs page.');
+  END IF;
 
-  -- RLM uses the existing organization-dashboard page alias in PageIdResolver.
-  -- Team Leader workbench requires live assigned-engagement scope even as Super User.
-  GRANT_EXISTING_SUPERUSER_PAGE('Dashboard/entity_wise_obs');
-  GRANT_EXISTING_SUPERUSER_PAGE('FieldAudit/AR_Dashboard');
-  GRANT_EXISTING_SUPERUSER_PAGE('ManagementAudit/MA_Dashboard');
+  -- Each parent has a distinct page ID and authorization path.
+  REGISTER_PAGE(1000300,'TOP','Top Management Dashboard',V_TOP_ROLE);
+  REGISTER_PAGE(1000301,'GROUP','ZTBL | Management Audit Dashboard',V_GROUP_ROLE);
+  REGISTER_PAGE(1000302,'CCO','Chief Compliance Officer Dashboard',38);
+  REGISTER_PAGE(1000303,'CIA','CIA Audit Command Center',3);
+  REGISTER_PAGE(1000304,'AuditParaSnap','ZTBL | Audit Para Snap',3);
 
-  REGISTER_API('GetKpiSummary','COMMON');
-  REGISTER_API('GetRiskSummary','COMMON');
-  REGISTER_API('GetAgingSummary','COMMON');
-  REGISTER_API('GetCycleSummary','COMMON');
-  REGISTER_API('GetSettlementTrend','COMMON');
-  REGISTER_API('GetCriticalItems','COMMON');
-  REGISTER_API('GetKpiLifecycle','TOP');
-  REGISTER_API('GetCiaCommandKpis','CIA');
-  REGISTER_API('GetCiaIssueNature','CIA');
-  REGISTER_API('GetRoleEntityHeatmap','REGIONAL');
-  REGISTER_API('GetRoleUnitComparison','MANAGEMENT');
-  REGISTER_API('GetRoleFollowups','MANAGEMENT');
+  -- RLM never receives a fabricated /ExecutiveOverview/RLM page ID.
+  -- PageIdResolver aliases it to this existing authenticated page.
+  GRANT_PAGE(V_RLM_PAGE_ID,1);
+  FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
+    GRANT_PAGE(V_RLM_PAGE_ID,V_RLM_REGIONAL_ROLES(i));
+  END LOOP;
+  FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
+    GRANT_PAGE(V_RLM_PAGE_ID,V_RLM_MANAGEMENT_ROLES(i));
+  END LOOP;
 
-  REGISTER_SNAP_API('GetKpis');
-  REGISTER_SNAP_API('GetDistribution');
-  REGISTER_SNAP_API('GetCriticalItems');
-  REGISTER_SNAP_API('GetReportA');
-  REGISTER_SNAP_API('GetReportB');
-  REGISTER_SNAP_API('GetReportC');
-  REGISTER_SNAP_API('GetReportD');
-  REGISTER_SNAP_API('GetReportE');
+  -- Common read-only data endpoints (one URL, multiple verified scopes).
+  -- PAGE_ID=1000300 is an existing shared-API metadata anchor, not a
+  -- substitute for role/page/scope checks in ExecutiveDashboardController.
+  REGISTER_GET('ExecutiveDashboard','GetKpiSummary',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetRiskSummary',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetAgingSummary',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetCycleSummary',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetSettlementTrend',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetCriticalItems',1000300,'COMMON');
+  REGISTER_GET('ExecutiveDashboard','GetKpiLifecycle',1000300,'TOP');
 
-  -- Report A-E endpoints are governed by executive_reports_permissions.sql.
-  -- Do not override its inactive-by-default rollout or grant broad RLM access.
+  REGISTER_GET('ExecutiveDashboard','GetCiaCommandKpis',1000303,'CIA');
+  REGISTER_GET('ExecutiveDashboard','GetCiaIssueNature',1000303,'CIA');
+  REGISTER_GET('ExecutiveDashboard','GetRoleEntityHeatmap',1000300,'REGIONAL');
+  REGISTER_GET('ExecutiveDashboard','GetRoleUnitComparison',1000300,'MANAGEMENT');
+  REGISTER_GET('ExecutiveDashboard','GetRoleFollowups',1000300,'MANAGEMENT');
+
+  -- Audit Para Snap has its own page and controller, eight GET endpoints.
+  -- New records stay INACTIVE; existing activation/role decisions are kept.
+  REGISTER_GET('AuditParaSnap','GetKpis',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetDistribution',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetCriticalItems',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetReportA',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetReportB',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetReportC',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetReportD',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetReportE',1000304,'SNAP');
+
+  -- The ExecutiveReports controller and its report A-E API grants are
+  -- managed by executive_reports_permissions.sql. Do not touch them here.
+  -- /ExecutiveOverview/Index redirects after authenticated role resolution.
   COMMIT;
+  DBMS_OUTPUT.PUT_LINE('Executive registration committed (no activations changed).');
 EXCEPTION WHEN OTHERS THEN
   ROLLBACK;
   RAISE;
