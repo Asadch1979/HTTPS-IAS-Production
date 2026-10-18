@@ -33,17 +33,17 @@ approved dark Regional Audit Pulse styling.
 | Current KPI summary, risk, aging, cycles, settlement trend, critical observations | `P_GET_KPI_SUMMARY`, `P_GET_RISK_SUMMARY`, `P_GET_AGING_SUMMARY`, `P_GET_CYCLE_SUMMARY`, `P_GET_SETTLEMENT_TREND`, `P_GET_CRITICAL_ITEMS` have no start/end parameters in `ReadExecutiveSummary`. Dates are retained in parent navigation but are explicitly not claimed to filter these datasets. Range support needs separately approved date-aware Oracle contracts, event/snapshot definitions, development compilation and reconciliation before API/UI activation. Existing signatures are untouched. |
 | Group/Division/GM/Region comparisons and follow-ups | `P_GET_ROLE_ENTITY_HEATMAP`, `P_GET_ROLE_UNIT_COMPARISON`, `P_GET_ROLE_FOLLOWUPS` accept a root/audit-period contract, not start/end dates. Current-state only; separate date-aware Oracle work and verification required. |
 | Reports A–E | Existing report reader already binds `P_START_DATE` and `P_END_DATE`. Permissions, calculations, exports and SQL remain unchanged. Historical balances/settlement attribution remain indicative and use current organization mapping. |
-| Audit Para Snap | Independent date-range policy, nine lifecycle KPIs and existing `P_GET_KPI_LIFECYCLE` are preserved. Its disabled Oracle/API features still need separate development database compilation, verification and approved activation. N/A remains N/A. |
+| Audit Para Snap | Date-only parent with independent date-range policy, nine lifecycle KPIs and existing `P_GET_KPI_LIFECYCLE` are preserved. Its disabled Oracle/API features still need separate development database compilation, verification and approved activation. N/A remains N/A. |
 | CIA Command Center | IAS audit-period IDs remain independent of calendar date ranges. Operational KPIs remain current-state. Ten approved nature labels and unmapped reconciliation are unchanged. The user-reported 14,604 unmapped records still require approved source-ID classification in `T_IAS_CIA_ISSUE_NATURE_MAP`; no mappings are inferred here. |
 
 ## Validation
 
 - `dotnet build AIS/AIS.csproj --no-restore --configuration Debug --verbosity quiet`:
   passed, zero errors (57 existing compiler warnings).
-- `node --test tests/executive-dashboard/*.test.cjs`: passed, 29 checks including
+- `node --test tests/executive-dashboard/*.test.cjs`: passed, 30 checks including
   real client execution without organizational inputs and preservation of Oracle
   signatures, Report A–E, CIA labels/reconciliation and independent Snap wiring.
-- `tests/executive-dashboard/role-parent-policy.ps1`: 36 compiled filter checks.
+- `tests/executive-dashboard/role-parent-policy.ps1`: 45 compiled filter checks.
 - `tests/executive-dashboard/cia-command-policy.ps1`: 23 Snap date/default checks,
   18 Snap controller access checks, 13 CIA period/configuration checks and 22 CIA
   controller access/gate checks. No Oracle connection is opened by these checks.

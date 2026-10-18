@@ -20,7 +20,7 @@
             <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
         </nav>
     }
-<section class="org exec exec-snap" id="executive-dashboard" data-perspective="SNAP"
+<section class="org exec exec-snap" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="SNAP"
          data-view="@Model.SelectedView.Id" data-enabled="@(Model.AuditParaSnapEnabled ? "true" : "false")"
          data-api-url="@Url.Content("~/api/AuditParaSnap/")" aria-label="ZTBL Audit Para Snap">
     <header class="org-header">

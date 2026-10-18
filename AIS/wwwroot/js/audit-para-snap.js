@@ -67,17 +67,6 @@
             status.textContent = 'Filters changed. Choose Apply.';
         }
     });
-    if (!reports) {
-        for (const [id,children] of [
-            ['exec-select-by',['exec-dimension','exec-office','exec-entity']],
-            ['exec-dimension',['exec-office','exec-entity']],
-            ['exec-office',['exec-entity']]
-        ]) document.getElementById(id).addEventListener('change', () => {
-            for (const child of children) document.getElementById(child).replaceChildren(new Option('All matching options',''));
-            navigation();
-            if (validDates()) form.requestSubmit(); else form.reportValidity();
-        });
-    }
     navigation();
     if (app.dataset.enabled !== 'true') {
         resetResults('N/A · Oracle activation pending compilation and approval.');
@@ -161,14 +150,7 @@
         target.replaceChildren();
         for (const row of criticalRows.filter(row => !selectedRisk || row.riskName === selectedRisk)) {
             const tr = element('tr'), entity = element('td');
-            const url = new URL(location.href);
-            // Same common dates and dimensions on every drill-down.
-            for (const [key,value] of new FormData(form)) {
-                if (value) url.searchParams.set(key,value); else url.searchParams.delete(key);
-            }
-            url.searchParams.set('entityId',row.entityId); url.searchParams.set('view','position');
-            if (row.entityId) { const link = element('a',row.entityName || row.entityId); link.href = url; entity.append(link); }
-            else entity.textContent = row.entityName || 'Unknown entity';
+            entity.textContent = row.entityName || 'Unknown entity';
             tr.append(entity,element('td',row.paraNo || 'Unnumbered'),element('td',row.riskName),
                 element('td',number(row.comCycle)),element('td',number(row.agingDays)),
                 element('td','N/A'),element('td',row.gistOfParas || ''));

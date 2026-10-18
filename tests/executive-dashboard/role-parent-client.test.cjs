@@ -16,11 +16,31 @@ test('role parents own dates and navigation; organizational controls remain CIA-
         assert.doesNotMatch(page, /name="(?:entityId|dimensionId|reportingOfficeId|selectBy)"/);
         assert.doesNotMatch(page, /OrganizationStructure|name="_Filters"/);
     }
+    const snapFilters = fs.readFileSync(path.join(views, '_AuditParaSnapFilters.cshtml'), 'utf8');
+    assert.doesNotMatch(snapFilters, /name="(?:entityId|dimensionId|reportingOfficeId|selectBy)"/);
+    assert.doesNotMatch(snapFilters, /dimensionId|reportingOfficeId|entityId/);
     const group = fs.readFileSync(path.join(views, 'GROUP.cshtml'), 'utf8');
     assert.ok(group.indexOf('mgmt-hero') < group.indexOf('data-view-navigation'));
     assert.ok(group.indexOf('data-view-navigation') < group.indexOf('id="exec-filters"'));
     assert.match(group, /Model.IsSuperUser && Model.DashboardType == "GROUP"/);
     assert.equal(fs.existsSync(path.join(views, 'Index.cshtml')), false);
+});
+
+test('disabled Snap with dates only preserves N/A and makes no API requests', () => {
+    const snap = fs.readFileSync(path.join(__dirname, '../../AIS/wwwroot/js/audit-para-snap.js'), 'utf8');
+    const values = [];
+    const card = { querySelector: () => ({ set textContent(value) { values.push(value); } }) };
+    const app = {
+        classList: { contains: () => true }, dataset: { view: 'glance', enabled: 'false' },
+        querySelectorAll: selector => selector === '[data-snap-card]' ? [card] : []
+    };
+    const fields = { 'executive-dashboard': app, 'exec-filters': { addEventListener() {} } };
+    vm.runInNewContext(snap, {
+        document: { getElementById: id => fields[id] || null },
+        fetch: () => { throw Error('Disabled Snap must not fetch'); }
+    });
+    assert.equal(values[0], 'N/A');
+    assert.match(values[1], /activation pending/);
 });
 
 // Exercise the real client without organizational inputs. A successful API

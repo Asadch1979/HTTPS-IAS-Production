@@ -131,7 +131,12 @@ namespace AIS.Controllers
             try
             {
                 filters ??= new ExecutiveDashboardFilterRequest();
-                if (auditParaSnap) AuditParaSnapPolicy.ApplyDefault(filters);
+                if (auditParaSnap)
+                {
+                    filters.EntityId = entityId;
+                    filters.ValidateParentPerspective("SNAP");
+                    AuditParaSnapPolicy.ApplyDefault(filters);
+                }
                 else
                 {
                     filters.EntityId = entityId;
@@ -212,7 +217,7 @@ namespace AIS.Controllers
                     database.NarrowExecutiveDashboardScope(scope, entityId);
                 if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
-                var options = needsGroup || needsRlmRoot || (!auditParaSnap && requestedType != "CIA" && view != "regional") ? new ExecutiveDashboardFilterOptions() :
+                var options = needsGroup || needsRlmRoot || (auditParaSnap || (requestedType != "CIA" && view != "regional")) ? new ExecutiveDashboardFilterOptions() :
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 // Fetch the actual IAS audit period IDs; a calendar year is not
                 // interchangeable with T_AU_PERIOD.AUDITPERIODID.

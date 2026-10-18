@@ -14,7 +14,7 @@ foreach ($assembly in $assemblies.Values) { [void][System.Reflection.Assembly]::
 [void][System.Reflection.Assembly]::LoadFrom((Resolve-Path -LiteralPath $AssemblyPath))
 
 $checks = 0
-foreach ($role in @('TOP','CCO','GROUP','RLM')) {
+foreach ($role in @('TOP','CCO','GROUP','RLM','SNAP')) {
     $filter = [AIS.Models.ExecutiveDashboardFilterRequest]::new()
     $filter.StartDate = '2024-02-01'; $filter.EndDate = '2024-02-29'
     $filter.ValidateParentPerspective($role)
