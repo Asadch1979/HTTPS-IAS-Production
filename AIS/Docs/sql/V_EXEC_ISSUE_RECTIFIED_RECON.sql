@@ -9,7 +9,10 @@
 CREATE OR REPLACE VIEW V_EXEC_ISSUE_RECTIFIED_RECON AS
 WITH active_conclusion AS
 (
-    SELECT l.e_id AS eng_id, MAX(l.created_on) AS concluded_on
+    -- Use the same latest unreversed STATUS=14 event as the lifecycle view.
+    SELECT l.e_id AS eng_id,
+           MAX(l.created_on) KEEP
+             (DENSE_RANK LAST ORDER BY l.id) AS concluded_on
       FROM t_au_plan_eng_log l
      WHERE l.status_id = 14
        AND NOT EXISTS
