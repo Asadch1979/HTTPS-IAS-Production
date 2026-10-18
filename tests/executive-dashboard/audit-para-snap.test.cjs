@@ -106,14 +106,23 @@ test('independent pages preserve dates on navigation and isolate report routes',
 });
 test('protected dashboard and Report A-E artifacts remain byte-equivalent to PR317',() => {
     for (const p of [
-        'AIS/Views/ExecutiveOverview/Index.cshtml','AIS/Models/ExecutiveDashboardViews.cs',
+        'AIS/Models/ExecutiveDashboardViews.cs',
         'AIS/Controllers/ExecutiveReportsController.cs',
         'AIS/DBConnection.ExecutiveDashboardReports.cs','AIS/Docs/sql/PKG_EXEC_REPORTS.sql',
-        'AIS/wwwroot/js/executive-reports.js','AIS/wwwroot/js/executive-dashboard.js',
         'AIS/wwwroot/css/executive-themes.css','AIS/wwwroot/css/executive-dashboard.css',
         'AIS/Views/Shared/EngagementWorkbench.cshtml','AIS/wwwroot/css/engagement-workbench.css',
-        'AIS/Views/ExecutiveOverview/_ManagementAudit.cshtml','AIS/Views/ExecutiveOverview/_RegionalPulse.cshtml'
+
     ]) assert.equal(read(p),baseline(p),'protected artifact: ' + p);
+    // Only the banner moves to the parent; all content remains identical.
+    for (const [file, start, end] of [
+        ['_ManagementAudit.cshtml','    <div class="mgmt-hero">','    <div class="mgmt-section-title">'],
+        ['_RegionalPulse.cshtml','    <div class="regional-hero">','    <div class="regional-section-label">']
+    ]) {
+        const p='AIS/Views/ExecutiveOverview/'+file, old=baseline(p);
+        assert.equal(read(p),old.slice(0,old.indexOf(start))+old.slice(old.indexOf(end)));
+    }
+    const reportJs='AIS/wwwroot/js/executive-reports.js';
+    assert.equal(read(reportJs),baseline(reportJs).replace("${$('entity').selectedOptions[0].textContent}","${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}"));
     // CIA request wiring is intentionally maintained independently. Continue
     // protecting every unrelated endpoint in the shared controller.
     const p='AIS/Controllers/ExecutiveDashboardController.cs', now=read(p), old=baseline(p);

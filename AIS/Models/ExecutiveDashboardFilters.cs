@@ -16,6 +16,15 @@ namespace AIS.Models
         public int? EntityId { get; set; }
         public string View { get; set; }
 
+        // Parent pages outside CIA accept dates only. Scoped API drilldowns retain
+        // their existing independently validated organizational contract.
+        public void ValidateParentPerspective(string perspective)
+        {
+            if (perspective != "CIA" && (SelectBy != "entityType" || DimensionId.HasValue ||
+                ReportingOfficeId.HasValue || EntityId.HasValue))
+                throw new ArgumentException("This dashboard accepts dates only; its hierarchy comes from the authenticated IAS scope.");
+        }
+
         public ExecutiveDashboardDateRange Validate()
         {
             if (SelectBy != "entityType" && SelectBy != "auditedBy") throw new ArgumentException("Select Entity Type or Audited By.");

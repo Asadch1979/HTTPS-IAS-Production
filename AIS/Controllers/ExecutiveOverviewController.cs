@@ -131,8 +131,18 @@ namespace AIS.Controllers
             try
             {
                 filters ??= new ExecutiveDashboardFilterRequest();
-                if (auditParaSnap) AuditParaSnapPolicy.ApplyDefault(filters);
-                if (!auditParaSnap && ((requestedType == "TOP" && view == "glance") || view == "reports") &&
+                if (auditParaSnap)
+                {
+                    filters.EntityId = entityId;
+                    filters.ValidateParentPerspective("SNAP");
+                    AuditParaSnapPolicy.ApplyDefault(filters);
+                }
+                else
+                {
+                    filters.EntityId = entityId;
+                    filters.ValidateParentPerspective(requestedType);
+                }
+                if (!auditParaSnap && requestedType != "CIA" &&
                     string.IsNullOrEmpty(filters.StartDate) && string.IsNullOrEmpty(filters.EndDate))
                 {
                     // The reference Annual Field Audit report compares four calendar years.
@@ -145,7 +155,7 @@ namespace AIS.Controllers
                          string.Equals(requestedReport, "A", StringComparison.OrdinalIgnoreCase));
                     // Default complete days only: today's partial date can produce
                     // inconsistent snapshot/results during debugging and time zones.
-                    var defaultEndDate = DateTime.Today.AddDays(-1);
+                    var defaultEndDate = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(5)).Date.AddDays(-1);
                     filters.StartDate = new DateTime(defaultEndDate.Year - (annualDefault ? 3 : 0), 1, 1).ToString("yyyy-MM-dd");
                     filters.EndDate = defaultEndDate.ToString("yyyy-MM-dd");
                 }
@@ -169,13 +179,20 @@ namespace AIS.Controllers
                 }
                 var views = auditParaSnap ? AuditParaSnapPolicy.Definitions() : ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
                 if (!auditParaSnap && requestedType=="CIA") views.RemoveAll(v => v.Id != "command");
+                if (requestedType == "GROUP")
+                {
+                    // Six analysis tabs; legacy glance bookmarks open the management scorecard.
+                    views.RemoveAll(v => v.Id == "glance");
+                    if (view == "glance") view = "management";
+                }
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
                 // Divisional/Group RLM management eligibility requires an explicitly
                 // approved IAS role ID in addition to posting type and page grant.
                 var allowedManagementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
                     .Get<int[]>() ?? Array.Empty<int>();
-                var management = (scope.DashboardType == "GROUP" && root?.EntityTypeId == 18) ||
+                var management = (scope.DashboardType == "GROUP" &&
+                    (root?.EntityTypeId == 18 || (superUser && !scope.GroupRootId.HasValue))) ||
                     (scope.DashboardType == "RLM" &&
                      (allowedManagementRoles.Contains(scope.RoleId) ||
                       (superUser && scope.GroupRootId.HasValue)) &&
@@ -200,7 +217,7 @@ namespace AIS.Controllers
                     database.NarrowExecutiveDashboardScope(scope, entityId);
                 if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
-                var options = needsGroup || needsRlmRoot ? new ExecutiveDashboardFilterOptions() :
+                var options = needsGroup || needsRlmRoot || (auditParaSnap || (requestedType != "CIA" && view != "regional")) ? new ExecutiveDashboardFilterOptions() :
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 // Fetch the actual IAS audit period IDs; a calendar year is not
                 // interchangeable with T_AU_PERIOD.AUDITPERIODID.
@@ -220,7 +237,7 @@ namespace AIS.Controllers
                     : new System.Collections.Generic.List<OrganizationNode>();
                 ViewData["TopMenu"] = menus.GetTopMenus();
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
-                return View(auditParaSnap ? "AuditParaSnap" : requestedType=="CIA" ? "CIA" : "Index", new ExecutiveDashboardPageModel
+                return View(auditParaSnap ? "AuditParaSnap" : scope.DashboardType, new ExecutiveDashboardPageModel
                 {
                     Views = views,
                     SelectedView = selectedView,

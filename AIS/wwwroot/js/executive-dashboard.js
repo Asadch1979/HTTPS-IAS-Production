@@ -208,7 +208,7 @@
         // accounts continue deriving their perspective/root from the IAS session.
         if (app.dataset.dashboardType) query.set('dashboardType', app.dataset.dashboardType);
         if (app.dataset.groupRootId) query.set('groupRootId', app.dataset.groupRootId);
-        if ($('entity').value) query.set('entityId', $('entity').value);
+        if ($('entity')?.value) query.set('entityId', $('entity').value);
         // These organizational dimensions are independently applied by the Oracle
         // dashboard package, including when the Entity selector is "All".
         const filterValues = new FormData($('filters'));
@@ -267,8 +267,8 @@
                 detail: { datasets }
             }));
             $('results').hidden = false;
-            const entity = $('entity').selectedOptions[0].textContent;
-            $('status').textContent = `${entity} · Current organizational filters applied · Updated ${new Date().toLocaleTimeString()}.`;
+            const entity = $('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel;
+            $('status').textContent = `${entity} · Current-state data; selected date range is not applied · Updated ${new Date().toLocaleTimeString()}.`;
             if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {

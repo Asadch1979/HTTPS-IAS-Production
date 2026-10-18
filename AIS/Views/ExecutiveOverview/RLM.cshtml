@@ -1,0 +1,121 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+@{
+    ViewData["Title"] = "Reporting Line Management · Executive Dashboard";
+    Layout = "_Layout";
+    var needsRoot = Model.NeedsRlmRoot;
+}
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
+@if (Model.ComparisonEntities.Any()) { <link rel="stylesheet" href="~/css/executive-entity-comparison.css" asp-append-version="true" /> }
+@if (Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" /> }
+@if (Model.SelectedView.Id == "management" || Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
+<link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/executive-dashboard-parents.css" asp-append-version="true" />
+    @if (Model.IsSuperUser)
+    {
+        <nav class="exec-super-switcher" aria-label="Super User executive dashboard perspectives">
+            <span>Super User dashboards</span>
+            <a href="@Url.Action("TOP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "TOP" ? "page" : null)">Top Management</a>
+            <a href="@Url.Action("CIA", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CIA" && !Model.IsAuditParaSnap ? "page" : null)">CIA Command Center</a>
+            <a href="@Url.Action("AuditParaSnap", "ExecutiveOverview")" aria-current="@(Model.IsAuditParaSnap ? "page" : null)">Audit Para Snap</a>
+            <a href="@Url.Action("CCO", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "CCO" ? "page" : null)">Compliance</a>
+            <a href="@Url.Action("GROUP", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "GROUP" ? "page" : null)">Group Management</a>
+            <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
+        </nav>
+    }
+<section class="org exec @(Model.SelectedView.Id == "regional" ? "exec-regional" : Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
+    @if (Model.SelectedView.Id == "regional")
+    {
+    <div class="regional-hero">
+        <div><span class="regional-eyebrow"><span class="regional-live-dot" aria-hidden="true"></span> REGIONAL AUDIT INTELLIGENCE</span>
+            <h1>Regional Audit Pulse</h1>
+            <p>@Model.ScopeLabel · Authorized reporting descendants only</p></div>
+        <div class="regional-hero-meta"><span>RISK &amp; COMPLIANCE</span><strong>Branch oversight</strong>
+            <small>Live current-state IAS figures</small></div>
+    </div>
+    }
+    else if (Model.SelectedView.Id == "management")
+    {
+    <div class="mgmt-hero">
+        <div class="mgmt-hero-label"><span class="mgmt-symbol" aria-hidden="true">ZTBL</span>
+            <div><span class="mgmt-eyebrow">MANAGEMENT AUDIT · EXECUTIVE INTELLIGENCE</span>
+                <h1>Management Audit Dashboard</h1>
+                <p>Accountability, risk exposure and follow-up across your authorized Group/Division hierarchy.</p></div>
+        </div>
+        <div class="mgmt-hero-scope"><strong>AUTHORIZED MANAGEMENT SCOPE</strong>
+            <span>@Model.ScopeLabel</span><small>Current audit para position · month-to-date settlement</small></div>
+    </div>
+    }
+    else
+    {
+    <header class="org-header"><div class="exec-title"><h1>Reporting Line Management</h1><p>@Model.ScopeLabel</p></div></header>
+    }
+    <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
+        @foreach (var view in Model.Views)
+        {
+            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, startDate = Model.Filters.StartDate, endDate = Model.Filters.EndDate, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">@view.Title</a>
+        }
+    </nav>
+    @if (Model.IsSuperUser && Model.DashboardType == "RLM")
+    {
+        <form class="exec-filters" method="get" action="@Url.Action("RLM", "ExecutiveOverview")">
+            <div><label for="exec-rlm-root">Super User: reporting hierarchy to review</label>
+                <select id="exec-rlm-root" name="groupRootId" required>
+                    <option value="">Select an authorized Group, Division, GM or Region</option>
+                    @foreach (var root in Model.RlmRoots)
+                    {
+                        <option value="@root.EntityId" selected="@(root.EntityId == Model.GroupRootId)">@root.EntityName (@root.EntityId)</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="org-button">Open Scoped Dashboard</button>
+        </form>
+    }
+    @if (needsRoot)
+    {
+        <p class="exec-note">@Model.ScopeLabel. No dashboard data is queried until an authorized root is selected.</p>
+    }
+    else
+    {
+    <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
+        <input type="hidden" name="view" value="@Model.SelectedView.Id" />
+        @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
+        @if (Model.SelectedView.Id == "reports")
+        {
+            var report = Context.Request.Query["report"].ToString();
+            <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(report) ? report : Model.SelectedView.Reports.FirstOrDefault())" />
+        }
+        <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" required /></div>
+        <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" required /></div>
+        <button class="org-button" id="exec-refresh" type="submit">Apply</button>
+        <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
+    </form>
+    <p class="exec-note" id="exec-filter-note">@(Model.SelectedView.Id == "reports"
+        ? "Selected dates apply to Report A–E and exports. Historical balances and settlement attribution remain indicative and use present organization mapping."
+        : Model.SelectedView.UseLifecycleKpis
+            ? "Dates filter lifecycle KPIs only. Charts and observations show current data. N/A indicates unavailable history."
+            : "Current-state dashboard: selected dates are retained for reporting navigation. KPIs, charts and follow-up data do not apply this range; date-aware Oracle procedures require separate development verification.")</p>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
+    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
+        <partial name="@Model.SelectedView.Partial" model="Model" />
+    </div>
+    <noscript><p>Enable JavaScript to load dashboard data.</p></noscript>
+    }
+</section>
+@section Scripts {
+    @if (needsRoot)
+    {
+        // No data queries before the authorized reporting root is selected.
+    }
+    else if (Model.SelectedView.Id == "reports")
+    {
+        <script src="~/js/executive-reports.js" asp-append-version="true"></script>
+    }
+    else
+    {
+        <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+        @if (Model.SelectedView.Id == "management") { <script src="~/js/executive-role-visuals.js" asp-append-version="true"></script> }
+        @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
+        @if (Model.RoleOracleEnabled && (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional")) { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
+    }
+}

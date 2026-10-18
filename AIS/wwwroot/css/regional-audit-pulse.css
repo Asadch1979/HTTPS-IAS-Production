@@ -5,7 +5,7 @@
 .exec.exec-regional .regional-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 27px 21px;border:1px solid #27405b;background:radial-gradient(ellipse at 90% 10%,#1d4d64,#11223c 57%,#101a31);border-radius:13px;margin:4px 0 21px;box-shadow:0 10px 30px #0004}
 .exec.exec-regional .regional-eyebrow{font-size:.68rem;color:#7ee5d0;letter-spacing:.115em;font-weight:850}
 .exec.exec-regional .regional-live-dot{width:8px;height:8px;display:inline-block;margin-right:7px;border-radius:50%;background:#5bd8bd;box-shadow:0 0 8px #5bd8bd91}
-.exec.exec-regional .regional-hero h2{color:#fff;font-size:1.75rem;margin:8px 0 7px}
+.exec.exec-regional .regional-hero h1{color:#fff;font-size:1.75rem;margin:8px 0 7px}
 .exec.exec-regional .regional-hero p{font-size:.85rem;color:#b6c8e2;margin:0}
 .exec.exec-regional .regional-hero-meta{min-width:206px;border:1px solid #4b6d84;background:#142e45ac;padding:13px 18px;border-radius:10px}
 .exec.exec-regional .regional-hero-meta span,.exec.exec-regional .regional-hero-meta strong,.exec.exec-regional .regional-hero-meta small{display:block}

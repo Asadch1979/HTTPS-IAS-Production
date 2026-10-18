@@ -27,12 +27,14 @@ test('Management and regional approved layouts stay in their respective authoriz
     const management = read('Views/ExecutiveOverview/_ManagementAudit.cshtml');
     const regional = read('Views/ExecutiveOverview/_RegionalPulse.cshtml');
     const role = read('Views/ExecutiveOverview/_RoleReporting.cshtml');
-    assert.match(management,/Management Audit Dashboard/);
+    assert.match(read('Views/ExecutiveOverview/GROUP.cshtml'),/Management Audit Dashboard/);
+    assert.doesNotMatch(management,/mgmt-hero/);
     assert.match(management,/data-mgmt-ring="settlement"/);
     assert.match(management,/data-mgmt-ring="risk"/);
     assert.match(management,/data-mgmt-ring="aging"/);
     assert.match(management,/Model\.RoleOracleEnabled/);
-    assert.match(regional,/Regional Audit Pulse/);
+    assert.match(read('Views/ExecutiveOverview/RLM.cshtml'),/Regional Audit Pulse/);
+    assert.doesNotMatch(regional,/regional-hero/);
     assert.match(regional,/Model\.RoleOracleEnabled/);
     assert.match(role,/data-region-heatmap/);
     assert.match(role,/data-management-bars/);
