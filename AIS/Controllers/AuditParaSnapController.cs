@@ -22,13 +22,14 @@ namespace AIS.Controllers
         private readonly SessionHandler session;
         private readonly IPermissionService permissions;
         private readonly IPageIdResolver pageIds;
+        private readonly IConfiguration configuration;
         private readonly ILogger<AuditParaSnapController> logger;
         private readonly IWebHostEnvironment environment;
         public AuditParaSnapController(DBConnection database,SessionHandler session,IPermissionService permissions,
             IPageIdResolver pageIds,IConfiguration configuration,ILogger<AuditParaSnapController> logger,IWebHostEnvironment environment)
         {
             this.database=database;this.session=session;this.permissions=permissions;this.pageIds=pageIds;
-            this.logger=logger;this.environment=environment;
+            this.configuration=configuration;this.logger=logger;this.environment=environment;
         }
         [HttpGet]
         public IActionResult GetKpis([FromQuery] ExecutiveDashboardFilterRequest filters)
@@ -85,6 +86,8 @@ namespace AIS.Controllers
                 // Validate all hierarchy selections before narrowing scope.
                 database.GetExecutiveDashboardFilterOptions(scope,filters);
                 scope=database.NarrowExecutiveDashboardScope(scope,filters.EntityId);
+                if (!configuration.GetValue<bool>("RoleDashboards:AuditParaSnapEnabled"))
+                    return Error(503,"not_deployed","Audit Para Snap awaits approved Oracle compilation and verification.");
                 var data=query(scope,filters);
                 if (report && string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase))
                     return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath),
