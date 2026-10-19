@@ -57,57 +57,75 @@ Existing CIA API/page entitlement guards and other KPI cards are untouched.
 
 ## 3. Audit Para Snap Division + Department / Cluster
 
-The two dropdowns are:
-- Division: `FAD` = Field Audit Division,
-  `MAD` = Management Audit Division. Default `FAD`.
-- Department / Cluster: `All` plus actual authorized audit-by departments
-  for the selected division. Changing division resets child to All and
-  submits GET, refreshing its authorized children list.
-- *All* means the sum of records for **all mapped AUDITBY_IDs** belonging
-  to that one division; it is **not bank-wide**. A selected child uses exactly
-  that department's `AUDITED_BY_ID`.
-- If a parent department itself records audits, it must also have an
-  explicit row in the map. Mapping must cover each true audit portfolio
-  exactly once; unique AUDITBY_ID prevents double counting.
-- Date filters, dashboard tabs, reports A–E and PDF/CSV export links carry
-  both selectors. Their Oracle sources all use the same audit division
-  map plus optional exact child restriction. Browser-provided child/parent
-  combinations are revalidated server-side.
+**Superseded design correction (19 October 2026):** IAS already maintains
+the bank-wide hierarchy in `V_IAS_ENTITY_REPORTING_NAMES`. PR #330 originally
+proposed `T_IAS_SNAP_AUDIT_SCOPE`, which would duplicate that hierarchy.
+This new correction **removes that proposed table** and switches all Snap
+classification and validation to the existing view. No new table, seed script,
+data-copy or nightly synchronization is needed.
 
-**Critical prerequisite: DATA MAPPING NOT YET SEEDED.**
+Verified by the owner's production hierarchy query:
 
-The actual audit department IDs and FAD/MAD child membership are NOT
-verified in connected GitHub. DBA must inspect:
+| Division label | IAS hierarchy parent ID | Direct dropdown children |
+| --- | --- | --- |
+| Field Audit Division (FAD) | `112243` — FIELD AUDIT DEPARTMENT | 9 audit clusters |
+| Management Audit Division (MAD) | `113254` — MANAGEMENT AUDIT DIVISION | 3 audit departments |
+
+- `PKG_AUDIT_SNAP_SCOPE.P_GET_CHILDREN` uses the view's
+  `REPORTING_1` to retrieve **direct** children, returning `ENTITY_ID`
+  and `ENTITY_NAME`. The Razor dropdown retains an explicit **All**.
+- `PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION` validates the division code
+  and an individual child against the same **direct-child** hierarchy,
+  rejecting all forged or cross-division selections.
+- `All` uses the selected parent `AUDITED_BY_ID` itself **plus**
+  all descendants whose `ENTITY_ID` has that parent in
+  `REPORTING_1` through `REPORTING_6`. This includes direct records of
+  a parent that also performs audits; it never means all ZTBL.
+- An individual dropdown selection adds an exact `AUDITED_BY_ID =
+  P_AUDITED_BY_ID` condition **in addition** to the selected division's
+  ancestry predicate, preventing a browser from escaping the division.
+- This exact source predicate is applied consistently to
+  `PKG_EXEC_DASHBOARD`'s lifecycle, distribution and critical cursors,
+  and `PKG_EXEC_REPORTS`'s two common data-source branches used by
+  Reports A–E.
+- The source view is used against **audit-performing IDs**
+  `V_EXEC_KPI_LIFECYCLE.AUDITED_BY_ID` and
+  `V_EXEC_REPORT_SOURCE.AUDITED_BY`; it is **not** applied to the
+  hierarchy of the *audited entity*.
+
+**Remaining production verification:** the user's query proves the
+organizational hierarchy. It does not independently prove that each
+reporting source uses the same audit-performing IAS `ENTITY_ID` values.
+Before deploying, run the rewritten read-only F8 script:
 `AIS/Docs/sql/verify_snap_audit_division_portfolios_F8_20261019.sql`.
-Then review/create and seed:
-`AIS/Docs/sql/snap_audit_division_scope.sql`.
+It compares every parent/descendant against both Oracle source views,
+finds overlaps, checks the 9/3 direct children and identifies any
+leftover old table. If audit-by keys are different, **fail closed** and
+resolve the relationship—do not weaken the scope or return bank-wide data.
 
-The mapping table `T_IAS_SNAP_AUDIT_SCOPE` deliberately contains **zero
-invented seed IDs**. If unseeded or incorrectly selected, the dashboard
-returns an explicit error (fail closed), rather than silently showing the
-entire bank. Do not deploy the ASP.NET dropdown before seeding both
-division mappings and verifying the old totals by aggregation.
+**Required DBA install order (after backup and staging validation):**
+1. Verify `V_IAS_ENTITY_REPORTING_NAMES` and the two source views.
+2. Compile the revised `PKG_AUDIT_SNAP_SCOPE` **spec and body** from
+   `AIS/Docs/sql/snap_audit_division_scope.sql`. Its exposed signatures
+   remain unchanged.
+3. Compile the revised `PKG_EXEC_DASHBOARD` and `PKG_EXEC_REPORTS`
+   package **bodies only**: their signatures stay as in merged PR #330.
+   No new scope table and **no new seed**.
+4. Verify `USER_ERRORS` and `USER_OBJECTS`, counts for FAD All and
+   MAD All versus direct and deeper descendants, selected child,
+   invalid child rejection, risk/trend, critical items and Reports A–E
+   including download/export.
+5. Keep existing Super User-only pilot permissions; this correction
+   changes **neither** roles/API activation nor application routing.
+   Do not merge/deploy unless explicitly authorized.
 
-**Oracle dependency order for staging only:**
-1. Verify live mapping and snapshot/export baselines.
-2. DBA create `T_IAS_SNAP_AUDIT_SCOPE`, install
-   `PKG_AUDIT_SNAP_SCOPE` spec/body; seed actual FAD/MAD department IDs
-   through a separately approved DML script; verify membership.
-3. Compile revised `PKG_EXEC_DASHBOARD` spec **and** body. Three relevant
-   cursors have trailing optional `P_SNAP_DIVISION_CODE`; non-Snap
-   calls pass none and retain existing behavior.
-4. Compile revised `PKG_EXEC_REPORTS` spec **and** body; the five report
-   entry points pass the same optional division parameter into two shared
-   report data-source branches.
-5. Confirm `USER_ERRORS` empty, getters valid, same baseline data counts,
-   cross-division exclusion, malicious child rejection, report A–E and PDF.
-6. Deploy app in a separate approved window; test the actual endpoints
-   under an authorized CIA/Super User session and a forbidden user (403).
+If an operator installed `T_IAS_SNAP_AUDIT_SCOPE` during an earlier
+deployment, this PR does **not** drop it automatically. The DBA must check
+for external dependencies, take a backup, and plan its retirement
+separately.
 
-**Do not run either full canonical SQL file casually**. Extract and compile
-reviewed package spec/body separately after backups, preserving unrelated
-objects and implementing the approved deployment sequence. Deploy no code
-against an incomplete DB signature/mapping.
+**Do not execute either canonical SQL file in full**: extract only the
+approved package spec/body for the stage being deployed.
 
 ## 4. Audit Para Snap Risk Distribution visual fix
 

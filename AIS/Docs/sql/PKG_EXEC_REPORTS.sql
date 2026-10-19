@@ -184,10 +184,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         WHERE 1 = 1
        AND (P_ENTITY_TYPE_ID IS NULL OR s.entity_type_id = P_ENTITY_TYPE_ID)
        AND (P_AUDITED_BY_ID IS NULL OR s.audited_by = P_AUDITED_BY_ID)
-       AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS
-            (SELECT 1 FROM T_IAS_SNAP_AUDIT_SCOPE m
-             WHERE m.DIVISION_CODE=P_SNAP_DIVISION_CODE
-               AND m.AUDITBY_ID=s.audited_by))
+       AND (P_SNAP_DIVISION_CODE IS NULL
+                OR s.audited_by = (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END)
+                OR EXISTS
+                  (SELECT 1
+                     FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.ENTITY_ID = s.audited_by
+                      AND (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END) IN
+                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
+                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
        AND (P_REPORTING_OFFICE_ID IS NULL
             OR s.entity_id = P_REPORTING_OFFICE_ID
             OR P_REPORTING_OFFICE_ID IN
@@ -263,10 +272,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         WHERE s.effective_added_on < P_END_DATE + 1
        AND (P_ENTITY_TYPE_ID IS NULL OR s.entity_type_id = P_ENTITY_TYPE_ID)
        AND (P_AUDITED_BY_ID IS NULL OR s.audited_by = P_AUDITED_BY_ID)
-       AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS
-            (SELECT 1 FROM T_IAS_SNAP_AUDIT_SCOPE m
-             WHERE m.DIVISION_CODE=P_SNAP_DIVISION_CODE
-               AND m.AUDITBY_ID=s.audited_by))
+       AND (P_SNAP_DIVISION_CODE IS NULL
+                OR s.audited_by = (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END)
+                OR EXISTS
+                  (SELECT 1
+                     FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.ENTITY_ID = s.audited_by
+                      AND (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END) IN
+                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
+                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
        AND (P_REPORTING_OFFICE_ID IS NULL
             OR s.entity_id = P_REPORTING_OFFICE_ID
             OR P_REPORTING_OFFICE_ID IN

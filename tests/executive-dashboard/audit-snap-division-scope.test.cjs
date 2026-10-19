@@ -15,11 +15,30 @@ test('Audit Para Snap supports only FAD/MAD divisions and verifies positive audi
  assert.match(policy,/filters.SnapDepartmentId\.HasValue/);
  assert.match(filters,/\["snapDivision"\] = SnapDivision/);
  assert.match(filters,/\["snapDepartmentId"\] = SnapDepartmentId/);
- assert.match(map,/CONSTRAINT UQ_IAS_SNAP_AUDITBY UNIQUE/);
  assert.match(map,/P_GET_CHILDREN/);
- assert.match(map,/P_AUDITBY_ID IS NULL OR m\.AUDITBY_ID = P_AUDITBY_ID/);
- assert.doesNotMatch(map,/INSERT INTO T_IAS_SNAP_AUDIT_SCOPE/);
+ assert.match(map,/P_AUDITBY_ID IS NULL OR h\.ENTITY_ID = P_AUDITBY_ID/);
+ assert.match(map,/V_IAS_ENTITY_REPORTING_NAMES h/);
+ assert.match(map,/h\.REPORTING_1 = V_PARENT_ID/);
+ assert.match(map,/WHEN 'FAD' THEN RETURN 112243/);
+ assert.match(map,/WHEN 'MAD' THEN RETURN 113254/);
+ assert.doesNotMatch(map,/\b(?:CREATE TABLE|INSERT INTO|JOIN|FROM) T_IAS_SNAP_AUDIT_SCOPE\b/);
 });
+test('All division filter includes parent auditby ID and descendants through reporting levels 1-6',()=>{
+ const kpi=read('Docs/sql/PKG_EXEC_DASHBOARD.sql');
+ const reports=read('Docs/sql/PKG_EXEC_REPORTS.sql');
+ for(const text of [kpi,reports]){
+   assert.match(text,/WHEN 'FAD' THEN 112243/);
+   assert.match(text,/WHEN 'MAD' THEN 113254/);
+   for(const level of [1,2,3,4,5,6])
+      assert.ok(text.includes('h.REPORTING_'+level),'Missing reporting level '+level);
+   assert.match(text,/OR EXISTS\s*\(SELECT 1\s*FROM V_IAS_ENTITY_REPORTING_NAMES h/);
+ }
+ const body=read('Docs/sql/snap_audit_division_scope.sql');
+ assert.match(body,/IF P_AUDITBY_ID IS NOT NULL/);
+ assert.match(body,/h\.ENTITY_ID <> V_PARENT_ID/);
+ assert.match(body,/REQUIRE_SELECTION\(P_DIVISION_CODE,NULL\)/);
+});
+
 test('both selectors persist on Snap tab navigation and reports',()=>{
  const parent=read('Views/ExecutiveOverview/_AuditParaSnapFilters.cshtml');
  const js=read('wwwroot/js/audit-para-snap.js');
@@ -48,9 +67,11 @@ test('all IAS Snap KPI, risk, trend, critical and report cursors apply the mappe
  const reports=read('Docs/sql/PKG_EXEC_REPORTS.sql');
  const count=(s,x)=>(s.match(x)||[]).length;
  assert.equal(count(kpi,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),6);
- assert.equal(count(kpi,/T_IAS_SNAP_AUDIT_SCOPE m/g),3);
+ assert.equal(count(kpi,/V_IAS_ENTITY_REPORTING_NAMES h/g),3);
  assert.equal(count(reports,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),10);
- assert.equal(count(reports,/T_IAS_SNAP_AUDIT_SCOPE m/g),2);
+ assert.equal(count(reports,/V_IAS_ENTITY_REPORTING_NAMES h/g),2);
+ assert.doesNotMatch(kpi,/T_IAS_SNAP_AUDIT_SCOPE/);
+ assert.doesNotMatch(reports,/T_IAS_SNAP_AUDIT_SCOPE/);
  assert.equal(count(reports,/IO_CURSOR, P_SNAP_DIVISION_CODE\);/g),5);
  assert.match(read('DBConnection.ExecutiveDashboardReports.cs'),/P_SNAP_DIVISION_CODE/);
  assert.match(read('DBConnection.ExecutiveDashboard.cs'),/P_SNAP_DIVISION_CODE/);

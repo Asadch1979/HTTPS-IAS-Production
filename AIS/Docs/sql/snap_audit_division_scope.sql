@@ -1,18 +1,18 @@
--- Audit Para Snap Division > Department/Cluster filter.
--- DBA-REVIEWED DEVELOPMENT DDL ONLY. No seed IDs are assumed.
--- Seed ALL actual audited-by entities through DBA-approved IAS mapping.
--- Scope is determined by V_EXEC_KPI_LIFECYCLE.AUDITED_BY_ID and
--- V_EXEC_REPORT_SOURCE.AUDITED_BY, never a business reporting ancestor.
-
-CREATE TABLE T_IAS_SNAP_AUDIT_SCOPE
-(
-  DIVISION_CODE VARCHAR2(8) NOT NULL,
-  AUDITBY_ID NUMBER(12) NOT NULL,
-  CONSTRAINT PK_IAS_SNAP_AUDIT_SCOPE PRIMARY KEY (DIVISION_CODE,AUDITBY_ID),
-  CONSTRAINT UQ_IAS_SNAP_AUDITBY UNIQUE (AUDITBY_ID),
-  CONSTRAINT CK_IAS_SNAP_DIVISION CHECK (DIVISION_CODE IN ('FAD','MAD')),
-  CONSTRAINT CK_IAS_SNAP_AUDITBY CHECK (AUDITBY_ID > 0)
-);
+-- IAS Audit Para Snap: Audit Division / Department-Cluster hierarchy.
+-- This uses the EXISTING, DBA-maintained V_IAS_ENTITY_REPORTING_NAMES.
+-- No new table, no seed data, no DML and no change to the IAS hierarchy.
+--
+-- User-verified audit-performing parents:
+-- FAD = 112243 FIELD AUDIT DEPARTMENT       (nine direct audit clusters)
+-- MAD = 113254 MANAGEMENT AUDIT DIVISION    (three direct audit departments)
+--
+-- This package validates the child selector. The reporting packages below
+-- apply the same parent/descendant predicate to AUDITED_BY_ID / AUDITED_BY.
+-- This is deliberately NOT based on the *audited entity's* reporting line.
+--
+-- Oracle deployment: review and compile this SPEC and BODY once, before
+-- compiling the revised PKG_EXEC_DASHBOARD and PKG_EXEC_REPORTS.
+-- Slash separators are for F5/SQL*Plus; do NOT run the whole file as F8.
 
 CREATE OR REPLACE PACKAGE PKG_AUDIT_SNAP_SCOPE AS
   PROCEDURE REQUIRE_SELECTION(
@@ -23,43 +23,71 @@ END PKG_AUDIT_SNAP_SCOPE;
 /
 
 CREATE OR REPLACE PACKAGE BODY PKG_AUDIT_SNAP_SCOPE AS
+
+  FUNCTION DIVISION_PARENT(P_DIVISION_CODE IN VARCHAR2)
+    RETURN NUMBER IS
+  BEGIN
+    CASE P_DIVISION_CODE
+      WHEN 'FAD' THEN RETURN 112243;
+      WHEN 'MAD' THEN RETURN 113254;
+      ELSE RAISE_APPLICATION_ERROR(
+        -20871,'Select Field Audit Division or Management Audit Division.');
+    END CASE;
+  END DIVISION_PARENT;
+
   PROCEDURE REQUIRE_SELECTION(
     P_DIVISION_CODE IN VARCHAR2, P_AUDITBY_ID IN NUMBER DEFAULT NULL) AS
+    V_PARENT_ID NUMBER;
     V_COUNT NUMBER;
   BEGIN
-    IF P_DIVISION_CODE IS NULL OR P_DIVISION_CODE NOT IN ('FAD','MAD')
-       OR P_AUDITBY_ID <= 0 OR P_AUDITBY_ID <> TRUNC(P_AUDITBY_ID) THEN
-      RAISE_APPLICATION_ERROR(-20871,'Select a valid audit division and department.');
+    V_PARENT_ID := DIVISION_PARENT(P_DIVISION_CODE);
+
+    IF P_AUDITBY_ID IS NOT NULL
+       AND (P_AUDITBY_ID <= 0 OR
+            P_AUDITBY_ID <> TRUNC(P_AUDITBY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20872,'Invalid Department / Cluster ID.');
     END IF;
-    -- All means NULL child but still requires at least one approved mapping.
+
+    -- The UI lists DIRECT children (REPORTING_1). A manually supplied child
+    -- cannot escape its chosen division. NULL child means 'All', not a
+    -- request to bypass the division predicate in reporting SQL.
     SELECT COUNT(*) INTO V_COUNT
-      FROM T_IAS_SNAP_AUDIT_SCOPE m
-      JOIN T_AUDIT_DEPARTMENTS d ON d.ENTITY_ID = m.AUDITBY_ID
-     WHERE m.DIVISION_CODE = P_DIVISION_CODE
-       AND (P_AUDITBY_ID IS NULL OR m.AUDITBY_ID = P_AUDITBY_ID);
+      FROM V_IAS_ENTITY_REPORTING_NAMES h
+     WHERE h.REPORTING_1 = V_PARENT_ID
+       AND h.ENTITY_ID <> V_PARENT_ID
+       AND (P_AUDITBY_ID IS NULL OR h.ENTITY_ID = P_AUDITBY_ID);
+
     IF V_COUNT = 0 THEN
-      RAISE_APPLICATION_ERROR(-20872,'Unmapped or unauthorized audit division/department.');
+      RAISE_APPLICATION_ERROR(
+        -20872,'Department / Cluster is not a direct child of the selected Division.');
     END IF;
   END REQUIRE_SELECTION;
 
   PROCEDURE P_GET_CHILDREN(
     P_DIVISION_CODE IN VARCHAR2, IO_CURSOR OUT SYS_REFCURSOR) AS
+    V_PARENT_ID NUMBER;
   BEGIN
+    V_PARENT_ID := DIVISION_PARENT(P_DIVISION_CODE);
     REQUIRE_SELECTION(P_DIVISION_CODE,NULL);
+
     OPEN IO_CURSOR FOR
-      SELECT m.AUDITBY_ID AS ID,
-             TRIM(d.DEPTNAME) AS NAME
-        FROM T_IAS_SNAP_AUDIT_SCOPE m
-        JOIN T_AUDIT_DEPARTMENTS d ON d.ENTITY_ID=m.AUDITBY_ID
-       WHERE m.DIVISION_CODE=P_DIVISION_CODE
-       ORDER BY UPPER(d.DEPTNAME),m.AUDITBY_ID;
+      SELECT DISTINCT h.ENTITY_ID AS ID,
+                      h.ENTITY_NAME AS NAME
+        FROM V_IAS_ENTITY_REPORTING_NAMES h
+       WHERE h.REPORTING_1 = V_PARENT_ID
+         AND h.ENTITY_ID <> V_PARENT_ID
+       ORDER BY NAME, ID;
   END P_GET_CHILDREN;
 END PKG_AUDIT_SNAP_SCOPE;
 /
 
--- IMPORTANT: Seed rows only AFTER reviewing the read-only F8 mapping report
--- verify_snap_audit_division_portfolios_F8_20261019.sql. Never seed by
--- guessing. Explicitly include the parent's own AUDITBY_ID when that
--- parent has direct audit records; include each child exactly once.
--- Both FAD and MAD must each have at least one validated audit portfolio.
--- This script does NOT grant access to any role or run in production.
+-- For ALL in each reporting cursor, include:
+-- (1) the division parent itself, if it directly performs an audit, and
+-- (2) audit-performing descendants whose entity IDs appear in the
+-- existing REPORTING_1..REPORTING_6 hierarchy.
+-- For one child, require the exact AUDITED_BY_ID match IN ADDITION to this
+-- division-wide predicate. All report readers and PDFs must apply it.
+--
+-- Deployment evidence: validate that AUDITED_BY_ID/AUDITED_BY values in
+-- real lifecycle and reports actually use these IAS ENTITY_ID values.
+-- If data uses another key, DO NOT fall back to bank-wide filtering.
