@@ -44,6 +44,12 @@ SELECT COUNT(*) AS all_cases,
 -- DBMS_SQL.RETURN_RESULT can be used where the client supports it.
 DECLARE
   v_cur SYS_REFCURSOR;
+  v_issue NUMBER; v_rectified NUMBER; v_dropped NUMBER;
+  v_added NUMBER; v_settled NUMBER; v_excluded NUMBER;
+  v_opening NUMBER; v_closing NUMBER; v_high NUMBER;
+  v_aged NUMBER; v_cycle NUMBER;
+  v_start DATE; v_end DATE;
+  v_open_quality VARCHAR2(10); v_close_quality VARCHAR2(10);
 BEGIN
   PKG_EXEC_DASHBOARD.P_GET_KPI_LIFECYCLE(
     P_DASHBOARD_TYPE=>'TOP',
@@ -51,7 +57,25 @@ BEGIN
     P_START_DATE=>DATE '2026-01-01',
     P_END_DATE=>DATE '2026-10-18',
     IO_CURSOR=>v_cur);
-  DBMS_SQL.RETURN_RESULT(v_cur);
+
+  FETCH v_cur INTO v_issue,v_rectified,v_dropped,v_added,
+                   v_settled,v_excluded,v_opening,v_closing,v_high,
+                   v_aged,v_cycle,v_start,v_end,
+                   v_open_quality,v_close_quality;
+  IF v_cur%NOTFOUND THEN
+    CLOSE v_cur;
+    RAISE_APPLICATION_ERROR(-20771,'Lifecycle procedure returned no row.');
+  END IF;
+  CLOSE v_cur;
+  DBMS_OUTPUT.PUT_LINE('Selected: '||TO_CHAR(v_start,'YYYY-MM-DD')||
+    ' to '||TO_CHAR(v_end,'YYYY-MM-DD'));
+  DBMS_OUTPUT.PUT_LINE('Opening open: '||v_opening||
+    ' · quality '||v_open_quality);
+  DBMS_OUTPUT.PUT_LINE('Para added: '||v_added||
+    ' · settled: '||v_settled);
+  DBMS_OUTPUT.PUT_LINE('Closing open: '||v_closing||
+    ' · quality '||v_close_quality);
+  DBMS_OUTPUT.PUT_LINE('High risk at end: '||v_high);
 END;
 
 -- 5. Confirm the new Group hierarchy is data-backed, rather than
