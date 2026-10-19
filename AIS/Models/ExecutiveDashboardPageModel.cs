@@ -24,6 +24,7 @@ namespace AIS.Models
         public List<AuditPeriodModel> CiaPeriods { get; set; } = new();
         public ExecutiveDashboardFilterRequest Filters { get; set; }
         public ExecutiveDashboardFilterOptions FilterOptions { get; set; }
+        public List<ExecutiveFilterOption> SnapDepartments { get; set; } = new();
         public List<OrganizationNode> ComparisonEntities { get; set; } = new();
     }
 }
