@@ -1,6 +1,11 @@
 /* Scoped only to Audit Para Snap; existing executive/report palettes remain intact. */
 .exec.exec-snap { --exec-tone:#305779;--exec-tint:#eaf2fa;--exec-border:#a8c4dd;background:#f4f7fb;border:1px solid #cedce9;border-radius:14px;padding:20px; }
-.exec-snap .org-header { padding:6px 0 18px; }
+.exec-snap .org-header { display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:10px 0 20px; }
+.exec-snap .org-header .snap-branding {display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0}
+.exec-snap .org-header .snap-branding .snap-eyebrow {margin:0;line-height:1.3}
+.exec-snap .org-header .snap-branding h1 {margin:0;font-size:clamp(1.35rem,2.2vw,2rem);line-height:1.2;letter-spacing:-.015em}
+.exec-snap .org-header .snap-scope {margin:3px 0 0;color:#56708b;font-size:.82rem;line-height:1.4}
+.exec-snap .org-header > .org-button {flex-shrink:0}
 .exec-snap .snap-eyebrow { margin:0 0 6px;color:#5b7690;font-size:11px;letter-spacing:.13em;font-weight:700; }
 .exec-snap .snap-period-toolbar { display:flex;align-items:end;gap:14px;flex-wrap:wrap;background:#e8f0f8;border:1px solid #b8cde0;border-radius:10px;padding:18px; }
 .exec-snap .snap-period-toolbar label { display:block;color:#305779;font-weight:600;margin-bottom:6px; }
