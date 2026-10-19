@@ -42,14 +42,8 @@
     </nav>
     <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading the selected period from IAS…</p>
     <div id="exec-results">
-        @if (Model.SelectedView.Id=="reports")
-        {
-            <p class="exec-note">Report A–E balances and settlement attribution remain indicative and use present organization mapping. The selected dates apply to reports and exports.</p>
-        }
-        else
-        {
-            <p class="exec-note" data-snap-quality>Activity uses qualifying lifecycle event dates. Historical balances, risk and aging are estimated from latest status, settlement dates and present organization/risk. Reopenings, transfers and missing events can change past figures. Historical compliance-cycle distribution is N/A; the lifecycle over-three-cycle KPI remains an explicitly marked estimate using present cycles. Today means as of now, not a completed end-of-day snapshot.</p>
-        }
+        @* Historical quality is retained in response metadata and per-card
+           accessible tooltips; avoid repeating lengthy caveats on every tab. *@
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
     <noscript><p>Enable JavaScript to load Audit Para Snap results.</p></noscript>
