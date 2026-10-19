@@ -30,7 +30,8 @@ test('every existing Oracle signature is unchanged; no duplicate lifecycle proce
         assert.equal(match?.[1].replace(/\s+/g,' ').trim(),signature,'spec/body mismatch: ' + name);
     }
     assert.equal((sql.match(/PROCEDURE P_GET_KPI_LIFECYCLE\(/g)||[]).length,2,'one spec and one body only');
-    for (const [name] of old) if (!['P_GET_CIA_EXEC_KPIS','P_GET_CIA_ISSUE_NATURE','P_GET_SNAP_CRITICAL'].includes(name))
+    for (const [name] of old) if (!['P_GET_CIA_EXEC_KPIS','P_GET_CIA_ISSUE_NATURE',
+            'P_GET_SNAP_CRITICAL','P_GET_SNAP_DISTRIBUTION'].includes(name))
         assert.equal(body(sql,name),body(before,name),'existing Oracle body changed: ' + name);
 });
 test('Snap historical queries use dated lifecycle evidence and explicit missing cycle history',() => {
@@ -50,6 +51,8 @@ test('Snap historical queries use dated lifecycle evidence and explicit missing 
     assert.match(distribution,/c\.dataset = 'cycle' AND V_TODAY = 0 THEN CAST\(NULL AS NUMBER\)/);
     assert.match(distribution,/para_settled_on >= GREATEST\(m.month_start,V_FROM\)/);
     assert.match(distribution,/para_settled_on < LEAST\(ADD_MONTHS\(m.month_start,1\),V_TO\)/);
+    assert.match(distribution,/COUNT\(CASE WHEN s.risk_id = 1 THEN s.com_id END\)/);
+    assert.match(distribution,/high_risk_count, quality_code/);
     assert.match(critical,/CASE WHEN V_TODAY = 1 THEN k.com_cycle END/);
     assert.match(critical,/AND k.risk_id = 1 -- ZTBL Critical = High-risk open/);
     assert.doesNotMatch(critical,/k.snap_age > 365\s+OR/);
