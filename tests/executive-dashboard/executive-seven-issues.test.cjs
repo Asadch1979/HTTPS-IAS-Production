@@ -37,7 +37,7 @@ test('Critical = OPEN High Risk, across current KPI list and Snap',()=>{
        sql.indexOf('END P_GET_SNAP_CRITICAL;',sql.lastIndexOf('PROCEDURE P_GET_SNAP_CRITICAL(')));
   assert.match(critical,/AND k\.risk_id = 1/);
   assert.doesNotMatch(critical,/AND \(k\.risk_id = 1 OR/);
-  assert.match(snapJs,/ZTBL Critical means open High-Risk para/);
+  assert.match(snapJs,/Critical = open High-Risk paras \(ZTBL\)/);
 });
 test('Reports only CIA, Compliance and Group Management',()=>{
   assert.match(views,/"GROUP" => new\[\] \{ "E" \}/);
