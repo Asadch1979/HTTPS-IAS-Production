@@ -15,6 +15,9 @@ namespace AIS.Models
         public int? ReportingOfficeId { get; set; }
         public int? EntityId { get; set; }
         public string View { get; set; }
+        // Audit Para Snap-specific audit-portfolio selectors; not business hierarchy IDs.
+        public string SnapDivision { get; set; }
+        public int? SnapDepartmentId { get; set; }
 
         // Parent pages outside CIA accept dates only. Scoped API drilldowns retain
         // their existing independently validated organizational contract.
@@ -39,7 +42,8 @@ namespace AIS.Models
         public Dictionary<string, object> RouteValues(string view, int? groupRootId)
             => new Dictionary<string, object> { ["view"] = view, ["groupRootId"] = groupRootId,
                 ["startDate"] = StartDate, ["endDate"] = EndDate, ["selectBy"] = SelectBy,
-                ["dimensionId"] = DimensionId, ["reportingOfficeId"] = ReportingOfficeId, ["entityId"] = EntityId };
+                ["dimensionId"] = DimensionId, ["reportingOfficeId"] = ReportingOfficeId, ["entityId"] = EntityId,
+                ["snapDivision"] = SnapDivision, ["snapDepartmentId"] = SnapDepartmentId };
     }
 
     public sealed class ExecutiveDashboardDateRange

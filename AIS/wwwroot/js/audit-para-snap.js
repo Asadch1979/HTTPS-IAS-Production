@@ -67,6 +67,14 @@
             status.textContent = 'Filters changed. Choose Apply.';
         }
     });
+    // Changing Division discards an incompatible Department / Cluster and
+    // refreshes the server-authorized child list with "All" selected.
+    const division = document.getElementById('snap-division');
+    const department = document.getElementById('snap-department');
+    division?.addEventListener('change', () => {
+        if (department) department.value = '';
+        if (validDates()) form.requestSubmit();
+    });
     navigation();
     if (reports) return;
     async function read(action, signal) {
@@ -227,12 +235,16 @@
             for (const row of subset) {
                 const line = element('div',null,'exec-bar-row'), track = element('div',null,'exec-track');
                 const fill = element('span',null,'exec-fill');
+                if (name === 'risk') fill.classList.add('snap-risk-' + String(row.bucketCode));
                 fill.style.width = row.qualityCode === 'N' ? '0%' : Math.max(0,Number(row.paraCount) / maximum * 100) + '%';
                 track.append(fill);
                 line.append(element('span',row.bucketName),track,element('strong',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
                 bars.append(line);
             }
-            target.replaceChildren(bars,table);
+            const details = element('details',null,'snap-chart-details');
+            const caption = element('summary','View chart data');
+            details.append(caption,table);
+            target.replaceChildren(bars,details);
             if (name === 'cycle' && subset.every(row => row.qualityCode === 'N'))
                 target.append(element('p','Historical cycle breakdown unavailable.','exec-empty'));
         }

@@ -3,6 +3,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace AIS.Controllers
 {
@@ -24,6 +25,36 @@ namespace AIS.Controllers
             if (scope.DashboardType != "CIA" || scope.PermissionPagePath != AuditParaSnapPolicy.PagePath ||
                 (user.UserRoleID != 3 && !(user.UserRoleID == 1 && CreateSessionHandler().IsSuperUser())))
                 throw new ExecutiveDashboardAccessException("RoleMapping", "A verified Audit Para Snap scope is required.");
+        }
+        internal List<ExecutiveFilterOption> GetAuditParaSnapDepartments(
+            ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null)
+        {
+            ValidateSnapScope(scope);
+            if (divisionCode != "FAD" && divisionCode != "MAD")
+                throw new ArgumentException("Invalid audit division.");
+            using var conn = DatabaseConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "PKG_AUDIT_SNAP_SCOPE.P_GET_CHILDREN";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("P_DIVISION_CODE", OracleDbType.Varchar2).Value = divisionCode;
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            var items = new List<ExecutiveFilterOption>();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var id = checked((int)ExecutiveCount(reader,"ID"));
+                if (id <= 0) throw new InvalidOperationException("Invalid IAS audited-by ID.");
+                items.Add(new ExecutiveFilterOption { Id = id, Name = ExecutiveText(reader,"NAME") });
+            }
+            ValidateSnapScope(scope);
+            if (items.Count == 0 || items.Select(e=>e.Id).Distinct().Count() != items.Count)
+                throw new InvalidOperationException("Audit division has no valid distinct mapped departments.");
+            if (selectedDepartmentId.HasValue && !items.Any(e=>e.Id==selectedDepartmentId.Value))
+                throw new ExecutiveDashboardAccessException("EntityScope",
+                    "Selected Department / Cluster does not belong to the chosen Division.");
+            return items;
         }
         internal ExecutiveKpiLifecycle GetAuditParaSnapKpis(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
         {
@@ -53,10 +84,11 @@ namespace AIS.Controllers
             command.Parameters.Add("P_ENTITY_TYPE_ID",OracleDbType.Int32).Value =
                 filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             command.Parameters.Add("P_AUDITED_BY_ID",OracleDbType.Int32).Value =
-                filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                (object)filters.SnapDepartmentId ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = filters.SnapDivision;
             var rows = new List<T>();
             using var reader = command.ExecuteReader();
             while (reader.Read())

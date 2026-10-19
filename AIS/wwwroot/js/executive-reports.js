@@ -276,7 +276,7 @@
         const values = new FormData(form);
         app.querySelectorAll('[data-view-navigation] a').forEach(link => {
             const url = new URL(link.href);
-            for (const key of ['startDate','endDate','selectBy','dimensionId','reportingOfficeId','entityId']) {
+            for (const key of ['startDate','endDate','selectBy','dimensionId','reportingOfficeId','entityId','snapDivision','snapDepartmentId']) {
                 const value = values.get(key); if (value) url.searchParams.set(key,value); else url.searchParams.delete(key);
             }
             if (url.searchParams.get('view') === 'reports' && selection.value) url.searchParams.set('report',selection.value);

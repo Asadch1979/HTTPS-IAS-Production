@@ -63,12 +63,16 @@
             `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
     function renderNature(rows) {
-        // Preserve the approved ten labels in Razor even when Oracle is disabled
-        // or fails. Render only verified numeric results from the CIA cursor.
+        // Oracle still returns ten source categories; the business presentation
+        // intentionally excludes ACCOUNTS and IS_AUDIT. All ten counts remain
+        // in reconciliation and mapping-coverage totals.
         if (!Array.isArray(rows) || rows.length !== 10) throw new Error('The Nature of Issue cursor did not return all ten categories.');
         const cards = [...main.querySelectorAll('[data-cia-category]')];
-        if (cards.length !== 10) throw new Error('The CIA nature-of-issue design is incomplete.');
+        if (cards.length !== 8) throw new Error('Expected eight visible CIA nature categories.');
+        const hiddenCodes = new Set(['ACCOUNTS','IS_AUDIT']);
         const known = new Map(cards.map(card => [card.dataset.ciaCategory, card]));
+        const fullCodes = new Set([...known.keys(),...hiddenCodes]);
+        if (fullCodes.size !== 10) throw new Error('CIA category configuration is invalid.');
         const seen = new Set();
         const totals = rows[0];
         const identified = totals.totalIssues;
@@ -76,21 +80,24 @@
         if (!Number.isSafeInteger(identified) || identified < 0 || !Number.isSafeInteger(unmapped) ||
             unmapped < 0 || unmapped > identified)
             throw new Error('Invalid IAS issue-classification totals.');
-        let mapped = 0;
+        let mapped = 0, hiddenCount = 0;
         for (const item of rows) {
             const card = known.get(item.categoryCode);
             const count = item.issueCount;
-            if (!card || seen.has(item.categoryCode) || !Number.isSafeInteger(count) || count < 0 ||
+            if (!fullCodes.has(item.categoryCode) || seen.has(item.categoryCode) ||
+                !Number.isSafeInteger(count) || count < 0 ||
                 item.totalIssues !== identified || item.unmappedIssues !== unmapped)
                 throw new Error('IAS category mapping returned inconsistent or unknown rows.');
             seen.add(item.categoryCode);
             mapped += count;
+            if (hiddenCodes.has(item.categoryCode)) hiddenCount += count;
         }
-        if (seen.size !== known.size) throw new Error('A required nature-of-issue category is missing.');
+        if (seen.size !== fullCodes.size) throw new Error('A required IAS nature category is missing.');
         if (mapped + unmapped !== identified) throw new Error('IAS category counts do not reconcile.');
 
         for (const item of rows) {
             const card = known.get(item.categoryCode);
+            if (!card) continue; // hidden category stays in full totals
             const share = identified > 0 ? item.issueCount / identified * 100 : 0;
             card.querySelector('[data-cia-category-count]').textContent = number(item.issueCount);
             card.querySelector('[data-cia-category-fill]').style.width = Math.min(100, share).toFixed(2) + '%';
@@ -115,6 +122,7 @@
         main.querySelector('[data-cia-mapped-pct]').textContent = pct == null ? 'N/A' : pct.toFixed(1) + '%';
         main.querySelector('[data-cia-total]').textContent = number(identified);
         main.querySelector('[data-cia-mapped]').textContent = number(mapped);
+        main.querySelector('[data-cia-hidden]').textContent = number(hiddenCount);
         main.querySelector('[data-cia-unmapped-total]').textContent = number(unmapped);
         main.querySelector('[data-cia-unmapped]').textContent = !consistent
             ? 'Category counts do not reconcile to the IAS identified-issue total; review the Oracle mapping.'
@@ -122,7 +130,7 @@
                 ? `${number(unmapped)} issues remain unmapped. The bars exclude these records and must not be treated as a complete classification.`
                 : identified === 0
                     ? 'No eligible issues were identified in the selected IAS audit period.'
-                    : 'All identified issues are assigned to one of the ten approved IAS categories.';
+                    : 'All identified issues are classified; the chart shows eight of the ten source categories.';
     }
     async function load() {
         controller?.abort(); controller = new AbortController();
@@ -189,7 +197,7 @@
         main.querySelector('[data-cia-as-of]').textContent = note;
     }
     function clearNature(note) {
-        for (const field of main.querySelectorAll('[data-cia-category-count], [data-cia-total], [data-cia-mapped], [data-cia-unmapped-total], [data-cia-mapped-pct]'))
+        for (const field of main.querySelectorAll('[data-cia-category-count], [data-cia-total], [data-cia-mapped], [data-cia-hidden], [data-cia-unmapped-total], [data-cia-mapped-pct]'))
             field.textContent = 'N/A';
         for (const fill of main.querySelectorAll('[data-cia-category-fill]')) fill.style.width = '0%';
         for (const label of main.querySelectorAll('[data-cia-category-share]')) label.textContent = note;

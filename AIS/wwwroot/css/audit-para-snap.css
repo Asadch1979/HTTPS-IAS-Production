@@ -9,7 +9,9 @@
 .exec-snap .snap-eyebrow { margin:0 0 6px;color:#5b7690;font-size:11px;letter-spacing:.13em;font-weight:700; }
 .exec-snap .snap-period-toolbar { display:flex;align-items:end;gap:14px;flex-wrap:wrap;background:#e8f0f8;border:1px solid #b8cde0;border-radius:10px;padding:18px; }
 .exec-snap .snap-period-toolbar label { display:block;color:#305779;font-weight:600;margin-bottom:6px; }
-.exec-snap .snap-period-toolbar input { padding:8px 10px;border:1px solid #a8bfd4;border-radius:6px;background:#fff;min-height:38px; }
+.exec-snap .snap-period-toolbar input,.exec-snap .snap-period-toolbar select { padding:8px 10px;border:1px solid #a8bfd4;border-radius:6px;background:#fff;min-height:38px;max-width:100%; }
+.exec-snap .snap-period-toolbar label {white-space:nowrap}
+.exec-snap .snap-period-toolbar select {min-width:190px;}
 .exec-snap .snap-period-toolbar small { color:#536d84;align-self:center; }
 .exec-snap .snap-selected-period { color:#305779;font-weight:600;padding:10px 0;margin:0; }
 .exec-snap .snap-organization { padding:14px 0;margin:0;border:0;background:transparent; }
@@ -18,4 +20,21 @@
 .exec-snap .snap-estimated { color:#92630e; }
 .exec-snap .snap-bucket-table { width:100%; }
 .exec-snap .snap-bucket-table td:last-child { text-align:right; }
-@media(max-width:600px) { .exec-snap .snap-period-toolbar>div { flex:1 1 100%; } .exec-snap .snap-period-toolbar input { width:100%; } }
+/* Snap only: inline fill spans ignore width without block layout. */
+.exec-snap .exec-track > .exec-fill {display:block;height:100%;min-height:100%;width:0;max-width:100%;background:#16876c}
+.exec-snap .exec-track > .snap-risk-1 {background:#c34a44}
+.exec-snap .exec-track > .snap-risk-2 {background:#c9902d}
+.exec-snap .exec-track > .snap-risk-3 {background:#218b73}
+.exec-snap .exec-charts > .exec-panel,.exec-snap .snap-monthly-trend {min-width:0}
+.exec-snap .snap-trend-chart {display:block;width:100%;height:auto;max-height:280px;overflow:visible}
+.exec-snap .snap-monthly-trend .exec-legend {margin:0 0 12px;color:#526b81;font-size:12px}
+.exec-snap .snap-chart-details {margin-top:16px;border-top:1px solid #dce6ef;padding-top:12px}
+.exec-snap .snap-chart-details > summary {font-weight:600;color:#305779;cursor:pointer}
+.exec-snap .snap-chart-details .snap-bucket-table {table-layout:auto;min-width:0;width:100%;margin-top:10px}
+.exec-snap .snap-chart-details .snap-bucket-table th:first-child {width:72%}
+.exec-snap .snap-chart-details .snap-bucket-table th:last-child {width:28%;text-align:right}
+.exec-snap .snap-chart-details .snap-bucket-table td:last-child {text-align:right;min-width:0;max-width:none;white-space:nowrap;color:#234560;font-variant-numeric:tabular-nums}
+.exec-snap .exec-bar-row {grid-template-columns:minmax(92px,140px) minmax(0,1fr) minmax(52px,74px);gap:10px}
+.exec-snap .exec-bar-row > strong {text-align:right;font-variant-numeric:tabular-nums}
+.exec-snap[data-view="risk"] .exec-charts {grid-template-columns:minmax(0,1fr)}
+@media(max-width:600px) { .exec-snap .snap-period-toolbar>div { flex:1 1 100%; } .exec-snap .snap-period-toolbar input,.exec-snap .snap-period-toolbar select { width:100%; } }

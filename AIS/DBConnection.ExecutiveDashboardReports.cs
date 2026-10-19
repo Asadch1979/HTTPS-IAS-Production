@@ -40,10 +40,15 @@ namespace AIS.Controllers
             command.Parameters.Add("P_START_DATE", OracleDbType.Date).Value = dates.StartDate;
             command.Parameters.Add("P_END_DATE", OracleDbType.Date).Value = dates.EndDate;
             command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value = filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
-            command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value = filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+            command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                scope.PermissionPagePath == AuditParaSnapPolicy.PagePath
+                    ? (object)filters.SnapDepartmentId ?? DBNull.Value
+                    : filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)filters.EntityId ?? DBNull.Value;
             command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
+                command.Parameters.Add("P_SNAP_DIVISION_CODE", OracleDbType.Varchar2).Value = filters.SnapDivision;
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {

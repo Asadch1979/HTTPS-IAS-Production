@@ -5,15 +5,16 @@
     var natureCategories = new[]
     {
         new { Code = "AML_CFT", Label = "AML/CFT" },
-        new { Code = "ACCOUNTS", Label = "Accounts" },
         new { Code = "LOAN_ADVANCES", Label = "Loan and Advances" },
         new { Code = "CASH_MANAGEMENT", Label = "Cash Management" },
         new { Code = "RECORD_MANAGEMENT", Label = "Record Management" },
         new { Code = "BANKING_OPERATIONS", Label = "Banking Operations" },
         new { Code = "BRANCH_GENERAL_CONTROLS", Label = "Branch General Controls" },
         new { Code = "ACCOUNTING_REPORTING_RECON", Label = "Accounting / Reporting / Reconciliation" },
-        new { Code = "MANAGEMENT_AUDIT", Label = "Management Audit" },
-        new { Code = "IS_AUDIT", Label = "IS Audit" }
+        new { Code = "MANAGEMENT_AUDIT", Label = "Management Audit" }
+
+        // Both removed from the presentation by request. Oracle retains
+        // all ten category codes for full classification reconciliation.
     };
 }
 <section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
@@ -30,13 +31,13 @@
         <div class="cia-command-section-heading">
             <div><span class="cia-command-eyebrow">02 / AUDIT ISSUES BY CATEGORY</span>
                 <h2 id="cia-nature-title">Nature of Issue Identified</h2>
-                <p class="exec-note">Selected IAS audit period · ten approved categories</p></div>
+                <p class="exec-note">Selected IAS audit period · eight displayed categories</p></div>
             <p class="cia-command-data-quality" data-cia-mapping-status>IAS classification pending</p>
         </div>
         <p class="cia-section-status" data-cia-nature-status role="status">Waiting for issue classification</p>
         <div class="cia-nature-display">
             <div class="cia-nature-main">
-                <div class="cia-nature-matrix" data-cia-nature-bars role="list" aria-label="Ten Nature of Issue Identified categories">
+                <div class="cia-nature-matrix" data-cia-nature-bars role="list" aria-label="Eight Nature of Issue Identified categories">
                     @foreach (var category in natureCategories)
                     {
                         <article class="cia-nature-card" role="listitem" data-cia-category="@category.Code">
@@ -53,9 +54,10 @@
                     <div><strong data-cia-mapped-pct>N/A</strong><small>Classified issues</small></div>
                 </div>
                 <div class="cia-nature-summary-row"><span>Issues identified</span><strong data-cia-total>N/A</strong></div>
-                <div class="cia-nature-summary-row"><span>Assigned to categories</span><strong data-cia-mapped>N/A</strong></div>
+                <div class="cia-nature-summary-row"><span>Assigned to all IAS categories</span><strong data-cia-mapped>N/A</strong></div>
+                <div class="cia-nature-summary-row"><span>Other classifications (not shown)</span><strong data-cia-hidden>N/A</strong></div>
                 <div class="cia-nature-summary-row"><span>Unmapped / review</span><strong data-cia-unmapped-total>N/A</strong></div>
-                <p>Coverage is based on the approved ten-category IAS mapping. Unmapped observations are disclosed rather than silently excluded.</p>
+                <p>Chart displays eight categories; Accounts and IS Audit remain included in Oracle's ten-category classification totals.</p>
             </aside>
         </div>
     </section>

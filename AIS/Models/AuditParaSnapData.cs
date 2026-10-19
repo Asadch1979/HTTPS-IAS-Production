@@ -18,12 +18,19 @@ namespace AIS.Models
             if (dates.EndDate > Today || (dates.EndDate.Year - dates.StartDate.Year) * 12 +
                 dates.EndDate.Month - dates.StartDate.Month >= 1200)
                 throw new ArgumentException("End Date cannot be in the future; select fewer than 1200 months.");
+            if (filters.SnapDivision != "FAD" && filters.SnapDivision != "MAD")
+                throw new ArgumentException("Select Field Audit Division or Management Audit Division.");
+            if (filters.SnapDepartmentId.HasValue && filters.SnapDepartmentId.Value <= 0)
+                throw new ArgumentException("Department / Cluster must be a positive mapped department.");
             if (!Views.Contains(filters.View))
                 throw new ArgumentException("Select a valid Audit Para Snap view.");
             return dates;
         }
         public static void ApplyDefault(ExecutiveDashboardFilterRequest filters)
         {
+            // Initial audit-division selector; MUST be mapped in Oracle before
+            // the page can load real data. No fallback to bank-wide results.
+            if (string.IsNullOrEmpty(filters.SnapDivision)) filters.SnapDivision = "FAD";
             // Year to the last complete Pakistan calendar day. On Jan 1 this
             // intentionally means the previous complete calendar year.
             if (!string.IsNullOrEmpty(filters.StartDate) || !string.IsNullOrEmpty(filters.EndDate)) return;

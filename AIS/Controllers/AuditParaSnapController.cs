@@ -79,6 +79,10 @@ namespace AIS.Controllers
                     !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value))
                     return Error(403,"forbidden","The exact Audit Para Snap API grant is required.");
                 AuditParaSnapPolicy.Validate(filters);
+                // Every read (including report PDF) validates the actual
+                // division -> audited-by relationship BEFORE Oracle querying.
+                // Empty "All" means a mapped portfolio set, never bank-wide.
+                database.GetAuditParaSnapDepartments(scope, filters.SnapDivision, filters.SnapDepartmentId);
                 if (report != (filters.View=="reports"))
                     return Error(400,"invalid_request","Dataset is not enabled for this view.");
                 if (!string.IsNullOrEmpty(format) && (!report || !string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase)))
