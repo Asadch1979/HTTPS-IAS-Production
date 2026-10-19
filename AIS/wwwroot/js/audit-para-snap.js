@@ -110,7 +110,9 @@
                 (!periodRate && !Number.isSafeInteger(value)))) throw new Error('Invalid lifecycle count.');
             card.querySelector('[data-snap-kpi]').textContent =
                 value == null ? 'N/A' : number(value) + (periodRate ? '%' : '');
-            card.title = position && estimated
+            card.title = periodRate
+                ? 'Selected-period settlements ÷ (estimated opening open paras + paras added in selected period). N/A if unavailable or inconsistent.'
+                : position && estimated
                 ? 'As-of value reconstructed from the latest available IAS records; historical status changes may not be complete.'
                 : position && verified ? 'Current IAS position.' : 'IAS event dates within the selected range.';
             card.querySelector('[data-snap-kpi-note]').textContent =
