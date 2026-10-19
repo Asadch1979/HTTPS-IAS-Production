@@ -48,12 +48,12 @@ namespace AIS.Controllers
             var items = ReadCiaCommandCursor(scope, filters, auditPeriodId,
                 "PKG_EXEC_DASHBOARD.P_GET_CIA_EXEC_KPIS", r => new CiaCommandKpis
                 {
-                    PlannedEntities = RoleLong(r, "PLANNED_ENTITIES"),
-                    AuditedEntities = RoleLong(r, "AUDITED_ENTITIES"),
+                    PlannedEntities = RoleNullableLong(r, "PLANNED_ENTITIES"),
+                    AuditedEntities = RoleNullableLong(r, "AUDITED_ENTITIES"),
                     PlanCoveragePct = CiaNullableDecimal(r, "PLAN_COVERAGE_PCT"),
                     DelayedAuditReports = RoleNullableLong(r, "DELAYED_AUDIT_REPORTS"),
-                    FraudA1Paras = RoleLong(r, "FRAUD_A1_PARAS"),
-                    AwaitingAuditeeResponse = RoleLong(r, "AWAITING_AUDITEE_RESPONSE"),
+                    FraudA1Paras = RoleNullableLong(r, "FRAUD_A1_PARAS"),
+                    AwaitingAuditeeResponse = RoleNullableLong(r, "AWAITING_AUDITEE_RESPONSE"),
                     TeamsConductingAudit = RoleNullableLong(r, "TEAMS_CONDUCTING_AUDIT"),
                     AuditPeriodId = RoleRequiredInt(r, "AUDIT_PERIOD_ID"),
                     AuditPeriodFrom = RoleDate(r, "AUDIT_PERIOD_FROM"),
