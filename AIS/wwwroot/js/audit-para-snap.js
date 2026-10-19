@@ -67,6 +67,14 @@
             status.textContent = 'Filters changed. Choose Apply.';
         }
     });
+    // Changing Division discards an incompatible Department / Cluster and
+    // refreshes the server-authorized child list with "All" selected.
+    const division = document.getElementById('snap-division');
+    const department = document.getElementById('snap-department');
+    division?.addEventListener('change', () => {
+        if (department) department.value = '';
+        if (validDates()) form.requestSubmit();
+    });
     navigation();
     if (reports) return;
     async function read(action, signal) {
