@@ -133,6 +133,15 @@ test('Oracle NULL displays N/A, while zero and nonzero workflow KPIs are rendere
     f.reply(5,nature());await flush();
     assert.equal(f.field('[data-cia-kpi="delayedAuditReports"]').textContent,'19');
     assert.equal(f.field('[data-cia-kpi="teamsConductingAudit"]').textContent,'7');
+
+    f.changePeriod('13');
+    f.reply(6,{...kpis(13),plannedEntities:null,auditedEntities:null,planCoveragePct:null,
+        fraudA1Paras:null,awaitingAuditeeResponse:null});
+    f.reply(7,nature());await flush();
+    assert.equal(f.field('[data-cia-kpi="planCoveragePct"]').textContent,'N/A');
+    assert.equal(f.field('[data-cia-plan]').textContent,'N/A audited of N/A planned entities');
+    assert.equal(f.field('[data-cia-kpi="fraudA1Paras"]').textContent,'N/A');
+    assert.equal(f.field('[data-cia-kpi="awaitingAuditeeResponse"]').textContent,'N/A');
 });
 test('mismatched period and unreconciled categories never display as valid results',async()=>{
     const f=fixture();const rows=nature();rows[0].issueCount=9;
