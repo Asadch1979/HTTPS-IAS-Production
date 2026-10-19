@@ -16,10 +16,17 @@ const dev = read('AIS/appsettings.Development.json');
 const prod = read('AIS/appsettings.Production.json');
 
 test('Oracle workflow KPI NULL preserved as nullable; zero is not conflated with N/A',()=>{
-  assert.match(reader,/DelayedAuditReports\s*=\s*RoleNullableLong\(r, "DELAYED_AUDIT_REPORTS"\)/);
-  assert.match(reader,/TeamsConductingAudit\s*=\s*RoleNullableLong\(r, "TEAMS_CONDUCTING_AUDIT"\)/);
-  assert.match(model,/long\? DelayedAuditReports/);
-  assert.match(model,/long\? TeamsConductingAudit/);
+  for(const [field,column] of [
+    ['PlannedEntities','PLANNED_ENTITIES'],
+    ['AuditedEntities','AUDITED_ENTITIES'],
+    ['DelayedAuditReports','DELAYED_AUDIT_REPORTS'],
+    ['FraudA1Paras','FRAUD_A1_PARAS'],
+    ['AwaitingAuditeeResponse','AWAITING_AUDITEE_RESPONSE'],
+    ['TeamsConductingAudit','TEAMS_CONDUCTING_AUDIT']
+  ]) {
+    assert.ok(reader.includes(field+' = RoleNullableLong(r, "'+column+'")'),field);
+    assert.ok(model.includes('long? '+field),field);
+  }
   assert.match(reader,/GetCiaCommandKpis\(/);
   assert.doesNotMatch(reader,/_configuration\.GetValue<bool>/);
   assert.match(js,/value == null \? 'N\/A'/);
