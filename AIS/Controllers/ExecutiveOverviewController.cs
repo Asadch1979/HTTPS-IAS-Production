@@ -219,6 +219,11 @@ namespace AIS.Controllers
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
                 var options = needsGroup || needsRlmRoot || (auditParaSnap || (requestedType != "CIA" && view != "regional")) ? new ExecutiveDashboardFilterOptions() :
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
+                // Load only the children of the selected audit division. An empty
+                // or unseeded division is unavailable, never a bank-wide fallback.
+                var snapDepartments = auditParaSnap
+                    ? database.GetAuditParaSnapDepartments(scope, filters.SnapDivision, filters.SnapDepartmentId)
+                    : new System.Collections.Generic.List<ExecutiveFilterOption>();
                 // Fetch the actual IAS audit period IDs; a calendar year is not
                 // interchangeable with T_AU_PERIOD.AUDITPERIODID.
                 var ciaPeriods = scope.DashboardType == "CIA" && view == "command"
@@ -254,6 +259,7 @@ namespace AIS.Controllers
                     NeedsRlmRoot = needsRlmRoot,
                     Filters = filters,
                     FilterOptions = options,
+                    SnapDepartments = snapDepartments,
                     RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
                     CiaCommandEnabled = configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"),
                     IsAuditParaSnap = auditParaSnap,
