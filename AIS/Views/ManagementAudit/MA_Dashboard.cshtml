@@ -8,7 +8,6 @@
     var homeUrl = Url.Content("~/Home/Index");
 }
 
-@if (Model.AvailableEngagements.Any(e => string.Equals(e.IsTeamLead?.Trim(), "Y", StringComparison.OrdinalIgnoreCase))) { <p><a class="btn btn-outline-primary" href="@Url.Action("MA_Dashboard", "ManagementAudit", new { workbench = true })">My Engagement Workbench</a></p> }
 <form id="maCsrfForm" class="d-none">@Html.AntiForgeryToken()</form>
 
 <div class="stepper-wrap sticky-top bg-white py-2 mb-3">
