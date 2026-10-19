@@ -29,6 +29,8 @@ namespace AIS.Models
         public long SettledTotal { get; set; }
         public long SettledMtd { get; set; }
         public decimal SettlementRatio { get; set; }
+        // May be NULL if there is no month-opening workload.
+        public decimal? SettlementMtdRate { get; set; }
         // CIA At-a-Glance: separate observation events, optional date range.
         // Null outside CIA glance; unavailable is not silently shown as zero.
         public long? IssueIdentified { get; set; }

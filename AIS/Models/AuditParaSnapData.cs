@@ -34,20 +34,26 @@ namespace AIS.Models
         public static List<ExecutiveDashboardViewDefinition> Definitions()
             => new()
             {
-                Definition("glance","At a Glance",new[]{"trend","risk"}),
-                Definition("position","Audit Para Position",new[]{"risk"}),
-                Definition("settlement","Settlement & Performance",new[]{"trend"}),
-                Definition("risk","Risk",new[]{"risk"}),
-                Definition("aging","Aging & Compliance",new[]{"aging","cycle"}),
+                Definition("glance","At a Glance",
+                    new[]{"openingOpenParas","issueIdentified","issueRectified","paraAdded","parasSettled",
+                        "closingOpenParas","highRiskOpenParas","over1YearParas","over3ComplianceCycles"},
+                    new[]{"trend","risk"}),
+                Definition("position","Audit Para Position",
+                    new[]{"openingOpenParas","paraAdded","parasSettled","closingOpenParas"},
+                    Array.Empty<string>()),
+                Definition("settlement","Settlement & Performance",
+                    new[]{"parasSettled","periodSettlementRate"},new[]{"trend"}),
+                Definition("risk","Risk",new[]{"highRiskOpenParas"},new[]{"risk"}),
+                Definition("aging","Aging & Compliance",
+                    new[]{"over1YearParas","over3ComplianceCycles"},new[]{"aging","cycle"}),
                 new() { Id="reports", Title="Reports", Partial="_Reports", Kpis=Array.Empty<string>(),
                     Sections=Array.Empty<string>(), Reports=new[]{"A","B","C","D","E"} }
             };
-        private static ExecutiveDashboardViewDefinition Definition(string id,string title,string[] sections)
+        private static ExecutiveDashboardViewDefinition Definition(
+            string id,string title,string[] kpis,string[] sections)
             => new() { Id=id, Title=title, Partial="_AuditParaSnapAnalysis",
-                Description="Selected-period activity and explicitly qualified as-of position.",
-                Kpis=new[]{"openingOpenParas","issueIdentified","issueRectified","paraAdded","parasSettled",
-                    "closingOpenParas","highRiskOpenParas","over1YearParas","over3ComplianceCycles"},
-                Sections=sections, UseLifecycleKpis=true };
+                Description="Authorized, selected-period IAS analysis.",
+                Kpis=kpis,Sections=sections,UseLifecycleKpis=true };
     }
     public sealed class AuditParaSnapBucket
     {
@@ -55,6 +61,8 @@ namespace AIS.Models
         public string BucketCode { get; set; }
         public string BucketName { get; set; }
         public long? ParaCount { get; set; }
+        // For monthly trend only: settled high-risk paras in the same month.
+        public long? HighRiskCount { get; set; }
         public string QualityCode { get; set; }
     }
     public sealed class AuditParaSnapCritical

@@ -11,13 +11,13 @@ const executive = read('AIS/Controllers/ExecutiveDashboardController.cs');
 const snap = read('AIS/Controllers/AuditParaSnapController.cs');
 test('distinct Razor parents match the page registrations', () => {
   for (const [id,route] of [['1000300','TOP'],['1000301','GROUP'],
-    ['1000302','CCO'],['1000303','CIA'],['1000304','AuditParaSnap']]) {
+    ['1000302','CCO'],['1000303','CIA'],['1000304','AuditParaSnap'],['1000305','RLM']]) {
     assert.match(permissions, new RegExp("REGISTER_PAGE\\("+id+",'"+route+"'"));
     assert.ok(fs.existsSync(path.join(root,'AIS/Views/ExecutiveOverview',route+'.cshtml')));
   }
   assert.match(routes, /return View\(auditParaSnap \? "AuditParaSnap" : scope\.DashboardType, new ExecutiveDashboardPageModel/);
-  assert.doesNotMatch(permissions, /REGISTER_PAGE\([^\n]*'RLM'/);
-  assert.match(permissions, /PageIdResolver\.AddAlias/);
+  assert.match(permissions, /REGISTER_PAGE\(1000305,'RLM'/);
+  assert.doesNotMatch(permissions, /GRANT_PAGE\(V_RLM_PAGE_ID/);
 });
 test('all 20 declared GET endpoints are covered exactly once', () => {
   const registrations = [...permissions.matchAll(/REGISTER_GET\('([^']+)','([^']+)',\d+,'[^']+'\);/g)];

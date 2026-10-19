@@ -518,7 +518,28 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                       NVL(SUM(p.is_settled), 0) /
                       (NVL(SUM(p.is_open), 0) + NVL(SUM(p.is_settled), 0)) * 100
                    END,
-                   2) AS settlement_ratio
+                   2) AS settlement_ratio,
+
+             -- Monthly settlement performance, deliberately separate from
+             -- lifetime SETTLEMENT_RATIO. Workload = reconstructed open at
+             -- month's start + newly added during this month.
+             -- Current master status cannot reconstruct all historical
+             -- reopenings; verify the denominator in production.
+             ROUND(
+               100 * NVL(SUM(CASE WHEN p.is_settled = 1
+                          AND p.setteled_on >= TRUNC(SYSDATE,'MM')
+                          AND p.setteled_on < ADD_MONTHS(TRUNC(SYSDATE,'MM'),1)
+                          THEN 1 ELSE 0 END),0)
+               / NULLIF(
+                   NVL(SUM(CASE WHEN p.para_added_on < TRUNC(SYSDATE,'MM')
+                           AND (p.is_open=1 OR
+                                (p.is_settled=1 AND p.setteled_on >= TRUNC(SYSDATE,'MM')))
+                           THEN 1 ELSE 0 END),0)
+                   + NVL(SUM(CASE WHEN p.para_added_on >= TRUNC(SYSDATE,'MM')
+                             AND p.para_added_on < ADD_MONTHS(TRUNC(SYSDATE,'MM'),1)
+                             AND (p.is_open=1 OR p.is_settled=1)
+                             THEN 1 ELSE 0 END),0),0)
+               ,2) AS settlement_mtd_rate
 
         FROM V_EXEC_PARA_BASE p
 
@@ -1823,6 +1844,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
                CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN CAST(NULL AS NUMBER)
                     ELSE NVL(n.para_count,0) END para_count,
+               CAST(NULL AS NUMBER) AS high_risk_count,
                CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN 'N'
                     WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
           FROM categories c LEFT JOIN counts n
@@ -1830,13 +1852,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         UNION ALL
         SELECT 'trend', TO_CHAR(m.month_start,'YYYY-MM'), TO_CHAR(m.month_start,'YYYY-MM'),
                ROW_NUMBER() OVER(ORDER BY m.month_start),
-               COUNT(s.com_id), 'E'
+               COUNT(s.com_id),
+               COUNT(CASE WHEN s.risk_id = 1 THEN s.com_id END), 'E'
           FROM months m LEFT JOIN scoped s
             ON s.para_settled_on >= GREATEST(m.month_start,V_FROM)
            AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
          GROUP BY m.month_start
       )
-      SELECT dataset, bucket_code, bucket_name, para_count, quality_code
+      SELECT dataset, bucket_code, bucket_name, para_count,
+             high_risk_count, quality_code
         FROM results ORDER BY dataset, ord;
   END P_GET_SNAP_DISTRIBUTION;
 

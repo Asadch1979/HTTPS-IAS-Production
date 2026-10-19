@@ -72,11 +72,7 @@
         <button class="org-button" id="exec-refresh" type="submit">Apply</button>
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
-    <p class="exec-note" id="exec-filter-note">@(Model.SelectedView.Id == "reports"
-        ? "Selected dates apply to Report A–E and exports. Historical balances and settlement attribution remain indicative and use present organization mapping."
-        : Model.SelectedView.UseLifecycleKpis
-            ? "Dates filter lifecycle KPIs only. Charts and observations show current data. N/A indicates unavailable history."
-            : "Current-state dashboard: selected dates are retained for reporting navigation. KPIs, charts and follow-up data do not apply this range; date-aware Oracle procedures require separate development verification.")</p>
+
     <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
         <partial name="@Model.SelectedView.Partial" model="Model" />

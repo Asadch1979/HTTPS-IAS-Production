@@ -67,8 +67,12 @@
     }
     function risk(rows) {
         const target = $('risk'); if (!target) return; target.replaceChildren();
+        // The chart intentionally includes only High/Medium/Low risk.
+        // Unknown/unrated values remain in Oracle for separate validation.
+        rows = rows.filter(row => [1,2,3].includes(Number(row.riskId)) ||
+            ['high','medium','low'].includes(String(row.riskName).toLowerCase()));
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
-        if (!total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
+        if (!total) target.append(el('p', 'No rated open observations in this scope.', 'exec-empty'));
         else {
             const graphic = el('div', null, 'exec-risk-stack');
             rows.forEach(row => {
@@ -82,7 +86,9 @@
             target.prepend(graphic);
 
         }
-        dataTable(target, ['Risk', 'Open paras', 'Percentage'], rows.map(row => [row.riskName, number(row.paraCount), `${number(row.percentage)}%`]));
+        dataTable(target, ['Risk', 'Open paras', 'Share of rated paras'],
+            rows.map(row => [row.riskName, number(row.paraCount),
+                total ? (row.paraCount / total * 100).toFixed(1) + '%' : 'N/A']));
     }
     function trend(rows) {
         const target = $('trend'); if (!target) return; target.replaceChildren();
@@ -118,10 +124,13 @@
         const target = $('kpis'); if (!target) return; target.replaceChildren();
         [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
-            ['Settlement Ratio', 'settlementRatio'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
+            ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const card = el('div', null, 'exec-kpi');
-            card.append(el('span', label), el('strong', number(data[key]) + (key === 'settlementRatio' ? '%' : '')));
+            const value = data[key];
+            card.append(el('span', label), el('strong',
+                value == null ? 'N/A' : number(value) +
+                (['settlementRatio','settlementMtdRate'].includes(key) ? '%' : '')));
             if (ciaIssues && ['issueIdentified', 'issueRectified'].includes(key)) {
                 const dates = new FormData($('filters'));
                 card.append(el('small', dates.get('startDate') && dates.get('endDate')
@@ -130,7 +139,9 @@
                 return;
             }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
-            card.append(el('small', key === 'settlementRatio' ? 'Settled as a share of all cases' : denominator > 0 ? `${(data[key] / denominator * 100).toFixed(1)}% of ${key === 'settledMtd' ? 'all settled' : ['totalCases', 'openParas', 'settledTotal'].includes(key) ? 'all cases' : 'open paras'}` : 'Comparison unavailable'));
+            card.append(el('small', key === 'settlementMtdRate'
+                ? 'This month: settled ÷ (opening outstanding + new paras)'
+                : key === 'settlementRatio' ? 'All settled ÷ (open + settled)' : denominator > 0 ? `${(data[key] / denominator * 100).toFixed(1)}% of ${key === 'settledMtd' ? 'all settled' : ['totalCases', 'openParas', 'settledTotal'].includes(key) ? 'all cases' : 'open paras'}` : 'Comparison unavailable'));
             target.append(card);
         });
     }
@@ -153,15 +164,18 @@
             .forEach(([label, key, quality]) => {
                 const card = el('div', null, 'exec-kpi');
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
+                card.title = quality === 'estimated'
+                    ? 'Historical snapshot reconstructed from the available IAS master and events; not a complete historical movement ledger.'
+                    : 'Source: IAS Oracle lifecycle';
                 card.append(el('span', label), el('strong',
-                    available ? (quality === 'estimated' ? '≈ ' : '') + number(data[key]) : 'N/A'));
+                    available ? number(data[key]) : 'N/A'));
                 const note = key === 'openingOpenParas' ? `Position as on ${startLabel}`
                     : key === 'closingOpenParas' ? `Position as on ${endLabel}`
                     : !available ? 'Historical value unavailable'
                     : quality === 'period' ? 'Selected Date Range'
                     : quality === 'estimated'
-                        ? (key === 'over3ComplianceCycles' ? 'Estimated · current cycle data' : 'Estimated · historical changes not fully traced')
-                        : 'Verified current snapshot';
+                        ? 'As of selected date'
+                        : 'Current IAS position';
                 card.append(el('small', note));
                 // Opening is a baseline, not its own 100% KPI. Rectification and
                 // identification may involve different issue cohorts in this interval.
@@ -178,7 +192,7 @@
         const target = $('critical'); if (!target) return; target.replaceChildren();
         const selection = $('critical-risk').value;
         rows = rows.filter(row => !selection || row.riskName === selection);
-        $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical items. At most 100 rows, ordered by high risk, age and case ID. Expand an observation to read its text.`;
+        $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = 7; tr.append(cell); target.append(tr);
         }

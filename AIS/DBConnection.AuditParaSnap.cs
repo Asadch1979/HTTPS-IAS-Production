@@ -72,6 +72,7 @@ namespace AIS.Controllers
             {
                 Dataset=ExecutiveText(r,"DATASET"),BucketCode=ExecutiveText(r,"BUCKET_CODE"),
                 BucketName=ExecutiveText(r,"BUCKET_NAME"),ParaCount=ExecutiveNullableCount(r,"PARA_COUNT"),
+                HighRiskCount=ExecutiveNullableCount(r,"HIGH_RISK_COUNT"),
                 QualityCode=ExecutiveText(r,"QUALITY_CODE")
             });
         internal List<AuditParaSnapCritical> GetAuditParaSnapCritical(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int maxRows)

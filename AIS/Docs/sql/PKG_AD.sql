@@ -1791,62 +1791,80 @@ create or replace package body PKG_AD is
                                           PAGEID  IN T_MENU_PAGES_GROUPMAP.PAGE_ID%TYPE) IS
     v_api_count NUMBER := 0;
   BEGIN
-    -- 1. Ensure menu mapping is clean
+    -- Existing front-end assignment workflow retained. A dedicated executive
+    -- page receives only its explicitly mapped, active GET APIs, even where
+    -- the endpoint is registered once under another parent page.
+    -- Deploy T_IAS_EXEC_PAGE_API manifest FIRST before compiling this body.
     DELETE FROM T_MENU_PAGES_GROUPMAP mp
-     WHERE mp.group_id = groupid
-       AND mp.page_id = PAGEID;
-  
-    INSERT INTO T_MENU_PAGES_GROUPMAP
-      (GROUPMAP_ID, GROUP_ID, PAGE_ID)
-    VALUES
-      ((SELECT COALESCE(MAX(p.GROUPMAP_ID) + 1, 1)
-         FROM T_MENU_PAGES_GROUPMAP p),
-       groupid,
-       PAGEID);
-  
-    -- 2. Check whether this page has any active API calls
-    SELECT COUNT(1)
-      INTO v_api_count
-      FROM T_AU_API_MASTER m
-     WHERE m.PAGE_ID = PAGEID
-       AND m.IS_ACTIVE = 'Y';
-  
-    -- 3. Grant APIs only if:
-    --    a) page has active APIs
-    --    b) group is not group 1
-    IF v_api_count > 0 or NVL(groupid, 0) <> 1 THEN
-    
-      INSERT INTO T_AU_ROLE_API_PERMISSION
-        (ROLE_ID, API_ID, IS_ACTIVE, CREATED_BY)
-        SELECT DISTINCT groupid, m.API_ID, 'Y', 113092
+     WHERE mp.group_id = groupid AND mp.page_id = PAGEID;
+    INSERT INTO T_MENU_PAGES_GROUPMAP (GROUPMAP_ID,GROUP_ID,PAGE_ID)
+    VALUES ((SELECT COALESCE(MAX(p.GROUPMAP_ID)+1,1)
+              FROM T_MENU_PAGES_GROUPMAP p),groupid,PAGEID);
+
+    IF PAGEID BETWEEN 1000300 AND 1000305 THEN
+      MERGE INTO T_AU_ROLE_API_PERMISSION p
+      USING
+      (
+        SELECT groupid AS role_id, m.api_id
+          FROM T_IAS_EXEC_PAGE_API d
+          JOIN T_AU_API_MASTER m ON m.API_ID=d.API_ID
+         WHERE d.PAGE_ID=PAGEID
+           AND m.IS_ACTIVE='Y'
+           AND UPPER(TRIM(m.HTTP_METHOD))='GET'
+      ) v
+      ON (p.ROLE_ID=v.role_id AND p.API_ID=v.api_id)
+      WHEN MATCHED THEN UPDATE SET p.IS_ACTIVE='Y'
+      WHEN NOT MATCHED THEN INSERT
+        (ROLE_ID,API_ID,IS_ACTIVE,CREATED_BY)
+        VALUES (v.role_id,v.api_id,'Y',113092);
+    ELSE
+      -- Non-executive IAS page assignment unchanged.
+      SELECT COUNT(1) INTO v_api_count
+        FROM T_AU_API_MASTER m
+       WHERE m.PAGE_ID=PAGEID AND m.IS_ACTIVE='Y';
+      IF v_api_count > 0 OR NVL(groupid,0) <> 1 THEN
+        INSERT INTO T_AU_ROLE_API_PERMISSION
+          (ROLE_ID,API_ID,IS_ACTIVE,CREATED_BY)
+        SELECT DISTINCT groupid,m.API_ID,'Y',113092
           FROM T_AU_API_MASTER m
-         WHERE m.PAGE_ID = PAGEID
-           AND m.IS_ACTIVE = 'Y'
-           AND NOT EXISTS (SELECT 1
-                  FROM T_AU_ROLE_API_PERMISSION p
-                 WHERE p.ROLE_ID = groupid
-                   AND p.API_ID = m.API_ID);
-    
+         WHERE m.PAGE_ID=PAGEID AND m.IS_ACTIVE='Y'
+           AND NOT EXISTS (SELECT 1 FROM T_AU_ROLE_API_PERMISSION p
+                            WHERE p.ROLE_ID=groupid AND p.API_ID=m.API_ID);
+      END IF;
     END IF;
-  
+
+    -- Existing security context checks on executive MVC/API handlers remain
+    -- mandatory. Granting an API alone does not grant bank-wide scope.
     COMMIT;
   END P_AddGroupMenuItemsAssignment;
-  procedure P_RemoveGroupMenuItemsAssignment(groupid in T_MENU_PAGES_GROUPMAP.GROUP_ID%type,
-                                             PAGEID  in T_MENU_PAGES_GROUPMAP.PAGE_ID%type) is
-  begin
-    -- 1. Remove menu visibility
-    delete from T_MENU_PAGES_GROUPMAP mp
-     where mp.group_id = groupid
-       and mp.page_id = PAGEID;
-  
-    -- 2. Revoke all APIs of this page
-    delete from T_AU_ROLE_API_PERMISSION p
-     where p.ROLE_ID = groupid
-       and p.API_ID in
-           (select m.API_ID from T_AU_API_MASTER m where m.PAGE_ID = PAGEID);
-  
-    commit;
-  end P_RemoveGroupMenuItemsAssignment;
+
+  PROCEDURE P_RemoveGroupMenuItemsAssignment(
+      groupid IN T_MENU_PAGES_GROUPMAP.GROUP_ID%TYPE,
+      PAGEID IN T_MENU_PAGES_GROUPMAP.PAGE_ID%TYPE) IS
+  BEGIN
+    DELETE FROM T_MENU_PAGES_GROUPMAP mp
+     WHERE mp.group_id=groupid AND mp.page_id=PAGEID;
+
+    IF PAGEID BETWEEN 1000300 AND 1000305 THEN
+      -- Only revoke endpoints mapped to the removed executive page,
+      -- preserving an API if another ASSIGNED dashboard still uses it.
+      DELETE FROM T_AU_ROLE_API_PERMISSION p
+       WHERE p.ROLE_ID=groupid
+         AND EXISTS (SELECT 1 FROM T_IAS_EXEC_PAGE_API x
+                      WHERE x.PAGE_ID=PAGEID AND x.API_ID=p.API_ID)
+         AND NOT EXISTS
+             (SELECT 1 FROM T_MENU_PAGES_GROUPMAP g
+               JOIN T_IAS_EXEC_PAGE_API x ON x.PAGE_ID=g.PAGE_ID
+              WHERE g.GROUP_ID=groupid AND x.API_ID=p.API_ID);
+    ELSE
+      -- Preserve the preexisting permission handling for other IAS pages.
+      DELETE FROM T_AU_ROLE_API_PERMISSION p
+       WHERE p.ROLE_ID=groupid
+         AND p.API_ID IN (SELECT m.API_ID FROM T_AU_API_MASTER m
+                           WHERE m.PAGE_ID=PAGEID);
+    END IF;
+    COMMIT;
+  END P_RemoveGroupMenuItemsAssignment;
 
   procedure P_GetAllMenuPages(menuId    in T_MENU_PAGES.MENU_ID%type,
                               ENT_ID    in number,
