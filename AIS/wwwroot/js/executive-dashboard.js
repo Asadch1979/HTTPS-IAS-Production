@@ -149,6 +149,7 @@
             ['High-Risk Open Paras', 'highRiskOpenParas', closingQuality],
             ['Over 1 Year', 'over1YearParas', closingQuality],
             ['Over 3 Compliance Cycles', 'over3ComplianceCycles', closingQuality]]
+            .filter(([, key]) => $('kpis').dataset.kpiKeys.split(',').includes(key))
             .forEach(([label, key, quality]) => {
                 const card = el('div', null, 'exec-kpi');
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
@@ -186,7 +187,11 @@
             [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
                 row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
             const age = el('td', row.agingDays == null ? 'N/A' : `${number(row.agingDays)} days`);
-            if (row.agingDays != null) age.title = `${number(row.agingDays)} days`;
+            // Expose source chronology instead of guessing corrected dates.
+            // Unexpected ages must be reconciled with PARA_ADDED_ON in Oracle.
+            age.title = row.paraAddedOn
+                ? `IAS Para Added On: ${String(row.paraAddedOn).slice(0, 10)} · Age calculated from this source date`
+                : 'IAS Para Added On is missing; source-date review required.';
             tr.append(age, el('td', row.daysSinceLastMovement == null ? 'No movement' : number(row.daysSinceLastMovement)));
             const cell = el('td'), details = el('details');
             details.append(el('summary', `Observation ${row.comId}`), el('p', row.gistOfParas || 'Observation text is unavailable.'));
@@ -269,7 +274,9 @@
             $('results').hidden = false;
             const entity = $('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel;
             $('status').textContent = `${entity} · Current-state data; selected date range is not applied · Updated ${new Date().toLocaleTimeString()}.`;
-            if (lifecycle) $('status').textContent = `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
+            if (lifecycle) $('status').textContent = app.dataset.view === 'position'
+                ? `${entity} · Audit Para Position for ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Historical opening/closing may be estimated · Updated ${new Date().toLocaleTimeString()}.`
+                : `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
