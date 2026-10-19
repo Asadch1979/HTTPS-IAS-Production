@@ -232,7 +232,10 @@
                 line.append(element('span',row.bucketName),track,element('strong',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
                 bars.append(line);
             }
-            target.replaceChildren(bars,table);
+            const details = element('details',null,'snap-chart-details');
+            const caption = element('summary','View chart data');
+            details.append(caption,table);
+            target.replaceChildren(bars,details);
             if (name === 'cycle' && subset.every(row => row.qualityCode === 'N'))
                 target.append(element('p','Historical cycle breakdown unavailable.','exec-empty'));
         }
