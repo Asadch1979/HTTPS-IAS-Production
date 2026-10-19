@@ -20,6 +20,9 @@
 .exec-snap .snap-bucket-table td:last-child { text-align:right; }
 /* Snap only: inline fill spans ignore width without block layout. */
 .exec-snap .exec-track > .exec-fill {display:block;height:100%;min-height:100%;width:0;max-width:100%;background:#16876c}
+.exec-snap .exec-charts > .exec-panel,.exec-snap .snap-monthly-trend {min-width:0}
+.exec-snap .snap-trend-chart {display:block;width:100%;height:auto;max-height:280px;overflow:visible}
+.exec-snap .snap-monthly-trend .exec-legend {margin:0 0 12px;color:#526b81;font-size:12px}
 .exec-snap .snap-chart-details {margin-top:16px;border-top:1px solid #dce6ef;padding-top:12px}
 .exec-snap .snap-chart-details > summary {font-weight:600;color:#305779;cursor:pointer}
 .exec-snap .snap-chart-details .snap-bucket-table {table-layout:auto;min-width:0;width:100%;margin-top:10px}
