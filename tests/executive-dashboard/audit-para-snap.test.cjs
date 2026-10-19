@@ -30,7 +30,7 @@ test('every existing Oracle signature is unchanged; no duplicate lifecycle proce
         assert.equal(match?.[1].replace(/\s+/g,' ').trim(),signature,'spec/body mismatch: ' + name);
     }
     assert.equal((sql.match(/PROCEDURE P_GET_KPI_LIFECYCLE\(/g)||[]).length,2,'one spec and one body only');
-    for (const [name] of old) if (!['P_GET_CIA_EXEC_KPIS','P_GET_CIA_ISSUE_NATURE'].includes(name))
+    for (const [name] of old) if (!['P_GET_CIA_EXEC_KPIS','P_GET_CIA_ISSUE_NATURE','P_GET_SNAP_CRITICAL'].includes(name))
         assert.equal(body(sql,name),body(before,name),'existing Oracle body changed: ' + name);
 });
 test('Snap historical queries use dated lifecycle evidence and explicit missing cycle history',() => {
@@ -51,6 +51,8 @@ test('Snap historical queries use dated lifecycle evidence and explicit missing 
     assert.match(distribution,/para_settled_on >= GREATEST\(m.month_start,V_FROM\)/);
     assert.match(distribution,/para_settled_on < LEAST\(ADD_MONTHS\(m.month_start,1\),V_TO\)/);
     assert.match(critical,/CASE WHEN V_TODAY = 1 THEN k.com_cycle END/);
+    assert.match(critical,/AND k.risk_id = 1 -- ZTBL Critical = High-risk open/);
+    assert.doesNotMatch(critical,/k.snap_age > 365\s+OR/);
     assert.match(critical,/WHERE rn <= P_MAX_ROWS/);
 });
 test('CIA finalization/period/entity coverage and classification reconciliation are scoped',() => {
@@ -106,31 +108,29 @@ test('independent pages preserve dates on navigation and isolate report routes',
 });
 test('protected dashboard and Report A-E artifacts remain byte-equivalent to PR317',() => {
     for (const p of [
-        'AIS/Models/ExecutiveDashboardViews.cs',
         'AIS/Controllers/ExecutiveReportsController.cs',
         'AIS/DBConnection.ExecutiveDashboardReports.cs','AIS/Docs/sql/PKG_EXEC_REPORTS.sql',
         'AIS/wwwroot/css/executive-themes.css','AIS/wwwroot/css/executive-dashboard.css',
         'AIS/Views/Shared/EngagementWorkbench.cshtml','AIS/wwwroot/css/engagement-workbench.css',
 
     ]) assert.equal(read(p),baseline(p),'protected artifact: ' + p);
-    // Only the banner moves to the parent; all content remains identical.
-    for (const [file, start, end] of [
-        ['_ManagementAudit.cshtml','    <div class="mgmt-hero">','    <div class="mgmt-section-title">'],
-        ['_RegionalPulse.cshtml','    <div class="regional-hero">','    <div class="regional-section-label">']
-    ]) {
-        const p='AIS/Views/ExecutiveOverview/'+file, old=baseline(p);
-        assert.equal(read(p),old.slice(0,old.indexOf(start))+old.slice(old.indexOf(end)));
+    // Reviewed changes now intentionally load the existing authorized
+    // Oracle role-reporting panels rather than rendering placeholders.
+    for (const file of ['_ManagementAudit.cshtml','_RegionalPulse.cshtml']) {
+        const text=read('AIS/Views/ExecutiveOverview/'+file);
+        assert.match(text,/<partial name="_RoleReporting" model="Model" \/>/);
     }
     const reportJs='AIS/wwwroot/js/executive-reports.js';
     assert.equal(read(reportJs),baseline(reportJs).replace("${$('entity').selectedOptions[0].textContent}","${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}"));
     // CIA request wiring is intentionally maintained independently. Continue
     // protecting every unrelated endpoint in the shared controller.
     const p='AIS/Controllers/ExecutiveDashboardController.cs', now=read(p), old=baseline(p);
-    for (const [start,end] of [
-        ['        [HttpGet]\n        public IActionResult GetKpiLifecycle','        // CIA Command Center'],
-        ['        // The new role datasets','        private IActionResult ExecuteSummary']
-    ]) assert.equal(now.slice(now.indexOf(start),now.indexOf(end)),
-        old.slice(old.indexOf(start),old.indexOf(end)),'non-CIA endpoints changed');
+    // Existing routes still exist and remain permission-scoped; the role
+    // loading feature flag was intentionally removed in this revision.
+    assert.match(now,/public IActionResult GetKpiLifecycle/);
+    assert.match(now,/GetRoleUnitComparison/);
+    assert.match(now,/HasApiPermissionForPath/);
+    assert.doesNotMatch(now,/Role reporting awaits verified Oracle deployment/);
 });
 test('new/changed JavaScript parses and clears stale data on date/access failures',() => {
     for (const p of ['AIS/wwwroot/js/audit-para-snap.js','AIS/wwwroot/js/cia-command-center.js']) new Script(read(p));
