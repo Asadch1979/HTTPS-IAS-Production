@@ -3,7 +3,7 @@
     const app = document.getElementById('executive-dashboard');
     const host = app?.querySelector('[data-role-reporting]');
     const form = document.getElementById('exec-filters');
-    if (!app || !host || !form || app.dataset.roleEnabled !== 'true') return;
+    if (!app || !host || !form) return;
 
     const mode = host.dataset.roleMode;
     const number = new Intl.NumberFormat('en-GB');

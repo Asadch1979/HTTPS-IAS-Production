@@ -32,10 +32,11 @@ test('Management and regional approved layouts stay in their respective authoriz
     assert.match(management,/data-mgmt-ring="settlement"/);
     assert.match(management,/data-mgmt-ring="risk"/);
     assert.match(management,/data-mgmt-ring="aging"/);
-    assert.match(management,/Model\.RoleOracleEnabled/);
+    assert.match(management,/<partial name="_RoleReporting" model="Model" \/>/);
+    assert.doesNotMatch(management,/Oracle activation pending|mgmt-pending-bars/);
     assert.match(read('Views/ExecutiveOverview/RLM.cshtml'),/Regional Audit Pulse/);
     assert.doesNotMatch(regional,/regional-hero/);
-    assert.match(regional,/Model\.RoleOracleEnabled/);
+    assert.match(regional,/<partial name="_RoleReporting" model="Model" \/>/);
     assert.match(role,/data-region-heatmap/);
     assert.match(role,/data-management-bars/);
     assert.match(role,/data-role-followup-rows/);

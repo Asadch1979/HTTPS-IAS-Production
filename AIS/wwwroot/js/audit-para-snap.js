@@ -68,10 +68,6 @@
         }
     });
     navigation();
-    if (app.dataset.enabled !== 'true') {
-        resetResults('N/A · Oracle activation pending compilation and approval.');
-        return;
-    }
     if (reports) return;
     async function read(action, signal) {
         const query = new URLSearchParams(new FormData(form));
@@ -169,8 +165,8 @@
         for (const value of [...new Set(rows.map(row => row.riskName))]) risk.add(new Option(value,value));
         renderCritical();
         document.getElementById('exec-critical-note').textContent =
-            rows.length + ' items returned (maximum 100). Past lists are Estimated using present risk; historical cycles and movement dates are N/A. ' +
-            'Past critical criteria cover high risk or age >365 days; cycle-only historical criticality cannot be reconstructed.';
+            rows.length + ' high-risk items returned (maximum 100). ZTBL Critical means open High-Risk para. ' +
+            'Past lists use present risk and are Estimated; historical cycles and movement dates are N/A.';
     }
     document.getElementById('exec-critical-risk').addEventListener('change',renderCritical);
     async function load() {

@@ -86,8 +86,6 @@ namespace AIS.Controllers
                 // Validate all hierarchy selections before narrowing scope.
                 database.GetExecutiveDashboardFilterOptions(scope,filters);
                 scope=database.NarrowExecutiveDashboardScope(scope,filters.EntityId);
-                if (!configuration.GetValue<bool>("RoleDashboards:AuditParaSnapEnabled"))
-                    return Error(503,"not_deployed","Audit Para Snap awaits approved Oracle compilation and verification.");
                 var data=query(scope,filters);
                 if (report && string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase))
                     return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath),

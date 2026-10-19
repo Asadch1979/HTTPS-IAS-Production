@@ -3,16 +3,7 @@
     <div class="regional-section-label"><h3>Regional risk overview</h3>
         <span>Open paras · high-risk exposure · aging days · compliance cycles</span></div>
     <partial name="_Sections" model="Model" />
-    @if (Model.RoleOracleEnabled)
-    {
-        <partial name="_RoleReporting" model="Model" />
-    }
-    else
-    {
-        <div class="regional-section-label"><h3>Branch Risk Heatmap</h3>
-            <span>Up to six authorized branches per batch</span></div>
-        <partial name="_EntityComparison" model="Model" />
-    }
+    <partial name="_RoleReporting" model="Model" />
     <section class="regional-footer exec-panel">
         <div><span class="regional-eyebrow">PRIORITY MONITORING</span>
             <h3>Observations requiring leadership attention</h3></div>

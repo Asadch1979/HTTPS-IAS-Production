@@ -21,10 +21,14 @@
         </nav>
     }
 <section class="org exec exec-snap" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="SNAP"
-         data-view="@Model.SelectedView.Id" data-enabled="@(Model.AuditParaSnapEnabled ? "true" : "false")"
+         data-view="@Model.SelectedView.Id"
          data-api-url="@Url.Content("~/api/AuditParaSnap/")" aria-label="ZTBL Audit Para Snap">
     <header class="org-header">
-        <div class="exec-title"><p class="snap-eyebrow">ZTBL · INTERNAL AUDIT REPORTING</p><h1>Audit Para Snap <span>· @Model.ScopeLabel</span></h1></div>
+        <div class="exec-title snap-branding">
+            <p class="snap-eyebrow">ZTBL · INTERNAL AUDIT REPORTING</p>
+            <h1>Audit Para Snap</h1>
+            <p class="snap-scope">@Model.ScopeLabel</p>
+        </div>
         <a class="org-button" href="@Url.Action("CIA","ExecutiveOverview")">← CIA Command Center</a>
     </header>
     <partial name="_AuditParaSnapFilters" model="Model" />
@@ -36,7 +40,7 @@
                href="@Url.Action("AuditParaSnap","ExecutiveOverview",Model.Filters.RouteValues(view.Id,null))">@view.Title</a>
         }
     </nav>
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.AuditParaSnapEnabled ? "Loading selected reporting period…" : "Oracle activation pending compilation, verification and approval. Values are N/A.")</p>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading the selected period from IAS…</p>
     <div id="exec-results">
         @if (Model.SelectedView.Id=="reports")
         {
@@ -52,7 +56,7 @@
 </section>
 @section Scripts {
     <script src="~/js/audit-para-snap.js" asp-append-version="true"></script>
-    @if (Model.SelectedView.Id=="reports" && Model.AuditParaSnapEnabled)
+    @if (Model.SelectedView.Id=="reports")
     {
         <script src="~/js/executive-reports.js" asp-append-version="true"></script>
     }
