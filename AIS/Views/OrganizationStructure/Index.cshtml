@@ -62,7 +62,8 @@
                 <label class="org-label" for="org-move-destination">Destination</label>
                 <select id="org-move-destination" required></select>
                 <label class="org-label" for="org-move-reason">Change reason (required, up to 1000 bytes)</label>
-                <textarea id="org-move-reason" required maxlength="1000" rows="3"></textarea>
+                <textarea id="org-move-reason" required maxlength="1000" rows="3" aria-describedby="org-move-requirement"></textarea>
+                <p id="org-move-requirement" role="status" aria-live="polite"></p>
                 <p id="org-move-feedback" role="status" aria-live="polite"></p>
                 <button id="org-move-preview" type="button" class="org-button">Preview move</button>
                 <button id="org-move-confirm" type="submit" class="org-button" disabled>Confirm move</button>
