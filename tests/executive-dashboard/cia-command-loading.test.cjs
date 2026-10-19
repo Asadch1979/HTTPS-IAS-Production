@@ -23,7 +23,7 @@ class Element {
     addEventListener(name,fn) { (this.events[name]??=[]).push(fn); }
     fire(name) { for(const fn of this.events[name]||[]) fn({preventDefault(){}}); }
 }
-function fixture({enabled=true,periodValue='12'}={}) {
+function fixture({legacyFlag,periodValue='12'}={}) {
     const fields=new Map();
     const field=key=> { if(!fields.has(key)) fields.set(key,new Element()); return fields.get(key); };
     const cards=codes.map(code=>{
@@ -40,7 +40,8 @@ function fixture({enabled=true,periodValue='12'}={}) {
             return codes.map(code=>field(code+key));
         return [field(key)];
     });
-    const main=new Element();main.dataset.commandEnabled=String(enabled);
+    const main=new Element();
+    if (legacyFlag !== undefined) main.dataset.commandEnabled=String(legacyFlag); // obsolete attribute must be ignored
     main.querySelector=field;main.querySelectorAll=nodesFor;
     const form=new Element(), hidden={value:periodValue};
     form.querySelector=()=>hidden;
@@ -127,8 +128,9 @@ test('empty results show real zero counts and an empty section state',async()=>{
     assert.equal(f.field('[data-cia-total]').textContent,'0');
     assert.equal(f.field('[data-cia-nature-status]').dataset.state,'empty');
 });
-test('disabled environments make no requests; a deliberately selected future period still loads',()=>{
-    const disabled=fixture({enabled:false});assert.equal(disabled.requests.length,0);
+test('Command Center loads without an environment flag; valid period is still required',()=>{
+    const noFlag=fixture();assert.equal(noFlag.requests.length,2);
+    const obsoleteFalse=fixture({legacyFlag:false});assert.equal(obsoleteFalse.requests.length,2);
     const future=fixture({periodValue:''});assert.equal(future.requests.length,0);
     future.changePeriod('2027');
     assert.equal(future.requests.length,2);assert.match(future.requests[0].url,/auditPeriodId=2027/);
