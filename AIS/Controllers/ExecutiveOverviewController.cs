@@ -72,10 +72,10 @@ namespace AIS.Controllers
             }
 
             // Reporting Line Management is not a bank-wide fallback.
-            // Require the same IAS organization page grant used by /RLM.
+            // It has its own dedicated page grant, never the organization page.
             if (user.UserEntityID.GetValueOrDefault() <= 0) return StatusCode(403);
             permissions.EnsurePermissionsCached(user);
-            var rlmPage = pageIds.ResolvePageId("/Dashboard/entity_wise_obs");
+            var rlmPage = pageIds.ResolvePageId("/ExecutiveOverview/RLM");
             if (rlmPage <= 0 || !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(rlmPage))
                 return StatusCode(403);
             return RedirectToAction(nameof(RLM));
