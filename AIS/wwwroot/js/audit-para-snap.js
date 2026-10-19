@@ -93,33 +93,115 @@
             const available = !position || verified || estimated;
             const value = available ? data[key] : null;
             if (value != null && (!Number.isSafeInteger(value) || value < 0)) throw new Error('Invalid lifecycle count.');
-            card.querySelector('[data-snap-kpi]').textContent = (value != null && position && estimated ? '≈ ' : '') + number(value);
-            card.querySelector('[data-snap-kpi-note]').textContent = value == null ? 'N/A · Historical evidence unavailable'
-                : position ? estimated ? key === 'over3ComplianceCycles'
-                    ? 'Estimated · present cycles on estimated past open population'
-                    : 'Estimated · latest master dates/status; present risk and organization'
-                    : 'Verified current position · as of now'
-                : 'Qualifying event dates within selected range';
+            card.querySelector('[data-snap-kpi]').textContent = number(value);
+            card.title = position && estimated
+                ? 'As-of value reconstructed from the latest available IAS records; historical status changes may not be complete.'
+                : position && verified ? 'Current IAS position.' : 'IAS event dates within the selected range.';
+            card.querySelector('[data-snap-kpi-note]').textContent =
+                value == null ? 'N/A · No reliable history' :
+                position ? 'As of selected date' : 'Within selected dates';
         }
     }
+
+    // Selected-period IAS monthly settlement trend. The Oracle cursor returns
+    // BOTH settled and high-risk-settled observations for the SAME month.
+    function renderMonthlyTrend(rows) {
+        const panel = element('div',null,'snap-monthly-trend');
+        const heading = element('h3','Monthly settlement trend');
+        const legend = element('p','━━ All settled (blue) · ┄┄ High-risk settled (red)','exec-legend');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        const ns = 'http://www.w3.org/2000/svg';
+        svg.setAttribute('viewBox','0 0 640 270');
+        svg.setAttribute('role','img');
+        svg.setAttribute('aria-label','Monthly settled paras and high-risk settled paras over the selected IAS period');
+        svg.setAttribute('class','snap-trend-chart');
+        const title = document.createElementNS(ns,'title');
+        title.textContent = 'Monthly settlement trend'; svg.append(title);
+        const maxCount = Math.max(1,...rows.map(row => Math.max(row.paraCount ?? 0, row.highRiskCount ?? 0)));
+        const ceil = Math.ceil(maxCount / 3 / Math.pow(10,Math.floor(Math.log10(maxCount / 3)))) *
+            Math.pow(10,Math.floor(Math.log10(maxCount / 3)));
+        const maximum = Math.max(3,ceil*3);
+        const x = i => 55 + i * 560 / Math.max(1,rows.length-1);
+        const y = value => 222 - value / maximum * 178;
+        const node = (tag,attrs) => {
+            const el = document.createElementNS(ns,tag);
+            Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,String(v)));
+            return el;
+        };
+        for (let k=0;k<=3;k++) {
+            const val = maximum*k/3, top=y(val);
+            svg.append(node('line',{x1:54,x2:618,y1:top,y2:top,stroke:'#dee7e5','stroke-dasharray':'3 5'}));
+            const lab = node('text',{x:46,y:top+4,'text-anchor':'end','font-size':11,fill:'#496574'});
+            lab.textContent = number(val); svg.append(lab);
+        }
+        for (const [key,color,dash] of [['paraCount','#265cc8',null],['highRiskCount','#b32a24','7 5']]) {
+            const vals = rows.map(row => row[key]);
+            if (vals.some(value => !Number.isSafeInteger(value) || value < 0))
+                throw new Error('Invalid monthly settlement count from IAS.');
+            const polyline = node('polyline',{
+                points:vals.map((value,i) => x(i)+','+y(value)).join(' '),
+                fill:'none',stroke:color,'stroke-width':3
+            });
+            if (dash) polyline.setAttribute('stroke-dasharray',dash);
+            svg.append(polyline);
+            vals.forEach((value,i) => {
+                const point=node('circle',{cx:x(i),cy:y(value),r:3.3,fill:color});
+                const desc=node('title',{});desc.textContent =
+                    rows[i].bucketName + ': ' + (key==='paraCount'?'Settled ':'High risk settled ') + number(value);
+                point.append(desc);svg.append(point);
+            });
+        }
+        const labelStep = Math.max(1,Math.ceil(rows.length/7));
+        rows.forEach((row,i) => {
+            if (i % labelStep!==0 && i!==rows.length-1) return;
+            const lab=node('text',{x:x(i),y:251,'text-anchor':'middle','font-size':11,fill:'#496574'});
+            lab.textContent=row.bucketName;svg.append(lab);
+        });
+        const table = element('table',null,'exec-table snap-bucket-table');
+        const head = element('thead'), header=element('tr'),body=element('tbody');
+        for (const label of ['Month','Settled','High-risk settled']) {
+            const th=element('th',label);th.scope='col';header.append(th);
+        }
+        head.append(header);
+        rows.forEach(row => {
+            const tr=element('tr'), th=element('th',row.bucketName);th.scope='row';
+            tr.title=row.qualityCode==='E'?'Derived from latest qualifying IAS settlement events':'IAS settlement events';
+            tr.append(th,element('td',number(row.paraCount)),element('td',number(row.highRiskCount)));
+            body.append(tr);
+        });
+        table.append(head,body);
+        const details=element('details',null,'exec-data');
+        details.append(element('summary','View chart data'),table);
+        panel.append(heading,legend,svg,details);
+        return panel;
+    }
+
     function renderDistribution(rows) {
         if (!Array.isArray(rows)) throw new Error('Invalid distribution cursor.');
         for (const name of ['risk','aging','cycle','trend']) {
             const target = document.getElementById('exec-' + name);
             if (!target) continue;
-            const subset = rows.filter(row => row.dataset === name);
+            // Unrated is retained in Oracle for data-quality diagnostics,
+            // but the visible distribution is explicitly for rated risks.
+            const subset = rows.filter(row => row.dataset === name &&
+                !(name === 'risk' && (row.bucketCode === '0' || row.bucketName === 'Unrated')));
             if (!subset.length) throw new Error('Missing ' + name + ' analysis.');
+            if (name === 'trend') {
+                target.replaceChildren(renderMonthlyTrend(subset));
+                continue;
+            }
             const table = element('table',null,'exec-table snap-bucket-table');
             const head = element('thead'), header = element('tr'), body = element('tbody');
-            header.append(element('th', name === 'trend' ? 'Month' : 'Category'),element('th','Paras'),element('th','Evidence'));
+            header.append(element('th','Category'),element('th','Paras'));
             for (const th of header.children) th.scope = 'col';
             head.append(header);
             for (const row of subset) {
                 if (!['Y','E','N'].includes(row.qualityCode) || row.paraCount != null &&
                     (!Number.isSafeInteger(row.paraCount) || row.paraCount < 0)) throw new Error('Invalid dated analysis.');
                 const tr = element('tr'), label = element('th',row.bucketName); label.scope = 'row';
-                tr.append(label,element('td',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)),
-                    element('td',row.qualityCode === 'N' ? 'History unavailable' : row.qualityCode === 'E' ? 'Estimated' : 'Current as of now','snap-quality'));
+                tr.title = row.qualityCode === 'N' ? 'Historical source evidence unavailable'
+                    : row.qualityCode === 'E' ? 'Calculated from available IAS history' : 'Current IAS status';
+                tr.append(label,element('td',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
                 body.append(tr);
             }
             table.append(head,body);
@@ -133,10 +215,9 @@
                 line.append(element('span',row.bucketName),track,element('strong',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
                 bars.append(line);
             }
-            const note = name === 'cycle' ? 'Past cycle histories are not verified. No current distribution is substituted.'
-                : name === 'trend' ? 'Selected months and inclusive dates only. Latest qualifying settlement dates can omit earlier settlements after a reopening.'
-                : 'Historical position is estimated; risk and organization use present assignments. Age is calculated at End Date.';
-            target.replaceChildren(bars,table,element('p',note,'exec-note'));
+            target.replaceChildren(bars,table);
+            if (name === 'cycle' && subset.every(row => row.qualityCode === 'N'))
+                target.append(element('p','Historical cycle breakdown unavailable.','exec-empty'));
         }
     }
     let criticalRows = [];
@@ -165,16 +246,19 @@
         for (const value of [...new Set(rows.map(row => row.riskName))]) risk.add(new Option(value,value));
         renderCritical();
         document.getElementById('exec-critical-note').textContent =
-            rows.length + ' high-risk items returned (maximum 100). ZTBL Critical means open High-Risk para. ' +
-            'Past lists use present risk and are Estimated; historical cycles and movement dates are N/A.';
+            'Critical = open High-Risk paras (ZTBL). Showing ' + rows.length + ' of up to 100.';
     }
-    document.getElementById('exec-critical-risk').addEventListener('change',renderCritical);
+    document.getElementById('exec-critical-risk')?.addEventListener('change',renderCritical);
     async function load() {
         if (!validDates()) { resetResults('Select valid dates and Apply.'); return; }
         request = new AbortController();
         app.setAttribute('aria-busy','true');
         status.textContent = 'Loading all selected-period results…';
-        const tasks = [['GetKpis',renderKpis],['GetDistribution',renderDistribution],['GetCriticalItems',loadCritical]];
+        const tasks = [];
+        if (app.querySelector('[data-snap-card]')) tasks.push(['GetKpis',renderKpis]);
+        if (['risk','aging','cycle','trend'].some(name => document.getElementById('exec-' + name)))
+            tasks.push(['GetDistribution',renderDistribution]);
+        if (document.getElementById('exec-critical')) tasks.push(['GetCriticalItems',loadCritical]);
         const results = await Promise.allSettled(tasks.map(async ([action,render]) => {
             const data = await read(action,request.signal);
             if (!request.signal.aborted) render(data);
@@ -185,7 +269,7 @@
             // Do not leave a mixture of refreshed and failed dataset values.
             resetResults('N/A · One or more dated datasets could not be loaded.');
             status.textContent = 'Audit Para Snap unavailable: ' + failures[0].reason.message;
-        } else status.textContent = 'Selected dates applied to all results · Historical estimates and unavailable histories are disclosed.';
+        } else status.textContent = 'IAS data loaded for the selected dates.';
         app.setAttribute('aria-busy','false');
     }
     load();
