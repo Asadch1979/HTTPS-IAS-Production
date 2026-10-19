@@ -1,6 +1,7 @@
 // Executes against the already-built AIS.dll. No Oracle connection or app host.
-// Missing DB configuration ensures no Oracle connection can open. Enabled
-// cases additionally prove the real CIA reader is reached (then safely fails).
+// Missing DB configuration ensures no Oracle connection can open. Valid
+// requests must reach the real CIA reader even when the legacy flag is absent
+// or is explicitly false. Unauthorized requests remain denied first.
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -71,16 +72,19 @@ public static class CiaCommandAccessChecks
         };
         int request(int role,bool superFlag,bool pageGrant,bool apiGrant,int resolvedId,
             bool revoked=false,string method="GET",string path="/api/ExecutiveDashboard/GetCiaCommandKpis",int period=12,
-            bool enabled=false,bool nature=false)
+            bool? legacyEnabled=null,bool nature=false)
         {
             var context=new DefaultHttpContext { Session=new MemorySession() };
             context.Request.Method=method;
             context.Request.PathBase="/ZTBLAIS";
             context.Request.Path=nature ? "/api/ExecutiveDashboard/GetCiaIssueNature" : path;
             context.User=new ClaimsPrincipal(new ClaimsIdentity(new[]{new Claim(ClaimTypes.Name,"snap-test")},"test"));
-            var configuration=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string> {
-                ["RoleDashboards:CiaCommandCenterEnabled"]=enabled.ToString()
-            }).Build();
+            // Deliberately vary a legacy/obsolete setting. The controller
+            // must no longer use it as a loading gate.
+            var settings=new Dictionary<string,string>();
+            if (legacyEnabled.HasValue)
+                settings["RoleDashboards:CiaCommandCenterEnabled"]=legacyEnabled.Value.ToString();
+            var configuration=new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
             var session=new SessionHandler(new HttpContextAccessor { HttpContext=context },configuration,null);
             if (role>0)
             {
@@ -95,9 +99,8 @@ public static class CiaCommandAccessChecks
             var database=(DBConnection)RuntimeHelpers.GetUninitializedObject(typeof(DBConnection));
             typeof(DBConnection).GetField("sessionHandler",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(database,session);
             // Normal scope resolution needs configuration for unmapped roles.
-            // Reader-entry probes deliberately leave it null, before con.Open().
-            if (!enabled)
-                typeof(DBConnection).GetField("_configuration",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(database,configuration);
+            // Test DBConnection intentionally has no actual Oracle credentials.
+            typeof(DBConnection).GetField("_configuration",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(database,configuration);
             var logger=new CaptureLogger();
             var controller=new ExecutiveDashboardController(database,session,new Permissions { Page=pageGrant,Api=apiGrant },
                 new Resolver { Id=resolvedId },logger,configuration);
@@ -105,12 +108,14 @@ public static class CiaCommandAccessChecks
             controller.ControllerContext.RouteData=new Microsoft.AspNetCore.Routing.RouteData();
             controller.RouteData.Values["action"]=nature ? "GetCiaIssueNature" : "GetCiaCommandKpis";
             var result=nature ? controller.GetCiaIssueNature(period) : controller.GetCiaCommandKpis(period);
-            if (enabled && role==3 && pageGrant && apiGrant) {
+            if ((role==3 || (role==1 && superFlag)) && pageGrant && apiGrant
+                && resolvedId==1000303 && !revoked && method=="GET" && period>0
+                && (nature || path=="/api/ExecutiveDashboard/GetCiaCommandKpis")) {
                 var value=((ObjectResult)result).Value;
                 var code=value.GetType().GetProperty("error")?.GetValue(value) as string;
                 if (code!="database_unavailable" || logger.LastException==null ||
                     !logger.LastException.ToString().Contains("ReadCiaCommandCursor"))
-                    throw new Exception("Enabled CIA request did not reach and log the actual DB reader.");
+                    throw new Exception("Authorized CIA request must reach the DB reader regardless of the removed loading flag.");
             }
             if (string.IsNullOrEmpty(context.Response.Headers["X-CIA-Request-Id"]))
                 throw new Exception("Missing CIA log correlation header.");
@@ -124,15 +129,16 @@ public static class CiaCommandAccessChecks
         check(request(3,false,true,true,1000304),403); // Snap page cannot replace CIA grant
         check(request(1,true,false,true,1000303),403);
         check(request(1,true,true,false,1000303),403); // no Super User API bypass
-        check(request(3,false,true,true,1000303),503); // authorized, environment gate reached
+        check(request(3,false,true,true,1000303),503); // no legacy flag: real reader reached
         check(request(1,true,true,true,1000303),503);
         check(request(3,false,true,true,1000303,revoked:true),401);
         check(request(3,false,true,true,1000303,method:"POST"),403);
         check(request(3,false,true,true,1000303,path:"/api/ExecutiveDashboard/GetCiaIssueNature"),403);
         check(request(3,false,true,true,1000303,period:0),400);
         check(request(3,false,true,true,1000303,nature:true),503);
-        check(request(3,false,true,true,1000303,enabled:true),503); // real reader, no DB credentials
-        check(request(3,false,true,true,1000303,enabled:true,nature:true),503);
-        return count+" CIA compiled-controller access/gate checks passed (no Oracle).";
+        check(request(3,false,true,true,1000303,legacyEnabled:false),503); // obsolete false ignored
+        check(request(3,false,true,true,1000303,legacyEnabled:true),503); // obsolete true ignored
+        check(request(3,false,true,true,1000303,legacyEnabled:true,nature:true),503);
+        return count+" CIA compiled-controller access checks passed (obsolete flag ignored, no Oracle).";
     }
 }
