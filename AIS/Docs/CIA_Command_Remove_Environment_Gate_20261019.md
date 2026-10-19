@@ -28,11 +28,11 @@ were reviewed. It is not an IAS business rule.
   page permission and independent API permission before Oracle reads.
   AJAX error isolation and mapped/unmapped issue count checks remain.
 - Remove the remaining CIA environment-based
-  `RoleDashboards:CiaWorkflowDefinitionsVerified` mask. The Oracle cursor
-  returns the values for Delayed Audit Reports and Teams Conducting Audit.
-  The C# reader now uses nullable numeric conversion for both fields:
+  `RoleDashboards:CiaWorkflowDefinitionsVerified` mask. The Oracle cursor returns the CIA KPI values without environment masking.
+  The C# reader uses nullable numeric conversion for **all six numeric
+  counts** (planned, audited, delayed, A1, awaiting response, active teams):
   Oracle `NULL` displays as `N/A`; Oracle `0` displays as **0**; positive
-  counts display unchanged. The UI labels these as **under production
+  counts display unchanged. Plan coverage is already nullable. The UI labels these as **under production
   validation**, never automatically "verified" merely because populated.
 - TOP lifecycle nine KPIs, Reports A-E, Audit Para Snap, GROUP/CCO/RLM
   parents and their separate loading logic are unchanged. A request
@@ -73,8 +73,9 @@ role (3) in a fresh authenticated session and confirm **403**, not 200.
    and partial checklist mapping alerts.
 5. Confirm both workflow KPIs reflect the actual IAS cursor:
    `NULL` gives N/A, `0` gives 0, and positive values give their
-   returned counts. Compare source engagement stages and deadline
-   definitions with production data *before* expanding to other roles.
+   returned counts. Check this rule for all six numeric counts and
+   nullable coverage percentage. Compare source engagement stages and
+   deadline definitions with production data *before* expanding to other roles.
    Do not claim these business rules are validated merely because they
    returned a number.
 6. Run focused frontend `cia-command-loading.test.cjs` and compiled
