@@ -125,7 +125,6 @@
     // BOTH settled and high-risk-settled observations for the SAME month.
     function renderMonthlyTrend(rows) {
         const panel = element('div',null,'snap-monthly-trend');
-        const heading = element('h3','Monthly settlement trend');
         const legend = element('p','━━ All settled (blue) · ┄┄ High-risk settled (red)','exec-legend');
         const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
         const ns = 'http://www.w3.org/2000/svg';
@@ -190,7 +189,7 @@
         table.append(head,body);
         const details=element('details',null,'exec-data');
         details.append(element('summary','View chart data'),table);
-        panel.append(heading,legend,svg,details);
+        panel.append(legend,svg,details);
         return panel;
     }
 
