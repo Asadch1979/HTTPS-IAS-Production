@@ -1,5 +1,4 @@
 using AIS.Models;
-using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -49,13 +48,13 @@ namespace AIS.Controllers
             var items = ReadCiaCommandCursor(scope, filters, auditPeriodId,
                 "PKG_EXEC_DASHBOARD.P_GET_CIA_EXEC_KPIS", r => new CiaCommandKpis
                 {
-                    PlannedEntities = RoleLong(r, "PLANNED_ENTITIES"),
-                    AuditedEntities = RoleLong(r, "AUDITED_ENTITIES"),
+                    PlannedEntities = RoleNullableLong(r, "PLANNED_ENTITIES"),
+                    AuditedEntities = RoleNullableLong(r, "AUDITED_ENTITIES"),
                     PlanCoveragePct = CiaNullableDecimal(r, "PLAN_COVERAGE_PCT"),
-                    DelayedAuditReports = RoleLong(r, "DELAYED_AUDIT_REPORTS"),
-                    FraudA1Paras = RoleLong(r, "FRAUD_A1_PARAS"),
-                    AwaitingAuditeeResponse = RoleLong(r, "AWAITING_AUDITEE_RESPONSE"),
-                    TeamsConductingAudit = RoleLong(r, "TEAMS_CONDUCTING_AUDIT"),
+                    DelayedAuditReports = RoleNullableLong(r, "DELAYED_AUDIT_REPORTS"),
+                    FraudA1Paras = RoleNullableLong(r, "FRAUD_A1_PARAS"),
+                    AwaitingAuditeeResponse = RoleNullableLong(r, "AWAITING_AUDITEE_RESPONSE"),
+                    TeamsConductingAudit = RoleNullableLong(r, "TEAMS_CONDUCTING_AUDIT"),
                     AuditPeriodId = RoleRequiredInt(r, "AUDIT_PERIOD_ID"),
                     AuditPeriodFrom = RoleDate(r, "AUDIT_PERIOD_FROM"),
                     AuditPeriodTo = RoleDate(r, "AUDIT_PERIOD_TO"),
@@ -63,13 +62,14 @@ namespace AIS.Controllers
                 });
             if (items.Count != 1)
                 throw new InvalidOperationException("CIA command KPI cursor must return exactly one row.");
-            if (!_configuration.GetValue<bool>("RoleDashboards:CiaWorkflowDefinitionsVerified"))
-            {
-                items[0].DelayedAuditReports = null;
-                items[0].TeamsConductingAudit = null;
-                items[0].WorkflowVerificationNote = "N/A until the reporting deadline and conducting-audit stages are approved against the live IAS workflow. Source proxy: audit end +15 days; conducting stages 4–11 (excludes draft/final reporting).";
-            }
-            else items[0].WorkflowVerificationNote = "Approved reporting deadline and conducting-audit stages; current operational position.";
+            // Return actual Oracle values, including NULL (display N/A) and zero
+            // (display 0). Availability is not controlled by environment flags.
+            // These operational estimates still require independent reconciliation
+            // against live IAS workflow records before wider role rollout.
+            items[0].WorkflowVerificationNote =
+                items[0].DelayedAuditReports.HasValue && items[0].TeamsConductingAudit.HasValue
+                    ? "Values returned by IAS; reporting deadline and active-stage criteria are pending production validation."
+                    : "N/A means the IAS procedure returned NULL for at least one workflow KPI. Zero, when returned, remains zero.";
             return items[0];
         }
 

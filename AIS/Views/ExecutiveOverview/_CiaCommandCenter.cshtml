@@ -16,15 +16,14 @@
         new { Code = "IS_AUDIT", Label = "IS Audit" }
     };
 }
-<section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
-         data-command-enabled="@(Model.CiaCommandEnabled ? "true" : "false")">
+<section class="cia-command-center" aria-label="Chief Internal Auditor audit command center">
     <div class="cia-kpi-heading"><h2>Audit assurance and execution</h2><p class="cia-section-status" data-cia-kpi-status role="status">Waiting for KPI data</p></div>
     <section class="cia-command-scorecard" data-cia-kpi-section aria-label="CIA execution KPIs">
         <article><span>Audit Plan Coverage</span><strong data-cia-kpi="planCoveragePct">N/A</strong><small data-cia-plan>Planned versus audited entities</small></article>
-        <article><span>Delayed Audit Reports</span><strong data-cia-kpi="delayedAuditReports">N/A</strong><small data-cia-workflow-note>Reporting deadline pending live workflow verification</small></article>
+        <article><span>Delayed Audit Reports</span><strong data-cia-kpi="delayedAuditReports">N/A</strong><small data-cia-workflow-note>IAS result · pending source reconciliation</small></article>
         <article><span>A1 Observations Detected</span><strong data-cia-kpi="fraudA1Paras">N/A</strong><small>Annexure A1 · selected audit period</small></article>
         <article><span>Awaiting Auditee Response</span><strong data-cia-kpi="awaitingAuditeeResponse">N/A</strong><small>Status 2 · current operational position</small></article>
-        <article><span>Teams Conducting Audit</span><strong data-cia-kpi="teamsConductingAudit">N/A</strong><small data-cia-workflow-note>Conducting-audit stages pending live workflow verification</small></article>
+        <article><span>Teams Conducting Audit</span><strong data-cia-kpi="teamsConductingAudit">N/A</strong><small data-cia-workflow-note>IAS result · pending source reconciliation</small></article>
     </section>
     <section class="cia-command-nature exec-panel" aria-labelledby="cia-nature-title">
         <div class="cia-command-section-heading">
@@ -62,7 +61,7 @@
     <section class="cia-command-secondary">
         <article class="exec-panel">
             <h2>Leadership Review Priorities</h2>
-            <p><strong>Reporting delays and conducting teams:</strong> N/A until workflow definitions are verified. Then review the existing authorized engagement/report workflow.</p>
+            <p><strong>Reporting delays and conducting teams:</strong> display actual IAS procedure values, or N/A when the procedure returns NULL. Review the deadline and stage definitions against production before wider access.</p>
             <p><strong>Remediation follow-up:</strong> status 2 means awaiting an auditee response; no unsupported remediation due date is inferred.</p>
         </article>
         <article class="exec-panel">

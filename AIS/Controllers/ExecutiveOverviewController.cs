@@ -255,7 +255,6 @@ namespace AIS.Controllers
                     Filters = filters,
                     FilterOptions = options,
                     RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
-                    CiaCommandEnabled = configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"),
                     IsAuditParaSnap = auditParaSnap,
                     AuditParaSnapEnabled = configuration.GetValue<bool>("RoleDashboards:AuditParaSnapEnabled"),
                     CiaPeriods = ciaPeriods,

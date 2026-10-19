@@ -106,8 +106,8 @@ namespace AIS.Controllers
                 ["DimensionId"] = filters.DimensionId, ["ReportingOfficeId"] = filters.ReportingOfficeId
             });
             var timer = Stopwatch.StartNew();
-            logger.LogInformation("CIA {Action} requested for audit period {AuditPeriodId}; enabled {Enabled}; request {TraceId}.",
-                action, auditPeriodId, configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"), traceId);
+            logger.LogInformation("CIA {Action} requested for audit period {AuditPeriodId}; request {TraceId}.",
+                action, auditPeriodId, traceId);
             var result = ExecuteSummary(entityId, null, dashboardType ?? "CIA", null, filters, query,
                 ciaCommand: true, ciaAuditPeriodId: auditPeriodId);
             var statusCode = (result as ObjectResult)?.StatusCode ?? 200;
@@ -237,8 +237,6 @@ namespace AIS.Controllers
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.
-                if (ciaCommand && !configuration.GetValue<bool>("RoleDashboards:CiaCommandCenterEnabled"))
-                    return Error(503, "not_deployed", "CIA Command Center loading is disabled in this environment.");
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
