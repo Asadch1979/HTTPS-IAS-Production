@@ -1,7 +1,0 @@
-RETIRED
-
-The numbered Management Audit notification deployment is intentionally
-non-deployable. Every SQL step fails with Oracle error -20998.
-
-Use ../management_audit_notification_deployment.md for the supported generic
-email queue and ASP.NET weekly-service deployment order.
