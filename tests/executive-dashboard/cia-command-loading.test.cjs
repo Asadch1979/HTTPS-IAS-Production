@@ -114,6 +114,26 @@ test('period changes abort old requests, ignore late results and preserve the se
     assert.equal(f.field('[data-cia-total]').textContent,'10');
     assert.equal(f.field('[data-cia-nature-status]').dataset.state,'success');
 });
+test('Oracle NULL displays N/A, while zero and nonzero workflow KPIs are rendered exactly',async()=>{
+    const f=fixture();
+    f.reply(0,kpis());f.reply(1,nature());await flush();
+    assert.equal(f.field('[data-cia-kpi="delayedAuditReports"]').textContent,'N/A');
+    assert.equal(f.field('[data-cia-kpi="teamsConductingAudit"]').textContent,'N/A');
+    assert.match(f.field('workflow1').textContent,/procedure did not return a value/);
+
+    f.changePeriod('13');
+    const zero={...kpis(13),delayedAuditReports:0,teamsConductingAudit:0};
+    f.reply(2,zero);f.reply(3,nature());await flush();
+    assert.equal(f.field('[data-cia-kpi="delayedAuditReports"]').textContent,'0');
+    assert.equal(f.field('[data-cia-kpi="teamsConductingAudit"]').textContent,'0');
+    assert.match(f.field('workflow1').textContent,/under production validation/);
+
+    f.changePeriod('12');
+    f.reply(4,{...kpis(12),delayedAuditReports:19,teamsConductingAudit:7});
+    f.reply(5,nature());await flush();
+    assert.equal(f.field('[data-cia-kpi="delayedAuditReports"]').textContent,'19');
+    assert.equal(f.field('[data-cia-kpi="teamsConductingAudit"]').textContent,'7');
+});
 test('mismatched period and unreconciled categories never display as valid results',async()=>{
     const f=fixture();const rows=nature();rows[0].issueCount=9;
     f.reply(0,kpis(99));f.reply(1,rows);await flush();
