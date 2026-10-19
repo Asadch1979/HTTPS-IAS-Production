@@ -42,7 +42,7 @@ namespace AIS.Models
                     new[]{"openingOpenParas","paraAdded","parasSettled","closingOpenParas"},
                     Array.Empty<string>()),
                 Definition("settlement","Settlement & Performance",
-                    new[]{"parasSettled"},new[]{"trend"}),
+                    new[]{"parasSettled","periodSettlementRate"},new[]{"trend"}),
                 Definition("risk","Risk",new[]{"highRiskOpenParas"},new[]{"risk"}),
                 Definition("aging","Aging & Compliance",
                     new[]{"over1YearParas","over3ComplianceCycles"},new[]{"aging","cycle"}),
