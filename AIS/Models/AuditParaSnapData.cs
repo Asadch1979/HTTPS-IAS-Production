@@ -61,6 +61,8 @@ namespace AIS.Models
         public string BucketCode { get; set; }
         public string BucketName { get; set; }
         public long? ParaCount { get; set; }
+        // For monthly trend only: settled high-risk paras in the same month.
+        public long? HighRiskCount { get; set; }
         public string QualityCode { get; set; }
     }
     public sealed class AuditParaSnapCritical
