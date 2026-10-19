@@ -1,151 +1,63 @@
-@model AIS.Models.FieldAuditWorkflow.FieldAuditWorkflowViewModel
+@model System.Collections.Generic.List<AIS.Models.HeadAuditEngagement>
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "My Engagement Workbench";
-    var management = ViewData["WorkbenchManagement"] as bool? == true;
-    var controller = management ? "ManagementAudit" : "FieldAudit";
-    var action = management ? "MA_Dashboard" : "AR_Dashboard";
-    var summary = Model.TeamLeadSnapshot?.Summary;
-    var today = DateTime.UtcNow.AddHours(5).Date;
-    var dueSoon = Model.WorkbenchTasks.Where(t =>
-        DateTime.TryParseExact(t.AUDIT_END_DATE, "dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var due) &&
-        due >= today && due <= today.AddDays(7))
-        .Select(t => t.ENG_PLAN_ID).Distinct().Count();
-    var planning = Model.AvailableEngagements.Where(e => e.StatusId == 1).ToList();
-    var fieldwork = Model.AvailableEngagements.Where(e => e.StatusId == 2).ToList();
-    var assignedCount = Model.AvailableEngagements.Count();
+    ViewData["Title"] = "Head Audit Department | Audit Teams Monitoring";
+    string Value(string value) => string.IsNullOrWhiteSpace(value) ? "N/A" : value;
 }
 <link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
 <section class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
     <div class="wb-appbar">
         <div class="wb-brand"><span class="wb-brand-icon" aria-hidden="true">IAS</span>
             <span><strong>ZTBL · Internal Audit</strong><small>TeamMate-inspired Engagement Workspace</small></span></div>
-        <span class="wb-appbar-meta">TEAM LEADER · AUTHORIZED ASSIGNMENTS ONLY</span>
+        <span class="wb-appbar-meta">HEAD AUDIT DEPARTMENT · READ-ONLY</span>
     </div>
     <header class="wb-hero">
-        <div>
-            <span class="wb-eyebrow">MY AUDIT ENGAGEMENTS / CONTROL DESK</span>
-            <h1 id="workbench-title">My Engagement Workbench</h1>
-            <p>Manage your assigned engagements from planning through reporting. Every action opens the existing IAS authorized workflow.</p>
-        </div>
-        <div class="wb-hero-meta">
-            <strong>@assignedCount.ToString("N0")</strong>
-            <span>Assigned engagements</span>
-            <small>As of @today.ToString("dd MMM yyyy") · Pakistan time</small>
-        </div>
+        <div><span class="wb-eyebrow">HEAD AUDIT DEPARTMENT</span>
+            <h1 id="workbench-title">Audit Teams Monitoring</h1>
+            <p>Monitor your authorized department's ongoing assignments and inspect the team's latest saved work.</p></div>
+        <div class="wb-hero-meta"><strong>@Model.Count.ToString("N0")</strong><span>Ongoing engagements</span>
+            <a class="wb-step-link" href="@Url.Action("AuditTeamsMonitoring")">Refresh saved information</a></div>
     </header>
-
-    <div class="wb-kpis" aria-label="Team Leader performance overview">
-        <article class="wb-stat wb-stat-blue"><div class="wb-stat-icon" aria-hidden="true">▣</div>
-            <span>Active engagements</span>
-            <strong>@(summary != null ? summary.ActiveEngagements.ToString("N0") : fieldwork.Count.ToString("N0"))</strong>
-            <small>@(summary != null ? "Verified Oracle Team Lead assignments" : "Joined assignments · IAS status 2")</small></article>
-        <article class="wb-stat wb-stat-violet"><div class="wb-stat-icon" aria-hidden="true">✓</div>
-            <span>Workpapers for my review</span><strong>@(summary?.AwaitingMyWorkpaperReview.ToString("N0") ?? "N/A")</strong>
-            <small>Latest V2 versions · IN_REVIEW</small></article>
-        <article class="wb-stat wb-stat-amber"><div class="wb-stat-icon" aria-hidden="true">≡</div>
-            <span>Observations for review</span><strong>@(summary?.ObservationsAwaitingAuditorReview.ToString("N0") ?? "N/A")</strong>
-            <small>IAS observation status 3</small></article>
-        <article class="wb-stat wb-stat-teal"><div class="wb-stat-icon" aria-hidden="true">◷</div>
-            <span>Upcoming audit end dates</span>
-            <strong>@(summary != null ? summary.EngagementsEndingNext7Days.ToString("N0") : dueSoon.ToString("N0"))</strong>
-            <small>Within seven days · planned audit end</small></article>
+    <div class="wb-kpis" aria-label="Department audit overview">
+        <article class="wb-stat wb-stat-blue"><span>Teams conducting audits</span>
+            <strong>@Model.Where(e => e.TeamId.HasValue).Select(e => e.TeamId).Distinct().Count().ToString("N0")</strong>
+            <small>Distinct assigned IAS team IDs</small></article>
+        <article class="wb-stat wb-stat-violet"><span>Active audit engagements</span><strong>@Model.Count.ToString("N0")</strong>
+            <small>Authorized ongoing IAS engagements</small></article>
+        <article class="wb-stat wb-stat-amber"><span>Approaching completion date</span>
+            <strong>@Model.Count(e => e.DaysToEnd >= 0 && e.DaysToEnd < 7).ToString("N0")</strong>
+            <small>Scheduled audit end within the next 7 days</small></article>
+        <article class="wb-stat wb-stat-teal"><span>Observations awaiting review</span>
+            <strong>@Model.Sum(e => e.AwaitingReview).ToString("N0")</strong>
+            <small>IAS status 3 · V2 workpapers in review: @(Model.Count > 0 && Model.All(e => e.WorkpapersAwaitingReview.HasValue) ? Model.Sum(e => e.WorkpapersAwaitingReview.Value).ToString("N0") : "N/A")</small></article>
     </div>
-
-    <section class="wb-process" aria-labelledby="wb-process-title">
-        <div class="wb-section-heading"><div><span class="wb-eyebrow">ENGAGEMENT PIPELINE</span>
-            <h2 id="wb-process-title">Workflow overview</h2></div>
-            <span class="wb-section-help">Planning → Fieldwork → Review → Reporting</span></div>
-        <div class="wb-stage-ribbon" aria-label="Workflow stages">
-            <span class="wb-ribbon-step"><b>01</b> Planning</span>
-            <span class="wb-ribbon-step"><b>02</b> Fieldwork</span>
-            <span class="wb-ribbon-step wb-ribbon-pending"><b>03</b> Review · mapping pending</span>
-            <span class="wb-ribbon-step wb-ribbon-pending"><b>04</b> Reporting · mapping pending</span>
-        </div>
-        <div class="wb-board" aria-label="Engagement workflow board">
-            @foreach (var stage in new[] { "Planning", "Fieldwork", "Review", "Reporting" })
+    <section class="wb-process" aria-labelledby="stages-title">
+        <div class="wb-section-heading"><div><span class="wb-eyebrow">LIVE IAS WORKFLOW</span>
+            <h2 id="stages-title">Engagement stages</h2></div></div>
+        <div class="wb-stage-ribbon">
+            @foreach (var stage in Model.GroupBy(e => new { e.StatusId, e.Status }).OrderBy(g => g.Key.StatusId))
             {
-                var stageAssignments = stage == "Planning" ? planning : stage == "Fieldwork" ? fieldwork
-                    : Model.AvailableEngagements.Where(e => false).ToList();
-                var stageCode = stage == "Planning" ? "plan" : stage == "Fieldwork" ? "field" :
-                    stage == "Review" ? "review" : "report";
-                <article class="wb-lane wb-lane-@stageCode">
-                    <div class="wb-lane-heading"><div><span class="wb-lane-indicator"></span><h3>@stage</h3></div>
-                        <span class="wb-lane-count">@(stage == "Review" || stage == "Reporting" ? "N/A" : stageAssignments.Count.ToString("N0"))</span>
-                    </div>
-                    @if (stage == "Review" || stage == "Reporting")
-                    {
-                        <div class="wb-unmapped"><strong>Stage verification pending</strong>
-                            <p>IAS status-to-stage mapping is not yet approved. Open an assigned engagement to use its existing Review or Report steps.</p></div>
-                    }
-                    else if (!stageAssignments.Any())
-                    {
-                        <p class="wb-lane-empty">No assigned engagements at this stage.</p>
-                    }
-                    @foreach (var engagement in stageAssignments.Take(12))
-                    {
-                        <div class="wb-assignment">
-                            <span class="wb-assignment-code">ENGAGEMENT #@engagement.EngagementId</span>
-                            <h4>@engagement.Label</h4>
-                            <span class="wb-assignment-meta">Task status @engagement.StatusId · Authorized Team Lead</span>
-                            <a class="wb-open" href="@Url.Action(action, controller, new { engId = engagement.EngagementId })">Open workflow <span aria-hidden="true">→</span></a>
-                        </div>
-                    }
-                    @if (stageAssignments.Count > 12)
-                    {
-                        <p class="wb-lane-extra">Showing 12 of @stageAssignments.Count assignments; all appear in the register below.</p>
-                    }
-                </article>
+                <span class="wb-ribbon-step"><b>@stage.Count()</b>@Value(stage.Key.Status) <small>IAS @stage.Key.StatusId</small></span>
             }
         </div>
     </section>
-
-    <section class="wb-overview" aria-labelledby="wb-register-title">
-        <div class="wb-section-heading"><div><span class="wb-eyebrow">MY WORK / ASSIGNMENTS</span>
-            <h2 id="wb-register-title">Engagement register &amp; quick actions</h2></div>
-            <span class="wb-section-help">Source: authorized IAS assignment and task records</span></div>
-        <div class="wb-panel wb-register">
-            <div class="wb-table" role="region" aria-label="Authorized audit engagements" tabindex="0">
-                <table><thead><tr><th scope="col">Assigned engagement</th><th scope="col">Workflow state</th>
-                    <th scope="col">Audit period &amp; team</th><th scope="col">Actions</th></tr></thead><tbody>
-                @foreach (var engagement in Model.AvailableEngagements)
+    <section class="wb-overview" aria-labelledby="register-title">
+        <div class="wb-section-heading"><div><span class="wb-eyebrow">AUTHORIZED DEPARTMENT PORTFOLIO</span>
+            <h2 id="register-title">Ongoing engagement register</h2></div></div>
+        <div class="wb-panel wb-register"><div class="wb-table" role="region" aria-label="Ongoing engagements" tabindex="0">
+            <table><thead><tr><th>Audit entity / team</th><th>Audit period / dates</th><th>Current stage / progress</th><th>Observations / reporting</th><th>Review</th></tr></thead>
+                <tbody>@foreach (var e in Model)
                 {
-                    var task = Model.WorkbenchTasks.FirstOrDefault(t => t.ENG_PLAN_ID == engagement.EngagementId);
-                    <tr><td><strong>@engagement.Label</strong><small>Engagement @engagement.EngagementId</small></td>
-                        <td><span class="wb-state-badge">IAS status @engagement.StatusId</span><small>@task?.ENG_STATUS</small></td>
-                        <td>@(task?.AUDIT_START_DATE ?? "N/A") – @(task?.AUDIT_END_DATE ?? "N/A")
-                            <small>@task?.EMP_NAME · @task?.TEAM_NAME</small></td>
-                        <td><a class="wb-table-action" href="@Url.Action(action, controller, new { engId = engagement.EngagementId })">Open engagement ↗</a>
-                            @if (engagement.EngagementId == Model.SelectedEngagementId)
-                            {
-                                @foreach (var step in Model.VisibleSteps.Where(s => s.IsEnabled &&
-                                    new[] { "WORKING_PAPER", "MANAGE_OBSERVATION_BRANCHES", "MANAGE_OBSERVATIONS", "AUDIT_REPORT", "MANAGEMENT_REPORT", "QUALITY_REVIEW_HO" }.Contains(s.StepCode)))
-                                {
-                                    <a class="wb-step-link" href="@Url.Action(action, controller, new { engId = engagement.EngagementId, stepCode = step.StepCode })">@step.StepTitle</a>
-                                }
-                            }
-                            <a class="wb-step-link" href="@Url.Action(action, controller, new { engId = engagement.EngagementId, workbench = true })">Quick actions</a>
-                        </td>
-                    </tr>
-                }
-                </tbody></table>
-            </div>
-            @if (!Model.AvailableEngagements.Any()) { <p class="wb-lane-empty">No Team Leader assignments returned by IAS.</p> }
-        </div>
+                    <tr><td><strong>@Value(e.Entity)</strong><small>@Value(e.Department) · Engagement #@e.EngagementId</small>
+                        <small>@Value(e.Team) · Team ID @(e.TeamId?.ToString() ?? "N/A")</small><small>@Value(e.Members)</small></td>
+                        <td>@Value(e.Period)<small>@(e.Start?.ToString("dd MMM yyyy") ?? "N/A") – @(e.End?.ToString("dd MMM yyyy") ?? "N/A")</small></td>
+                        <td><span class="wb-state-badge">@Value(e.Status) · @e.StatusId</span><small>@Value(e.TaskProgress)</small>
+                            <small>@Value(e.WorkpaperProgress)</small></td>
+                        <td>@Value(e.ObservationCounts)<small>Saved reports: @e.Reports · @Value(e.ReportStatus)</small></td>
+                        <td><a class="wb-table-action" href="@Url.Action("Review", new { engId = e.EngagementId })">Open Engagement / Review Work →</a></td></tr>
+                }</tbody>
+            </table>
+            @if (Model.Count == 0) { <p class="wb-lane-empty">No ongoing engagements in your authorized department.</p> }
+        </div></div>
     </section>
-
-    @if (Model.TeamLeadSnapshot != null)
-    {
-        <partial name="_TeamLeadOracle" model="Model" />
-    }
-    else
-    {
-        <div class="wb-secondary">
-            <article class="wb-panel"><div class="wb-mini-heading"><span aria-hidden="true">▤</span><h2>Assigned workpapers</h2></div>
-                <p>Workpaper-review breakdown will appear after the read-only V2 Oracle package is approved. Use the authorized engagement workflow meanwhile.</p></article>
-            <article class="wb-panel"><div class="wb-mini-heading"><span aria-hidden="true">◎</span><h2>Observation review queue</h2></div>
-                <p>Current observation and auditee-response queue will appear after the Team Lead cursor is enabled. No unverified counts are shown.</p></article>
-        </div>
-    }
 </section>

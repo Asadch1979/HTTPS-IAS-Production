@@ -58,7 +58,7 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult AR_Dashboard(string stepCode = null, int? engId = null, bool workbench = false)
+        public IActionResult AR_Dashboard(string stepCode = null, int? engId = null)
             {
             ViewData["TopMenu"] = _topMenus.GetTopMenus();
             ViewData["TopMenuPages"] = _topMenus.GetTopMenusPages();
@@ -74,42 +74,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
                 }
 
-            List<TaskListModel> leadTasks = null;
-            List<FieldAuditEngagementOptionModel> leadEngagements = null;
-            if (workbench)
-            {
-                if (_sessionHandler.IsSessionRevoked(user)) return Unauthorized();
-                if (!ModelState.IsValid || engId <= 0) return BadRequest();
-                if (!int.TryParse(user.PPNumber, out var ppNumber) || ppNumber <= 0) return StatusCode(403);
-                leadTasks = _dbConnection.GetTaskList().Where(t => t.TEAMMEMBER_PPNO == ppNumber &&
-                    t.ISACTIVE == "Y" && t.ISCLOSE == "Z").ToList();
-                leadEngagements = _dbConnection.GetArDashboardDropdownOptions().Where(e =>
-                    string.Equals(e.IsTeamLead?.Trim(), "Y", StringComparison.OrdinalIgnoreCase) &&
-                    leadTasks.Any(t => t.ENG_PLAN_ID == e.EngagementId && t.STATUS_ID == e.StatusId))
-                    .GroupBy(e => e.EngagementId).Select(g => g.First()).ToList();
-                if (!leadEngagements.Any() || (engId.HasValue && !leadEngagements.Any(e => e.EngagementId == engId)))
-                    return StatusCode(403);
-            }
-            // Validate workbench assignment before the workflow builder changes active context.
-            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true, authorizedEngagements: leadEngagements);
-            if (workbench)
-            {
-                model.WorkbenchTasks = leadTasks;
-                if (_configuration.GetValue<bool>("RoleDashboards:TeamLeadOracleEnabled"))
-                {
-                    // Authenticated membership was verified before the workflow
-                    // context was changed. The DB reader resolves PPNO from IAS
-                    // session again, and the package independently checks it.
-                    var snapshot = _dbConnection.GetTeamLeadDashboardSnapshot(engId);
-                    var allowed = model.AvailableEngagements.Select(e => (long)e.EngagementId).ToHashSet();
-                    snapshot.Engagements = snapshot.Engagements.Where(e => allowed.Contains(e.EngId)).ToList();
-                    snapshot.Workpapers = snapshot.Workpapers.Where(w => allowed.Contains(w.EngId)).ToList();
-                    snapshot.Observations = snapshot.Observations.Where(o => allowed.Contains(o.EngId)).ToList();
-                    model.TeamLeadSnapshot = snapshot;
-                }
-                ViewData["WorkbenchManagement"] = false;
-                return View("~/Views/Shared/EngagementWorkbench.cshtml", model);
-            }
+            var model = BuildWorkflowViewModel(user, stepCode, engId, autoSelectDefaultSelection: true);
             return View("~/Views/FieldAudit/AR_Dashboard.cshtml", model);
             }
 
