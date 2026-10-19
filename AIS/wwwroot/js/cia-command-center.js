@@ -55,16 +55,16 @@
             `${number(data.auditedEntities)} audited of ${number(data.plannedEntities)} planned entities`;
         for (const note of main.querySelectorAll('[data-cia-workflow-note]')) {
             note.textContent = data.delayedAuditReports == null || data.teamsConductingAudit == null
-                ? 'N/A · IAS deadline and active-stage verification pending.'
-                : 'Current state · Verified IAS reporting deadline and audit stages.';
-            note.title = data.workflowVerificationNote || 'Workflow definitions require verification.';
+                ? 'N/A · IAS procedure did not return a value.'
+                : 'IAS procedure result · under production validation.';
+            note.title = data.workflowVerificationNote || 'Review returned IAS figures against production source records.';
         }
         main.querySelector('[data-cia-as-of]').textContent =
             `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
     function renderNature(rows) {
-        // Preserve the approved ten labels in Razor even when Oracle is disabled
-        // or fails. Render only verified numeric results from the CIA cursor.
+        // Preserve ten approved labels if Oracle fails. Show only actual,
+        // reconciled IAS values; never substitute fabricated category counts.
         if (!Array.isArray(rows) || rows.length !== 10) throw new Error('The Nature of Issue cursor did not return all ten categories.');
         const cards = [...main.querySelectorAll('[data-cia-category]')];
         if (cards.length !== 10) throw new Error('The CIA nature-of-issue design is incomplete.');
