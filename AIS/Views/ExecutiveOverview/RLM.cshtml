@@ -117,6 +117,6 @@
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
         @if (Model.SelectedView.Id == "management") { <script src="~/js/executive-role-visuals.js" asp-append-version="true"></script> }
         @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
-        @if (Model.RoleOracleEnabled && (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional")) { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
+        @if (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional") { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
     }
 }
