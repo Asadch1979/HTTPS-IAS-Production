@@ -148,9 +148,6 @@ namespace AIS.Controllers
             int? groupRootId, ExecutiveDashboardFilterRequest filters, string requiredPerspective,
             Func<ExecutiveDashboardScope, ExecutiveDashboardFilterRequest, T> read)
         {
-            if (!configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"))
-                return StatusCode(503, new { success = false, error = "not_deployed",
-                    message = "Role reporting awaits verified Oracle deployment." });
             return ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) =>
             {
                 var root = database.GetExecutiveDashboardRoot(scope);
