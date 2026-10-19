@@ -291,6 +291,7 @@ namespace AIS.Services
                 ["/Reports/monitoring_of_para_settlement"] = 249,
                 ["/Reports/IAS_PARA_POSITION"] = 1000400,
                 ["/ExecutiveOverview/AuditParaSnap"] = AIS.Models.AuditParaSnapPolicy.PageId,
+                ["/ExecutiveOverview/RLM"] = 1000305,
                 ["/OutstandingParasPdf/GeneratePdf"] = 970107,
                 ["/OutstandingParasPdf/LoadEntities"] = 970107,
                 ["/OutstandingParasPdf/GeneratePdfByEngId"] = 970107,
@@ -316,7 +317,6 @@ namespace AIS.Services
 
             AddAlias(updated, "/FieldAudit/OpenAuditReport", "/FieldAuditReport/ReportOverview");
             AddAlias(updated, "/OrganizationStructure/Index", "/Dashboard/entity_wise_obs");
-            AddAlias(updated, "/ExecutiveOverview/RLM", "/Dashboard/entity_wise_obs");
             AddAlias(updated, "/OrganizationStructure", "/Dashboard/entity_wise_obs");
             AddAlias(updated, "/OrganizationStructure/Data", "/Dashboard/entity_wise_obs");
             AddAlias(updated, "/OrganizationStructure/EntityPath", "/Dashboard/entity_wise_obs");
