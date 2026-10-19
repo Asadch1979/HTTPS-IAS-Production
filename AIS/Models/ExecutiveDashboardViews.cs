@@ -13,7 +13,8 @@ namespace AIS.Models
         public string[] Kpis { get; set; }
         public string[] Sections { get; set; }
         public bool UseLifecycleKpis { get; set; }
-        public string[] Datasets => (Kpis.Length > 0 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
+        public string[] Datasets => (Kpis.Length > 0 && (!UseLifecycleKpis || Sections.Contains("critical"))
+                ? new[] { "GetKpiSummary" } : Array.Empty<string>())
             .Concat(UseLifecycleKpis ? new[] { "GetKpiLifecycle" } : Array.Empty<string>())
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
@@ -43,11 +44,13 @@ namespace AIS.Models
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
             var reports = perspective switch
             {
-                "TOP" => new[] { "A", "B", "C", "D", "E" },
+                // Formal executive reports are approved for CIA, Compliance
+                // and Group Management only. TOP/RLM must not expose a
+                // reports tab, including through a manually crafted URL.
                 "GROUP" => new[] { "E" },
-                "RLM" => Array.Empty<string>(),
                 "CCO" => new[] { "B", "C", "D" },
-                _ => new[] { "A", "B", "C", "D", "E" }
+                "CIA" => new[] { "A", "B", "C", "D", "E" },
+                _ => Array.Empty<string>()
             };
             var views = new List<ExecutiveDashboardViewDefinition>
             {
@@ -58,7 +61,20 @@ namespace AIS.Models
                 View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas", "criticalItems" }, perspective == "CCO" ? new[] { "cycle", "aging", "critical" } : new[] { "aging", "cycle", "critical" }),
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
+            // TOP Audit Para Position uses the existing genuinely dated
+            // lifecycle cursor, not current-state total/open/settled counts.
+            // Historical snapshot measures remain explicitly estimated.
+            if (perspective == "TOP")
+            {
+                var position = views.First(v => v.Id == "position");
+                position.Kpis = new[] { "openingOpenParas", "paraAdded",
+                    "parasSettled", "closingOpenParas", "highRiskOpenParas" };
+                position.Sections = Array.Empty<string>(); // no current-state risk chart
+                position.UseLifecycleKpis = true;
+            }
             views[0].UseLifecycleKpis = perspective == "TOP";
+            if (perspective != "CIA" && perspective != "CCO" && perspective != "GROUP")
+                views.RemoveAll(v => v.Id == "reports");
             if (perspective == "CIA")
                 views.Insert(0, View("command", "CIA Audit Command Center", "_CiaCommandCenter",
                     "Plan coverage, delayed reports, A1 observations, pending auditee response, audit teams and ten issue categories.",
