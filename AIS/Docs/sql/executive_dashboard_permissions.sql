@@ -9,8 +9,10 @@
 -- Independent parent routes:
 --   TOP 1000300, GROUP 1000301, CCO 1000302, CIA 1000303,
 --   AuditParaSnap 1000304.
--- RLM deliberately uses the existing /Dashboard/entity_wise_obs page grant
--- through PageIdResolver.AddAlias. Index is a route resolver, not a new page.
+-- RLM has its own dedicated 1000305 /ExecutiveOverview/RLM page.
+-- Organization Structure retains its independent legacy page permission.
+-- Install executive_dashboard_page_api_manifest.sql before updating PKG_AD
+-- to allow front-end page assignments to grant shared GET APIs.
 -- Common executive GET API paths must be registered ONCE; PAGE_ID=1000300
 -- is their legacy registration anchor, NOT permission to access TOP. MVC
 -- checks authenticated perspective/page and the independent API role grant.
@@ -31,7 +33,6 @@ DECLARE
   V_NEW_API_ACTIVE CHAR(1) := 'N';
   V_NEW_GRANT_ACTIVE CHAR(1) := 'N';
   V_MENU_ID NUMBER;
-  V_RLM_PAGE_ID NUMBER;
   V_FOUND NUMBER;
   V_CONFLICTS NUMBER;
   V_API_ID NUMBER;
@@ -231,14 +232,6 @@ BEGIN
     RAISE_APPLICATION_ERROR(-20088,
       'Existing organization dashboard menu is missing or ambiguous.');
   END IF;
-  SELECT COUNT(*),MIN(ID) INTO V_FOUND,V_RLM_PAGE_ID
-    FROM T_MENU_PAGES
-   WHERE LOWER(TRIM(BOTH '/' FROM TRIM(PAGE_PATH))) =
-         'dashboard/entity_wise_obs';
-  IF V_FOUND<>1 THEN
-    RAISE_APPLICATION_ERROR(-20089,
-      'RLM alias requires one existing Dashboard/entity_wise_obs page.');
-  END IF;
 
   -- Each parent has a distinct page ID and authorization path.
   REGISTER_PAGE(1000300,'TOP','Top Management Dashboard',V_TOP_ROLE);
@@ -246,20 +239,22 @@ BEGIN
   REGISTER_PAGE(1000302,'CCO','Chief Compliance Officer Dashboard',38);
   REGISTER_PAGE(1000303,'CIA','CIA Audit Command Center',3);
   REGISTER_PAGE(1000304,'AuditParaSnap','ZTBL | Audit Para Snap',3);
+  REGISTER_PAGE(1000305,'RLM','Division / GM / Regional Audit Dashboard');
 
-  -- RLM never receives a fabricated /ExecutiveOverview/RLM page ID.
-  -- PageIdResolver aliases it to this existing authenticated page.
-  GRANT_PAGE(V_RLM_PAGE_ID,1);
+  -- Role-eligible RLM accounts receive the new RLM page, not the
+  -- independent Organization Structure page.
+  GRANT_PAGE(1000305,1);
   FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
-    GRANT_PAGE(V_RLM_PAGE_ID,V_RLM_REGIONAL_ROLES(i));
+    GRANT_PAGE(1000305,V_RLM_REGIONAL_ROLES(i));
   END LOOP;
   FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
-    GRANT_PAGE(V_RLM_PAGE_ID,V_RLM_MANAGEMENT_ROLES(i));
+    GRANT_PAGE(1000305,V_RLM_MANAGEMENT_ROLES(i));
   END LOOP;
 
   -- Common read-only data endpoints (one URL, multiple verified scopes).
-  -- PAGE_ID=1000300 is an existing shared-API metadata anchor, not a
-  -- substitute for role/page/scope checks in ExecutiveDashboardController.
+  -- PAGE_ID=1000300 is a shared API registration anchor, not an
+  -- authorization substitute. T_IAS_EXEC_PAGE_API maps its actual
+  -- dependent executive pages; all MVC session/role/scope checks remain.
   REGISTER_GET('ExecutiveDashboard','GetKpiSummary',1000300,'COMMON');
   REGISTER_GET('ExecutiveDashboard','GetRiskSummary',1000300,'COMMON');
   REGISTER_GET('ExecutiveDashboard','GetAgingSummary',1000300,'COMMON');
