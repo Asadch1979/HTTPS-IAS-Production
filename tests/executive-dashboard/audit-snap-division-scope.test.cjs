@@ -1,0 +1,64 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const root = path.resolve(__dirname,'../..');
+const read = p => fs.readFileSync(path.join(root,'AIS',p),'utf8');
+
+test('Audit Para Snap supports only FAD/MAD divisions and verifies positive audited-by children',()=>{
+ const policy=read('Models/AuditParaSnapData.cs');
+ const filters=read('Models/ExecutiveDashboardFilters.cs');
+ const map=read('Docs/sql/snap_audit_division_scope.sql');
+ assert.match(policy,/filters.SnapDivision != "FAD" && filters.SnapDivision != "MAD"/);
+ assert.match(policy,/filters.SnapDepartmentId\.HasValue/);
+ assert.match(filters,/\["snapDivision"\] = SnapDivision/);
+ assert.match(filters,/\["snapDepartmentId"\] = SnapDepartmentId/);
+ assert.match(map,/CONSTRAINT UQ_IAS_SNAP_AUDITBY UNIQUE/);
+ assert.match(map,/P_GET_CHILDREN/);
+ assert.match(map,/P_AUDITBY_ID IS NULL OR m\.AUDITBY_ID = P_AUDITBY_ID/);
+ assert.doesNotMatch(map,/INSERT INTO T_IAS_SNAP_AUDIT_SCOPE/);
+});
+test('both selectors persist on Snap tab navigation and reports',()=>{
+ const parent=read('Views/ExecutiveOverview/_AuditParaSnapFilters.cshtml');
+ const js=read('wwwroot/js/audit-para-snap.js');
+ const reports=read('wwwroot/js/executive-reports.js');
+ assert.match(parent,/name="snapDivision"/);
+ assert.match(parent,/name="snapDepartmentId"/);
+ assert.match(parent,/>Field Audit Division</);
+ assert.match(parent,/>Management Audit Division</);
+ assert.match(parent,/>All</);
+ assert.match(js,/department.value = ''/);
+ assert.match(js,/form.requestSubmit\(\)/);
+ assert.match(reports,/'snapDivision','snapDepartmentId'/);
+});
+test('web AND API both reject unknown child before returning data',()=>{
+ const page=read('Controllers/ExecutiveOverviewController.cs');
+ const api=read('Controllers/AuditParaSnapController.cs');
+ const db=read('DBConnection.AuditParaSnap.cs');
+ assert.match(page,/database\.GetAuditParaSnapDepartments\(scope, filters.SnapDivision, filters.SnapDepartmentId\)/);
+ assert.match(api,/database\.GetAuditParaSnapDepartments\(scope, filters.SnapDivision, filters.SnapDepartmentId\)/);
+ assert.match(db,/Selected Department \/ Cluster does not belong to the chosen Division/);
+ assert.match(api,/HasApiPermissionForPath/);
+ assert.match(api,/pageId != AuditParaSnapPolicy.PageId/);
+});
+test('all IAS Snap KPI, risk, trend, critical and report cursors apply the mapped audit-portfolio scope',()=>{
+ const kpi=read('Docs/sql/PKG_EXEC_DASHBOARD.sql');
+ const reports=read('Docs/sql/PKG_EXEC_REPORTS.sql');
+ const count=(s,x)=>(s.match(x)||[]).length;
+ assert.equal(count(kpi,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),6);
+ assert.equal(count(kpi,/T_IAS_SNAP_AUDIT_SCOPE m/g),3);
+ assert.equal(count(reports,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),10);
+ assert.equal(count(reports,/T_IAS_SNAP_AUDIT_SCOPE m/g),2);
+ assert.equal(count(reports,/IO_CURSOR, P_SNAP_DIVISION_CODE\);/g),5);
+ assert.match(read('DBConnection.ExecutiveDashboardReports.cs'),/P_SNAP_DIVISION_CODE/);
+ assert.match(read('DBConnection.ExecutiveDashboard.cs'),/P_SNAP_DIVISION_CODE/);
+ assert.match(read('DBConnection.AuditParaSnap.cs'),/P_SNAP_DIVISION_CODE/);
+});
+test('all scoped visualization JavaScript parses and Snap exposes table disclosure',()=>{
+ for(const name of ['audit-para-snap','cia-command-center','executive-reports'])
+   assert.doesNotThrow(()=>new vm.Script(read('wwwroot/js/'+name+'.js')));
+ assert.match(read('wwwroot/css/audit-para-snap.css'),/\.exec-snap \.exec-track > \.exec-fill \{display:block/);
+ assert.match(read('wwwroot/js/audit-para-snap.js'),/target.replaceChildren\(bars,details\)/);
+});
