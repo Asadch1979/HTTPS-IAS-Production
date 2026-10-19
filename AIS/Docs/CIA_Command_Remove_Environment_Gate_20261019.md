@@ -1,4 +1,4 @@
-# CIA Command Center: permanently remove the environment loading gate
+# CIA Command Center: remove environment gates; display nullable Oracle results
 
 ## Why this patch exists
 
@@ -27,13 +27,17 @@ were reviewed. It is not an IAS business rule.
   CIA perspective, required view, selected audit period and scope,
   page permission and independent API permission before Oracle reads.
   AJAX error isolation and mapped/unmapped issue count checks remain.
-- **DO NOT** remove `RoleDashboards:CiaWorkflowDefinitionsVerified`.
-  This independent data-quality guard keeps Delayed Audit Reports and
-  Teams Conducting Audit at `N/A` while the IAS 15-day SLA and active
-  audit stage definitions lack live approval. It does not block the
-  other three CIA KPIs or Nature of Issue categories.
+- Remove the remaining CIA environment-based
+  `RoleDashboards:CiaWorkflowDefinitionsVerified` mask. The Oracle cursor
+  returns the values for Delayed Audit Reports and Teams Conducting Audit.
+  The C# reader now uses nullable numeric conversion for both fields:
+  Oracle `NULL` displays as `N/A`; Oracle `0` displays as **0**; positive
+  counts display unchanged. The UI labels these as **under production
+  validation**, never automatically "verified" merely because populated.
 - TOP lifecycle nine KPIs, Reports A-E, Audit Para Snap, GROUP/CCO/RLM
-  parents and their unrelated gates are unchanged.
+  parents and their separate loading logic are unchanged. A request
+  to remove those other deployment switches would need a separate
+  review and release; it is not hidden inside this urgent CIA fix.
 
 ## Security prerequisite for the planned Super User-only pilot
 
@@ -67,8 +71,12 @@ role (3) in a fresh authenticated session and confirm **403**, not 200.
 4. Verify CIA source data and audit-period totals,
    `SUM(ISSUE_COUNT)+UNMAPPED_ISSUES=TOTAL_ISSUES`,
    and partial checklist mapping alerts.
-5. Confirm Delayed Audit Reports and Teams Conducting Audit still
-   display N/A until the separate workflow verification is approved.
+5. Confirm both workflow KPIs reflect the actual IAS cursor:
+   `NULL` gives N/A, `0` gives 0, and positive values give their
+   returned counts. Compare source engagement stages and deadline
+   definitions with production data *before* expanding to other roles.
+   Do not claim these business rules are validated merely because they
+   returned a number.
 6. Run focused frontend `cia-command-loading.test.cjs` and compiled
    `cia-command-policy.ps1` / `CiaCommandAccessChecks.cs` checks.
    Conduct an authenticated staging/smoke test before the production patch.
