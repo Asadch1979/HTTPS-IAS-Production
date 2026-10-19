@@ -16,8 +16,7 @@
         new { Code = "IS_AUDIT", Label = "IS Audit" }
     };
 }
-<section class="cia-command-center" aria-label="Chief Internal Auditor audit command center"
-         data-command-enabled="@(Model.CiaCommandEnabled ? "true" : "false")">
+<section class="cia-command-center" aria-label="Chief Internal Auditor audit command center">
     <div class="cia-kpi-heading"><h2>Audit assurance and execution</h2><p class="cia-section-status" data-cia-kpi-status role="status">Waiting for KPI data</p></div>
     <section class="cia-command-scorecard" data-cia-kpi-section aria-label="CIA execution KPIs">
         <article><span>Audit Plan Coverage</span><strong data-cia-kpi="planCoveragePct">N/A</strong><small data-cia-plan>Planned versus audited entities</small></article>
