@@ -93,9 +93,23 @@
             const verified = opening ? data.historicalOpeningVerified === true : data.closingAsofVerified === true;
             const estimated = opening ? data.openingEstimated === true : data.closingEstimated === true;
             const available = !position || verified || estimated;
-            const value = available ? data[key] : null;
-            if (value != null && (!Number.isSafeInteger(value) || value < 0)) throw new Error('Invalid lifecycle count.');
-            card.querySelector('[data-snap-kpi]').textContent = number(value);
+            let value = available ? data[key] : null;
+            if (periodRate) {
+                // The date-range rate is distinct from MTD and lifetime ratio.
+                // Do not invent a rate when the reconstructed opening is
+                // unavailable or the denominator is inconsistent with events.
+                const baseline = data.openingOpenParas;
+                const additions = data.paraAdded;
+                const settled = data.parasSettled;
+                const denominator = baseline == null || additions == null ? null : baseline + additions;
+                value = denominator > 0 && Number.isSafeInteger(settled) &&
+                    settled >= 0 && settled <= denominator
+                    ? Math.round(settled / denominator * 10000) / 100 : null;
+            }
+            if (value != null && (!Number.isFinite(value) || value < 0 ||
+                (!periodRate && !Number.isSafeInteger(value)))) throw new Error('Invalid lifecycle count.');
+            card.querySelector('[data-snap-kpi]').textContent =
+                value == null ? 'N/A' : number(value) + (periodRate ? '%' : '');
             card.title = position && estimated
                 ? 'As-of value reconstructed from the latest available IAS records; historical status changes may not be complete.'
                 : position && verified ? 'Current IAS position.' : 'IAS event dates within the selected range.';
