@@ -37,13 +37,13 @@ namespace AIS.Controllers
                         if (roots.Count != 1)
                             throw new ExecutiveDashboardAccessException("EntityScope", "Super User must select one verified Group, Division, GM or Region root.");
                     }
-                    return new ExecutiveDashboardScope(user, "RLM", "/Dashboard/entity_wise_obs",
+                    return new ExecutiveDashboardScope(user, "RLM", "/ExecutiveOverview/RLM",
                         groupRootId, groupRootId);
                 }
                 if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0 ||
                     !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID && !n.HasTypeConflict && n.EntityTypeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Reporting Line Management requires the authenticated entity.");
-                return new ExecutiveDashboardScope(user, "RLM", "/Dashboard/entity_wise_obs", user.UserEntityID);
+                return new ExecutiveDashboardScope(user, "RLM", "/ExecutiveOverview/RLM", user.UserEntityID);
             }
             if (user.UserRoleID == 1 && session.IsSuperUser())
             {
