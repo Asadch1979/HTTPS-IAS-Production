@@ -1263,10 +1263,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         ON dropped_o.id = k.observation_id AND k.record_type = 'ISSUE'
       WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS
-                (SELECT 1 FROM T_IAS_SNAP_AUDIT_SCOPE m
-                  WHERE m.DIVISION_CODE=P_SNAP_DIVISION_CODE
-                    AND m.AUDITBY_ID=k.audited_by_id))
+           AND (P_SNAP_DIVISION_CODE IS NULL
+                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END)
+                OR EXISTS
+                  (SELECT 1
+                     FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.ENTITY_ID = k.audited_by_id
+                      AND (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END) IN
+                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
+                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
         AND (P_REPORTING_OFFICE_ID IS NULL
              OR k.entity_id = P_REPORTING_OFFICE_ID
              OR P_REPORTING_OFFICE_ID IN
@@ -1806,10 +1815,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS
-                (SELECT 1 FROM T_IAS_SNAP_AUDIT_SCOPE m
-                  WHERE m.DIVISION_CODE=P_SNAP_DIVISION_CODE
-                    AND m.AUDITBY_ID=k.audited_by_id))
+           AND (P_SNAP_DIVISION_CODE IS NULL
+                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END)
+                OR EXISTS
+                  (SELECT 1
+                     FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.ENTITY_ID = k.audited_by_id
+                      AND (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END) IN
+                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
+                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
            AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
                 OR P_REPORTING_OFFICE_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
@@ -1938,10 +1956,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS
-                (SELECT 1 FROM T_IAS_SNAP_AUDIT_SCOPE m
-                  WHERE m.DIVISION_CODE=P_SNAP_DIVISION_CODE
-                    AND m.AUDITBY_ID=k.audited_by_id))
+           AND (P_SNAP_DIVISION_CODE IS NULL
+                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END)
+                OR EXISTS
+                  (SELECT 1
+                     FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.ENTITY_ID = k.audited_by_id
+                      AND (CASE P_SNAP_DIVISION_CODE
+                        WHEN 'FAD' THEN 112243
+                        WHEN 'MAD' THEN 113254 END) IN
+                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
+                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
            AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
                 OR P_REPORTING_OFFICE_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
