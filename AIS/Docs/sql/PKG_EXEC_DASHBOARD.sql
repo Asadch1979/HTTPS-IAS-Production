@@ -220,19 +220,10 @@ SELECT
         THEN 1 ELSE 0
     END AS is_over_1_year,
 
-    CASE
-        WHEN c.para_status = 8
-         AND (
-                c.risk = 1
-             OR NVL(c.com_cycle,0) > 3
-             OR (
-                    c.para_added_on IS NOT NULL
-                AND TRUNC(SYSDATE) - TRUNC(c.para_added_on) > 365
-                )
-             )
-        THEN 1
-        ELSE 0
-    END AS is_critical,
+    -- ZTBL definition: an OPEN high-risk para (RISK=1) is Critical.
+    -- Aging / repeat compliance cycles remain independent indicators.
+    CASE WHEN c.para_status = 8 AND c.risk = 1
+         THEN 1 ELSE 0 END AS is_critical,
 
     c.no_of_instances,
     -- Copy made at audit conclusion, NOT a new lifecycle ISSUE event.
@@ -1918,8 +1909,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           LEFT JOIN t_auditee_entities e ON e.entity_id = k.entity_id
           LEFT JOIN ais_t_au_post_compliance p ON p.com_id = k.com_id
          WHERE k.snap_open = 1
-           AND (k.risk_id = 1 OR k.snap_age > 365
-                OR (V_TODAY = 1 AND NVL(k.com_cycle,0) > 3))
+           AND k.risk_id = 1 -- ZTBL Critical = High-risk open
       )
       SELECT com_id, entity_id, entity_name, para_no, gist_of_paras,
              risk_name, aging_days, com_cycle,
