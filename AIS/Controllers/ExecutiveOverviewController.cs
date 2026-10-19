@@ -254,11 +254,14 @@ namespace AIS.Controllers
                     NeedsRlmRoot = needsRlmRoot,
                     Filters = filters,
                     FilterOptions = options,
+                    RoleOracleEnabled = configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled"),
                     IsAuditParaSnap = auditParaSnap,
+                    AuditParaSnapEnabled = configuration.GetValue<bool>("RoleDashboards:AuditParaSnapEnabled"),
                     CiaPeriods = ciaPeriods,
                     SelectedCiaPeriodId = selectedCiaPeriod,
                     IsManagementPerspective = management,
-                    ComparisonEntities = new(),
+                    ComparisonEntities = view == "regional" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
+                        ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
             }
