@@ -12,15 +12,14 @@ const {Script} = require('node:vm');
 const root = join(__dirname, '..', '..');
 const read = path => readFileSync(join(root, 'AIS', path), 'utf8');
 
-test('TeamMate workbench preserves actual assignments and all four workflow lanes', () => {
+test('TeamMate design belongs to Head Audit Department after merged PR #329', () => {
     const razor = read('Views/Shared/EngagementWorkbench.cshtml');
-    assert.match(razor,/My Engagement Workbench/);
-    assert.match(razor,/new\[\] \{ "Planning", "Fieldwork", "Review", "Reporting" \}/);
-    assert.match(razor,/stage == "Review" \|\| stage == "Reporting"/);
-    assert.match(razor,/Stage verification pending/);
-    assert.match(razor,/Url\.Action\(action, controller, new \{ engId = engagement\.EngagementId \}\)/);
-    assert.match(razor,/Model\.TeamLeadSnapshot/);
+    assert.match(razor,/Audit Teams Monitoring/);
+    assert.match(razor,/HEAD AUDIT DEPARTMENT · READ-ONLY/);
+    assert.match(razor,/Open Engagement \/ Review Work/);
     assert.match(read('wwwroot/css/engagement-workbench.css'),/\.wb-redesigned \.wb-stage-ribbon/);
+    assert.match(read('Views/HeadAuditDepartment/Review.cshtml'),/wb-review-nav/);
+    assert.match(read('Controllers/HeadAuditDepartmentController.cs'),/HasViewPermission/);
 });
 
 test('Management and regional approved layouts stay in their respective authorized views', () => {
@@ -42,21 +41,24 @@ test('Management and regional approved layouts stay in their respective authoriz
     assert.match(role,/data-role-followup-rows/);
 });
 
-test('All ten CIA issue categories render even without the Oracle feature flag', () => {
+test('CIA shows eight nature categories while preserving all ten Oracle classifications', () => {
     const razor = read('Views/ExecutiveOverview/_CiaCommandCenter.cshtml');
     const expected = [
-        'AML_CFT','ACCOUNTS','LOAN_ADVANCES','CASH_MANAGEMENT','RECORD_MANAGEMENT',
+        'AML_CFT','LOAN_ADVANCES','CASH_MANAGEMENT','RECORD_MANAGEMENT',
         'BANKING_OPERATIONS','BRANCH_GENERAL_CONTROLS','ACCOUNTING_REPORTING_RECON',
-        'MANAGEMENT_AUDIT','IS_AUDIT'
+        'MANAGEMENT_AUDIT'
     ];
     for (const category of expected) assert.ok(razor.includes('Code = "' + category + '"'), category);
-    assert.equal((razor.match(/new \{ Code = "/g) || []).length, 10);
+    assert.equal((razor.match(/new \{ Code = "/g) || []).length, 8);
+    assert.doesNotMatch(razor,/Code = "ACCOUNTS"/);
+    assert.doesNotMatch(razor,/Code = "IS_AUDIT"/);
     assert.match(razor,/data-cia-category="@category\.Code"/);
     assert.match(razor,/data-cia-category-count>N\/A/);
     assert.match(razor,/data-cia-nature-ring/);
     const js = read('wwwroot/js/cia-command-center.js');
     assert.match(js,/mapped \+ unmapped === identified/);
     assert.match(js,/known\.get\(item\.categoryCode\)/);
+    assert.match(js,/hiddenCodes = new Set\(\['ACCOUNTS','IS_AUDIT'\]\)/);
     assert.match(js,/Issue classification unavailable/);
 });
 
