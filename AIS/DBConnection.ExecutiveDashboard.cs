@@ -237,7 +237,9 @@ namespace AIS.Controllers
                     CriticalItems = ExecutiveCount(reader, "CRITICAL_ITEMS"),
                     SettledTotal = ExecutiveCount(reader, "SETTLED_TOTAL"),
                     SettledMtd = ExecutiveCount(reader, "SETTLED_MTD"),
-                    SettlementRatio = ExecutiveDecimal(reader, "SETTLEMENT_RATIO")
+                    SettlementRatio = ExecutiveDecimal(reader, "SETTLEMENT_RATIO"),
+                    SettlementMtdRate = reader.IsDBNull(reader.GetOrdinal("SETTLEMENT_MTD_RATE"))
+                        ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("SETTLEMENT_MTD_RATE"))
                 }, filters: filters);
             if (rows.Count != 1) throw new InvalidOperationException("Executive KPI cursor must contain one summary row.");
             var summary = rows[0];
