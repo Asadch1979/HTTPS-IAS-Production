@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
 @if (Model.ComparisonEntities.Any()) { <link rel="stylesheet" href="~/css/executive-entity-comparison.css" asp-append-version="true" /> }
-@if (Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" /> }
+@* RLM retains the approved dark Design 3 on ALL analysis tabs. *@
+<link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" />
 @if (Model.SelectedView.Id == "management" || Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
 <link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard-parents.css" asp-append-version="true" />
@@ -23,7 +24,7 @@
             <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
         </nav>
     }
-<section class="org exec @(Model.SelectedView.Id == "regional" ? "exec-regional" : Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
+<section class="org exec exec-regional @(Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
     @if (Model.SelectedView.Id == "regional")
     {
     <div class="regional-hero">
