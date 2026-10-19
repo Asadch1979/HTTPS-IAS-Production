@@ -12,18 +12,8 @@
         <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="aging" role="img" aria-label="Over-365-day share awaiting IAS data"><span data-mgmt-ring-value="aging">N/A</span></div>
             <div><span class="mgmt-eyebrow">AGING PRESSURE</span><h3>Over 365 days</h3><p>Aged open paras as a share of current open paras.</p></div></article>
     </div>
-    @if (Model.RoleOracleEnabled)
-    {
-        <partial name="_RoleReporting" model="Model" />
-    }
-    else
-    {
-        <section class="exec-panel mgmt-preview">
-            <span class="mgmt-eyebrow">SUBORDINATE OFFICE PERFORMANCE</span>
-            <h3>Department and Division comparisons</h3>
-            <p>The approved visual scorecard is ready. Detailed organizational comparisons and follow-up priorities require the verified read-only role-dashboard Oracle procedures. Existing scoped KPIs and risk/trend graphs above remain available.</p>
-            <div class="mgmt-pending-bars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-        </section>
-    }
+    @* Actual scoped Oracle cursors are requested only for users with
+       authorized page/API grants; no environment activation switch. *@
+    <partial name="_RoleReporting" model="Model" />
     <p class="exec-note mgmt-footer-note">Management actions are displayed as open-para follow-up priorities, not unverified approvals or remediation due dates. Capped tables are not portfolio totals.</p>
 </section>
