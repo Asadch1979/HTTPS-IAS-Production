@@ -235,6 +235,7 @@
             for (const row of subset) {
                 const line = element('div',null,'exec-bar-row'), track = element('div',null,'exec-track');
                 const fill = element('span',null,'exec-fill');
+                if (name === 'risk') fill.classList.add('snap-risk-' + String(row.bucketCode));
                 fill.style.width = row.qualityCode === 'N' ? '0%' : Math.max(0,Number(row.paraCount) / maximum * 100) + '%';
                 track.append(fill);
                 line.append(element('span',row.bucketName),track,element('strong',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
