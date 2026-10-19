@@ -8,6 +8,7 @@ const {runInNewContext} = require('node:vm');
 const source = readFileSync(join(__dirname,'../../AIS/wwwroot/js/cia-command-center.js'),'utf8');
 const codes = ['AML_CFT','ACCOUNTS','LOAN_ADVANCES','CASH_MANAGEMENT','RECORD_MANAGEMENT',
     'BANKING_OPERATIONS','BRANCH_GENERAL_CONTROLS','ACCOUNTING_REPORTING_RECON','MANAGEMENT_AUDIT','IS_AUDIT'];
+const visibleCodes = codes.filter(code => code !== 'ACCOUNTS' && code !== 'IS_AUDIT');
 const kpis = (period=12,count=7) => ({auditPeriodId:period,plannedEntities:10,auditedEntities:5,planCoveragePct:50,
     delayedAuditReports:null,fraudA1Paras:count,awaitingAuditeeResponse:3,teamsConductingAudit:null,
     auditPeriodFrom:'2026-01-01',auditPeriodTo:'2026-12-31',currentStateAsOf:'2026-10-18'});
@@ -26,7 +27,7 @@ class Element {
 function fixture({enabled=true,periodValue='12'}={}) {
     const fields=new Map();
     const field=key=> { if(!fields.has(key)) fields.set(key,new Element()); return fields.get(key); };
-    const cards=codes.map(code=>{
+    const cards=visibleCodes.map(code=>{
         const card=new Element(); card.dataset.ciaCategory=code;
         card.querySelector=key=>field(code+key);return card;
     });
@@ -37,7 +38,7 @@ function fixture({enabled=true,periodValue='12'}={}) {
         if(key==='[data-cia-category]') return cards;
         if(key==='[data-cia-workflow-note]') return [field('workflow1'),field('workflow2')];
         if(['[data-cia-category-count]','[data-cia-category-fill]','[data-cia-category-share]'].includes(key))
-            return codes.map(code=>field(code+key));
+            return visibleCodes.map(code=>field(code+key));
         return [field(key)];
     });
     const main=new Element();main.dataset.commandEnabled=String(enabled);
@@ -92,6 +93,7 @@ test('successful nature data remains when the KPI request fails',async()=>{
     const f=fixture();f.reply(1,nature());await flush();f.reply(0,null,500);await flush();
     assert.equal(f.cards[0].querySelector('[data-cia-category-count]').textContent,'1');
     assert.equal(f.field('[data-cia-total]').textContent,'10');
+    assert.equal(f.field('[data-cia-hidden]').textContent,'2');
     assert.match(f.field('[data-cia-kpi-status]').textContent,/HTTP 500/);
 });
 test('invalid JSON and HTML redirects are section-local failures',async()=>{
