@@ -87,7 +87,9 @@
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             const key = card.dataset.snapCard;
             const opening = key === 'openingOpenParas';
-            const position = opening || ['closingOpenParas','highRiskOpenParas','over1YearParas','over3ComplianceCycles'].includes(key);
+            const periodRate = key === 'periodSettlementRate';
+            const position = opening || periodRate ||
+                ['closingOpenParas','highRiskOpenParas','over1YearParas','over3ComplianceCycles'].includes(key);
             const verified = opening ? data.historicalOpeningVerified === true : data.closingAsofVerified === true;
             const estimated = opening ? data.openingEstimated === true : data.closingEstimated === true;
             const available = !position || verified || estimated;
