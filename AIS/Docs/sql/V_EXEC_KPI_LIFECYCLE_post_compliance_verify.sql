@@ -105,6 +105,10 @@ SELECT
     COUNT(CASE WHEN record_type='PARA'
                 AND para_added_on >= TRUNC(:P_FROM)
                 AND para_added_on < TRUNC(:P_TO)+1
+                AND (para_status=8 OR
+                    (para_status=9 AND
+                     (raw_para_settled_on < TRUNC(:P_FROM)
+                      OR raw_para_settled_on >= TRUNC(:P_TO)+1)))
                THEN 1 END) AS para_added,
     COUNT(CASE WHEN record_type='PARA'
                 AND para_settled_on >= TRUNC(:P_FROM)
@@ -125,3 +129,86 @@ UNION ALL SELECT 'C', COUNT(*) FROM v_exec_kpi_src_c;
 -- ISSUE_DROPPED deliberately returns NULL, not an invented zero.
 -- Historical opening/closing and risk positions remain estimates.
 -- Never use this script to update source data or relax authorized scope.
+
+-- 10: Independent, no-bind department reconciliation for 1 Jan - 20 Oct 2026.
+-- Adjust dates manually when matching another dashboard range.
+-- Includes gross addition and same-period settlement diagnostic.
+-- Does NOT bypass the application/Oracle authorization controls.
+WITH raw AS
+(
+    SELECT p.*,
+           ROW_NUMBER() OVER
+           (
+               PARTITION BY p.ind,
+                   CASE WHEN p.ind = 'A' THEN p.new_para_id
+                        ELSE p.com_id END
+               ORDER BY p.com_id
+           ) issue_rn
+      FROM ais_t_au_post_compliance p
+     WHERE p.ind IN ('A','O','C')
+       AND p.audited_by IN (112242,112248)
+),
+dept AS
+(
+    SELECT audited_by,
+           COUNT(CASE WHEN ind='A' AND new_para_id IS NOT NULL
+                            AND issue_rn = 1
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                       THEN 1 END) issue_identified,
+           COUNT(CASE WHEN ind='A' AND new_para_id IS NOT NULL
+                            AND issue_rn = 1
+                            AND NVL(issue_rectified,0)=1
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                       THEN 1 END) issue_rectified,
+           COUNT(CASE WHEN (ind <> 'A'
+                            OR NVL(issue_rectified,0)<>1)
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                            AND (para_status=8
+                               OR (para_status=9 AND
+                                   (setteled_on < DATE '2026-01-01'
+                                    OR setteled_on >= DATE '2026-10-21')))
+                       THEN 1 END) para_added,
+           COUNT(CASE WHEN (ind <> 'A'
+                            OR NVL(issue_rectified,0)<>1)
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                       THEN 1 END) gross_para_additions,
+           COUNT(CASE WHEN para_status=9
+                            AND (ind <> 'A'
+                                 OR NVL(issue_rectified,0)<>1)
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                            AND setteled_on >= DATE '2026-01-01'
+                            AND setteled_on < DATE '2026-10-21'
+                       THEN 1 END) added_and_settled_same_period,
+           COUNT(CASE WHEN para_status=9
+                            AND (ind <> 'A'
+                                 OR NVL(issue_rectified,0)<>1)
+                            AND para_added_on >= DATE '2026-01-01'
+                            AND para_added_on < DATE '2026-10-21'
+                            AND setteled_on IS NULL
+                       THEN 1 END) settled_status_missing_date
+      FROM raw
+     GROUP BY audited_by
+)
+SELECT CASE WHEN GROUPING(audited_by)=1 THEN 'ALL FAD CHECKED DEPARTMENTS'
+            ELSE TO_CHAR(audited_by) END audit_department,
+       SUM(issue_identified) issue_identified,
+       SUM(issue_rectified) issue_rectified,
+       SUM(para_added) para_added,
+       SUM(gross_para_additions) gross_para_additions,
+       SUM(added_and_settled_same_period) added_settled_same_period,
+       SUM(settled_status_missing_date) status9_missing_settlement_date
+  FROM dept
+ GROUP BY ROLLUP(audited_by)
+ ORDER BY GROUPING(audited_by) DESC,audited_by;
+
+-- Notes:
+-- - Issue Identified and Issue Rectified use the SAME PARA_ADDED_ON cohort.
+-- - Para Added uses status 8, or 9 settled outside that period.
+-- - Gross Paras Settled remains unchanged: net additions can break the
+--   usual Opening + Added - Settled = Closing movement identity.
+-- - Re-check period mapping and historical estimation separately.
