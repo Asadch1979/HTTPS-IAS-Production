@@ -1130,9 +1130,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND k.issue_identified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_identified,
 
-        -- ISSUE_RECTIFIED_ON is populated only for post-compliance
-        -- IND='A' observations whose copied ISSUE_RECTIFIED flag is 1.
-        -- Original observation statuses are not present in this fact source.
+        -- Rectified KPI: ISSUE_RECTIFIED=1, recognized in the
+        -- original PARA_ADDED_ON issue cohort. ISSUE_RECTIFIED_ON is
+        -- a compatibility alias for that date, not SETTELED_ON.
+        -- No original observation status is required here.
         NVL(SUM(CASE
           WHEN k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
@@ -1145,10 +1146,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         -- not a misleading zero. Alias unchanged for existing consumers.
         CAST(NULL AS NUMBER) AS issue_dropped,
 
+        -- Para Added: include status 8 (open) and status 9 (settled)
+        -- if their PARA_ADDED_ON falls within the selected period.
+        -- Same-period post-report settlements remain additions and
+        -- are counted separately by the Paras Settled activity KPI.
+        -- Modern pre-conclusion ISSUE_RECTIFIED=1 exclusions are
+        -- already enforced in k.para_added_on.
         NVL(SUM(CASE
           WHEN k.record_type = 'PARA'
            AND k.para_added_on >= V_FROM
            AND k.para_added_on < V_TO_EXCLUSIVE
+           AND (k.para_status = 8
+                OR (k.para_status = 9
+                    AND k.excluded_pre_finalization = 0))
           THEN 1 ELSE 0 END), 0) AS para_added,
 
         NVL(SUM(CASE
