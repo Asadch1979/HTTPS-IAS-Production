@@ -591,8 +591,12 @@ create or replace package body PKG_HD is
 
         UPDATE T_AU_OBSERVATION o
            SET o.status = NEW_STATUS_ID
-         WHERE o.id = OBS_ID;
-        COMMIT;
+         WHERE o.id = OBS_ID AND o.engplanid = engplan_id;
+         IF SQL%ROWCOUNT <> 1 THEN
+           RAISE_APPLICATION_ERROR(-20154,
+             'Observation does not belong to the selected engagement.');
+         END IF;
+         COMMIT;
         insert into t_audit_para
           (id, engplanid, obid, status, memo_number, para_no)
         values
@@ -1783,7 +1787,17 @@ create or replace package body PKG_HD is
     N_F number := 0;
     Z_R number := 0;
     B_N varchar2(100);
+    V_AUTH_COUNT number := 0;
   begin
+    -- The selected engagement must belong to the caller's authenticated audit office.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = engid AND eg.auditby_id = ENT_ID
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Engagement does not belong to the authorized audit office.');
+    END IF;
 
     select '-' into B_N from dual;
     select count(o.id)
@@ -1885,8 +1899,18 @@ create or replace package body PKG_HD is
     v_com_id      ais_t_au_post_compliance.com_id%TYPE;
     V_ENTITY_TYPE number;
     V_KIP_EXIST   Varchar2(2);
+    V_AUTH_COUNT number := 0;
 
   begin
+    -- Prevent conclusion against an engagement of another audit office.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = engid AND eg.auditby_id = ENT_ID
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Engagement does not belong to the authorized audit office.');
+    END IF;
 
     select '-' into B_N from dual;
 
