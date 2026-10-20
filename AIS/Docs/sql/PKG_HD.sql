@@ -2034,7 +2034,10 @@ create or replace package body PKG_HD is
                       inner join t_au_period p
                          on p.auditperiodid = ep.period_id
                       inner join t_au_observation_text t
-                         on t.observatsion_id = o.id
+                          on t.observatsion_id = o.id
+                         and t.id = (select max(latest.id)
+                                       from t_au_observation_text latest
+                                      where latest.observatsion_id = o.id)
                       inner join t_auditee_ent_types et
                          on et.autid = e.type_id
                       where o.engplanid = engid
@@ -2146,7 +2149,7 @@ create or replace package body PKG_HD is
                        where ac.engplanid = engid)
                 from t_au_observation o
                where o.engplanid = engid
-                 and o.memo_number = j.memo_number;
+                  and o.id = j.id;
             commit;
           end loop;
           update t_au_audit_joining j
