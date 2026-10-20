@@ -1622,7 +1622,24 @@ create or replace package body PKG_HD is
 
     B_N varchar2(100);
     P_N number;
+    V_AUTH_COUNT number := 0;
   begin
+
+    -- Verify authenticated office ownership before changing audit observations.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_observation o
+     JOIN t_au_plan_eng eg ON eg.eng_id = o.engplanid
+     WHERE o.id = obsid
+       AND (eg.auditby_id = ENT_ID OR EXISTS (
+         SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+          WHERE h.entity_id = eg.auditby_id AND ENT_ID IN
+            (h.reporting_1,h.reporting_2,h.reporting_3,
+             h.reporting_4,h.reporting_5,h.reporting_6)))
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Observation does not belong to the authorized audit office.');
+    END IF;
 
    Select nvl(max(o.final_para_no),0) into P_N from t_au_observation o
    where o.id = obsid;
@@ -3163,7 +3180,24 @@ create or replace package body PKG_HD is
                                        R_ID           in number,
                                        io_cursor      OUT t_cursor) as
     B_N varchar2(100);
+    V_AUTH_COUNT number := 0;
   begin
+
+    -- Verify authenticated office ownership before changing audit observations.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_observation o
+     JOIN t_au_plan_eng eg ON eg.eng_id = o.engplanid
+     WHERE o.id = OBID
+       AND (eg.auditby_id = ENT_ID OR EXISTS (
+         SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+          WHERE h.entity_id = eg.auditby_id AND ENT_ID IN
+            (h.reporting_1,h.reporting_2,h.reporting_3,
+             h.reporting_4,h.reporting_5,h.reporting_6)))
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Observation does not belong to the authorized audit office.');
+    END IF;
 
     select '-' into B_N from dual;
 
@@ -3218,7 +3252,24 @@ create or replace package body PKG_HD is
                                           R_ID         in number,
                                           io_cursor    OUT t_cursor) as
     B_N varchar2(100);
+    V_AUTH_COUNT number := 0;
   begin
+
+    -- Verify authenticated office ownership before changing audit observations.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_observation o
+     JOIN t_au_plan_eng eg ON eg.eng_id = o.engplanid
+     WHERE o.id = OBID
+       AND (eg.auditby_id = ENT_ID OR EXISTS (
+         SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+          WHERE h.entity_id = eg.auditby_id AND ENT_ID IN
+            (h.reporting_1,h.reporting_2,h.reporting_3,
+             h.reporting_4,h.reporting_5,h.reporting_6)))
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Observation does not belong to the authorized audit office.');
+    END IF;
 
     select '-' into B_N from dual;
 
