@@ -1067,9 +1067,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -------------------------------------------------------------------
   -- Lifecycle / At-a-Glance KPI preview.
   --
-  -- Four activity counts use inclusive Start/End calendar dates
-  -- and the tested Source A/O/C lifecycle business rules.
-  -- Issue Rectified is sourced from post-compliance ISSUE_RECTIFIED=1.
+  -- Four activity counts use inclusive Start/End calendar dates.
+  -- Issue Identified and Issue Rectified use PARA_ADDED_ON for the
+  -- same modern issue cohort; rectification also requires the
+  -- copied ISSUE_RECTIFIED=1 flag.
+  -- Para Added retains only statuses 8, or 9 settled outside range.
+  -- This is a NET qualifying addition measure, not gross additions.
+  -- Paras Settled remains a separate gross date-based measure; therefore
+  -- Opening + Para Added - Paras Settled need not equal Closing.
   -- ISSUE_DROPPED is NULL: never-transferred drops cannot be reconstructed
   -- from the post-compliance register alone.
   --
@@ -1130,9 +1135,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND k.issue_identified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_identified,
 
-        -- ISSUE_RECTIFIED_ON is populated only for post-compliance
-        -- IND='A' observations whose copied ISSUE_RECTIFIED flag is 1.
-        -- Original observation statuses are not present in this fact source.
+        -- Rectified KPI: ISSUE_RECTIFIED=1, recognized in the
+        -- original PARA_ADDED_ON issue cohort. ISSUE_RECTIFIED_ON is
+        -- a compatibility alias for that date, not SETTELED_ON.
+        -- No original observation status is required here.
         NVL(SUM(CASE
           WHEN k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
@@ -1145,10 +1151,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         -- not a misleading zero. Alias unchanged for existing consumers.
         CAST(NULL AS NUMBER) AS issue_dropped,
 
+        -- Para Added: period additions still at status 8, plus status-9
+        -- additions ONLY when SETTELED_ON is outside the selected period.
+        -- A-source ISSUE_RECTIFIED=1 is already excluded by the lifecycle
+        -- PARA_ADDED_ON projection. Null SETTELED_ON for status 9 is
+        -- unknown and is not counted as a confirmed outside-period date.
         NVL(SUM(CASE
           WHEN k.record_type = 'PARA'
            AND k.para_added_on >= V_FROM
            AND k.para_added_on < V_TO_EXCLUSIVE
+           AND (k.para_status = 8
+                OR (k.para_status = 9
+                    AND (k.raw_para_settled_on < V_FROM
+                         OR k.raw_para_settled_on >= V_TO_EXCLUSIVE)))
           THEN 1 ELSE 0 END), 0) AS para_added,
 
         NVL(SUM(CASE
@@ -1289,7 +1304,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -------------------------------------------------------------------
   -- CIA-only ISSUE event counts. No dates = all eligible historical
   -- observations within the authenticated authorized IAS scope.
-  -- Issue identified/rectified use their own event date and may differ.
+  -- Issue identified/rectified both use the PARA_ADDED_ON issue cohort;
+  -- Issue Rectified further requires copied ISSUE_RECTIFIED=1.
   -- Status-23 drops never transferred at conclusion are unavailable.
   -- The source flag distinguishes rectification from para settlement.
   -------------------------------------------------------------------
