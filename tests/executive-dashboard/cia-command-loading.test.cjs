@@ -41,7 +41,7 @@ function fixture({enabled=true,periodValue='12'}={}) {
             return visibleCodes.map(code=>field(code+key));
         return [field(key)];
     });
-    const main=new Element();main.dataset.commandEnabled=String(enabled);
+    const main=new Element();if(enabled!==null) main.dataset.commandEnabled=String(enabled);
     main.querySelector=field;main.querySelectorAll=nodesFor;
     const form=new Element(), hidden={value:periodValue};
     form.querySelector=()=>hidden;
@@ -129,9 +129,23 @@ test('empty results show real zero counts and an empty section state',async()=>{
     assert.equal(f.field('[data-cia-total]').textContent,'0');
     assert.equal(f.field('[data-cia-nature-status]').dataset.state,'empty');
 });
-test('disabled environments make no requests; a deliberately selected future period still loads',()=>{
-    const disabled=fixture({enabled:false});assert.equal(disabled.requests.length,0);
+test('obsolete environment flags no longer block CIA requests; an empty period still waits',()=>{
+    for (const enabled of [true,false,null]) {
+        const f=fixture({enabled}); assert.equal(f.requests.length,2);
+    }
     const future=fixture({periodValue:''});assert.equal(future.requests.length,0);
     future.changePeriod('2027');
     assert.equal(future.requests.length,2);assert.match(future.requests[0].url,/auditPeriodId=2027/);
+});
+test('CIA KPI display distinguishes Oracle NULL, actual zero and actual positive values',async()=>{
+    const f=fixture({enabled:false});
+    f.reply(0,{...kpis(),plannedEntities:null,auditedEntities:0,delayedAuditReports:0,
+        fraudA1Paras:null,awaitingAuditeeResponse:12,teamsConductingAudit:4});
+    f.reply(1,nature());
+    await flush();
+    assert.equal(f.field('[data-cia-kpi="delayedAuditReports"]').textContent,'0');
+    assert.equal(f.field('[data-cia-kpi="fraudA1Paras"]').textContent,'N/A');
+    assert.equal(f.field('[data-cia-kpi="awaitingAuditeeResponse"]').textContent,'12');
+    assert.equal(f.field('[data-cia-kpi="teamsConductingAudit"]').textContent,'4');
+    assert.match(f.field('[data-cia-plan]').textContent,/0 audited of N\/A planned/);
 });
