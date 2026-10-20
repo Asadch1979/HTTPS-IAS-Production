@@ -105,10 +105,7 @@ SELECT
     COUNT(CASE WHEN record_type='PARA'
                 AND para_added_on >= TRUNC(:P_FROM)
                 AND para_added_on < TRUNC(:P_TO)+1
-                AND (para_status=8 OR
-                    (para_status=9 AND
-                     (raw_para_settled_on < TRUNC(:P_FROM)
-                      OR raw_para_settled_on >= TRUNC(:P_TO)+1)))
+                AND para_status IN (8,9)
                THEN 1 END) AS para_added,
     COUNT(CASE WHEN record_type='PARA'
                 AND para_settled_on >= TRUNC(:P_FROM)
@@ -166,15 +163,13 @@ dept AS
                             OR NVL(issue_rectified,0)<>1)
                             AND para_added_on >= DATE '2026-01-01'
                             AND para_added_on < DATE '2026-10-21'
-                            AND (para_status=8
-                               OR (para_status=9 AND
-                                   (setteled_on < DATE '2026-01-01'
-                                    OR setteled_on >= DATE '2026-10-21')))
+                            AND para_status IN (8,9)
                        THEN 1 END) para_added,
            COUNT(CASE WHEN (ind <> 'A'
                             OR NVL(issue_rectified,0)<>1)
                             AND para_added_on >= DATE '2026-01-01'
                             AND para_added_on < DATE '2026-10-21'
+                            AND para_status IN (8,9)
                        THEN 1 END) gross_para_additions,
            COUNT(CASE WHEN para_status=9
                             AND (ind <> 'A'
@@ -208,7 +203,9 @@ SELECT CASE WHEN GROUPING(audited_by)=1 THEN 'ALL FAD CHECKED DEPARTMENTS'
 
 -- Notes:
 -- - Issue Identified and Issue Rectified use the SAME PARA_ADDED_ON cohort.
--- - Para Added uses status 8, or 9 settled outside that period.
--- - Gross Paras Settled remains unchanged: net additions can break the
---   usual Opening + Added - Settled = Closing movement identity.
+-- - Para Added includes both status 8 and 9, including status 9
+--   settled after report issuance within the SAME reporting period.
+-- - Gross Paras Settled is unchanged: same-period additions and
+--   settlements are correctly included in BOTH movement figures.
+-- - Historical opening/closing is still an estimate (missing events).
 -- - Re-check period mapping and historical estimation separately.
