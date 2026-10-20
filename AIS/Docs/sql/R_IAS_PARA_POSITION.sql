@@ -59,7 +59,11 @@ BEGIN
                CASE WHEN record_type = 'PARA' AND para_added_on < V_FROM
                       AND (para_status = 8 OR (para_status = 9 AND para_settled_on >= V_FROM))
                     THEN 1 ELSE 0 END AS opening_flag,
-               CASE WHEN record_type = 'PARA' AND para_added_on >= V_FROM AND para_added_on < V_TO
+               -- Match approved KPI: all status 8/9 paras added during
+               -- the period, including status 9 settled after report issue.
+               CASE WHEN record_type = 'PARA'
+                          AND para_added_on >= V_FROM AND para_added_on < V_TO
+                          AND para_status IN (8, 9)
                     THEN 1 ELSE 0 END AS added_flag,
                CASE WHEN record_type = 'PARA' AND para_added_on < V_TO
                       AND para_settled_on >= V_FROM AND para_settled_on < V_TO
@@ -74,8 +78,9 @@ BEGIN
            SUM(CASE WHEN record_type = 'ISSUE' AND issue_eligible = 1
                           AND issue_identified_on >= V_FROM AND issue_identified_on < V_TO
                     THEN 1 ELSE 0 END) AS issue_identified,
-           -- Modern post-compliance ISSUE_RECTIFIED=1 produces the event date.
-           -- Original observation status is deliberately unknown in this source.
+           -- Modern ISSUE_RECTIFIED=1 counts in its PARA_ADDED_ON cohort.
+           -- ISSUE_RECTIFIED_ON retains its compatibility alias but is not
+           -- the physical observation settlement date in this reporting mode.
            SUM(CASE WHEN record_type = 'ISSUE' AND issue_eligible = 1
                           AND issue_rectified_on >= V_FROM AND issue_rectified_on < V_TO
                     THEN 1 ELSE 0 END) AS issue_rectified,
