@@ -1163,7 +1163,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           WHEN k.record_type = 'PARA'
            AND k.para_added_on >= V_FROM
            AND k.para_added_on < V_TO_EXCLUSIVE
-           AND k.para_status IN (8, 9)
+           AND (k.para_status = 8
+                OR (k.para_status = 9
+                    AND k.excluded_pre_finalization = 0))
           THEN 1 ELSE 0 END), 0) AS para_added,
 
         NVL(SUM(CASE
