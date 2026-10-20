@@ -271,7 +271,15 @@ LEFT JOIN (
     FROM ais_t_au_post_compliance_history
     GROUP BY com_id
 ) h
-       ON h.com_id = c.com_id;
+       ON h.com_id = c.com_id
+
+-- The executive/role dashboards report POST-REPORT paras, not issues
+-- rectified during audit finalization. The source flag is 0 by default,
+-- not NULL. Keep status-9 paras settled after report issuance, including
+-- additions and settlements within the same reporting period.
+-- CASE preserves any legacy/unclassified IND values unchanged.
+WHERE CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified, 0) = 1
+           THEN 0 ELSE 1 END = 1;
 /
 CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
 
