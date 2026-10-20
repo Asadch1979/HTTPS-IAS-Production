@@ -2180,10 +2180,10 @@ create or replace package body PKG_HD is
         VALUES
           ((SELECT COALESCE(max(ll.ID) + 1, 1) FROM t_au_plan_eng_log ll),
            engid,
-           14,
-           '1',
-           sysdate,
-           'AUDIT CONCLUDED');
+            14,
+            P_NO,
+            sysdate,
+            'AUDIT CONCLUDED');
         commit;
           pkg_sm.P_Store_Sample_data(engid, 'N', P_NO, ENT_ID, R_ID);
           open io_cursor for
