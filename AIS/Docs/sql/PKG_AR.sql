@@ -2107,14 +2107,9 @@ create or replace package body PKG_AR is
                                    P_NO      in number,
                                    R_ID      in number,
                                    io_cursor OUT t_cursor) is
-    V_F number := 0;
+    -- Authorization is based on the requesting PPNO, not the team's leader.
     T_L varchar(5) := 'N';
-    Z_B number := 0;
   begin
-  
-    commit;
-    commit;
-  
     select nvl(max(tm.isteamlead), 'N')
       into T_L
       from t_au_observation op
@@ -2122,10 +2117,13 @@ create or replace package body PKG_AR is
         on op.engplanid = tl.eng_plan_id
      inner join t_au_team_members tm
         on tl.team_id = tm.t_id
+       and tm.member_ppno = tl.teammember_ppno
      where tl.teammember_ppno = P_NO
-       and op.id = OBS_ID;
-  
-    select m.role_id into V_F from t_user_maping m where m.ppno = p_no;
+       and tl.isactive = 'Y'
+       and op.id = OBS_ID
+       and exists (select 1 from t_au_plan_eng eg
+                    where eg.eng_id = op.engplanid
+                      and eg.status between 4 and 13);
     if (T_L = 'Y') then
       UPDATE t_au_observation
          SET STATUS     = C_STATUS_DROPPED,
@@ -2133,7 +2131,7 @@ create or replace package body PKG_AR is
              SETTLED_BY = NULL,
              ISSUE_RECTIFIED = 0
        WHERE ID = OBS_ID
-         AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED);
+         AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED, C_STATUS_DROPPED);
     
       if SQL%ROWCOUNT = 0 then
         raise_application_error(-20031,
@@ -2202,7 +2200,11 @@ create or replace package body PKG_AR is
           on tl.team_id = tm.t_id
          and tm.member_ppno = tl.teammember_ppno
        where o.id = obs_id
-         and tl.teammember_ppno = P_NO;
+         and tl.teammember_ppno = P_NO
+          and tl.isactive = 'Y'
+          and exists (select 1 from t_au_plan_eng eg
+                       where eg.eng_id = o.engplanid
+                         and eg.status between 4 and 13);
     vr V%rowtype;
   begin
     Open V;
@@ -2466,7 +2468,11 @@ create or replace package body PKG_AR is
        and t.teammember_ppno = m.member_ppno
      inner join t_au_observation o
         on o.engplanid = t.eng_plan_id
+      inner join t_au_plan_eng eg
+        on eg.eng_id = o.engplanid
+       and eg.status between 4 and 13
      where m.member_ppno = P_NO
+       and t.isactive = 'Y'
        and o.id = obs_id;
   
     SELECT NVL(MAX(o.engplanid), 0)
@@ -2480,6 +2486,19 @@ create or replace package body PKG_AR is
     END IF;
 
     IF R_D = 'Y' THEN
+      -- Legacy Team Lead route accepts low-risk status 4 or draft status 5.
+      -- Verify the stored risk; HTTP RISK_ID is not an authority.
+      IF NEW_STATUS_ID NOT IN (4, C_STATUS_DRAFT) THEN
+        RAISE_APPLICATION_ERROR(-20038, 'Team Lead cannot finalize or settle a final para.');
+      END IF;
+      IF NEW_STATUS_ID = 4 THEN
+        SELECT COUNT(*) INTO V_DUP_COUNT FROM t_au_observation o
+         WHERE o.id = OBS_ID AND o.severity = 3
+           AND o.status NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED, C_STATUS_DROPPED);
+        IF V_DUP_COUNT <> 1 THEN
+          RAISE_APPLICATION_ERROR(-20039, 'Team Lead may settle only an eligible low-risk observation.');
+        END IF;
+      END IF;
     
       IF NEW_STATUS_ID = C_STATUS_DRAFT AND TRIM(D_PARA_NO) IS NULL THEN
         raise_application_error(-20032,
@@ -6984,7 +7003,8 @@ create or replace package body PKG_AR is
       JOIN T_AU_PLAN_ENG P ON P.ENG_ID = T.ENG_PLAN_ID
      WHERE M.MEMBER_PPNO = P_NO
        AND P.STATUS BETWEEN 4 AND 12
-       AND T.ENG_PLAN_ID = V_ENGPLAN_ID;
+       AND T.ENG_PLAN_ID = V_ENGPLAN_ID
+        AND T.ISACTIVE = 'Y';
   
     IF V_ASSIGNED_MEMBERS = 0 THEN
       RAISE_APPLICATION_ERROR(-20003,
@@ -7192,7 +7212,10 @@ create or replace package body PKG_AR is
         ON T.TEAM_ID = M.T_ID
        AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
      WHERE M.MEMBER_PPNO = P_P_NO
-       AND T.ENG_PLAN_ID = P_ENG_ID;
+       AND T.ENG_PLAN_ID = P_ENG_ID
+        AND T.ISACTIVE = 'Y'
+        AND EXISTS (SELECT 1 FROM t_au_plan_eng e
+                     WHERE e.eng_id = P_ENG_ID AND e.status BETWEEN 4 AND 13);
   
     IF V_IS_TEAM_LEAD <> 'Y' THEN
       OPEN IO_CURSOR FOR
@@ -7324,7 +7347,10 @@ create or replace package body PKG_AR is
        AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
      WHERE M.MEMBER_PPNO = P_P_NO
        AND T.ENG_PLAN_ID = P_ENG_ID
-       AND M.ISTEAMLEAD = 'Y';
+        AND T.ISACTIVE = 'Y'
+        AND M.ISTEAMLEAD = 'Y'
+        AND EXISTS (SELECT 1 FROM t_au_plan_eng e
+                     WHERE e.eng_id = P_ENG_ID AND e.status BETWEEN 4 AND 13);
   
     IF V_ACCESS_COUNT = 0 THEN
       P_REMARKS := 'You are not authorized to update this engagement.';
