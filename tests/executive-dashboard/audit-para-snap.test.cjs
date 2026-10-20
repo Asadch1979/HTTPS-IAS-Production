@@ -48,12 +48,21 @@ test('Snap historical queries use dated lifecycle evidence and explicit missing 
         assert.match(text,/FROM V_EXEC_KPI_LIFECYCLE k/);
         assert.doesNotMatch(text,/V_EXEC_PARA_BASE|P_GET_KPI_SUMMARY|P_GET_RISK_SUMMARY/);
     }
-    assert.match(distribution,/c\.dataset = 'cycle' AND V_TODAY = 0 THEN CAST\(NULL AS NUMBER\)/);
+    assert.match(distribution,/WITH history_asof AS/);
+    assert.match(distribution,/h\.comment_on < V_TO/);
+    assert.match(distribution,/h\.com_cycle IS NOT NULL/);
+    assert.match(distribution,/WHEN h\.recorded_cycle IS NOT NULL THEN h\.recorded_cycle/);
+    assert.match(distribution,/Unknown cycle/);
+    assert.doesNotMatch(distribution,/c\.dataset = 'cycle' AND V_TODAY = 0 THEN CAST\(NULL AS NUMBER\)/);
     assert.match(distribution,/para_settled_on >= GREATEST\(m.month_start,V_FROM\)/);
     assert.match(distribution,/para_settled_on < LEAST\(ADD_MONTHS\(m.month_start,1\),V_TO\)/);
     assert.match(distribution,/COUNT\(CASE WHEN s.risk_id = 1 THEN s.com_id END\)/);
     assert.match(distribution,/high_risk_count, quality_code/);
-    assert.match(critical,/CASE WHEN V_TODAY = 1 THEN k.com_cycle END/);
+    assert.match(critical,/WITH history_asof AS/);
+    assert.match(critical,/k\.snap_cycle AS com_cycle/);
+    assert.match(critical,/MAX\(h\.comment_on\) AS last_movement_on/);
+    assert.match(critical,/AS days_since_movement/);
+    assert.doesNotMatch(critical,/CASE WHEN V_TODAY = 1 THEN k.com_cycle END/);
     assert.match(critical,/AND k.risk_id = 1 -- ZTBL Critical = High-risk open/);
     assert.doesNotMatch(critical,/k.snap_age > 365\s+OR/);
     assert.match(critical,/WHERE rn <= P_MAX_ROWS/);
