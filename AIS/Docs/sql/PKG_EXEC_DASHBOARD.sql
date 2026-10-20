@@ -1071,10 +1071,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- Issue Identified and Issue Rectified use PARA_ADDED_ON for the
   -- same modern issue cohort; rectification also requires the
   -- copied ISSUE_RECTIFIED=1 flag.
-  -- Para Added retains only statuses 8, or 9 settled outside range.
-  -- This is a NET qualifying addition measure, not gross additions.
-  -- Paras Settled remains a separate gross date-based measure; therefore
-  -- Opening + Para Added - Paras Settled need not equal Closing.
+  -- Para Added counts every eligible status-8 or status-9 para added
+  -- in the selected period, INCLUDING status-9 paras settled in that
+  -- same period after the audit report was issued.
+  -- Paras Settled remains a separate settlement-date activity KPI.
+  -- Gross movement: Opening + Para Added - Paras Settled = Closing,
+  -- subject to existing historical event/status estimation limits.
   -- ISSUE_DROPPED is NULL: never-transferred drops cannot be reconstructed
   -- from the post-compliance register alone.
   --
@@ -1151,19 +1153,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         -- not a misleading zero. Alias unchanged for existing consumers.
         CAST(NULL AS NUMBER) AS issue_dropped,
 
-        -- Para Added: period additions still at status 8, plus status-9
-        -- additions ONLY when SETTELED_ON is outside the selected period.
-        -- A-source ISSUE_RECTIFIED=1 is already excluded by the lifecycle
-        -- PARA_ADDED_ON projection. Null SETTELED_ON for status 9 is
-        -- unknown and is not counted as a confirmed outside-period date.
+        -- Para Added: include status 8 (open) and status 9 (settled)
+        -- if their PARA_ADDED_ON falls within the selected period.
+        -- Same-period post-report settlements remain additions and
+        -- are counted separately by the Paras Settled activity KPI.
+        -- Modern pre-conclusion ISSUE_RECTIFIED=1 exclusions are
+        -- already enforced in k.para_added_on.
         NVL(SUM(CASE
           WHEN k.record_type = 'PARA'
            AND k.para_added_on >= V_FROM
            AND k.para_added_on < V_TO_EXCLUSIVE
-           AND (k.para_status = 8
-                OR (k.para_status = 9
-                    AND (k.raw_para_settled_on < V_FROM
-                         OR k.raw_para_settled_on >= V_TO_EXCLUSIVE)))
+           AND k.para_status IN (8, 9)
           THEN 1 ELSE 0 END), 0) AS para_added,
 
         NVL(SUM(CASE
