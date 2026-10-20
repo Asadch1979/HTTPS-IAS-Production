@@ -1069,8 +1069,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   --
   -- Four activity counts use inclusive Start/End calendar dates
   -- and the tested Source A/O/C lifecycle business rules.
-  -- Issue Rectified excludes status 23 drops. ISSUE_DROPPED remains
-  -- an independent diagnostic of drops before audit conclusion.
+  -- Issue Rectified is sourced from post-compliance ISSUE_RECTIFIED=1.
+  -- ISSUE_DROPPED is NULL: never-transferred drops cannot be reconstructed
+  -- from the post-compliance register alone.
   --
   -- Historical opening/closing balances and associated end-date risk,
   -- aging and cycle counts are DATE-BASED ESTIMATES (E). A historical
@@ -1129,24 +1130,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
            AND k.issue_identified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_identified,
 
+        -- ISSUE_RECTIFIED_ON is populated only for post-compliance
+        -- IND='A' observations whose copied ISSUE_RECTIFIED flag is 1.
+        -- Original observation statuses are not present in this fact source.
         NVL(SUM(CASE
           WHEN k.record_type = 'ISSUE'
-           AND k.observation_status IN (4, 9)
+           AND k.issue_eligible = 1
            AND k.issue_rectified_on >= V_FROM
            AND k.issue_rectified_on < V_TO_EXCLUSIVE
           THEN 1 ELSE 0 END), 0) AS issue_rectified,
 
-        -- ISSUE_RECTIFIED_ON is necessarily NULL for STATUS=23.
-        -- A dropped observation is a separate pre-conclusion disposition.
-        NVL(SUM(CASE
-          WHEN k.record_type = 'ISSUE'
-           AND k.issue_eligible = 1
-           AND k.observation_status = 23
-           AND dropped_o.stelled_on >= V_FROM
-           AND dropped_o.stelled_on < V_TO_EXCLUSIVE
-           AND k.report_concluded_on IS NOT NULL
-           AND dropped_o.stelled_on < k.report_concluded_on
-          THEN 1 ELSE 0 END), 0) AS issue_dropped,
+        -- The post-compliance register does not contain status-23
+        -- observations never transferred at conclusion. Return unknown,
+        -- not a misleading zero. Alias unchanged for existing consumers.
+        CAST(NULL AS NUMBER) AS issue_dropped,
 
         NVL(SUM(CASE
           WHEN k.record_type = 'PARA'
@@ -1257,10 +1254,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           AS closing_asof_verified
 
       FROM V_EXEC_KPI_LIFECYCLE k
-      -- Observation ID is the modern source primary key. Join only ISSUE
-      -- rows so legacy PARA rows cannot contribute to the drop diagnostic.
-      LEFT JOIN t_au_observation dropped_o
-        ON dropped_o.id = k.observation_id AND k.record_type = 'ISSUE'
       WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
            AND (P_SNAP_DIVISION_CODE IS NULL
@@ -1297,7 +1290,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- CIA-only ISSUE event counts. No dates = all eligible historical
   -- observations within the authenticated authorized IAS scope.
   -- Issue identified/rectified use their own event date and may differ.
-  -- Status 23 (Drop by Team Lead) is excluded from rectifications.
+  -- Status-23 drops never transferred at conclusion are unavailable.
+  -- The source flag distinguishes rectification from para settlement.
   -------------------------------------------------------------------
   PROCEDURE P_GET_CIA_ISSUES(
       P_DASHBOARD_TYPE IN VARCHAR2,
@@ -1336,7 +1330,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                        k.issue_identified_on < V_TO_EXCLUSIVE))
                  THEN 1 ELSE 0 END), 0) AS issue_identified,
              NVL(SUM(CASE
-                 WHEN k.observation_status IN (4, 9)
+                 WHEN k.issue_eligible = 1
                   AND k.issue_rectified_on IS NOT NULL
                   AND (V_FROM IS NULL OR
                       (k.issue_rectified_on >= V_FROM AND
@@ -1670,7 +1664,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                o.v_cat_nature_id AS violation_sub_id,
                k.audited_by_id
           FROM v_exec_kpi_lifecycle k
-          JOIN t_au_observation o ON o.id = k.observation_id
+          LEFT JOIN t_au_observation o ON o.id = k.observation_id
           LEFT JOIN v_ias_cia_issue_checklist_root croot
             ON croot.observation_id = k.observation_id
          WHERE k.record_type = 'ISSUE'
