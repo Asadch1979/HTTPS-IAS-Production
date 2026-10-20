@@ -59,13 +59,11 @@ BEGIN
                CASE WHEN record_type = 'PARA' AND para_added_on < V_FROM
                       AND (para_status = 8 OR (para_status = 9 AND para_settled_on >= V_FROM))
                     THEN 1 ELSE 0 END AS opening_flag,
-               -- Match the live lifecycle cursor: qualifying net additions.
+               -- Match approved KPI: all status 8/9 paras added during
+               -- the period, including status 9 settled after report issue.
                CASE WHEN record_type = 'PARA'
                           AND para_added_on >= V_FROM AND para_added_on < V_TO
-                          AND (para_status = 8 OR
-                               (para_status = 9 AND
-                                (raw_para_settled_on < V_FROM
-                                 OR raw_para_settled_on >= V_TO)))
+                          AND para_status IN (8, 9)
                     THEN 1 ELSE 0 END AS added_flag,
                CASE WHEN record_type = 'PARA' AND para_added_on < V_TO
                       AND para_settled_on >= V_FROM AND para_settled_on < V_TO
