@@ -1472,149 +1472,188 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
   -- never alters other executive KPI procedures or perspectives.
   -------------------------------------------------------------------
   PROCEDURE P_GET_CIA_EXEC_KPIS(
-      P_DASHBOARD_TYPE IN VARCHAR2,
-      P_ENTITY_ID IN NUMBER,
-      P_AUDIT_PERIOD_ID IN NUMBER,
-      P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
-      P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
-      P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
-      IO_CURSOR OUT SYS_REFCURSOR) AS
+    P_DASHBOARD_TYPE IN VARCHAR2,
+    P_ENTITY_ID IN NUMBER,
+    P_AUDIT_PERIOD_ID IN NUMBER,
+    P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
+    P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+    P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
+    IO_CURSOR OUT SYS_REFCURSOR
+) AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
-  BEGIN
+BEGIN
+    -- Only the Audited By department controls audit portfolio scope.
+    -- Retain obsolete parameters temporarily for C# compatibility.
+    IF P_ENTITY_ID IS NOT NULL
+       OR P_ENTITY_TYPE_ID IS NOT NULL
+       OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+        RAISE_APPLICATION_ERROR(
+            -20048,
+            'CIA KPI supports Audited By filtering only.'
+        );
+    END IF;
+
     RESOLVE_CIA_COMMAND_PERIOD(
-      P_DASHBOARD_TYPE, P_ENTITY_ID, P_AUDIT_PERIOD_ID,
-      V_FROM, V_TO_EXCLUSIVE);
+        P_DASHBOARD_TYPE,
+        NULL,
+        P_AUDIT_PERIOD_ID,
+        V_FROM,
+        V_TO_EXCLUSIVE
+    );
 
     OPEN IO_CURSOR FOR
-      WITH plan_scope AS
-      (
-        SELECT p.id AS plan_id, p.entity_id
-          FROM t_au_plan p
-          LEFT JOIN v_exec_entity_scope s ON s.entity_id = p.entity_id
-         WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
-           AND p.status IN (1, 2)
-           AND (P_ENTITY_TYPE_ID IS NULL
-                OR p.entity_typeid = P_ENTITY_TYPE_ID)
-           AND (P_AUDITED_BY_ID IS NULL
-                OR p.auditedby = P_AUDITED_BY_ID)
-           AND (P_REPORTING_OFFICE_ID IS NULL
-                OR p.entity_id = P_REPORTING_OFFICE_ID
-                OR P_REPORTING_OFFICE_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-           AND (P_ENTITY_ID IS NULL OR p.entity_id = P_ENTITY_ID
-                OR P_ENTITY_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-      ),
-      engagement_scope AS
-      (
-        SELECT e.eng_id, e.plan_id, e.period_id, e.entity_id,
-               e.auditby_id, e.status, e.team_id,
-               e.audit_startdate, e.audit_enddate,
+    WITH plan_scope AS
+    (
+        SELECT p.id AS plan_id,
+               p.entity_id,
+               p.auditedby AS auditby_id
+        FROM t_au_plan p
+        INNER JOIN v_exec_entity_scope s
+            ON s.entity_id = p.auditedby
+        WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
+          AND p.status IN (1, 2)
+          AND s.parent_id IN (112243, 113254)
+          AND (
+              P_AUDITED_BY_ID IS NULL
+              OR s.entity_id = P_AUDITED_BY_ID
+          )
+    ),
+    engagement_scope AS
+    (
+        SELECT e.eng_id,
+               e.plan_id,
+               e.period_id,
+               e.entity_id,
+               e.auditby_id,
+               e.status,
+               e.team_id,
+               e.audit_startdate,
+               e.audit_enddate,
                e.operation_startdate
-          FROM t_au_plan_eng e
-          LEFT JOIN t_auditee_entities a ON a.entity_id = e.entity_id
-          LEFT JOIN v_exec_entity_scope s ON s.entity_id = e.entity_id
-         WHERE (P_ENTITY_TYPE_ID IS NULL
-                OR a.type_id = P_ENTITY_TYPE_ID)
-           AND (P_AUDITED_BY_ID IS NULL
-                OR e.auditby_id = P_AUDITED_BY_ID)
-           AND (P_REPORTING_OFFICE_ID IS NULL
-                OR e.entity_id = P_REPORTING_OFFICE_ID
-                OR P_REPORTING_OFFICE_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-           AND (P_ENTITY_ID IS NULL OR e.entity_id = P_ENTITY_ID
-                OR P_ENTITY_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-      ),
-      -- Planned/audited are ENTITY counts, not plan-row counts. A valid
-      -- concluded engagement may have a different or NULL PLAN_ID while
-      -- matching the same entity and selected IAS audit period.
-      completed_entities AS
-      (
+        FROM t_au_plan_eng e
+        INNER JOIN t_auditee_entities a
+            ON a.entity_id = e.entity_id
+        INNER JOIN v_exec_entity_scope s
+            ON s.entity_id = e.auditby_id
+        WHERE s.parent_id IN (112243, 113254)
+          AND (
+              P_AUDITED_BY_ID IS NULL
+              OR s.entity_id = P_AUDITED_BY_ID
+          )
+    ),
+    completed_entities AS
+    (
         SELECT DISTINCT e.entity_id
-          FROM engagement_scope e
-         WHERE e.entity_id IS NOT NULL
-           AND e.period_id = P_AUDIT_PERIOD_ID
-           AND (e.status = 14 OR EXISTS
-               (SELECT 1 FROM t_au_plan_eng_log l
-                 WHERE l.e_id = e.eng_id AND l.status_id = 14))
-      ),
-      coverage AS
-      (
-        SELECT COUNT(DISTINCT p.entity_id) AS planned_entities,
-               COUNT(DISTINCT CASE WHEN ce.entity_id IS NOT NULL
-                                   THEN p.entity_id END)
-                 AS audited_entities
-          FROM plan_scope p
-          LEFT JOIN completed_entities ce
+        FROM engagement_scope e
+        WHERE e.entity_id IS NOT NULL
+          AND e.period_id = P_AUDIT_PERIOD_ID
+          AND (
+              e.status = 14
+              OR EXISTS
+              (
+                  SELECT 1
+                  FROM t_au_plan_eng_log l
+                  WHERE l.e_id = e.eng_id
+                    AND l.status_id = 14
+              )
+          )
+    ),
+    coverage AS
+    (
+        SELECT COUNT(DISTINCT p.entity_id)
+                   AS planned_entities,
+               COUNT(DISTINCT
+                   CASE
+                       WHEN ce.entity_id IS NOT NULL
+                       THEN p.entity_id
+                   END
+               ) AS audited_entities
+        FROM plan_scope p
+        LEFT JOIN completed_entities ce
             ON ce.entity_id = p.entity_id
-      ),
-      delayed AS
-      (
-        SELECT COUNT(DISTINCT e.eng_id) AS delayed_audit_reports
-          FROM engagement_scope e
-         WHERE e.status BETWEEN 4 AND 13
-           AND e.audit_enddate + 15 < TRUNC(SYSDATE)
-           AND NOT EXISTS
-               (SELECT 1 FROM t_au_plan_eng_log l
-                 WHERE l.e_id = e.eng_id AND l.status_id = 14)
-      ),
-      fraud AS
-      (
-        SELECT COUNT(DISTINCT o.id) AS fraud_a1_paras
-          FROM t_au_observation o
-          JOIN engagement_scope e ON e.eng_id = o.engplanid
-         WHERE o.annex = 1
-           AND o.status IN (8, 9)
-           AND e.status = 14
-           AND e.period_id = P_AUDIT_PERIOD_ID
-           AND o.entereddate >= V_FROM
-           AND o.entereddate < V_TO_EXCLUSIVE
-      ),
-      awaiting AS
-      (
-        SELECT COUNT(DISTINCT o.id) AS awaiting_auditee_response
-          FROM t_au_observation o
-          JOIN engagement_scope e ON e.eng_id = o.engplanid
-         WHERE o.status = 2
-      ),
-      active_teams AS
-      (
-        SELECT COUNT(DISTINCT e.team_id) AS teams_conducting_audit
-          FROM engagement_scope e
-         WHERE e.team_id IS NOT NULL
-           AND e.status BETWEEN 4 AND 11
-           AND TRUNC(NVL(e.operation_startdate, e.audit_startdate))
-               <= TRUNC(SYSDATE)
-           AND NOT EXISTS
-               (SELECT 1 FROM t_au_plan_eng_log l
-                 WHERE l.e_id = e.eng_id AND l.status_id = 14)
-      )
-      SELECT c.planned_entities,
-             c.audited_entities,
-             ROUND(CASE WHEN c.planned_entities = 0 THEN NULL
-                        ELSE c.audited_entities * 100
-                             / c.planned_entities END, 2)
-               AS plan_coverage_pct,
-             d.delayed_audit_reports,
-             f.fraud_a1_paras,
-             a.awaiting_auditee_response,
-             t.teams_conducting_audit,
-             P_AUDIT_PERIOD_ID AS audit_period_id,
-             V_FROM AS audit_period_from,
-             V_TO_EXCLUSIVE - 1 AS audit_period_to,
-             TRUNC(SYSDATE) AS current_state_as_of
-        FROM coverage c
-        CROSS JOIN delayed d
-        CROSS JOIN fraud f
-        CROSS JOIN awaiting a
-        CROSS JOIN active_teams t;
-  END P_GET_CIA_EXEC_KPIS;
+    ),
+    delayed AS
+    (
+        SELECT COUNT(DISTINCT e.eng_id)
+                   AS delayed_audit_reports
+        FROM engagement_scope e
+        WHERE e.status BETWEEN 4 AND 13
+          AND e.audit_enddate + 15 < TRUNC(SYSDATE)
+          AND NOT EXISTS
+          (
+              SELECT 1
+              FROM t_au_plan_eng_log l
+              WHERE l.e_id = e.eng_id
+                AND l.status_id = 14
+          )
+    ),
+    fraud AS
+    (
+        SELECT COUNT(DISTINCT o.id)
+                   AS fraud_a1_paras
+        FROM t_au_observation o
+        INNER JOIN engagement_scope e
+            ON e.eng_id = o.engplanid
+        WHERE o.annex = 1
+          AND o.status IN (8, 9)
+          AND e.status = 14
+          AND e.period_id = P_AUDIT_PERIOD_ID
+          AND o.entereddate >= V_FROM
+          AND o.entereddate < V_TO_EXCLUSIVE
+    ),
+    awaiting AS
+    (
+        SELECT COUNT(DISTINCT o.id)
+                   AS awaiting_auditee_response
+        FROM t_au_observation o
+        INNER JOIN engagement_scope e
+            ON e.eng_id = o.engplanid
+        WHERE o.status = 2
+    ),
+    active_teams AS
+    (
+        SELECT COUNT(DISTINCT e.team_id)
+                   AS teams_conducting_audit
+        FROM engagement_scope e
+        WHERE e.team_id IS NOT NULL
+          AND e.status BETWEEN 4 AND 11
+          AND TRUNC(
+              NVL(e.operation_startdate, e.audit_startdate)
+          ) <= TRUNC(SYSDATE)
+          AND NOT EXISTS
+          (
+              SELECT 1
+              FROM t_au_plan_eng_log l
+              WHERE l.e_id = e.eng_id
+                AND l.status_id = 14
+          )
+    )
+    SELECT c.planned_entities,
+           c.audited_entities,
+           ROUND(
+               CASE
+                   WHEN c.planned_entities = 0 THEN NULL
+                   ELSE c.audited_entities * 100
+                        / c.planned_entities
+               END, 2
+           ) AS plan_coverage_pct,
+           d.delayed_audit_reports,
+           f.fraud_a1_paras,
+           a.awaiting_auditee_response,
+           t.teams_conducting_audit,
+           P_AUDIT_PERIOD_ID AS audit_period_id,
+           V_FROM AS audit_period_from,
+           V_TO_EXCLUSIVE - 1 AS audit_period_to,
+           TRUNC(SYSDATE) AS current_state_as_of
+    FROM coverage c
+    CROSS JOIN delayed d
+    CROSS JOIN fraud f
+    CROSS JOIN awaiting a
+    CROSS JOIN active_teams t;
+
+END P_GET_CIA_EXEC_KPIS;
+
 
   -------------------------------------------------------------------
   -- CIA Nature of Issue Identified (exactly ten rows).

@@ -667,7 +667,7 @@ create or replace package body PKG_HD is
         select m.entity_id as branchentityid, m.c_name as branchname
           from v_get_parent_office m
          WHERE (m.parent_id = Entityid or m.parent_code = Entityid)
-           and m.relation_type_id in (4, 5)
+          -- and m.relation_type_id in (3,4, 5)
         -- and m.auditedby = ENT_ID
          order by m.c_name;
     elsIF R_ID in (2, 6, 7,9) then
@@ -1968,8 +1968,8 @@ create or replace package body PKG_HD is
                                   end)
                                end)
                             end) as c_stage,
-                            o.status,
-                            CASE WHEN o.status = 9 THEN NVL(o.issue_rectified, 0) ELSE 0 END AS issue_rectified,
+                            Case when o.status = 4 then 9 else o.status END as status,
+                            CASE WHEN o.status in (4,9) THEN NVL(o.issue_rectified, 0) ELSE 0 END AS issue_rectified,
                             o.final_para_no,
                             t.headings,
                             o.entereddate,
@@ -1997,7 +1997,7 @@ create or replace package body PKG_HD is
                       inner join t_auditee_ent_types et
                          on et.autid = e.type_id
                       where o.engplanid = engid
-                        and o.status in (8, 9)
+                        and o.status in (4, 8, 9)
                         and not exists
                       (select 'z'
                                from ais_t_au_post_compliance cc
@@ -2116,7 +2116,7 @@ create or replace package body PKG_HD is
           -- Re-conclusion skips existing modern paras in the insert loop. Refresh
           -- only their copied flag, preserving existing para balances and statuses.
           UPDATE ais_t_au_post_compliance c
-             SET c.issue_rectified = (SELECT CASE WHEN o.status = 9 THEN NVL(o.issue_rectified,0) ELSE 0 END
+             SET c.issue_rectified = (SELECT CASE WHEN o.status in (4,9) THEN NVL(o.issue_rectified,0) ELSE 0 END
                                        FROM t_au_observation o WHERE o.id = c.new_para_id)
            WHERE c.ind = 'A' AND EXISTS (SELECT 1 FROM t_au_observation o
                                         WHERE o.id = c.new_para_id AND o.engplanid = engid);
