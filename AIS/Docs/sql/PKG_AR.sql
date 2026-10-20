@@ -2554,20 +2554,21 @@ create or replace package body PKG_AR is
                                         o.Draft_Para_Added_On
                                      END,
              o.stelled_on = CASE
-                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
-                               SYSDATE
-                              ELSE
-                               NULL
-                            END,
+                               WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED) THEN
+                                SYSDATE
+                               ELSE
+                                NULL
+                             END,
              o.settled_by = CASE
-                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
-                               P_NO
-                              ELSE
-                               NULL
-                            END,
-             o.issue_rectified = CASE WHEN NEW_STATUS_ID = C_STATUS_SETTLED
-                                      AND EXISTS (SELECT 1 FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
-                                      THEN 1 ELSE 0 END
+                               WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED) THEN
+                                P_NO
+                               ELSE
+                                NULL
+                             END,
+             o.issue_rectified = CASE WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED)
+                                       AND EXISTS (SELECT 1 FROM t_au_plan_eng eg
+                                                   WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
+                                       THEN 1 ELSE 0 END
        WHERE o.id = OBS_ID;
       COMMIT;
       open io_cursor for
@@ -2576,6 +2577,19 @@ create or replace package body PKG_AR is
          where r.statusid = NEW_STATUS_ID;
     else
       if (R_ID in (6, 7, 15) and R_D = 'O') then
+        SELECT COUNT(*) INTO V_DUP_COUNT FROM t_au_plan_eng eg
+         WHERE eg.eng_id = V_ENGPLANID
+           AND (eg.auditby_id = ENT_ID OR EXISTS (
+             SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+              WHERE h.entity_id = eg.auditby_id AND ENT_ID IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,
+                 h.reporting_4,h.reporting_5,h.reporting_6)))
+           AND EXISTS (SELECT 1 FROM t_user_maping m
+                        WHERE m.ppno = P_NO AND m.role_id = R_ID);
+        IF V_DUP_COUNT <> 1 THEN
+          RAISE_APPLICATION_ERROR(-20153,
+            'Observation does not belong to the authorized audit office.');
+        END IF;
         UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE e
            SET e.REMARKS         = Remarks,
                E.LASTUPDATEDBY   = P_NO,
@@ -7076,6 +7090,7 @@ create or replace package body PKG_AR is
     V_ENGPLAN_ID NUMBER;
     V_ENG_STATUS NUMBER;
     V_DUP_COUNT  NUMBER := 0;
+    V_AUTH_COUNT NUMBER := 0;
   BEGIN
     IF P_NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
       RAISE_APPLICATION_ERROR(-20010,
@@ -7106,6 +7121,20 @@ create or replace package body PKG_AR is
     SELECT eg.status INTO V_ENG_STATUS FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLAN_ID;
     IF V_ENG_STATUS = 14 THEN
       RAISE_APPLICATION_ERROR(-20037, 'Finalization requires an active audit; reverse the concluded audit through the authorized workflow first.');
+    END IF;
+    -- Departmental authority must be limited to the authenticated audit office.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = V_ENGPLAN_ID
+       AND (eg.auditby_id = P_ENT_ID OR EXISTS (
+         SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+          WHERE h.entity_id = eg.auditby_id AND P_ENT_ID IN
+            (h.reporting_1,h.reporting_2,h.reporting_3,
+             h.reporting_4,h.reporting_5,h.reporting_6)))
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = P_R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Observation does not belong to the authorized audit office.');
     END IF;
   
     IF P_NEW_STATUS_ID = C_STATUS_FINAL THEN
