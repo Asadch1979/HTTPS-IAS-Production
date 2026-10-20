@@ -1470,6 +1470,13 @@ create or replace package body PKG_AR is
     V_ENTEREDDATE   T_AU_OBSERVATION.ENTEREDDATE%type;
     V_AUTH_COUNT NUMBER := 0;
   begin
+    -- Creation must not bypass the review/finalization workflow by
+    -- accepting a caller-selected final, settled or dropped status.
+    IF STATUS IS NULL OR STATUS <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20152,
+        'A new observation must enter IAS in initial status 1.');
+    END IF;
+
     -- A caller can record an observation only for their active assigned audit.
     SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
      WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
@@ -1723,6 +1730,13 @@ create or replace package body PKG_AR is
     V_ENTEREDDATE T_AU_OBSERVATION.ENTEREDDATE%type;
     V_AUTH_COUNT NUMBER := 0;
   begin
+    -- Creation must not bypass the review/finalization workflow by
+    -- accepting a caller-selected final, settled or dropped status.
+    IF STATUS IS NULL OR STATUS <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20152,
+        'A new observation must enter IAS in initial status 1.');
+    END IF;
+
     -- A caller can record an observation only for their active assigned audit.
     SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
      WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
@@ -2099,7 +2113,7 @@ create or replace package body PKG_AR is
       into V_F
       from t_au_observation s
      where s.id = OBS_ID;
-    if (V_F < 8 and N_F != 0) then
+    if (V_F IN (1, 2, 3, 5, 6, 7) and N_F != 0) then
       if (subprocessid = 0) then
         update T_AU_OBSERVATION_TEXT ot
            set ot.text            = obtext,
