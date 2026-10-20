@@ -2,7 +2,9 @@
 -- IAS calls PKG_RPT.R_IAS_PARA_POSITION. Do not run this file to replace or "fix"
 -- that package. Verify its live ALL_ARGUMENTS signature and approved package body.
 -- Preserved below solely for calculation/history comparison.
--- Oracle 18c. Compile V_EXEC_KPI_SRC_A/O/C and V_EXEC_KPI_LIFECYCLE first.
+-- Oracle 18c. Compile V_EXEC_KPI_LIFECYCLE, then compatibility SRC_A/O/C.
+-- Historical DATE-based KPI totals are estimates; pre-transfer drops and
+-- audit-conclusion timestamps cannot be recovered from post-compliance alone.
 -- Standalone procedure: leaves PKG_RPT.R_FAD_MONTHLY_REVIEW unchanged.
 CREATE OR REPLACE PROCEDURE R_IAS_PARA_POSITION(
     P_NO IN NUMBER, ENT_ID IN NUMBER, R_ID IN NUMBER, R_T IN NUMBER,
@@ -72,8 +74,9 @@ BEGIN
            SUM(CASE WHEN record_type = 'ISSUE' AND issue_eligible = 1
                           AND issue_identified_on >= V_FROM AND issue_identified_on < V_TO
                     THEN 1 ELSE 0 END) AS issue_identified,
-           -- Matches P_GET_KPI_LIFECYCLE: dropped status 23 is separate from rectification.
-           SUM(CASE WHEN record_type = 'ISSUE' AND observation_status IN (4, 9)
+           -- Modern post-compliance ISSUE_RECTIFIED=1 produces the event date.
+           -- Original observation status is deliberately unknown in this source.
+           SUM(CASE WHEN record_type = 'ISSUE' AND issue_eligible = 1
                           AND issue_rectified_on >= V_FROM AND issue_rectified_on < V_TO
                     THEN 1 ELSE 0 END) AS issue_rectified,
            SUM(added_flag) AS para_added,
