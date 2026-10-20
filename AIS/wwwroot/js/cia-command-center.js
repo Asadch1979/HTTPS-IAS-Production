@@ -24,7 +24,7 @@
             401: 'Your IAS session expired. Sign in again.',
             403: 'CIA page or API permission is missing.',
             500: 'The server could not load this section.',
-            503: 'Reporting is unavailable or disabled in this environment.'
+            503: 'Reporting service is unavailable. Check the API and Oracle logs.'
         };
         if (response.redirected) throw new Error('IAS session changed. Sign in and reload.' + suffix);
         const failure = messages[response.status] || 'Reporting request failed.';
@@ -56,7 +56,7 @@
         for (const note of main.querySelectorAll('[data-cia-workflow-note]')) {
             note.textContent = data.delayedAuditReports == null || data.teamsConductingAudit == null
                 ? 'N/A · IAS deadline and active-stage verification pending.'
-                : 'Current state · Verified IAS reporting deadline and audit stages.';
+                : 'IAS result · deadline and audit stages pending production validation.';
             note.title = data.workflowVerificationNote || 'Workflow definitions require verification.';
         }
         main.querySelector('[data-cia-as-of]').textContent =
@@ -136,10 +136,8 @@
         controller?.abort(); controller = new AbortController();
         const request = controller;
         const current = ++version, selectedPeriod = period.value;
-        if (main.dataset.commandEnabled !== 'true' || !selectedPeriod) {
-            const reason = main.dataset.commandEnabled !== 'true'
-                ? 'Data loading is disabled in this environment.'
-                : 'Select an IAS audit period to load results.';
+        if (!selectedPeriod) {
+            const reason = 'Select an IAS audit period to load results.';
             clearKpis(reason); clearNature(reason);
             setSectionState('kpi','unavailable',reason);
             setSectionState('nature','unavailable',reason);

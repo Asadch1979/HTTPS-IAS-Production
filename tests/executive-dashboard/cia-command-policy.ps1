@@ -29,11 +29,12 @@ ExpectPeriod @((Period 14 '2026-12-31' '2026-01-01'),$current) 14 12
 $repo=Resolve-Path "$PSScriptRoot/../.."
 $dev=Get-Content "$repo/AIS/appsettings.Development.json" -Raw | ConvertFrom-Json
 $production=Get-Content "$repo/AIS/appsettings.Production.json" -Raw | ConvertFrom-Json
-if ($dev.RoleDashboards.CiaCommandCenterEnabled -ne $true -or $dev.RoleDashboards.CiaWorkflowDefinitionsVerified -ne $false) {
-    throw 'Development loading/workflow gates differ from the approved configuration.'
+foreach ($obsolete in @('CiaCommandCenterEnabled','CiaWorkflowDefinitionsVerified')) {
+    if ($null -ne $dev.RoleDashboards.$obsolete -or $null -ne $production.RoleDashboards.$obsolete) {
+        throw "Obsolete CIA gate remains in development/production configuration: $obsolete."
+    }
+    $checks++
 }
-if ($production.RoleDashboards.CiaCommandCenterEnabled -eq $true) { throw 'Production was enabled.' }
-$checks+=2
 Write-Output "$checks CIA period/configuration checks passed."
 foreach ($dll in Get-ChildItem (Split-Path $AssemblyPath) -Filter 'Oracle.*.dll') {
     [void][System.Reflection.Assembly]::LoadFrom($dll.FullName)
