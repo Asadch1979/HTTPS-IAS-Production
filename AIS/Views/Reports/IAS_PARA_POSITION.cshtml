@@ -37,12 +37,12 @@
     <div class="row col-md-12 mt-3">
 
         <label for="periodStartModalField"><b>Report Period From</b><span class="text-danger">*</span></label>
-        <input required type="date" class="form-control" id="periodStartModalField" aria-describedby="brcode" placeholder="Start Date">
+        <input required type="date" class="form-control" id="periodStartModalField" min="2024-01-01" max="@AIS.Models.IASParaPositionPolicy.Today.ToString("yyyy-MM-dd")" value="@AIS.Models.IASParaPositionPolicy.DefaultStart.ToString("yyyy-MM-dd")" aria-describedby="brcode" placeholder="Start Date">
     </div>
     <div class="row col-md-12 mt-3">
 
         <label for="periodEndModalField"><b>Report Period To</b><span class="text-danger">*</span></label>
-        <input required type="date" class="form-control" id="periodEndModalField" aria-describedby="brcode" placeholder="End Date">
+        <input required type="date" class="form-control" id="periodEndModalField" min="2024-01-01" max="@AIS.Models.IASParaPositionPolicy.Today.ToString("yyyy-MM-dd")" value="@AIS.Models.IASParaPositionPolicy.DefaultEnd.ToString("yyyy-MM-dd")" aria-describedby="brcode" placeholder="End Date">
 
     </div>
     <div class="row col-md-12 mt-3">

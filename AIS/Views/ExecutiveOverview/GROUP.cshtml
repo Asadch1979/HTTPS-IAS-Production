@@ -26,9 +26,9 @@
 <section class="org exec exec-management" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Management Audit Dashboard">
     <div class="mgmt-hero">
         <div class="mgmt-hero-label"><span class="mgmt-symbol" aria-hidden="true">ZTBL</span>
-            <div><span class="mgmt-eyebrow">MANAGEMENT AUDIT · EXECUTIVE INTELLIGENCE</span>
+            <div class="dashboard-title"><span class="mgmt-eyebrow">MANAGEMENT AUDIT · EXECUTIVE INTELLIGENCE</span>
                 <h1>Management Audit Dashboard</h1>
-                <p>Accountability, risk exposure and follow-up across your authorized Group/Division hierarchy.</p></div>
+                <p>@Model.ScopeLabel</p></div>
         </div>
         <div class="mgmt-hero-scope"><strong>AUTHORIZED MANAGEMENT SCOPE</strong>
             <span>@Model.ScopeLabel</span><small>Current audit para position · month-to-date settlement</small></div>
@@ -80,6 +80,7 @@
     <noscript><p>Enable JavaScript to load dashboard data.</p></noscript>
     }
 </section>
+<partial name="_DashboardExportAssets" />
 @section Scripts {
     @if (needsRoot)
     {

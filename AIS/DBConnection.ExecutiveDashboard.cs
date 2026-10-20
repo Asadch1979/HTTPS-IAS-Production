@@ -200,7 +200,10 @@ namespace AIS.Controllers
                  n.Reporting3 == root || n.Reporting4 == root || n.Reporting5 == root || n.Reporting6 == root)).ToList();
         }
         internal List<ExecutiveSettlementTrend> GetExecutiveSettlementTrend(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
-            => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_SETTLEMENT_TREND", scope, auditPeriod,
+            => scope.DashboardType == "CCO" ? ComplianceDistribution(scope, filters).Where(b => b.Dataset == "trend")
+                .Select(b => new ExecutiveSettlementTrend { SettlementMonth = b.BucketCode, SettledParas = b.ParaCount ?? 0,
+                    HighRiskSettled = b.HighRiskCount ?? 0 }).ToList()
+            : ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_SETTLEMENT_TREND", scope, auditPeriod,
                 reader => new ExecutiveSettlementTrend {
                     SettlementMonth = ExecutiveText(reader, "SETTLEMENT_MONTH"),
                     SettledParas = ExecutiveCount(reader, "SETTLED_PARAS"),
@@ -209,6 +212,7 @@ namespace AIS.Controllers
         internal List<ExecutiveCriticalItem> GetExecutiveCriticalItems(ExecutiveDashboardScope scope, string auditPeriod, int maxRows, ExecutiveDashboardFilterRequest filters = null)
         {
             if (maxRows < 1 || maxRows > 500) throw new ArgumentException("Maximum rows must be between 1 and 500.");
+            if (scope.DashboardType == "CCO") return ComplianceCritical(scope, filters, maxRows);
             return ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_CRITICAL_ITEMS", scope, auditPeriod,
                 reader => new ExecutiveCriticalItem {
                     ComId = ExecutiveCount(reader, "COM_ID"),
@@ -225,6 +229,7 @@ namespace AIS.Controllers
 
         internal ExecutiveKpiSummary GetExecutiveKpiSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
         {
+            if (scope.DashboardType == "CCO") return ComplianceKpis(scope, filters);
             var rows = ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_KPI_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveKpiSummary
                 {
@@ -293,7 +298,7 @@ namespace AIS.Controllers
         }
 
         internal List<ExecutiveRiskSummary> GetExecutiveRiskSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
-            => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_RISK_SUMMARY", scope, auditPeriod,
+            => scope.DashboardType == "CCO" ? ComplianceRisk(scope, filters) : ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_RISK_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveRiskSummary
                 {
                     RiskId = reader.IsDBNull(reader.GetOrdinal("RISK_ID")) ? (int?)null : checked((int)ExecutiveDecimal(reader, "RISK_ID")),
@@ -303,7 +308,10 @@ namespace AIS.Controllers
                 }, filters: filters);
 
         internal List<ExecutiveAgingSummary> GetExecutiveAgingSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
-            => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_AGING_SUMMARY", scope, auditPeriod,
+            => scope.DashboardType == "CCO" ? ComplianceDistribution(scope, filters).Where(b => b.Dataset == "aging")
+                .Select(b => new ExecutiveAgingSummary { BucketCode = b.BucketCode, BucketName = b.BucketName,
+                    ParaCount = b.ParaCount ?? 0, HighRiskCount = b.HighRiskCount ?? 0 }).ToList()
+            : ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_AGING_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveAgingSummary
                 {
                     BucketCode = ExecutiveText(reader, "BUCKET_CODE"),
@@ -313,7 +321,10 @@ namespace AIS.Controllers
                 }, filters: filters);
 
         internal List<ExecutiveCycleSummary> GetExecutiveCycleSummary(ExecutiveDashboardScope scope, string auditPeriod, ExecutiveDashboardFilterRequest filters = null)
-            => ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_CYCLE_SUMMARY", scope, auditPeriod,
+            => scope.DashboardType == "CCO" ? ComplianceDistribution(scope, filters).Where(b => b.Dataset == "cycle")
+                .Select(b => new ExecutiveCycleSummary { BucketCode = b.BucketCode, BucketName = b.BucketName,
+                    ParaCount = b.ParaCount ?? 0, HighRiskCount = b.HighRiskCount ?? 0 }).ToList()
+            : ReadExecutiveSummary("PKG_EXEC_DASHBOARD.P_GET_CYCLE_SUMMARY", scope, auditPeriod,
                 reader => new ExecutiveCycleSummary
                 {
                     BucketCode = ExecutiveText(reader, "BUCKET_CODE"),

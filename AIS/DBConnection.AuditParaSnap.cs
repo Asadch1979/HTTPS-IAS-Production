@@ -30,6 +30,11 @@ namespace AIS.Controllers
             ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null)
         {
             ValidateSnapScope(scope);
+            if (divisionCode == "1")
+            {
+                if (selectedDepartmentId.HasValue) throw new ArgumentException("All Divisions does not accept a Department / Cluster.");
+                return new List<ExecutiveFilterOption>();
+            }
             if (divisionCode != "FAD" && divisionCode != "MAD")
                 throw new ArgumentException("Invalid audit division.");
             using var conn = DatabaseConnection();
@@ -67,8 +72,8 @@ namespace AIS.Controllers
         private List<T> ReadSnap<T>(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters,
             string procedure, Func<OracleDataReader,T> map, int? maxRows = null)
         {
-            ValidateSnapScope(scope);
-            var dates = AuditParaSnapPolicy.Validate(filters);
+            ValidateDatedDashboardScope(scope, filters);
+            var dates = filters.Validate();
             if (maxRows.HasValue && (maxRows < 1 || maxRows > 250))
                 throw new ArgumentException("Critical item limit must be 1..250.");
             using var connection = DatabaseConnection();
@@ -77,18 +82,18 @@ namespace AIS.Controllers
             command.CommandType = CommandType.StoredProcedure;
             command.BindByName = true;
             GuardAgainstDynamicSql(command);
-            command.Parameters.Add("P_DASHBOARD_TYPE",OracleDbType.Varchar2).Value = "CIA";
+            command.Parameters.Add("P_DASHBOARD_TYPE",OracleDbType.Varchar2).Value = scope.DashboardType;
             command.Parameters.Add("P_ENTITY_ID",OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
             command.Parameters.Add("P_START_DATE",OracleDbType.Date).Value = dates.StartDate;
             command.Parameters.Add("P_END_DATE",OracleDbType.Date).Value = dates.EndDate;
             command.Parameters.Add("P_ENTITY_TYPE_ID",OracleDbType.Int32).Value =
                 filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             command.Parameters.Add("P_AUDITED_BY_ID",OracleDbType.Int32).Value =
-                (object)filters.SnapDepartmentId ?? DBNull.Value;
+                (object)(scope.DashboardType == "CCO" ? (filters.SelectBy == "auditedBy" ? filters.DimensionId : null) : filters.SnapDepartmentId) ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-            command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = filters.SnapDivision;
+            command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = (object)filters.SnapDivision ?? DBNull.Value;
             var rows = new List<T>();
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -96,7 +101,7 @@ namespace AIS.Controllers
                 if (rows.Count >= (maxRows ?? 1213)) throw new InvalidOperationException("Snap cursor exceeded its bound.");
                 rows.Add(map(reader));
             }
-            ValidateSnapScope(scope);
+            ValidateDatedDashboardScope(scope, filters);
             return rows;
         }
         internal List<AuditParaSnapBucket> GetAuditParaSnapDistribution(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
@@ -113,7 +118,9 @@ namespace AIS.Controllers
                 ComId=ExecutiveCount(r,"COM_ID"),EntityId=OrgNumber(r,"ENTITY_ID"),EntityName=ExecutiveText(r,"ENTITY_NAME"),
                 ParaNo=ExecutiveText(r,"PARA_NO"),GistOfParas=ExecutiveText(r,"GIST_OF_PARAS"),
                 RiskName=ExecutiveText(r,"RISK_NAME"),AgingDays=OrgNumber(r,"AGING_DAYS"),
-                ComCycle=OrgNumber(r,"COM_CYCLE"),QualityCode=ExecutiveText(r,"QUALITY_CODE")
+                ComCycle=OrgNumber(r,"COM_CYCLE"),QualityCode=ExecutiveText(r,"QUALITY_CODE"),
+                AuditPeriod=ExecutiveText(r,"AUDIT_PERIOD"), ParaAddedOn=RoleDate(r,"PARA_ADDED_ON"),
+                DaysSinceLastMovement=OrgNumber(r,"DAYS_SINCE_MOVEMENT")
             },maxRows);
     }
 }

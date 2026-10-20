@@ -29,8 +29,10 @@ namespace AIS.Controllers
         private IActionResult Read(Func<IActionResult> action, bool api = false)
         {
             if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
+            permissions.EnsurePermissionsCached(user);
             if (!HeadAuditMonitoringPolicy.IsEligible(user) ||
-                !permissions.HasViewPermission(user, HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);
+                !session.TryGetAllowedViewIds(out var pages) ||
+                !pages.Contains(HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);
             if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))
                 return StatusCode(403);
             if (!ModelState.IsValid) return BadRequest();
@@ -39,6 +41,7 @@ namespace AIS.Controllers
                 ViewData["TopMenu"] = menus.GetTopMenus();
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
                 ViewData["HideTopHeader"] = true;
+                ViewData["ScopeLabel"] = user.UserEntityName + " and authorized subordinate offices";
                 return action();
             }
             catch (OracleException ex) when (ex.Number == 20151 || ex.Number == 20152) { return StatusCode(403); }
@@ -87,7 +90,7 @@ namespace AIS.Controllers
         {
             if (engId <= 0 || evidenceId <= 0) return BadRequest();
             var document = database.GetHeadAuditDocument(engId, evidenceId, report: false);
-            return document == null ? NotFound() : File(document.Bytes, "application/octet-stream", document.Name ?? $"evidence-{evidenceId}.bin");
+            return document == null ? StatusCode(403) : File(document.Bytes, "application/octet-stream", document.Name ?? $"evidence-{evidenceId}.bin");
         }, api: true);
 
         [HttpGet("/api/HeadAuditDepartment/Report")]
@@ -95,7 +98,7 @@ namespace AIS.Controllers
         {
             if (engId <= 0 || reportId <= 0) return BadRequest();
             var document = database.GetHeadAuditDocument(engId, reportId, report: true);
-            return document == null ? NotFound() : File(document.Bytes, "application/octet-stream", document.Name ?? $"report-{reportId}.bin");
+            return document == null ? StatusCode(403) : File(document.Bytes, "application/octet-stream", document.Name ?? $"report-{reportId}.bin");
         }, api: true);
 
         [HttpGet("/api/HeadAuditDepartment/ResponseEvidence")]
@@ -103,7 +106,7 @@ namespace AIS.Controllers
         {
             if (engId <= 0 || evidenceId <= 0) return BadRequest();
             var document = database.GetHeadAuditDocument(engId, evidenceId, report: false, responseEvidence: true);
-            return document == null ? NotFound() : File(document.Bytes, "application/octet-stream", document.Name ?? $"evidence-{evidenceId}.bin");
+            return document == null ? StatusCode(403) : File(document.Bytes, "application/octet-stream", document.Name ?? $"evidence-{evidenceId}.bin");
         }, api: true);
     }
 }

@@ -126,6 +126,10 @@
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
+            const compliance = app.dataset.perspective === 'CCO';
+            if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
+                settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
+                settlementMtdRate: 'Selected-Period Settlement Rate', openParas: 'Closing Open Paras' })[key] || label;
             const card = el('div', null, 'exec-kpi');
             const value = data[key];
             card.append(el('span', label), el('strong',
@@ -139,7 +143,10 @@
                 return;
             }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
-            card.append(el('small', key === 'settlementMtdRate'
+            card.append(el('small', compliance
+                ? (['settlementRatio','settlementMtdRate'].includes(key) ? 'Period settled ÷ (opening + period additions)'
+                    : ['totalCases','settledTotal','settledMtd'].includes(key) ? 'Selected reporting period' : 'As of End Date')
+                : key === 'settlementMtdRate'
                 ? 'This month: settled ÷ (opening outstanding + new paras)'
                 : key === 'settlementRatio' ? 'All settled ÷ (open + settled)' : denominator > 0 ? `${(data[key] / denominator * 100).toFixed(1)}% of ${key === 'settledMtd' ? 'all settled' : ['totalCases', 'openParas', 'settledTotal'].includes(key) ? 'all cases' : 'open paras'}` : 'Comparison unavailable'));
             target.append(card);
@@ -235,7 +242,7 @@
             const value = filterValues.get(key);
             if (value) query.set(key, value);
         }
-        // Start/end dates are not applied to the six current-state summary APIs.
+        // Compliance applies dates to every dataset; other perspectives retain their contracts.
         query.set('view', app.dataset.view);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
         $('status').textContent = 'Loading authorized dashboard data…';
@@ -244,7 +251,7 @@
             const actions = app.dataset.datasets.split(',').filter(Boolean);
             const data = await Promise.all(actions.map(async action => {
                 const actionQuery = new URLSearchParams(query);
-                if ((lifecycle && action === 'GetKpiLifecycle') ||
+                if (app.dataset.perspective === 'CCO' || (lifecycle && action === 'GetKpiLifecycle') ||
                     (ciaIssues && action === 'GetKpiSummary')) {
                     const start = filterValues.get('startDate');
                     const end = filterValues.get('endDate');
@@ -261,6 +268,8 @@
                 if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Unexpected response. Reload the page or sign in again.');
                 const result = await response.json();
                 if (!response.ok || result.success !== true) throw new Error(result.message || 'Dashboard data is temporarily unavailable.');
+                if (app.dataset.perspective === 'CCO' && result.dateRangeApplied !== true)
+                    throw new Error('Compliance requires a date-aware response for every dataset.');
                 if (['GetKpiSummary', 'GetKpiLifecycle'].includes(action) ? !result.data || typeof result.data !== 'object' || Array.isArray(result.data) : !Array.isArray(result.data))
                     throw new Error('Dashboard response is incomplete. Please refresh.');
                 return [action, result.data];
@@ -292,6 +301,8 @@
                 ? `${entity} · Audit Para Position for ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Historical opening/closing may be estimated · Updated ${new Date().toLocaleTimeString()}.`
                 : `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
+            if (app.dataset.perspective === 'CCO') $('status').textContent =
+                `${entity} · Selected period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Balances and distributions as of End Date; historical values may be estimated.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
@@ -306,6 +317,11 @@
         if (!start || !end) return form.checkValidity();
         end.setCustomValidity((lifecycle || start.value || end.value) && (!start.value || !end.value || start.value > end.value)
             ? 'Provide both dates, with Start Date no later than End Date.' : '');
+        if (app.dataset.perspective === 'CCO' && start.value && end.value) {
+            const a = start.value.split('-').map(Number), b = end.value.split('-').map(Number);
+            if ((b[0] - a[0]) * 12 + b[1] - a[1] >= 1200)
+                end.setCustomValidity('Select fewer than 1200 calendar months.');
+        }
         return form.checkValidity();
     }
     function updateNavigation() {

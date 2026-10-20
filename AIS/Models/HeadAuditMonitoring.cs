@@ -7,7 +7,7 @@ namespace AIS.Models
     {
         public const int PageId = 1000401;
         public static bool IsEligible(SessionUser user) => user != null &&
-            (user.UserRoleID == 1 || user.UserRoleID == 5 || user.UserRoleID == 6 || user.UserRoleID == 7) &&
+            user.UserRoleID > 0 &&
             user.UserEntityID.GetValueOrDefault() > 0;
         public static readonly string[] Sections = { "Plan", "Criteria", "Team", "Tasks", "Workpapers", "Observations", "History", "Evidence", "ResponseEvidence", "DraftReport", "Reports" };
     }

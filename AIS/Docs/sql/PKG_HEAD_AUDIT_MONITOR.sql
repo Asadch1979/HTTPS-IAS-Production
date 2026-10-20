@@ -1,10 +1,9 @@
 -- Source only. Review/install manually; no application-startup DDL.
 -- Department identity is the authenticated IAS entity, never a Team Lead PPNO.
--- Verified role catalogue: T_GROUPS roles 5 FAD, 6 Management, 7 ISAD, 1 Super User.
--- Names and active role/department pairs are checked against the target database.
--- CAD/other heads must not be added until their actual role AND department are verified.
+-- Page allocation is checked in IAS before every reader; Oracle verifies active posting and entity membership.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 
+-- Retained for legacy consumers; monitoring no longer uses this role catalogue.
 CREATE OR REPLACE VIEW V_HEAD_AUDIT_ROLE_DEPT AS
 SELECT g.role_id, d.entity_id dept_id, d.deptname
   FROM t_groups g CROSS JOIN t_audit_departments d
@@ -17,15 +16,15 @@ SELECT g.role_id, d.entity_id dept_id, d.deptname
          AND UPPER(TRIM(d.deptname))='INFORMATION SYSTEM AUDIT DEPARTMENT'));
 /
 
--- Portfolio membership follows existing PKG_HD/FAD reporting hierarchy.
--- Do not use auditee reporting parents (business hierarchy) to expand audit authority.
+-- Audit-performing entity hierarchy; never expand by the auditee's business parent.
 CREATE OR REPLACE VIEW V_HEAD_AUDIT_ENG_SCOPE AS
+WITH descendants AS (
+ SELECT CONNECT_BY_ROOT entity_id dept_id, entity_id
+ FROM v_exec_entity_scope
+ CONNECT BY NOCYCLE PRIOR entity_id = parent_id
+)
 SELECT DISTINCT d.dept_id, e.eng_id
-  FROM (SELECT DISTINCT dept_id FROM v_head_audit_role_dept) d
-  JOIN t_au_plan_eng e ON e.auditby_id=d.dept_id
-    OR (d.dept_id=112243 AND EXISTS
-        (SELECT 1 FROM t_auditee_entities_maping_fad f
-          WHERE f.parent_id=d.dept_id AND f.entity_id=e.auditby_id))
+ FROM descendants d JOIN t_au_plan_eng e ON e.auditby_id=d.entity_id
  WHERE e.status BETWEEN 4 AND 13;
 /
 
@@ -61,10 +60,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
             AND (c.effective_to IS NULL OR c.effective_to>=TRUNC(SYSDATE))))
          OR (P_CONTEXT_ID IS NULL AND u.entity_id=P_DEPT_ID AND EXISTS (
            SELECT 1 FROM t_user_maping m WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID)))
-       AND ((P_ROLE_ID IN (5,6,7) AND EXISTS (
-         SELECT 1 FROM v_head_audit_role_dept d WHERE d.role_id=P_ROLE_ID AND d.dept_id=P_DEPT_ID))
-         OR (P_ROLE_ID=1 AND EXISTS (
-           SELECT 1 FROM v_head_audit_role_dept d WHERE d.dept_id=P_DEPT_ID)));
+       AND EXISTS (SELECT 1 FROM v_exec_entity_scope sc WHERE sc.entity_id=P_DEPT_ID);
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20151,'Unauthorized Head audit department context.'); END IF;
     IF P_ENG_ID IS NOT NULL THEN
       SELECT COUNT(*) INTO n FROM v_head_audit_eng_scope

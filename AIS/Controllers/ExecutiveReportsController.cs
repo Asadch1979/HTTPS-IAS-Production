@@ -62,6 +62,7 @@ namespace AIS.Controllers
                 if (filters.Validate() == null || (filters.View != null && filters.View != "reports"))
                     return Error(400, "invalid_request", "Both dates and the Reports view are required.");
                 var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
+                if (scope.DashboardType == "CCO") ComplianceDashboardPolicy.Validate(filters);
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
                 if (!superUser) permissions.EnsurePermissionsCached(user);
                 var pageId = pageIds.ResolvePageId(scope.PermissionPagePath);

@@ -163,6 +163,7 @@ namespace AIS.Controllers
                 filters.View = view;
                 filters.Validate();
                 if (auditParaSnap) AuditParaSnapPolicy.Validate(filters);
+                if (requestedType == "CCO") ComplianceDashboardPolicy.Validate(filters);
                 if (requestedType == "RLM" && (filters.DimensionId.HasValue || filters.SelectBy != "entityType"))
                     return BadRequest("Reporting Line Management supports Reporting Office and Entity only.");
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();

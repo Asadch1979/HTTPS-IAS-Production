@@ -1274,19 +1274,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       FROM V_EXEC_KPI_LIFECYCLE k
       WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL
-                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END)
-                OR EXISTS
-                  (SELECT 1
-                     FROM V_IAS_ENTITY_REPORTING_NAMES h
-                    WHERE h.ENTITY_ID = k.audited_by_id
-                      AND (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END) IN
-                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
-                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
+           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
+                SELECT 1 FROM (
+                  SELECT 112243 division_id, 'FAD' division_code FROM dual
+                  UNION ALL SELECT 113254, 'MAD' FROM dual
+                ) d WHERE (P_SNAP_DIVISION_CODE = '1' OR d.division_code = P_SNAP_DIVISION_CODE)
+                  AND (k.audited_by_id = d.division_id OR EXISTS (
+                    SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.entity_id = k.audited_by_id AND d.division_id IN
+                      (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))))
         AND (P_REPORTING_OFFICE_ID IS NULL
              OR k.entity_id = P_REPORTING_OFFICE_ID
              OR P_REPORTING_OFFICE_ID IN
@@ -1833,8 +1829,8 @@ END P_GET_CIA_EXEC_KPIS;
     V_TO DATE;
     V_TODAY NUMBER;
   BEGIN
-    IF V_TYPE <> 'CIA' THEN
-      RAISE_APPLICATION_ERROR(-20045, 'Audit Para Snap requires CIA scope.');
+    IF V_TYPE NOT IN ('CIA','CCO') THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require CIA or CCO scope.');
     END IF;
     IF P_START_DATE IS NULL OR P_END_DATE IS NULL
        OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
@@ -1885,19 +1881,15 @@ END P_GET_CIA_EXEC_KPIS;
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL
-                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END)
-                OR EXISTS
-                  (SELECT 1
-                     FROM V_IAS_ENTITY_REPORTING_NAMES h
-                    WHERE h.ENTITY_ID = k.audited_by_id
-                      AND (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END) IN
-                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
-                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
+           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
+                SELECT 1 FROM (
+                  SELECT 112243 division_id, 'FAD' division_code FROM dual
+                  UNION ALL SELECT 113254, 'MAD' FROM dual
+                ) d WHERE (P_SNAP_DIVISION_CODE = '1' OR d.division_code = P_SNAP_DIVISION_CODE)
+                  AND (k.audited_by_id = d.division_id OR EXISTS (
+                    SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.entity_id = k.audited_by_id AND d.division_id IN
+                      (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))))
            AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
                 OR P_REPORTING_OFFICE_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
@@ -1924,17 +1916,17 @@ END P_GET_CIA_EXEC_KPIS;
       ),
       position_rows AS
       (
-        SELECT 'risk' dataset,
+        SELECT 'risk' dataset, risk_id,
                CASE WHEN risk_id IN (1,2,3) THEN TO_CHAR(risk_id) ELSE '0' END bucket_code
           FROM scoped WHERE snap_open = 1
         UNION ALL
-        SELECT 'aging',
+        SELECT 'aging', risk_id,
                CASE WHEN snap_age IS NULL THEN '0' WHEN snap_age <= 90 THEN '1'
                     WHEN snap_age <= 180 THEN '2' WHEN snap_age <= 365 THEN '3'
                     WHEN snap_age <= 1095 THEN '4' ELSE '5' END
           FROM scoped WHERE snap_open = 1
         UNION ALL
-        SELECT 'cycle',
+        SELECT 'cycle', risk_id,
                CASE WHEN snap_cycle IS NULL OR snap_cycle < 0 THEN '9'
                     WHEN snap_cycle = 0 THEN '0'
                     WHEN snap_cycle <= 3 THEN '1' ELSE '4' END
@@ -1942,7 +1934,7 @@ END P_GET_CIA_EXEC_KPIS;
       ),
       counts AS
       (
-        SELECT dataset, bucket_code, COUNT(*) para_count FROM position_rows
+        SELECT dataset, bucket_code, COUNT(*) para_count, COUNT(CASE WHEN risk_id=1 THEN 1 END) high_risk_count FROM position_rows
          GROUP BY dataset, bucket_code
       ),
       months AS
@@ -1955,7 +1947,7 @@ END P_GET_CIA_EXEC_KPIS;
       (
         SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
                NVL(n.para_count,0) AS para_count,
-               CAST(NULL AS NUMBER) AS high_risk_count,
+               NVL(n.high_risk_count,0) AS high_risk_count,
                CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
           FROM categories c LEFT JOIN counts n
             ON n.dataset = c.dataset AND n.bucket_code = c.bucket_code
@@ -1990,8 +1982,8 @@ END P_GET_CIA_EXEC_KPIS;
     V_TO DATE;
     V_TODAY NUMBER;
   BEGIN
-    IF V_TYPE <> 'CIA' THEN
-      RAISE_APPLICATION_ERROR(-20045, 'Audit Para Snap requires CIA scope.');
+    IF V_TYPE NOT IN ('CIA','CCO') THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require CIA or CCO scope.');
     END IF;
     IF P_START_DATE IS NULL OR P_END_DATE IS NULL
        OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
@@ -2047,19 +2039,15 @@ END P_GET_CIA_EXEC_KPIS;
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
-           AND (P_SNAP_DIVISION_CODE IS NULL
-                OR k.audited_by_id = (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END)
-                OR EXISTS
-                  (SELECT 1
-                     FROM V_IAS_ENTITY_REPORTING_NAMES h
-                    WHERE h.ENTITY_ID = k.audited_by_id
-                      AND (CASE P_SNAP_DIVISION_CODE
-                        WHEN 'FAD' THEN 112243
-                        WHEN 'MAD' THEN 113254 END) IN
-                          (h.REPORTING_1,h.REPORTING_2,h.REPORTING_3,
-                           h.REPORTING_4,h.REPORTING_5,h.REPORTING_6)))
+           AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
+                SELECT 1 FROM (
+                  SELECT 112243 division_id, 'FAD' division_code FROM dual
+                  UNION ALL SELECT 113254, 'MAD' FROM dual
+                ) d WHERE (P_SNAP_DIVISION_CODE = '1' OR d.division_code = P_SNAP_DIVISION_CODE)
+                  AND (k.audited_by_id = d.division_id OR EXISTS (
+                    SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h
+                    WHERE h.entity_id = k.audited_by_id AND d.division_id IN
+                      (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))))
            AND (P_REPORTING_OFFICE_ID IS NULL OR k.entity_id = P_REPORTING_OFFICE_ID
                 OR P_REPORTING_OFFICE_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
@@ -2069,7 +2057,7 @@ END P_GET_CIA_EXEC_KPIS;
       ),
       ranked AS
       (
-        SELECT k.com_id, k.entity_id, e.name AS entity_name,
+        SELECT k.com_id, k.entity_id, e.name AS entity_name, p.audit_period, k.para_added_on,
                p.para_no, SUBSTR(p.gist_of_paras,1,1000) AS gist_of_paras,
                CASE k.risk_id WHEN 1 THEN 'High' WHEN 2 THEN 'Medium'
                               WHEN 3 THEN 'Low' ELSE 'Unrated' END risk_name,
@@ -2089,7 +2077,7 @@ END P_GET_CIA_EXEC_KPIS;
       SELECT com_id, entity_id, entity_name, para_no, gist_of_paras,
              risk_name, aging_days, com_cycle,
              CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,
-             days_since_movement
+             days_since_movement, audit_period, para_added_on
         FROM ranked WHERE rn <= P_MAX_ROWS ORDER BY rn;
   END P_GET_SNAP_CRITICAL;
 

@@ -85,8 +85,11 @@ var iasParaPositionVersion = 0;
         var startDate = $('#periodStartModalField').val();
         var endDate = $('#periodEndModalField').val();
         if (!$('#entityTypeSelectionField').val() || $('#entityTypeSelectionField').val() === '0' ||
-            !startDate || !endDate || startDate > endDate) {
-            errorBox.removeClass('d-none').text('Select an entity type and a valid report period; From must not exceed To.');
+            !startDate || !endDate || startDate > endDate || startDate < '2024-01-01' ||
+            endDate > $('#periodEndModalField').attr('max') ||
+            !document.getElementById('periodStartModalField').checkValidity() ||
+            !document.getElementById('periodEndModalField').checkValidity()) {
+            errorBox.removeClass('d-none').text('Select dates from 01 January 2024 through today (Pakistan); From must not exceed To.');
             return;
         }
         if ($('#entityTypeSelectionField').val() != 0) {
@@ -158,7 +161,6 @@ var iasParaPositionVersion = 0;
                             ? '<td>' + escapeCell(record.reportinG_OFFICE) + '</td>'
                             : '';
 
-                        if (!allEntities) {
                         $('#iasParaPositionGrid tbody').append(
                             '<tr>' +
                             '<td>' + rowNumber + '</td>' +
@@ -178,17 +180,28 @@ var iasParaPositionVersion = 0;
                             '<td class="text-end">' + formatNumber(lowRisk) + '</td>' +
                             '</tr>'
                         );
-                        }
                     });
 
                     updateTotals(totals);
                     if (allEntities) {
                         $('#iasParaSummaryPeriod').text(startDate + ' to ' + endDate);
                         $('#iasParaPositionSummary').prop('hidden', false);
-                    } else {
-                        $('#iasParaPositionTableContainer').prop('hidden', false);
-                        initializeDataTable('iasParaPositionGrid');
                     }
+                    $('#iasParaPositionTableContainer').prop('hidden', false);
+                    // Keep the physical schema stable; DataTables adjusts headers,
+                    // body and footer together and exports only visible columns.
+                    var table = $('#iasParaPositionGrid').DataTable({
+                        dom: '<"top"lfB>rt<"bottom"ip><"clear">',
+                        ordering: false,
+                        columnDefs: [{ targets: showReportingOffice ? [1, 2] : [1], visible: !allEntities }],
+                        buttons: [getPdfExportButtonConfig(), getExcelExportButtonConfig('Export to Excel'),
+                            getCsvExportButtonConfig('Export to CSV'), { extend: 'copyHtml5' }].map(function (button) {
+                                button.exportOptions = Object.assign({}, button.exportOptions, { columns: ':visible' });
+                                return button;
+                            }),
+                        lengthMenu: [[10, 50, 100, -1], [10, 50, 100, 'All']]
+                    });
+                    table.columns.adjust();
                     $('#iasParaPositionStatus').text(allEntities ? 'Summary of all returned report figures.' : data.length + ' report rows loaded.');
                 },
                 error: function (_, status) {

@@ -10,6 +10,8 @@ namespace AIS.Controllers
         {
         public List<IASParaPositionModel> GetIASParaPosition(int entityTypeId, DateTime startDate, DateTime endDate)
             {
+            if (!IASParaPositionPolicy.IsValid(startDate, endDate) || entityTypeId == 0 || entityTypeId < -1)
+                throw new ArgumentException("Invalid IAS reporting period or entity type.");
             var session = CreateSessionHandler();
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new AIS.Session.UnauthenticatedException();

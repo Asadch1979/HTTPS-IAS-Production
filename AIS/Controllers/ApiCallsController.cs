@@ -4812,9 +4812,9 @@ namespace AIS.Controllers
             {
             if (!ModelState.IsValid || ENT_TYPE_ID == 0 || ENT_TYPE_ID < -1 ||
                 !S_DATE.HasValue || !E_DATE.HasValue || S_DATE.Value.Date > E_DATE.Value.Date ||
-                E_DATE.Value.Date == DateTime.MaxValue.Date)
+                !IASParaPositionPolicy.IsValid(S_DATE.Value, E_DATE.Value))
                 {
-                return BadRequest(new { message = "Select an entity type and a valid report period; From must not exceed To." });
+                return BadRequest(new { message = "Select dates from 01 January 2024 through today (Pakistan); From must not exceed To." });
                 }
 
             var rows = dBConnection.GetIASParaPosition(ENT_TYPE_ID, S_DATE.Value.Date, E_DATE.Value.Date);

@@ -7,11 +7,13 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname,'../..');
 const read = p => fs.readFileSync(path.join(root,'AIS',p),'utf8');
 
-test('Audit Para Snap supports only FAD/MAD divisions and verifies positive audited-by children',()=>{
+test('Audit Para Snap supports All/FAD/MAD and verifies positive audited-by children',()=>{
  const policy=read('Models/AuditParaSnapData.cs');
  const filters=read('Models/ExecutiveDashboardFilters.cs');
  const map=read('Docs/sql/snap_audit_division_scope.sql');
  assert.match(policy,/filters.SnapDivision != "FAD" && filters.SnapDivision != "MAD"/);
+ assert.match(policy,/filters.SnapDivision != "1"/);
+ assert.match(policy,/filters.SnapDivision == "1" && filters.SnapDepartmentId.HasValue/);
  assert.match(policy,/filters.SnapDepartmentId\.HasValue/);
  assert.match(filters,/\["snapDivision"\] = SnapDivision/);
  assert.match(filters,/\["snapDepartmentId"\] = SnapDepartmentId/);
@@ -27,11 +29,12 @@ test('All division filter includes parent auditby ID and descendants through rep
  const kpi=read('Docs/sql/PKG_EXEC_DASHBOARD.sql');
  const reports=read('Docs/sql/PKG_EXEC_REPORTS.sql');
  for(const text of [kpi,reports]){
-   assert.match(text,/WHEN 'FAD' THEN 112243/);
-   assert.match(text,/WHEN 'MAD' THEN 113254/);
+   assert.match(text,/SELECT 112243 division_id, 'FAD' division_code FROM dual/);
+   assert.match(text,/UNION ALL SELECT 113254, 'MAD' FROM dual/);
+   assert.match(text,/P_SNAP_DIVISION_CODE = '1' OR d.division_code = P_SNAP_DIVISION_CODE/);
    for(const level of [1,2,3,4,5,6])
-      assert.ok(text.includes('h.REPORTING_'+level),'Missing reporting level '+level);
-   assert.match(text,/OR EXISTS\s*\(SELECT 1\s*FROM V_IAS_ENTITY_REPORTING_NAMES h/);
+      assert.ok(text.toLowerCase().includes('h.reporting_'+level),'Missing reporting level '+level);
+   assert.match(text,/OR EXISTS\s*\(\s*SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h/);
  }
  const body=read('Docs/sql/snap_audit_division_scope.sql');
  assert.match(body,/IF P_AUDITBY_ID IS NOT NULL/);
@@ -48,6 +51,7 @@ test('both selectors persist on Snap tab navigation and reports',()=>{
  assert.match(parent,/>Field Audit Division</);
  assert.match(parent,/>Management Audit Division</);
  assert.match(parent,/>All</);
+ assert.match(parent,/<option value="1"[^>]*>All Divisions</);
  assert.match(js,/department.value = ''/);
  assert.match(js,/form.requestSubmit\(\)/);
  assert.match(reports,/'snapDivision','snapDepartmentId'/);

@@ -24,7 +24,7 @@
 <section class="org exec exec-cia" id="executive-dashboard" data-perspective="CIA" data-view="command"
          data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="CIA" aria-label="CIA Audit Command Center">
     <header class="cia-executive-header">
-        <div class="cia-executive-title">
+        <div class="dashboard-title cia-executive-title">
             <p class="cia-command-eyebrow">INTERNAL AUDIT GROUP</p>
             <h1>CIA Audit Command Center</h1>
             <p>@Model.ScopeLabel</p>
@@ -55,6 +55,7 @@
     </div>
     <noscript><p>Enable JavaScript to load CIA Command Center data.</p></noscript>
 </section>
+<partial name="_DashboardExportAssets" />
 @section Scripts {
     <script src="~/js/cia-command-center.js" asp-append-version="true"></script>
 }

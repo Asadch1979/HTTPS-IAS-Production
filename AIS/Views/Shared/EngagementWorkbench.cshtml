@@ -12,9 +12,9 @@
         <span class="wb-appbar-meta">HEAD AUDIT DEPARTMENT · READ-ONLY</span>
     </div>
     <header class="wb-hero">
-        <div><span class="wb-eyebrow">HEAD AUDIT DEPARTMENT</span>
+        <div class="dashboard-title"><span class="wb-eyebrow">HEAD AUDIT DEPARTMENT</span>
             <h1 id="workbench-title">Audit Teams Monitoring</h1>
-            <p>Monitor your authorized department's ongoing assignments and inspect the team's latest saved work.</p></div>
+            <p>@ViewData["ScopeLabel"]</p></div>
         <div class="wb-hero-meta"><strong>@Model.Count.ToString("N0")</strong><span>Ongoing engagements</span>
             <a class="wb-step-link" href="@Url.Action("AuditTeamsMonitoring")">Refresh saved information</a></div>
     </header>
@@ -61,3 +61,5 @@
         </div></div>
     </section>
 </section>
+
+<partial name="_DashboardExportAssets" />

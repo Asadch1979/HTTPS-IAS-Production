@@ -11,7 +11,7 @@ namespace AIS.Controllers
     public partial class DBConnection
     {
         // No department, role or PPNO can be supplied by the browser. Oracle independently
-        // rechecks the active IAS assignment and the verified role/department mapping.
+        // rechecks the active IAS assignment and the authorized entity hierarchy.
         private List<T> ReadHeadAudit<T>(string procedure, Func<OracleDataReader, T> map,
             long? engagementId = null, string section = null, long? evidenceId = null)
         {
@@ -19,6 +19,8 @@ namespace AIS.Controllers
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new UnauthenticatedException();
             if (!HeadAuditMonitoringPolicy.IsEligible(user)) throw new UnauthorizedAccessException();
+            if (!GetTopMenuPages(user).Any(p => p.PageId == HeadAuditMonitoringPolicy.PageId))
+                throw new UnauthorizedAccessException();
             using var connection = DatabaseConnection();
             using var command = connection.CreateCommand();
             command.CommandType = CommandType.StoredProcedure;

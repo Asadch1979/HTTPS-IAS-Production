@@ -72,7 +72,8 @@
     const division = document.getElementById('snap-division');
     const department = document.getElementById('snap-department');
     division?.addEventListener('change', () => {
-        if (department) department.value = '';
+        if (department) { department.value = ''; department.disabled = division.value === '1'; }
+        navigation();
         if (validDates()) form.requestSubmit();
     });
     navigation();

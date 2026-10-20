@@ -11,12 +11,13 @@
         <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" required /></div>
         <div><label for="snap-division">Division</label>
             <select id="snap-division" name="snapDivision" required>
+                <option value="1" selected="@(Model.Filters.SnapDivision == "1")">All Divisions</option>
                 <option value="FAD" selected="@(Model.Filters.SnapDivision == "FAD")">Field Audit Division</option>
                 <option value="MAD" selected="@(Model.Filters.SnapDivision == "MAD")">Management Audit Division</option>
             </select>
         </div>
         <div><label for="snap-department">Department / Cluster</label>
-            <select id="snap-department" name="snapDepartmentId" aria-label="Department or Cluster">
+            <select id="snap-department" name="snapDepartmentId" aria-label="Department or Cluster" disabled="@(Model.Filters.SnapDivision == "1")">
                 <option value="">All</option>
                 @foreach (var item in Model.SnapDepartments)
                 {

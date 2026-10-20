@@ -24,7 +24,7 @@
         </nav>
     }
 <section class="org exec @(Model.SelectedView.Id == "regional" ? "exec-regional" : Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Top Management">
-    <header class="org-header"><div class="exec-title"><h1>Top Management</h1><p>@Model.ScopeLabel</p></div></header>
+    <header class="org-header"><div class="dashboard-title exec-title"><h1>Top Management</h1><p>@Model.ScopeLabel</p></div></header>
     <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
         @foreach (var view in Model.Views)
         {
@@ -55,6 +55,7 @@
     </div>
     <noscript><p>Enable JavaScript to load dashboard data.</p></noscript>
 </section>
+<partial name="_DashboardExportAssets" />
 @section Scripts {
     @if (needsRoot)
     {

@@ -18,8 +18,10 @@ namespace AIS.Models
             if (dates.EndDate > Today || (dates.EndDate.Year - dates.StartDate.Year) * 12 +
                 dates.EndDate.Month - dates.StartDate.Month >= 1200)
                 throw new ArgumentException("End Date cannot be in the future; select fewer than 1200 months.");
-            if (filters.SnapDivision != "FAD" && filters.SnapDivision != "MAD")
-                throw new ArgumentException("Select Field Audit Division or Management Audit Division.");
+            if (filters.SnapDivision != "1" && filters.SnapDivision != "FAD" && filters.SnapDivision != "MAD")
+                throw new ArgumentException("Select All Divisions, Field Audit Division or Management Audit Division.");
+            if (filters.SnapDivision == "1" && filters.SnapDepartmentId.HasValue)
+                throw new ArgumentException("All Divisions does not accept a Department / Cluster.");
             if (filters.SnapDepartmentId.HasValue && filters.SnapDepartmentId.Value <= 0)
                 throw new ArgumentException("Department / Cluster must be a positive mapped department.");
             if (!Views.Contains(filters.View))
@@ -83,5 +85,8 @@ namespace AIS.Models
         public int? AgingDays { get; set; }
         public int? ComCycle { get; set; }
         public string QualityCode { get; set; }
+        public string AuditPeriod { get; set; }
+        public DateTime? ParaAddedOn { get; set; }
+        public int? DaysSinceLastMovement { get; set; }
     }
 }

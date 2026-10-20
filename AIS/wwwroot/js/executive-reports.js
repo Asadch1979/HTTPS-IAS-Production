@@ -270,6 +270,11 @@
     function validDates() {
         const start = $('start-date'), end = $('end-date');
         end.setCustomValidity(!start.value || !end.value || start.value > end.value ? 'Provide both dates, with Start Date no later than End Date.' : '');
+        if (app.dataset.perspective === 'CCO' && start.value && end.value) {
+            const a = start.value.split('-').map(Number), b = end.value.split('-').map(Number);
+            if ((b[0] - a[0]) * 12 + b[1] - a[1] >= 1200)
+                end.setCustomValidity('Select fewer than 1200 calendar months.');
+        }
         return form.checkValidity();
     }
     function navigation() {
