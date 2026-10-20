@@ -747,6 +747,7 @@ create or replace package body PKG_AR is
        inner join t_au_audit_team_tasklist_status s
           on s.status_id = t.status_id
        where t.teammember_ppno = P_P_NO
+         and t.isactive = 'Y'
          and p.status between 4 and 12;
   
   end P_GET_AR_DASHBOARD_DROPDOWN;
@@ -2614,6 +2615,10 @@ create or replace package body PKG_AR is
          where r.statusid = NEW_STATUS_ID;
     else
       if (R_ID in (6, 7, 15) and R_D = 'O') then
+        IF NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
+          RAISE_APPLICATION_ERROR(-20040,
+            'Departmental Head may select only Final Report or settlement status.');
+        END IF;
         SELECT COUNT(*) INTO V_DUP_COUNT FROM t_au_plan_eng eg
          WHERE eg.eng_id = V_ENGPLANID
            AND (eg.auditby_id = ENT_ID OR EXISTS (
