@@ -1467,8 +1467,24 @@ create or replace package body PKG_AR is
     OBS             NUMBER := 0;
     V_AUDIT_ENDDATE T_AU_PLAN_ENG.AUDIT_ENDDATE%type;
     V_ENTEREDDATE   T_AU_OBSERVATION.ENTEREDDATE%type;
+    V_AUTH_COUNT NUMBER := 0;
   begin
-  
+    -- A caller can record an observation only for their active assigned audit.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
+       AND EXISTS (SELECT 1 FROM t_au_audit_team_tasklist t
+                    JOIN t_au_team_members m
+                      ON m.t_id = t.team_id
+                     AND m.member_ppno = t.teammember_ppno
+                   WHERE t.eng_plan_id = eg.eng_id
+                     AND t.teammember_ppno = P_NO
+                     AND t.isactive = 'Y');
+    IF V_AUTH_COUNT <> 1 OR P_NO IS NULL OR ENTEREDBY IS NULL
+       OR P_NO <> ENTEREDBY THEN
+      RAISE_APPLICATION_ERROR(-20151,
+        'Observation creation requires an active assigned auditor.');
+    END IF;
+
     SELECT SEQ_T_AU_OBSERVATION.NEXTVAL INTO OBS FROM DUAL;
     commit;
     commit;
@@ -1704,7 +1720,24 @@ create or replace package body PKG_AR is
     Z_B           number := 0;
     OBS           number := 0;
     V_ENTEREDDATE T_AU_OBSERVATION.ENTEREDDATE%type;
+    V_AUTH_COUNT NUMBER := 0;
   begin
+    -- A caller can record an observation only for their active assigned audit.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
+       AND EXISTS (SELECT 1 FROM t_au_audit_team_tasklist t
+                    JOIN t_au_team_members m
+                      ON m.t_id = t.team_id
+                     AND m.member_ppno = t.teammember_ppno
+                   WHERE t.eng_plan_id = eg.eng_id
+                     AND t.teammember_ppno = P_NO
+                     AND t.isactive = 'Y');
+    IF V_AUTH_COUNT <> 1 OR P_NO IS NULL OR ENTEREDBY IS NULL
+       OR P_NO <> ENTEREDBY THEN
+      RAISE_APPLICATION_ERROR(-20151,
+        'Observation creation requires an active assigned auditor.');
+    END IF;
+
     Open V;
     Fetch V
       into vr1;
@@ -2056,7 +2089,11 @@ create or replace package body PKG_AR is
      inner join t_au_observation o
         on o.engplanid = t.eng_plan_id
      where o.id = obs_id
-       and t.teammember_ppno = P_NO;
+        and t.teammember_ppno = P_NO
+        and t.isactive = 'Y'
+        and exists (select 1 from t_au_plan_eng eg
+                     where eg.eng_id = o.engplanid
+                       and eg.status between 4 and 13);
     select nvl(s.status, 0)
       into V_F
       from t_au_observation s
