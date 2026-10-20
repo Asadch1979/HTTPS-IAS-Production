@@ -33,7 +33,7 @@ test('CIA KPI scope follows Audited By and rejects unsupported filters', () => {
   assert.match(body, /e\.period_id = P_AUDIT_PERIOD_ID/);
   assert.match(body, /ON ce\.entity_id = p\.entity_id/);
   assert.doesNotMatch(body, /completed_plan_ids AS/);
-  assert.match(body, /COUNT\(DISTINCT CASE WHEN ce\.entity_id IS NOT NULL/);
+  assert.match(body, /COUNT\(DISTINCT\s+CASE\s+WHEN ce\.entity_id IS NOT NULL/);
 });
 test('unavailable pre-transfer drops return NULL, not invented zero', () => {
   assert.match(pkg, /CAST\(NULL AS NUMBER\) AS issue_dropped/);
