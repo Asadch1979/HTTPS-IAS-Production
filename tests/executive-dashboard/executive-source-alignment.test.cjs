@@ -33,9 +33,10 @@ test('valid lifecycle ISSUE rectification comes from post-compliance source flag
   assert.match(lifecycle, /NVL\(p\.issue_rectified, 0\) = 1/);
   assert.match(lifecycle, /p\.para_added_on END AS issue_rectified_on/);
   assert.match(pkg, /k\.record_type = 'ISSUE'\s+AND k\.issue_eligible = 1\s+AND k\.issue_rectified_on/);
-  assert.match(pkg, /k\.para_status = 8\s+OR \(k\.para_status = 9/);
-  assert.match(pkg, /k\.raw_para_settled_on < V_FROM/);
-  assert.match(pkg, /k\.raw_para_settled_on >= V_TO_EXCLUSIVE/);
+  assert.match(pkg, /k\.para_status IN \(8, 9\)/);
+  const paraAdded = pkg.match(/-- Para Added: include status 8[\s\S]*?AS para_added,/);
+  assert.ok(paraAdded, 'Missing inclusive post-report Para Added KPI.');
+  assert.doesNotMatch(paraAdded[0], /raw_para_settled_on/);
   if (recon) assert.match(recon, /KEEP\s+\(DENSE_RANK LAST ORDER BY l\.id\)/);
   else t.diagnostic('Optional reconciliation view DDL is absent from this checkout.');
 });
