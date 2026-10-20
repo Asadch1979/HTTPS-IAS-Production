@@ -1500,8 +1500,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
   BEGIN
+    -- Only Audited By controls CIA audit portfolio scope.
+    -- Keep obsolete parameters for C# compatibility; reject unsupported
+    -- filters rather than ignoring them.
+    IF P_ENTITY_ID IS NOT NULL
+       OR P_ENTITY_TYPE_ID IS NOT NULL
+       OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+      RAISE_APPLICATION_ERROR(-20048,
+        'CIA KPI supports Audited By filtering only.');
+    END IF;
+
     RESOLVE_CIA_COMMAND_PERIOD(
-      P_DASHBOARD_TYPE, P_ENTITY_ID, P_AUDIT_PERIOD_ID,
+      P_DASHBOARD_TYPE, NULL, P_AUDIT_PERIOD_ID,
       V_FROM, V_TO_EXCLUSIVE);
 
     OPEN IO_CURSOR FOR
