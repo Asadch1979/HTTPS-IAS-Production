@@ -1517,24 +1517,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     OPEN IO_CURSOR FOR
       WITH plan_scope AS
       (
-        SELECT p.id AS plan_id, p.entity_id
+        SELECT p.id AS plan_id,
+               p.entity_id,
+               p.auditedby AS auditby_id
           FROM t_au_plan p
-          LEFT JOIN v_exec_entity_scope s ON s.entity_id = p.entity_id
+          INNER JOIN v_exec_entity_scope s
+            ON s.entity_id = p.auditedby
          WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
            AND p.status IN (1, 2)
-           AND (P_ENTITY_TYPE_ID IS NULL
-                OR p.entity_typeid = P_ENTITY_TYPE_ID)
+           AND s.parent_id IN (112243, 113254)
            AND (P_AUDITED_BY_ID IS NULL
-                OR p.auditedby = P_AUDITED_BY_ID)
-           AND (P_REPORTING_OFFICE_ID IS NULL
-                OR p.entity_id = P_REPORTING_OFFICE_ID
-                OR P_REPORTING_OFFICE_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-           AND (P_ENTITY_ID IS NULL OR p.entity_id = P_ENTITY_ID
-                OR P_ENTITY_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
+                OR s.entity_id = P_AUDITED_BY_ID)
       ),
       engagement_scope AS
       (
@@ -1543,21 +1536,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
                e.audit_startdate, e.audit_enddate,
                e.operation_startdate
           FROM t_au_plan_eng e
-          LEFT JOIN t_auditee_entities a ON a.entity_id = e.entity_id
-          LEFT JOIN v_exec_entity_scope s ON s.entity_id = e.entity_id
-         WHERE (P_ENTITY_TYPE_ID IS NULL
-                OR a.type_id = P_ENTITY_TYPE_ID)
+          INNER JOIN t_auditee_entities a
+            ON a.entity_id = e.entity_id
+          INNER JOIN v_exec_entity_scope s
+            ON s.entity_id = e.auditby_id
+         WHERE s.parent_id IN (112243, 113254)
            AND (P_AUDITED_BY_ID IS NULL
-                OR e.auditby_id = P_AUDITED_BY_ID)
-           AND (P_REPORTING_OFFICE_ID IS NULL
-                OR e.entity_id = P_REPORTING_OFFICE_ID
-                OR P_REPORTING_OFFICE_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
-           AND (P_ENTITY_ID IS NULL OR e.entity_id = P_ENTITY_ID
-                OR P_ENTITY_ID IN
-                   (s.reporting_1, s.reporting_2, s.reporting_3,
-                    s.reporting_4, s.reporting_5, s.reporting_6))
+                OR s.entity_id = P_AUDITED_BY_ID)
       ),
       -- Planned/audited are ENTITY counts, not plan-row counts. A valid
       -- concluded engagement may have a different or NULL PLAN_ID while
