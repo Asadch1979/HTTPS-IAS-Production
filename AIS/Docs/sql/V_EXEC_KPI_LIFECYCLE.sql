@@ -57,9 +57,13 @@ lifecycle AS
         CASE WHEN k.record_type = 'PARA' THEN p.para_status END AS para_status,
         CASE WHEN k.record_type = 'PARA' THEN p.com_cycle END AS com_cycle,
         CASE WHEN k.record_type = 'ISSUE' THEN p.para_added_on END AS issue_identified_on,
+        -- The Rectified KPI uses the original issue recognition cohort:
+        -- ISSUE_RECTIFIED=1 and PARA_ADDED_ON inside the selected range.
+        -- ISSUE_RECTIFIED_ON retains its public alias for old consumers,
+        -- but is a KPI recognition date, NOT the physical settlement date.
         CASE WHEN k.record_type = 'ISSUE'
                    AND NVL(p.issue_rectified, 0) = 1
-             THEN p.setteled_on END AS issue_rectified_on,
+             THEN p.para_added_on END AS issue_rectified_on,
         CAST(NULL AS DATE) AS final_para_assigned_on,
         CASE WHEN k.record_type = 'PARA' THEN p.para_added_on END AS raw_para_added_on,
         CASE WHEN k.record_type = 'PARA' THEN p.setteled_on END AS raw_para_settled_on,
