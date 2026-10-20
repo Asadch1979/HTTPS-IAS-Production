@@ -18,8 +18,8 @@ test('post-compliance executive view excludes ONLY pre-conclusion modern rectifi
     assert.ok(first >= 0 && last > first);
     assert.match(view,/FROM ais_t_au_post_compliance c/i);
     assert.match(view,/WHERE CASE WHEN c\.ind = 'A' AND NVL\(c\.issue_rectified, 0\) = 1\s+THEN 0 ELSE 1 END = 1/);
-    assert.match(view,/CASE WHEN c\.para_status = 8 THEN 1\s+ELSE 0\s+END AS is_open/);
-    assert.match(view,/CASE WHEN c\.para_status = 9 THEN 1\s+ELSE 0\s+END AS is_settled/);
+    assert.match(view,/CASE\s+WHEN c\.para_status = 8 THEN 1\s+ELSE\s+0\s+END AS is_open/);
+    assert.match(view,/CASE\s+WHEN c\.para_status = 9 THEN 1\s+ELSE\s+0\s+END AS is_settled/);
     assert.doesNotMatch(view,/TRUNC\(SYSDATE\).*?WHERE/i);
 });
 
