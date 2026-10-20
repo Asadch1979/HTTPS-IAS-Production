@@ -271,7 +271,15 @@ LEFT JOIN (
     FROM ais_t_au_post_compliance_history
     GROUP BY com_id
 ) h
-       ON h.com_id = c.com_id;
+       ON h.com_id = c.com_id
+
+-- The executive/role dashboards report POST-REPORT paras, not issues
+-- rectified during audit finalization. The source flag is 0 by default,
+-- not NULL. Keep status-9 paras settled after report issuance, including
+-- additions and settlements within the same reporting period.
+-- CASE preserves any legacy/unclassified IND values unchanged.
+WHERE CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified, 0) = 1
+           THEN 0 ELSE 1 END = 1;
 /
 CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
 
@@ -1843,9 +1851,27 @@ END P_GET_CIA_EXEC_KPIS;
         P_SNAP_DIVISION_CODE,P_AUDITED_BY_ID);
     END IF;
     OPEN IO_CURSOR FOR
-      WITH scoped AS
+      -- Read the latest compliance-cycle entry no later than the selected
+      -- end date. Current master COM_CYCLE must not be mistaken for
+      -- a historical snapshot.
+      WITH history_asof AS
+      (
+        SELECT h.com_id,
+               MAX(h.com_cycle) KEEP (
+                 DENSE_RANK LAST ORDER BY h.comment_on, h.hist_id
+               ) AS recorded_cycle
+          FROM ais_t_au_post_compliance_history h
+         WHERE h.comment_on < V_TO
+           AND h.com_cycle IS NOT NULL
+         GROUP BY h.com_id
+      ),
+      scoped AS
       (
         SELECT k.*,
+               CASE WHEN V_TODAY = 1 THEN k.com_cycle
+                    WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
+                    WHEN k.com_cycle = 0 THEN 0
+               END AS snap_cycle,
                CASE WHEN V_TODAY = 1 THEN k.current_open
                     WHEN k.para_added_on < V_TO
                      AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
@@ -1855,6 +1881,7 @@ END P_GET_CIA_EXEC_KPIS;
                     THEN 1 ELSE 0 END AS snap_open,
                TRUNC(P_END_DATE) - TRUNC(k.para_added_on) AS snap_age
           FROM V_EXEC_KPI_LIFECYCLE k
+          LEFT JOIN history_asof h ON h.com_id = k.com_id
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
@@ -1893,6 +1920,7 @@ END P_GET_CIA_EXEC_KPIS;
         UNION ALL SELECT 'cycle','0','Zero cycles',1 FROM dual
         UNION ALL SELECT 'cycle','1','1-3 cycles',2 FROM dual
         UNION ALL SELECT 'cycle','4','Over 3 cycles',3 FROM dual
+        UNION ALL SELECT 'cycle','9','Unknown cycle',4 FROM dual
       ),
       position_rows AS
       (
@@ -1906,9 +1934,11 @@ END P_GET_CIA_EXEC_KPIS;
                     WHEN snap_age <= 1095 THEN '4' ELSE '5' END
           FROM scoped WHERE snap_open = 1
         UNION ALL
-        SELECT 'cycle', CASE WHEN NVL(com_cycle,0) = 0 THEN '0'
-                            WHEN com_cycle <= 3 THEN '1' ELSE '4' END
-          FROM scoped WHERE snap_open = 1 AND V_TODAY = 1
+        SELECT 'cycle',
+               CASE WHEN snap_cycle IS NULL OR snap_cycle < 0 THEN '9'
+                    WHEN snap_cycle = 0 THEN '0'
+                    WHEN snap_cycle <= 3 THEN '1' ELSE '4' END
+          FROM scoped WHERE snap_open = 1
       ),
       counts AS
       (
@@ -1924,11 +1954,9 @@ END P_GET_CIA_EXEC_KPIS;
       results AS
       (
         SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
-               CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN CAST(NULL AS NUMBER)
-                    ELSE NVL(n.para_count,0) END para_count,
+               NVL(n.para_count,0) AS para_count,
                CAST(NULL AS NUMBER) AS high_risk_count,
-               CASE WHEN c.dataset = 'cycle' AND V_TODAY = 0 THEN 'N'
-                    WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+               CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
           FROM categories c LEFT JOIN counts n
             ON n.dataset = c.dataset AND n.bucket_code = c.bucket_code
         UNION ALL
@@ -1984,9 +2012,28 @@ END P_GET_CIA_EXEC_KPIS;
         P_SNAP_DIVISION_CODE,P_AUDITED_BY_ID);
     END IF;
     OPEN IO_CURSOR FOR
-      WITH scoped AS
+      -- Last recorded cycle and movement as of the selected End Date.
+      WITH history_asof AS
+      (
+        SELECT h.com_id,
+               MAX(h.com_cycle) KEEP (
+                 DENSE_RANK LAST ORDER BY
+                   CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+                   CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST
+               ) AS recorded_cycle,
+               MAX(h.comment_on) AS last_movement_on
+          FROM ais_t_au_post_compliance_history h
+         WHERE h.comment_on < V_TO
+         GROUP BY h.com_id
+      ),
+      scoped AS
       (
         SELECT k.*,
+               CASE WHEN V_TODAY = 1 THEN k.com_cycle
+                    WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
+                    WHEN k.com_cycle = 0 THEN 0
+               END AS snap_cycle,
+               h.last_movement_on AS last_movement_on,
                CASE WHEN V_TODAY = 1 THEN k.current_open
                     WHEN k.para_added_on < V_TO
                      AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
@@ -1996,6 +2043,7 @@ END P_GET_CIA_EXEC_KPIS;
                     THEN 1 ELSE 0 END AS snap_open,
                TRUNC(P_END_DATE) - TRUNC(k.para_added_on) AS snap_age
           FROM V_EXEC_KPI_LIFECYCLE k
+          LEFT JOIN history_asof h ON h.com_id = k.com_id
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
@@ -2026,7 +2074,10 @@ END P_GET_CIA_EXEC_KPIS;
                CASE k.risk_id WHEN 1 THEN 'High' WHEN 2 THEN 'Medium'
                               WHEN 3 THEN 'Low' ELSE 'Unrated' END risk_name,
                k.snap_age AS aging_days,
-               CASE WHEN V_TODAY = 1 THEN k.com_cycle END AS com_cycle,
+               k.snap_cycle AS com_cycle,
+               CASE WHEN k.last_movement_on IS NOT NULL
+                    THEN TRUNC(P_END_DATE) - TRUNC(k.last_movement_on)
+               END AS days_since_movement,
                ROW_NUMBER() OVER(ORDER BY CASE WHEN k.risk_id = 1 THEN 0 ELSE 1 END,
                                           k.snap_age DESC NULLS LAST,k.com_id) rn
           FROM scoped k
@@ -2037,7 +2088,8 @@ END P_GET_CIA_EXEC_KPIS;
       )
       SELECT com_id, entity_id, entity_name, para_no, gist_of_paras,
              risk_name, aging_days, com_cycle,
-             CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+             CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,
+             days_since_movement
         FROM ranked WHERE rn <= P_MAX_ROWS ORDER BY rn;
   END P_GET_SNAP_CRITICAL;
 
