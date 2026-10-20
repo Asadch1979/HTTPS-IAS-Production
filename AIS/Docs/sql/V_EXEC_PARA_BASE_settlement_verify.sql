@@ -23,19 +23,22 @@ raw_totals AS
          COUNT(CASE WHEN c.para_status IN (8,9)
                       AND c.para_added_on >= d.date_from
                       AND c.para_added_on < d.date_to
-                      AND NOT (c.ind = 'A' AND NVL(c.issue_rectified,0)=1)
+                      AND CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified,0)=1
+                               THEN 0 ELSE 1 END = 1
                     THEN c.com_id END) expected_added,
          COUNT(CASE WHEN c.para_status = 9
                       AND c.setteled_on >= d.date_from
                       AND c.setteled_on < d.date_to
-                      AND NOT (c.ind = 'A' AND NVL(c.issue_rectified,0)=1)
+                      AND CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified,0)=1
+                               THEN 0 ELSE 1 END = 1
                     THEN c.com_id END) expected_settled,
          COUNT(CASE WHEN c.para_status = 9
                       AND c.para_added_on >= d.date_from
                       AND c.para_added_on < d.date_to
                       AND c.setteled_on >= d.date_from
                       AND c.setteled_on < d.date_to
-                      AND NOT (c.ind = 'A' AND NVL(c.issue_rectified,0)=1)
+                      AND CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified,0)=1
+                               THEN 0 ELSE 1 END = 1
                     THEN c.com_id END) expected_same_period,
          COUNT(CASE WHEN c.ind = 'A'
                       AND NVL(c.issue_rectified,0) = 1
