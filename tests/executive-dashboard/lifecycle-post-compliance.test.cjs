@@ -26,8 +26,18 @@ test('modern issue count is unique per observation, not duplicated per COM_ID',(
 test('rectified flags do not also count as para additions and settlements',()=>{
   assert.match(lifecycle,/NVL\(p\.issue_rectified, 0\) = 1/);
   assert.match(lifecycle,/p\.ind <> 'A' OR NVL\(p\.issue_rectified, 0\) <> 1/);
-  assert.match(lifecycle,/AS issue_rectified_on/);
+  assert.match(lifecycle,/THEN p\.para_added_on END AS issue_rectified_on/);
   assert.match(lifecycle,/AS excluded_pre_finalization/);
+  // Both open and post-report settled paras are additions,
+  // irrespective of the settlement's own reporting-period date.
+  assert.match(pkg,/k\.para_status = 8/);
+  assert.match(pkg,/k\.para_status = 9\s+AND k\.excluded_pre_finalization = 0/);
+  assert.match(pkg,/k\.para_added_on >= V_FROM/);
+  const body = pkg.slice(pkg.lastIndexOf('PROCEDURE P_GET_KPI_LIFECYCLE('));
+  const paraAdded = body.match(/NVL\(SUM\(CASE\s+WHEN k\.record_type = 'PARA'[\s\S]*?AS para_added,/);
+  assert.ok(paraAdded, 'Missing lifecycle Para Added projection.');
+  assert.doesNotMatch(paraAdded[0],/raw_para_settled_on/);
+  assert.match(reference,/para_status IN \(8, 9\)/);
 });
 test('old unknown status/conclusion metadata never manufactured',()=>{
   for(const col of ['observation_status','report_concluded_on','eng_id','audit_startdate','audit_enddate'])

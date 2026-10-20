@@ -18,12 +18,22 @@ test('canonical package still exposes existing CIA and lifecycle procedures', ()
     assert.equal(pkg.match(new RegExp('PROCEDURE ' + name + '\\(', 'g'))?.length, 2, name);
   }
 });
-test('CIA audited-entity numerator is entity- and selected-period-based', () => {
-  assert.match(pkg, /completed_entities AS/);
-  assert.match(pkg, /e\.period_id = P_AUDIT_PERIOD_ID/);
-  assert.match(pkg, /ON ce\.entity_id = p\.entity_id/);
-  assert.doesNotMatch(pkg, /completed_plan_ids AS/);
-  assert.match(pkg, /COUNT\(DISTINCT CASE WHEN ce\.entity_id IS NOT NULL/);
+test('CIA KPI scope follows Audited By and rejects unsupported filters', () => {
+  const body = pkg.slice(pkg.lastIndexOf('PROCEDURE P_GET_CIA_EXEC_KPIS('),
+    pkg.lastIndexOf('END P_GET_CIA_EXEC_KPIS;'));
+  assert.match(body, /P_ENTITY_ID IS NOT NULL/);
+  assert.match(body, /P_ENTITY_TYPE_ID IS NOT NULL/);
+  assert.match(body, /P_REPORTING_OFFICE_ID IS NOT NULL/);
+  assert.match(body, /RAISE_APPLICATION_ERROR\(\s*-20048/);
+  assert.match(body, /P_DASHBOARD_TYPE,\s*NULL,\s*P_AUDIT_PERIOD_ID/);
+  assert.match(body, /ON s\.entity_id = p\.auditedby/);
+  assert.match(body, /ON s\.entity_id = e\.auditby_id/);
+  assert.equal((body.match(/s\.parent_id IN \(112243, 113254\)/g) || []).length, 2);
+  assert.match(body, /completed_entities AS/);
+  assert.match(body, /e\.period_id = P_AUDIT_PERIOD_ID/);
+  assert.match(body, /ON ce\.entity_id = p\.entity_id/);
+  assert.doesNotMatch(body, /completed_plan_ids AS/);
+  assert.match(body, /COUNT\(DISTINCT\s+CASE\s+WHEN ce\.entity_id IS NOT NULL/);
 });
 test('unavailable pre-transfer drops return NULL, not invented zero', () => {
   assert.match(pkg, /CAST\(NULL AS NUMBER\) AS issue_dropped/);
@@ -31,8 +41,13 @@ test('unavailable pre-transfer drops return NULL, not invented zero', () => {
 });
 test('valid lifecycle ISSUE rectification comes from post-compliance source flag', (t) => {
   assert.match(lifecycle, /NVL\(p\.issue_rectified, 0\) = 1/);
-  assert.match(lifecycle, /p\.setteled_on END AS issue_rectified_on/);
+  assert.match(lifecycle, /p\.para_added_on END AS issue_rectified_on/);
   assert.match(pkg, /k\.record_type = 'ISSUE'\s+AND k\.issue_eligible = 1\s+AND k\.issue_rectified_on/);
+  assert.match(pkg, /k\.para_status = 8/);
+  assert.match(pkg, /k\.para_status = 9\s+AND k\.excluded_pre_finalization = 0/);
+  const paraAdded = pkg.match(/-- Para Added: include status 8[\s\S]*?AS para_added,/);
+  assert.ok(paraAdded, 'Missing inclusive post-report Para Added KPI.');
+  assert.doesNotMatch(paraAdded[0], /raw_para_settled_on/);
   if (recon) assert.match(recon, /KEEP\s+\(DENSE_RANK LAST ORDER BY l\.id\)/);
   else t.diagnostic('Optional reconciliation view DDL is absent from this checkout.');
 });
