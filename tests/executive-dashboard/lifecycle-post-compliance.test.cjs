@@ -30,7 +30,8 @@ test('rectified flags do not also count as para additions and settlements',()=>{
   assert.match(lifecycle,/AS excluded_pre_finalization/);
   // Both open and post-report settled paras are additions,
   // irrespective of the settlement's own reporting-period date.
-  assert.match(pkg,/k\.para_status IN \(8, 9\)/);
+  assert.match(pkg,/k\.para_status = 8/);
+  assert.match(pkg,/k\.para_status = 9\s+AND k\.excluded_pre_finalization = 0/);
   assert.match(pkg,/k\.para_added_on >= V_FROM/);
   const body = pkg.slice(pkg.lastIndexOf('PROCEDURE P_GET_KPI_LIFECYCLE('));
   const paraAdded = body.match(/NVL\(SUM\(CASE\s+WHEN k\.record_type = 'PARA'[\s\S]*?AS para_added,/);
