@@ -26,8 +26,12 @@ test('modern issue count is unique per observation, not duplicated per COM_ID',(
 test('rectified flags do not also count as para additions and settlements',()=>{
   assert.match(lifecycle,/NVL\(p\.issue_rectified, 0\) = 1/);
   assert.match(lifecycle,/p\.ind <> 'A' OR NVL\(p\.issue_rectified, 0\) <> 1/);
-  assert.match(lifecycle,/AS issue_rectified_on/);
+  assert.match(lifecycle,/THEN p\.para_added_on END AS issue_rectified_on/);
   assert.match(lifecycle,/AS excluded_pre_finalization/);
+  assert.match(pkg,/k\.para_status = 8/);
+  assert.match(pkg,/k\.raw_para_settled_on < V_FROM/);
+  assert.match(pkg,/k\.raw_para_settled_on >= V_TO_EXCLUSIVE/);
+  assert.match(pkg,/k\.para_added_on >= V_FROM/);
 });
 test('old unknown status/conclusion metadata never manufactured',()=>{
   for(const col of ['observation_status','report_concluded_on','eng_id','audit_startdate','audit_enddate'])
