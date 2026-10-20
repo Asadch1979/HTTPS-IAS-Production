@@ -23,12 +23,13 @@ history_asof AS
 (
     SELECT h.com_id,
            MAX(h.com_cycle) KEEP
-             (DENSE_RANK LAST ORDER BY h.comment_on, h.hist_id)
+             (DENSE_RANK LAST ORDER BY
+               CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+               CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST)
              AS recorded_cycle,
            MAX(h.comment_on) AS last_movement_on
       FROM ais_t_au_post_compliance_history h
      WHERE h.comment_on < DATE '2026-10-21'
-       AND h.com_cycle IS NOT NULL
      GROUP BY h.com_id
 ),
 snapshot AS
