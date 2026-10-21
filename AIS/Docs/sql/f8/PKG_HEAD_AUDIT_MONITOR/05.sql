@@ -123,7 +123,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
           WITHIN GROUP(ORDER BY r.report_version) FROM t_frpt_report_meta r WHERE r.eng_id=e.eng_id) report_status
        FROM v_head_audit_eng_scope sc JOIN t_au_plan_eng e ON e.eng_id=sc.eng_id
        LEFT JOIN t_auditee_entities ent ON ent.entity_id=e.entity_id
-       LEFT JOIN t_audit_departments d ON d.entity_id=e.auditby_id
+       LEFT JOIN (SELECT entity_id, MAX(deptname) deptname
+                    FROM t_audit_departments GROUP BY entity_id) d
+         ON d.entity_id=e.auditby_id
        LEFT JOIN t_auditee_entities office ON office.entity_id=e.auditby_id
        LEFT JOIN t_au_period p ON p.auditperiodid=e.period_id
        LEFT JOIN t_au_plan_eng_status s ON s.id=e.status
