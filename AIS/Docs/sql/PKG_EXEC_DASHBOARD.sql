@@ -2285,7 +2285,10 @@ END P_GET_CIA_EXEC_KPIS;
           k.para_settled_on setteled_on,k.para_added_on,d.cutoff-1-TRUNC(k.para_added_on) aging_days,
           COALESCE(h.recorded_cycle,CASE WHEN k.com_cycle=0 THEN 0 END) com_cycle,
           h.last_movement_date,d.cutoff-1-TRUNC(h.last_movement_date) days_since_last_movement,
-          CAST(NULL AS NUMBER) para_status,CAST(NULL AS NUMBER) com_status,CAST(NULL AS NUMBER) com_stage
+          -- These are CURRENT post-compliance workflow statuses, not historical
+          -- reconstructed statuses. The row's is_open/aging/cycle metrics remain
+          -- as-of-yesterday; status as-of-yesterday is not available here.
+          b.para_status AS para_status,b.com_status AS com_status,b.com_stage AS com_stage
         FROM V_EXEC_KPI_LIFECYCLE k JOIN V_EXEC_PARA_BASE b ON b.com_id=k.com_id
         CROSS JOIN reporting_clock d LEFT JOIN history_asof h ON h.com_id=k.com_id
         WHERE k.record_type='PARA' AND d.cutoff>TRUNC(d.cutoff,'YYYY')
