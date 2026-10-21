@@ -71,6 +71,7 @@ namespace AIS.Controllers
             int? officeId = null, int? statusId = null, string exception = null) => Read(() =>
         {
             if (engId <= 0 || !HeadAuditMonitoringPolicy.Sections.Contains(section)) return BadRequest();
+            if (new[] { "Plan", "Criteria", "Team" }.Contains(section)) section = "Tasks";
             if (!auditPeriodId.HasValue)
             {
                 var saved = database.GetHeadAuditEngagements().SingleOrDefault(e => e.EngagementId == engId);
@@ -83,6 +84,7 @@ namespace AIS.Controllers
             return View("~/Views/HeadAuditDepartment/Review.cshtml", new HeadAuditReview
             {
                 Engagement = engagement, Section = section, Records = database.GetHeadAuditWork(engId, section),
+                Plans = dashboard.Plans.Where(p => p.EngagementId == engId).ToList(),
                 AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
             });
         });

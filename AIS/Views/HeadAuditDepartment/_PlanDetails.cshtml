@@ -1,0 +1,13 @@
+@model System.Collections.Generic.List<AIS.Models.HeadAuditPlanDetail>
+<div class="wb-table" role="region" aria-label="Audit plan details" tabindex="0">
+    <table><thead><tr><th>Audit entity</th><th>No. of days</th><th>Start date – End date</th><th>Engagement team</th><th>Current stage</th><th>Status</th></tr></thead><tbody>
+    @foreach (var plan in Model)
+    {
+        <tr><td>@(string.IsNullOrWhiteSpace(plan.Entity) ? "N/A" : plan.Entity)</td><td>@(plan.Days?.ToString() ?? "N/A")</td>
+            <td>@(plan.Start?.ToString("dd MMM yyyy") ?? "N/A") – @(plan.End?.ToString("dd MMM yyyy") ?? "N/A")</td>
+            <td>@(string.IsNullOrWhiteSpace(plan.Team) ? "N/A" : plan.Team)</td>
+            <td>@(string.IsNullOrWhiteSpace(plan.Stage) ? "N/A" : plan.Stage)</td><td>@plan.Status</td></tr>
+    }
+    @if (Model.Count == 0) { <tr><td colspan="6">No approved audit plan details available.</td></tr> }
+    </tbody></table>
+</div>

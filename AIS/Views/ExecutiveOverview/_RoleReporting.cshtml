@@ -18,7 +18,7 @@
         }
         else
         {
-            <p class="exec-note">Top reporting units by current open para volume (maximum eight bars). Bars share the same maximum for comparison, and are not additive to the portfolio total.</p>
+            <p class="exec-note">Top reporting units by yesterday’s open para volume (maximum eight bars). Bars share the same maximum for comparison, and are not additive to the portfolio total.</p>
             <div class="role-comparison-bars" data-management-bars aria-label="Open paras by authorized organizational unit"><p>Loading unit comparisons…</p></div>
         }
         <p role="status" data-role-units-status>Loading authorized unit comparison…</p>
@@ -26,7 +26,7 @@
             <table class="exec-table"><thead><tr>
                 <th scope="col">Unit</th><th scope="col">Open paras</th><th scope="col">High risk</th>
                 <th scope="col">Over 365 days</th><th scope="col">Over 3 cycles</th>
-                <th scope="col">@(regional ? "High-risk share" : "Settled MTD")</th>
+                <th scope="col">@(regional ? "High-risk share" : "Settled YTD")</th>
             </tr></thead><tbody data-role-unit-rows></tbody></table>
         </div>
     </article>

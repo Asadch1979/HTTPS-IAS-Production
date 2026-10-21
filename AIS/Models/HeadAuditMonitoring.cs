@@ -53,6 +53,12 @@ namespace AIS.Models
     // Encoded text only: this model is never rendered as trusted HTML or sent to workflow editors.
     public sealed class HeadAuditWorkRecord
     {
+        public DateTime? Start { get; set; }
+        public DateTime? End { get; set; }
+        public string Memo { get; set; }
+        public string DraftPara { get; set; }
+        public string FinalPara { get; set; }
+        public string Risk { get; set; }
         public long Id { get; set; }
         public string Title { get; set; }
         public string Status { get; set; }
@@ -68,6 +74,7 @@ namespace AIS.Models
         public int? StatusId { get; set; }
         public string Exception { get; set; }
         public HeadAuditEngagement Engagement { get; set; }
+        public List<HeadAuditPlanDetail> Plans { get; set; } = new();
         public string Section { get; set; }
         public List<HeadAuditWorkRecord> Records { get; set; } = new();
     }
@@ -95,6 +102,7 @@ namespace AIS.Models
         public int? AuditPeriodId { get; set; }
         public List<HeadAuditOfficeSummary> Offices { get; set; } = new();
         public List<HeadAuditEngagement> Engagements { get; set; } = new();
+        public List<HeadAuditPlanDetail> Plans { get; set; } = new();
         public int? OfficeId { get; set; }
         public int? StatusId { get; set; }
         public string Exception { get; set; }
@@ -120,6 +128,19 @@ namespace AIS.Models
             var current = periods.Where(p => p.START_DATE.Date <= today && p.END_DATE.Date >= today).ToList();
             return current.Count == 1 ? current[0].AUDITPERIODID : (int?)null;
         }
+    }
+
+    public sealed class HeadAuditPlanDetail
+    {
+        public long PlanId { get; set; }
+        public long? EngagementId { get; set; }
+        public string Entity { get; set; }
+        public int? Days { get; set; }
+        public DateTime? Start { get; set; }
+        public DateTime? End { get; set; }
+        public string Team { get; set; }
+        public string Stage { get; set; }
+        public string Status { get; set; }
     }
 
     public sealed class HeadAuditDocument

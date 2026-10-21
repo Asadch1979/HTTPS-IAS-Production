@@ -6,11 +6,11 @@
     <partial name="_Sections" model="Model" />
     <div class="mgmt-gauge-grid" aria-label="Portfolio risk and settlement indicators">
         <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="settlement" role="img" aria-label="Settlement ratio awaiting IAS data"><span data-mgmt-ring-value="settlement">N/A</span></div>
-            <div><span class="mgmt-eyebrow">SETTLEMENT PERFORMANCE</span><h3>Settlement ratio</h3><p>Settled ÷ (open + settled). Source: current IAS para position.</p></div></article>
+            <div><span class="mgmt-eyebrow">SETTLEMENT PERFORMANCE</span><h3>Settlement ratio</h3><p>Year-to-date settled ÷ (opening balance + period additions). Position at yesterday.</p></div></article>
         <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="risk" role="img" aria-label="High-risk exposure awaiting IAS data"><span data-mgmt-ring-value="risk">N/A</span></div>
             <div><span class="mgmt-eyebrow">EXPOSURE</span><h3>High-risk share</h3><p>Open high-risk paras as a share of all open paras.</p></div></article>
         <article class="exec-panel mgmt-gauge-panel"><div class="mgmt-ring" data-mgmt-ring="aging" role="img" aria-label="Over-365-day share awaiting IAS data"><span data-mgmt-ring-value="aging">N/A</span></div>
-            <div><span class="mgmt-eyebrow">AGING PRESSURE</span><h3>Over 365 days</h3><p>Aged open paras as a share of current open paras.</p></div></article>
+            <div><span class="mgmt-eyebrow">AGING PRESSURE</span><h3>Over 365 days</h3><p>Aged open paras as a share of yesterday’s open paras.</p></div></article>
     </div>
     @* Actual scoped Oracle cursors are requested only for users with
        authorized page/API grants; no environment activation switch. *@

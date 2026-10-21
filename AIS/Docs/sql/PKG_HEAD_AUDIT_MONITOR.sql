@@ -30,6 +30,8 @@ SELECT DISTINCT d.dept_id,e.eng_id
 CREATE OR REPLACE PACKAGE PKG_HEAD_AUDIT_MONITOR AS
   PROCEDURE P_GET_PERIODS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
+  PROCEDURE P_GET_PLAN_DETAILS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
   PROCEDURE P_GET_OFFICE_SUMMARY(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
   PROCEDURE P_GET_ENGAGEMENTS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
@@ -84,6 +86,29 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
     OPEN IO_CURSOR FOR SELECT auditperiodid,description,start_date,end_date
       FROM t_au_period ORDER BY start_date DESC,auditperiodid DESC;
+  END;
+
+  PROCEDURE P_GET_PLAN_DETAILS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR) AS
+  BEGIN
+    REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
+    REQUIRE_PERIOD(P_PERIOD_ID);
+    OPEN IO_CURSOR FOR
+      -- Retain approved plans with no engagement. A plan with several saved
+      -- engagements has one detail row per engagement; KPI plan IDs count once.
+      SELECT p.id plan_id,e.eng_id,a.name entity_name,p.no_of_days,
+        e.audit_startdate,e.audit_enddate,e.team_name,s.status stage,
+        CASE WHEN e.status=14 THEN 'Completed'
+             WHEN e.status BETWEEN 4 AND 13 THEN 'InProgress' ELSE 'Planned' END plan_status
+      FROM t_au_plan p LEFT JOIN t_auditee_entities a ON a.entity_id=p.entity_id
+      LEFT JOIN t_au_plan_eng e ON e.plan_id=p.id AND e.auditby_id=p.auditedby
+        AND e.period_id=P_PERIOD_ID AND EXISTS (SELECT 1 FROM v_head_audit_eng_scope sc
+          WHERE sc.dept_id=P_DEPT_ID AND sc.eng_id=e.eng_id)
+      LEFT JOIN t_au_plan_eng_status s ON s.id=e.status
+      WHERE p.auditperiodid=P_PERIOD_ID AND p.status IN (1,2,4)
+        AND EXISTS (SELECT 1 FROM v_head_audit_office_scope sc
+          WHERE sc.dept_id=P_DEPT_ID AND sc.office_id=p.auditedby)
+      ORDER BY a.name,p.id,e.eng_id;
   END;
 
   -- Current position within one audit-period cohort, not historical completion activity.
@@ -245,15 +270,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
         WHERE sc.dept_id=P_DEPT_ID AND e.eng_id=P_ENG_ID ORDER BY m.isteamlead DESC,m.member_name;
     ELSIF P_SECTION='Tasks' THEN
       OPEN IO_CURSOR FOR
-        SELECT t.id record_id,'Assignment #'||t.id title,NVL(s.description,TO_CHAR(t.status_id)) status_name,
-          TO_CHAR(t.teammember_ppno) author,CAST(NULL AS DATE) saved_on,
-          TO_CLOB('Team ID: '||t.team_id||CHR(10)||'Sequence: '||t.sequence_no||CHR(10)||
-            'Active: '||t.isactive||CHR(10)||'Entity: '||t.entity_name||CHR(10)||
-            'Start: '||TO_CHAR(t.audit_start_date,'YYYY-MM-DD')||CHR(10)||
-            'End: '||TO_CHAR(t.audit_end_date,'YYYY-MM-DD')) content
-         FROM t_au_audit_team_tasklist t LEFT JOIN t_au_audit_team_tasklist_status s ON s.status_id=t.status_id
-         JOIN v_head_audit_eng_scope sc ON sc.eng_id=t.eng_plan_id
-        WHERE sc.dept_id=P_DEPT_ID AND t.eng_plan_id=P_ENG_ID ORDER BY t.id;
+        SELECT t.id record_id,t.entity_name title,s.description status_name,
+          (SELECT MAX(TRIM(emp.employeefirstname||' '||emp.employeelastname)) FROM v_service_employeeinfo emp WHERE emp.ppno=t.teammember_ppno) author,CAST(NULL AS DATE) saved_on,
+          TO_CLOB(CASE WHEN t.isactive='Y' THEN 'Active assignment' ELSE 'Inactive assignment' END) content,
+          t.audit_start_date start_date,t.audit_end_date end_date
+        FROM t_au_audit_team_tasklist t
+        LEFT JOIN t_au_audit_team_tasklist_status s ON s.status_id=t.status_id
+        JOIN v_head_audit_eng_scope sc ON sc.eng_id=t.eng_plan_id
+        WHERE sc.dept_id=P_DEPT_ID AND t.eng_plan_id=P_ENG_ID ORDER BY t.sequence_no,t.id;
     ELSIF P_SECTION IN ('WorkpapersLoan','WorkpapersVoucher','WorkpapersAccount','WorkpapersAssets','WorkpapersCash') THEN
       -- Separate cursors preserve full CLOB text without Oracle set operators on LOBs.
       IF P_SECTION='WorkpapersLoan' THEN
@@ -344,38 +368,37 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
       END IF;
     ELSIF P_SECTION='Observations' THEN
       OPEN IO_CURSOR FOR
-        SELECT o.id record_id,'Observation #'||o.id||' / Risk: '||NVL(r.description,TO_CHAR(o.severity)) title,
-          NVL(s.statusname,TO_CHAR(o.status)) status_name,TO_CHAR(o.enteredby) author,
-          NVL(ot.lastupdateddate,ot.entereddate) saved_on,
-          TO_CLOB('Memo: '||o.memo_number||CHR(10)||'Draft para: '||o.draft_para_no||CHR(10)||
-            'Final para: '||o.final_para_no||CHR(10)||'Reviewed by: '||o.reviewed_by||CHR(10)||
-            'Reviewed on: '||TO_CHAR(o.reviewed_on,'YYYY-MM-DD HH24:MI:SS')||CHR(10)||ot.headings||CHR(10))||ot.text content
-         FROM t_au_observation o LEFT JOIN t_au_observation_status s ON s.statusid=o.status
-         LEFT JOIN t_risk r ON r.r_id=o.severity
-         LEFT JOIN t_au_observation_text ot ON ot.observatsion_id=o.id
-         JOIN v_head_audit_eng_scope sc ON sc.eng_id=o.engplanid
-        WHERE sc.dept_id=P_DEPT_ID AND o.engplanid=P_ENG_ID ORDER BY o.id,ot.id;
+        SELECT o.id record_id,ot.headings title,s.statusname status_name,
+          (SELECT MAX(TRIM(emp.employeefirstname||' '||emp.employeelastname)) FROM v_service_employeeinfo emp WHERE emp.ppno=o.enteredby) author,
+          NVL(ot.lastupdateddate,ot.entereddate) saved_on,ot.text content,
+          o.memo_number memo_no,o.draft_para_no,o.final_para_no,CASE o.severity WHEN 1 THEN 'High' WHEN 2 THEN 'Medium' WHEN 3 THEN 'Low' ELSE 'Unrated' END risk_name
+        FROM t_au_observation o LEFT JOIN t_au_observation_status s ON s.statusid=o.status
+        LEFT JOIN t_risk r ON r.r_id=o.severity
+        LEFT JOIN t_au_observation_text ot ON ot.id=(SELECT MAX(txt.id)
+          FROM t_au_observation_text txt WHERE txt.observatsion_id=o.id)
+        JOIN v_head_audit_eng_scope sc ON sc.eng_id=o.engplanid
+        WHERE sc.dept_id=P_DEPT_ID AND o.engplanid=P_ENG_ID ORDER BY o.memo_number,o.id;
     ELSIF P_SECTION='History' THEN
       OPEN IO_CURSOR FOR
-        SELECT l.id record_id,'Engagement workflow history' title,NVL(s.status,TO_CHAR(l.status_id)) status_name,
-          TO_CHAR(l.createdby_id) author,l.created_on saved_on,
+        SELECT l.id record_id,NVL(s.status,'Engagement workflow history') title,NVL(s.status,TO_CHAR(l.status_id)) status_name,
+          (SELECT MAX(TRIM(emp.employeefirstname||' '||emp.employeelastname)) FROM v_service_employeeinfo emp WHERE emp.ppno=l.createdby_id) author,l.created_on saved_on,
           TO_CLOB(l.remarks)||CHR(10)||l.comments content
          FROM t_au_plan_eng_log l LEFT JOIN t_au_plan_eng_status s ON s.id=l.status_id
          JOIN v_head_audit_eng_scope sc ON sc.eng_id=l.e_id
         WHERE sc.dept_id=P_DEPT_ID AND l.e_id=P_ENG_ID ORDER BY l.created_on DESC,l.id DESC;
     ELSIF P_SECTION='ObservationReviews' THEN
       OPEN IO_CURSOR FOR
-        SELECT r.id record_id,'Observation #'||o.id||' recommendation' title,
-          TO_CHAR(r.status) status_name,TO_CHAR(r.reco_by) author,r.reco_date saved_on,
-          TO_CLOB('Role: '||r.reco_role||CHR(10)||'Submitted: '||r.submitted||CHR(10))||r.recommendation content
+        SELECT r.id record_id,'Memo '||o.memo_number||' recommendation' title,
+          TO_CHAR(r.status) status_name,(SELECT MAX(TRIM(emp.employeefirstname||' '||emp.employeelastname)) FROM v_service_employeeinfo emp WHERE emp.ppno=r.reco_by) author,r.reco_date saved_on,
+          TO_CLOB(r.recommendation) content
          FROM t_au_observations_auditor_recommendation r JOIN t_au_observation o ON o.id=r.au_obs_id
          JOIN v_head_audit_eng_scope sc ON sc.eng_id=o.engplanid
         WHERE sc.dept_id=P_DEPT_ID AND o.engplanid=P_ENG_ID ORDER BY r.reco_date DESC,r.id DESC;
     ELSIF P_SECTION='ObservationResponses' THEN
       OPEN IO_CURSOR FOR
-        SELECT r.id record_id,'Observation #'||o.id||' response' title,
-          TO_CHAR(r.status) status_name,TO_CHAR(r.repliedby) author,NVL(r.lastupdateddate,r.replieddate) saved_on,
-          TO_CLOB('Role: '||r.reply_role||CHR(10)||'Submitted: '||r.submitted||CHR(10))||r.reply||CHR(10)||r.remarks content
+        SELECT r.id record_id,'Memo '||o.memo_number||' response' title,
+          TO_CHAR(r.status) status_name,(SELECT MAX(TRIM(emp.employeefirstname||' '||emp.employeelastname)) FROM v_service_employeeinfo emp WHERE emp.ppno=r.repliedby) author,NVL(r.lastupdateddate,r.replieddate) saved_on,
+          TO_CLOB(r.reply)||CHR(10)||r.remarks content
          FROM t_au_observations_auditee_response r JOIN t_au_observation o ON o.id=r.au_obs_id
          JOIN v_head_audit_eng_scope sc ON sc.eng_id=o.engplanid
         WHERE sc.dept_id=P_DEPT_ID AND o.engplanid=P_ENG_ID ORDER BY r.replieddate DESC,r.id DESC;

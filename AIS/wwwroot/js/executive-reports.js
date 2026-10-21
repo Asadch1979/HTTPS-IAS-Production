@@ -209,8 +209,8 @@
     const exportCsvButton = $('report-export-csv'), exportPrintButton = $('report-export-print');
     let request, version = 0, loadedReport = null;
     function setExportReady(ready) {
-        exportCsvButton.disabled = !ready;
-        exportPrintButton.disabled = !ready;
+        if (exportCsvButton) exportCsvButton.disabled = !ready;
+        if (exportPrintButton) exportPrintButton.disabled = !ready;
     }
     function csvEscape(value) {
         const text = String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -244,8 +244,8 @@
         link.remove();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
-    exportCsvButton.addEventListener('click', exportCsv);
-    exportPrintButton.addEventListener('click', async () => {
+    exportCsvButton?.addEventListener('click', exportCsv);
+    exportPrintButton?.addEventListener('click', async () => {
         if (!loadedReport) return;
         const snapshot = loadedReport;
         exportPrintButton.disabled = true;

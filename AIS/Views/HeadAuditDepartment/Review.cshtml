@@ -15,30 +15,65 @@
         <a class="wb-table-action" href="@Url.Action("AuditTeamsMonitoring", new { auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">← All engagements</a></div></header>
     <section class="wb-overview">
         <nav class="wb-review-nav" aria-label="Review saved work">
-            @foreach (var section in AIS.Models.HeadAuditMonitoringPolicy.Sections)
+            @foreach (var section in AIS.Models.HeadAuditMonitoringPolicy.Sections.Where(s => s != "Plan" && s != "Criteria" && s != "Team"))
             {
                 <a class="wb-state-badge" aria-current="@(section == Model.Section ? "page" : null)"
-                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">@(section)</a>
+                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">@(section == "Tasks" ? "Plan & job assignments" : section)</a>
             }
         </nav>
-        <h2>@Model.Section</h2>
-        @if (Model.Section == "History") { <p>Saved engagement movements, observation recommendations and auditee responses.</p> }
-        @if (Model.Section == "Workpapers") { <p>Saved working papers. Completion and review state: N/A where the source does not record them.</p> }
-        @if (Model.Records.Count == 0) { <div class="wb-panel"><p>N/A — no saved @Model.Section.ToLowerInvariant() records are available for this engagement.</p></div> }
-        @foreach (var record in Model.Records)
+        @if (Model.Section == "Tasks")
         {
-            <article class="wb-panel wb-review-record"><h3>@Value(record.Title)</h3>
-                <p>Status: @Value(record.Status) · Saved by: @Value(record.Author) · @(record.SavedOn?.ToString("dd MMM yyyy HH:mm") ?? "N/A")</p>
-                @if (Model.Section == "Evidence" || Model.Section == "ResponseEvidence")
-                {
-                    <a class="wb-table-action" href="@Url.Action(Model.Section, new { engId = Model.Engagement.EngagementId, evidenceId = record.Id })">Download supporting evidence</a>
-                }
-                @if (Model.Section == "Reports")
-                {
-                    <a class="wb-table-action" href="@Url.Action("Report", new { engId = Model.Engagement.EngagementId, reportId = record.Id })">Download saved report</a>
-                }
-                <pre class="wb-saved-content">@Value(record.Content)</pre>
-            </article>
+            <h2>Audit plan details</h2>
+            <partial name="_PlanDetails" model="Model.Plans" />
+            <h2>Task list / Job assignment</h2>
+            <p><strong>Engagement team:</strong> @Value(Model.Engagement.Team) · @Value(Model.Engagement.Members)</p>
+            <div class="wb-table"><table><thead><tr><th>Audit entity</th><th>Job assigned to</th><th>Start date</th><th>End date</th><th>Stage</th><th>Assignment</th></tr></thead><tbody>
+            @foreach (var record in Model.Records) {
+                <tr><td>@Value(record.Title)</td><td>@Value(record.Author)</td><td>@(record.Start?.ToString("dd MMM yyyy") ?? "N/A")</td><td>@(record.End?.ToString("dd MMM yyyy") ?? "N/A")</td><td>@Value(record.Status)</td><td>@Value(record.Content)</td></tr>
+            }
+            @if (Model.Records.Count == 0) { <tr><td colspan="6">No saved job assignments.</td></tr> }
+            </tbody></table></div>
+        }
+        else if (Model.Section == "Observations")
+        {
+            <h2>Report summary</h2>
+            <div class="wb-table"><table><thead><tr><th>Total observations</th><th>High risk</th><th>Medium risk</th><th>Low risk</th></tr></thead>
+            <tbody><tr><td>@Model.Records.Count</td><td>@Model.Records.Count(r => r.Risk == "High")</td><td>@Model.Records.Count(r => r.Risk == "Medium")</td><td>@Model.Records.Count(r => r.Risk == "Low")</td></tr></tbody></table></div>
+            <h2>Audit observations</h2>
+            <div class="wb-table"><table><thead><tr><th>Memo No.</th><th>Draft Para No.</th><th>Final Para No.</th><th>Title of Para</th><th>Risk Category</th><th>Status</th><th>Observation</th></tr></thead><tbody>
+            @foreach (var record in Model.Records) {
+                <tr><td>@Value(record.Memo)</td><td>@Value(record.DraftPara)</td><td>@Value(record.FinalPara)</td><td>@Value(record.Title)</td><td>@Value(record.Risk)</td><td>@Value(record.Status)</td><td><details><summary>View saved text</summary><div class="wb-saved-content">@Value(record.Content)</div></details></td></tr>
+            }
+            @if (Model.Records.Count == 0) { <tr><td colspan="7">No saved observations.</td></tr> }
+            </tbody></table></div>
+        }
+        else if (Model.Section == "History")
+        {
+            <h2>History</h2>
+            <div class="wb-table"><table><thead><tr><th>Event heading / description</th><th>Date</th><th>Performed by</th></tr></thead><tbody>
+            @foreach (var record in Model.Records.OrderByDescending(r => r.SavedOn)) {
+                <tr><td><strong>@Value(record.Title)</strong><div class="wb-saved-content">@Value(record.Content)</div></td><td>@(record.SavedOn?.ToString("dd MMM yyyy HH:mm") ?? "N/A")</td><td>@Value(record.Author)</td></tr>
+            }
+            @if (Model.Records.Count == 0) { <tr><td colspan="3">No saved history.</td></tr> }
+            </tbody></table></div>
+        }
+        else
+        {
+            <h2>@Model.Section</h2>
+            <div class="wb-table"><table><thead><tr><th>Saved record</th><th>Status</th><th>Saved by / date</th><th>Details</th></tr></thead><tbody>
+            @foreach (var record in Model.Records) {
+                <tr><td>@Value(record.Title)
+                    @if (Model.Section == "Evidence" || Model.Section == "ResponseEvidence") {
+                        <a class="wb-table-action" href="@Url.Action(Model.Section, new { engId=Model.Engagement.EngagementId, evidenceId=record.Id })">Download evidence</a>
+                    }
+                    @if (Model.Section == "Reports") {
+                        <a class="wb-table-action" href="@Url.Action("Report", new { engId=Model.Engagement.EngagementId, reportId=record.Id })">Download saved report</a>
+                    }
+                </td><td>@Value(record.Status)</td><td>@Value(record.Author)<small>@(record.SavedOn?.ToString("dd MMM yyyy HH:mm") ?? "N/A")</small></td><td class="wb-saved-content">@Value(record.Content)</td></tr>
+            }
+            @if (Model.Records.Count == 0) { <tr><td colspan="4">No saved records.</td></tr> }
+            </tbody></table></div>
         }
     </section>
 </section>
+<partial name="_DashboardExportAssets" />

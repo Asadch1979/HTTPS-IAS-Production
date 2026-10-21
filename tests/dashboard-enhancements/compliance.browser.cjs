@@ -2,9 +2,10 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
 const script = fs.readFileSync(path.resolve(__dirname,'../../AIS/wwwroot/js/executive-dashboard.js'));
+const perspective=process.env.TEST_PERSPECTIVE || 'CCO';
 const actions=['GetKpiSummary','GetRiskSummary','GetAgingSummary','GetCycleSummary','GetSettlementTrend','GetCriticalItems'];
-const fixture=`<html><body><section id="executive-dashboard" data-perspective="CCO" data-scope-label="Authorized test scope"
-data-dashboard-type="CCO" data-view="glance" data-api-url="/api/" data-datasets="${actions.join(',')}">
+const fixture=`<html><body><section id="executive-dashboard" data-perspective="${perspective}" data-scope-label="Authorized test scope"
+data-dashboard-type="${perspective}" data-group-root-id="123" data-view="glance" data-api-url="/api/" data-datasets="${actions.join(',')}">
 <nav data-view-navigation><a href="/?view=risk">Risk</a></nav><form id="exec-filters">
 <input type="date" id="exec-start-date" name="startDate" value="2024-01-01" max="2026-10-20" required>
 <input type="date" id="exec-end-date" name="endDate" value="2024-02-29" max="2026-10-20" required>
@@ -28,14 +29,14 @@ data-dashboard-type="CCO" data-view="glance" data-api-url="/api/" data-datasets=
  await new Promise(resolve=>server.once('listening',resolve));
  const browser=await chromium.launch({channel:process.env.TEST_BROWSER||'chrome',headless:true});
  try{
-   const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   const page=await browser.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(`http://127.0.0.1:${server.address().port}`);
    await page.waitForFunction(()=>document.getElementById('executive-dashboard').getAttribute('aria-busy')==='false');
    assert.equal(queries.length,6);
    queries.forEach(url=>{
      assert.equal(url.searchParams.get('startDate'),'2024-01-01');
      assert.equal(url.searchParams.get('endDate'),'2024-02-29');
-     assert.equal(url.searchParams.get('dashboardType'),'CCO');
+     assert.equal(url.searchParams.get('dashboardType'),perspective);
    });
    assert.equal(await page.locator('#exec-results').evaluate(el=>el.hidden),false);
    assert.match(await page.locator('#exec-kpis').innerText(),/Settled in Period/);
@@ -47,6 +48,6 @@ data-dashboard-type="CCO" data-view="glance" data-api-url="/api/" data-datasets=
    await page.waitForFunction(()=>document.getElementById('exec-status').textContent.includes('date-aware'));
    assert.equal(await page.locator('#exec-results').evaluate(el=>el.hidden),true);
    assert.deepEqual(errors,[]);
-   console.log('PASS: all six CCO requests carry dates, date-aware responses required, period labels and navigation persistence.');
+   console.log('PASS: all six '+perspective+' requests carry dates, date-aware responses required, period labels and navigation persistence.');
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

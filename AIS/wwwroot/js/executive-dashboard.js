@@ -126,7 +126,7 @@
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
-            const compliance = app.dataset.perspective === 'CCO';
+            const compliance = ['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective);
             if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
                 settlementMtdRate: 'Selected-Period Settlement Rate', openParas: 'Closing Open Paras' })[key] || label;
@@ -251,7 +251,7 @@
             const actions = app.dataset.datasets.split(',').filter(Boolean);
             const data = await Promise.all(actions.map(async action => {
                 const actionQuery = new URLSearchParams(query);
-                if (app.dataset.perspective === 'CCO' || (lifecycle && action === 'GetKpiLifecycle') ||
+                if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective) || (lifecycle && action === 'GetKpiLifecycle') ||
                     (ciaIssues && action === 'GetKpiSummary')) {
                     const start = filterValues.get('startDate');
                     const end = filterValues.get('endDate');
@@ -268,7 +268,7 @@
                 if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('Unexpected response. Reload the page or sign in again.');
                 const result = await response.json();
                 if (!response.ok || result.success !== true) throw new Error(result.message || 'Dashboard data is temporarily unavailable.');
-                if (app.dataset.perspective === 'CCO' && result.dateRangeApplied !== true)
+                if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective) && result.dateRangeApplied !== true)
                     throw new Error('Compliance requires a date-aware response for every dataset.');
                 if (['GetKpiSummary', 'GetKpiLifecycle'].includes(action) ? !result.data || typeof result.data !== 'object' || Array.isArray(result.data) : !Array.isArray(result.data))
                     throw new Error('Dashboard response is incomplete. Please refresh.');
@@ -301,7 +301,7 @@
                 ? `${entity} · Audit Para Position for ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Historical opening/closing may be estimated · Updated ${new Date().toLocaleTimeString()}.`
                 : `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
-            if (app.dataset.perspective === 'CCO') $('status').textContent =
+            if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective)) $('status').textContent =
                 `${entity} · Selected period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Balances and distributions as of End Date; historical values may be estimated.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
@@ -317,7 +317,7 @@
         if (!start || !end) return form.checkValidity();
         end.setCustomValidity((lifecycle || start.value || end.value) && (!start.value || !end.value || start.value > end.value)
             ? 'Provide both dates, with Start Date no later than End Date.' : '');
-        if (app.dataset.perspective === 'CCO' && start.value && end.value) {
+        if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective) && start.value && end.value) {
             const a = start.value.split('-').map(Number), b = end.value.split('-').map(Number);
             if ((b[0] - a[0]) * 12 + b[1] - a[1] >= 1200)
                 end.setCustomValidity('Select fewer than 1200 calendar months.');

@@ -52,6 +52,11 @@
             <tbody><tr><td>@total.Planned</td><td>@total.CompletedPlans</td><td>@total.OngoingPlans</td><td>@total.NotStarted</td><td>@Rate(total.Achievement)</td><td>@total.Delayed</td></tr></tbody></table>
         <p class="wb-period-note">Green: completed · Blue: ongoing · Grey: not yet started. Delayed engagements are a separate exception measure and are not added to the plan totals. Completion means audit conclusion; final-report issuance alone is not conclusion.</p>
     </section>
+    <section class="wb-overview" aria-labelledby="plan-details-title">
+        <h2 id="plan-details-title">Audit plan details</h2>
+        <p class="wb-period-note">Approved plans in the selected audit period, including plans without engagements. Where a plan has several engagements, each engagement is shown; the plan KPI counts the plan once.</p>
+        <partial name="~/Views/HeadAuditDepartment/_PlanDetails.cshtml" model="Model.Plans" />
+    </section>
     <section class="wb-overview" aria-labelledby="offices-title"><div class="wb-section-heading"><h2 id="offices-title">Audit office performance</h2></div>
         <div class="wb-table"><table><thead><tr><th>Audit office / cluster</th><th>Planned</th><th>Completed engagements</th><th>Completed plans</th><th>Ongoing</th><th>Delayed</th><th>Pending reports</th><th>Achievement</th></tr></thead>
             <tbody>@foreach (var office in Model.Offices) { <tr><td>@Value(office.Office)</td><td>@office.Planned</td><td>@office.Completed</td><td>@office.CompletedPlans</td><td>@office.Ongoing</td><td>@office.Delayed</td><td>@office.PendingReports</td><td>@Rate(office.Achievement)</td></tr> }</tbody></table></div>

@@ -76,8 +76,8 @@
         status.textContent = 'Preparing section export…';
         try {
             const tables = rows(target);
-            const canvas = await capture(target);
-            if (!canvas.width || !canvas.height) throw new Error('The section is too large to capture.');
+            const canvas = format === 'xlsx' ? null : await capture(target);
+            if (canvas && (!canvas.width || !canvas.height)) throw new Error('The section is too large to capture.');
             if (revision !== selectedRevision) throw new Error('The dashboard changed. Export the refreshed section again.');
             const name = (target.querySelector('h1,h2,h3')?.textContent || target.getAttribute('aria-label') || 'IAS dashboard')
                 .trim().replace(/[^a-z0-9 -]/gi, '').slice(0, 90) || 'IAS dashboard';
@@ -101,9 +101,14 @@
                 pdf.save(name + '.pdf');
             } else {
                 const workbook = new ExcelJS.Workbook();
-                const snapshot = workbook.addWorksheet('Visual snapshot');
-                const image = workbook.addImage({ base64: canvas.toDataURL('image/png'), extension: 'png' });
-                snapshot.addImage(image, { tl: { col: 0, row: 0 }, ext: { width: canvas.width, height: canvas.height } });
+                const context = workbook.addWorksheet('Context');
+                context.addRow(['Section', name]);
+                context.addRow(['Authorized scope', app.dataset.scopeLabel || app.querySelector('.dashboard-title p')?.textContent.trim() || '']);
+                for (const [label, selector] of [['Start date', '#exec-start-date'], ['End date', '#exec-end-date'], ['Audit period', '#head-period']]) {
+                    const field = app.querySelector(selector);
+                    if (field) context.addRow([label, field.selectedOptions?.[0]?.textContent.trim() || field.value]);
+                }
+                context.columns.forEach(column => { column.width = 36; });
                 tables.forEach((data, index) => {
                     const sheet = workbook.addWorksheet('Table ' + (index + 1));
                     // Literal strings prevent spreadsheet formula injection.
@@ -123,6 +128,7 @@
                     ]));
                     sheet.columns.forEach(column => { column.width = 32; });
                 }
+                if (workbook.worksheets.length === 1) throw new Error('This section has no tabular data to export.');
                 const buffer = await workbook.xlsx.writeBuffer();
                 if (revision !== selectedRevision) throw new Error('The dashboard changed. Export the refreshed section again.');
                 save(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name + '.xlsx');

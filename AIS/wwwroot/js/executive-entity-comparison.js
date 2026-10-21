@@ -36,7 +36,7 @@
                 const high = count(1), medium = count(2), low = count(3);
                 const level = !kpi.openParas ? 'none' : high ? 'high' : medium ? 'medium' : low ? 'low' : 'unrated';
                 tile.dataset.risk = level;
-                target.textContent = `${level === 'none' ? 'No open paras' : level.toUpperCase() + ' risk'} · Open ${number(kpi.openParas)} · High ${number(high)} · Medium ${number(medium)} · Low ${number(low)} · High-risk share ${kpi.openParas ? (high / kpi.openParas * 100).toFixed(1) + '%' : 'N/A'} · Over 365 days ${number(kpi.over1YearParas)} · Settled balance ${number(kpi.settledTotal)} · Settled month-to-date ${number(kpi.settledMtd)} · Settlement ratio ${number(kpi.settlementRatio)}%`;
+                target.textContent = `${level === 'none' ? 'No open paras' : level.toUpperCase() + ' risk'} · Open ${number(kpi.openParas)} · High ${number(high)} · Medium ${number(medium)} · Low ${number(low)} · High-risk share ${kpi.openParas ? (high / kpi.openParas * 100).toFixed(1) + '%' : 'N/A'} · Over 365 days ${number(kpi.over1YearParas)} · Settled balance ${number(kpi.settledTotal)} · ${['GROUP','RLM'].includes(app.dataset.perspective) ? 'Settled year-to-date' : 'Settled month-to-date'} ${number(kpi.settledMtd)} · Settlement ratio ${number(kpi.settlementRatio)}%`;
             } catch (error) {
                 target.textContent = `${error.message}. Reload the page to retry. No figures available.`;
                 failures++;

@@ -143,7 +143,7 @@
                 const risk = item.riskName || (item.riskId == null ? 'Unrated' : String(item.riskId));
                 cell(tr,risk,'',item.riskId === 1 ? 'high' : item.riskId === 2 ? 'medium' : '');
                 cell(tr,item.agingDays == null ? 'Unknown' : number.format(item.agingDays));
-                cell(tr,number.format(item.comCycle || 0));
+                cell(tr,item.comCycle == null ? 'Unknown' : number.format(item.comCycle));
                 cell(tr,(item.priorityReason || 'NORMAL').replaceAll('_',' '),'role-priority');
                 cell(tr,(item.gistOfParas || '').slice(0,240));
                 tbody.append(tr);

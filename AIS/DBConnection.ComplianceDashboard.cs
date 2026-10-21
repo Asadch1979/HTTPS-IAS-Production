@@ -9,6 +9,15 @@ namespace AIS.Controllers
     {
         private void ValidateDatedDashboardScope(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
         {
+            if (ManagementDashboardPeriod.Applies(scope.DashboardType))
+            {
+                ValidateExecutiveDashboardSession(scope);
+                RequireExecutiveGroupScope(scope);
+                if (scope.EntityId.GetValueOrDefault() <= 0) throw new UnauthorizedAccessException();
+                ManagementDashboardPeriod.Apply(filters, scope.DashboardType);
+                ComplianceDashboardPolicy.Validate(filters);
+                return;
+            }
             if (scope.DashboardType != "CCO")
             {
                 ValidateSnapScope(scope);

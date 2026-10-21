@@ -48,7 +48,8 @@ ${Array.from({length:35},(_,i)=>`<tr><td>${i===0?'=HYPERLINK("bad")':'Entity '+i
      else {
        const ExcelJS=require(path.join(root,'lib/dashboard-export/exceljs-4.4.0.min.js'));
        const book=new ExcelJS.Workbook();await book.xlsx.load(bytes);
-       assert.equal(book.getWorksheet('Visual snapshot').getImages().length,1);
+       assert.equal(book.getWorksheet('Visual snapshot'),undefined);
+       assert.ok(book.worksheets.every(sheet => sheet.getImages().length === 0));
        assert.equal(book.getWorksheet('Table 1').rowCount,36);
        assert.equal(book.getWorksheet('Table 1').columnCount,2);
        assert.equal(book.getWorksheet('Table 1').getCell('A2').type,3,'Formula-like text stays literal');
@@ -59,6 +60,6 @@ ${Array.from({length:35},(_,i)=>`<tr><td>${i===0?'=HYPERLINK("bad")':'Entity '+i
    await control.locator('summary').click();await control.getByRole('button',{name:'PDF',exact:true}).click();
    assert.match(await page.locator('.dashboard-export-status').innerText(),/wait for the dashboard/);
    assert.deepEqual(errors,[]);
-   console.log('PASS: full-scroll PNG, paginated PDF, Excel snapshot and literal/visible table data, layout preservation, busy-state guard.');
+   console.log('PASS: full-scroll PNG, paginated PDF, data-only Excel and literal/visible table data, layout preservation, busy-state guard.');
  } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -85,6 +85,7 @@ namespace AIS.Controllers
                 database.GetAuditParaSnapDepartments(scope, filters.SnapDivision, filters.SnapDepartmentId);
                 if (report != (filters.View=="reports"))
                     return Error(400,"invalid_request","Dataset is not enabled for this view.");
+                if (!string.IsNullOrEmpty(format) && !superUser) return Error(403,"forbidden","Export requires Super User.");
                 if (!string.IsNullOrEmpty(format) && (!report || !string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase)))
                     return Error(400,"invalid_request","Only report PDF export is supported.");
                 // Validate all hierarchy selections before narrowing scope.

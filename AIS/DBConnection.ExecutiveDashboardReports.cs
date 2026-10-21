@@ -24,6 +24,7 @@ namespace AIS.Controllers
             ValidateExecutiveDashboardSession(scope);
             RequireExecutiveGroupScope(scope);
             if (filters == null) throw new ArgumentException("Report filters and dates are required.");
+            ManagementDashboardPeriod.Apply(filters, scope.DashboardType);
             var dates = filters.Validate() ?? throw new ArgumentException("Both report dates are required.");
             // Preserve the fixed authenticated root independently of any selected entity.
             // Dimensional validation uses observation-level SQL data, not a directory scan.

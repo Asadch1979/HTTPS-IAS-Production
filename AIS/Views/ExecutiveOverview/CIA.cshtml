@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "CIA Audit Command Center · Executive Dashboard";
     Layout = "_Layout";
+    ViewData["HideTopHeader"] = true;
     var selectedPeriod = Model.CiaPeriods.FirstOrDefault(p => p.AUDITPERIODID == Model.SelectedCiaPeriodId);
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />

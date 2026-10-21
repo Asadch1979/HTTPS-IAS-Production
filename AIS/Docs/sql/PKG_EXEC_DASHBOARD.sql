@@ -1116,6 +1116,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         'Both KPI reporting dates are required; Start Date cannot exceed End Date.');
     END IF;
 
+    IF V_TYPE IN ('GROUP','RLM') AND
+       (TRUNC(P_START_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE),'YYYY') OR
+        TRUNC(P_END_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))-1) THEN
+      RAISE_APPLICATION_ERROR(-20046,'Management reporting requires current-year start through yesterday.');
+    END IF;
     V_FROM := TRUNC(P_START_DATE);
     V_TO_EXCLUSIVE := TRUNC(P_END_DATE) + 1;
     IF TRUNC(P_END_DATE) > TRUNC(SYSDATE) THEN
@@ -1123,7 +1128,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     END IF;
 
     V_TODAY_SNAPSHOT := CASE
-      WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+      WHEN V_TYPE NOT IN ('GROUP','RLM') AND TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
 
     IF P_SNAP_DIVISION_CODE IS NOT NULL THEN
       PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(
@@ -1829,8 +1834,8 @@ END P_GET_CIA_EXEC_KPIS;
     V_TO DATE;
     V_TODAY NUMBER;
   BEGIN
-    IF V_TYPE NOT IN ('CIA','CCO') THEN
-      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require CIA or CCO scope.');
+    IF V_TYPE NOT IN ('CIA','CCO','GROUP','RLM') THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require an authorized supported perspective.');
     END IF;
     IF P_START_DATE IS NULL OR P_END_DATE IS NULL
        OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
@@ -1838,9 +1843,14 @@ END P_GET_CIA_EXEC_KPIS;
        OR MONTHS_BETWEEN(TRUNC(P_END_DATE, 'MM'), TRUNC(P_START_DATE, 'MM')) >= 1200 THEN
       RAISE_APPLICATION_ERROR(-20046, 'Provide ordered non-future Snap dates spanning fewer than 1200 months.');
     END IF;
+    IF V_TYPE IN ('GROUP','RLM') AND
+       (TRUNC(P_START_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE),'YYYY') OR
+        TRUNC(P_END_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))-1) THEN
+      RAISE_APPLICATION_ERROR(-20046,'Management reporting requires current-year start through yesterday.');
+    END IF;
     V_FROM := TRUNC(P_START_DATE);
     V_TO := TRUNC(P_END_DATE) + 1;
-    V_TODAY := CASE WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+    V_TODAY := CASE WHEN V_TYPE NOT IN ('GROUP','RLM') AND TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
 
     IF P_SNAP_DIVISION_CODE IS NOT NULL THEN
       PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(
@@ -1982,8 +1992,8 @@ END P_GET_CIA_EXEC_KPIS;
     V_TO DATE;
     V_TODAY NUMBER;
   BEGIN
-    IF V_TYPE NOT IN ('CIA','CCO') THEN
-      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require CIA or CCO scope.');
+    IF V_TYPE NOT IN ('CIA','CCO','GROUP','RLM') THEN
+      RAISE_APPLICATION_ERROR(-20045, 'Dated distributions require an authorized supported perspective.');
     END IF;
     IF P_START_DATE IS NULL OR P_END_DATE IS NULL
        OR TRUNC(P_START_DATE) > TRUNC(P_END_DATE)
@@ -1991,9 +2001,14 @@ END P_GET_CIA_EXEC_KPIS;
        OR MONTHS_BETWEEN(TRUNC(P_END_DATE, 'MM'), TRUNC(P_START_DATE, 'MM')) >= 1200 THEN
       RAISE_APPLICATION_ERROR(-20046, 'Provide ordered non-future Snap dates spanning fewer than 1200 months.');
     END IF;
+    IF V_TYPE IN ('GROUP','RLM') AND
+       (TRUNC(P_START_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE),'YYYY') OR
+        TRUNC(P_END_DATE) <> TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))-1) THEN
+      RAISE_APPLICATION_ERROR(-20046,'Management reporting requires current-year start through yesterday.');
+    END IF;
     V_FROM := TRUNC(P_START_DATE);
     V_TO := TRUNC(P_END_DATE) + 1;
-    V_TODAY := CASE WHEN TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
+    V_TODAY := CASE WHEN V_TYPE NOT IN ('GROUP','RLM') AND TRUNC(P_END_DATE) = TRUNC(SYSDATE) THEN 1 ELSE 0 END;
 
     IF P_MAX_ROWS IS NULL OR P_MAX_ROWS < 1 OR P_MAX_ROWS > 250
        OR P_MAX_ROWS <> TRUNC(P_MAX_ROWS) THEN
@@ -2112,6 +2127,34 @@ END P_GET_CIA_EXEC_KPIS;
       RAISE_APPLICATION_ERROR(-20062,'Max rows is required');
     END IF;
     OPEN IO_CURSOR FOR
+      WITH reporting_clock AS (
+        SELECT TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) cutoff FROM dual
+      ), history_asof AS (
+        SELECT h.com_id,MAX(h.comment_on) last_movement_date,
+          MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST) recorded_cycle
+        FROM ais_t_au_post_compliance_history h CROSS JOIN reporting_clock d
+        WHERE h.comment_on<d.cutoff GROUP BY h.com_id
+      ), management_position AS (
+        -- Same historical-open rule as P_GET_SNAP_DISTRIBUTION. Opening stock
+        -- is retained; activity covers Jan 1 through yesterday, never today.
+        SELECT b.com_id,b.para_no,b.audit_period,b.gist_of_paras,b.entity_id,b.entity_name,
+          b.entity_type_id,b.division_id,b.division_name,b.business_group_id,b.business_group_name,
+          k.risk_id,b.risk_name,b.reporting_1,b.reporting_2,b.reporting_3,b.reporting_4,b.reporting_5,b.reporting_6,
+          CASE WHEN k.para_added_on<d.cutoff AND
+            (k.source_ind<>'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on<d.cutoff)
+            AND (k.para_status=8 OR (k.para_status=9 AND k.para_settled_on>=d.cutoff)) THEN 1 ELSE 0 END is_open,
+          CASE WHEN k.para_settled_on>=TRUNC(d.cutoff,'YYYY')
+            AND k.para_settled_on<d.cutoff THEN 1 ELSE 0 END is_settled,
+          k.para_settled_on setteled_on,k.para_added_on,d.cutoff-1-TRUNC(k.para_added_on) aging_days,
+          COALESCE(h.recorded_cycle,CASE WHEN k.com_cycle=0 THEN 0 END) com_cycle,
+          h.last_movement_date,d.cutoff-1-TRUNC(h.last_movement_date) days_since_last_movement,
+          CAST(NULL AS NUMBER) para_status,CAST(NULL AS NUMBER) com_status,CAST(NULL AS NUMBER) com_stage
+        FROM V_EXEC_KPI_LIFECYCLE k JOIN V_EXEC_PARA_BASE b ON b.com_id=k.com_id
+        CROSS JOIN reporting_clock d LEFT JOIN history_asof h ON h.com_id=k.com_id
+        WHERE k.record_type='PARA' AND d.cutoff>TRUNC(d.cutoff,'YYYY')
+      )
       SELECT * FROM (
         SELECT p.entity_id, MAX(p.entity_name) AS entity_name,
                MAX(p.entity_type_id) AS entity_type_id,
@@ -2125,7 +2168,7 @@ END P_GET_CIA_EXEC_KPIS;
                SUM(CASE WHEN p.com_cycle > 3 THEN 1 ELSE 0 END) AS over_3_cycles,
                ROUND(100 * SUM(CASE WHEN p.risk_id = 1 THEN 1 ELSE 0 END)
                      / NULLIF(COUNT(*),0),2) AS high_risk_share_pct
-          FROM V_EXEC_PARA_BASE p
+          FROM management_position p
          WHERE p.is_open = 1
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
            AND (P_ENTITY_TYPE_ID IS NULL OR p.entity_type_id = P_ENTITY_TYPE_ID)
@@ -2146,7 +2189,34 @@ END P_GET_CIA_EXEC_KPIS;
   BEGIN
     REQUIRE_ROLE_DASHBOARD(P_DASHBOARD_TYPE,P_ROOT_ENTITY_ID);
     OPEN IO_CURSOR FOR
-      WITH scoped AS (
+      WITH reporting_clock AS (
+        SELECT TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) cutoff FROM dual
+      ), history_asof AS (
+        SELECT h.com_id,MAX(h.comment_on) last_movement_date,
+          MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST) recorded_cycle
+        FROM ais_t_au_post_compliance_history h CROSS JOIN reporting_clock d
+        WHERE h.comment_on<d.cutoff GROUP BY h.com_id
+      ), management_position AS (
+        -- Same historical-open rule as P_GET_SNAP_DISTRIBUTION. Opening stock
+        -- is retained; activity covers Jan 1 through yesterday, never today.
+        SELECT b.com_id,b.para_no,b.audit_period,b.gist_of_paras,b.entity_id,b.entity_name,
+          b.entity_type_id,b.division_id,b.division_name,b.business_group_id,b.business_group_name,
+          k.risk_id,b.risk_name,b.reporting_1,b.reporting_2,b.reporting_3,b.reporting_4,b.reporting_5,b.reporting_6,
+          CASE WHEN k.para_added_on<d.cutoff AND
+            (k.source_ind<>'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on<d.cutoff)
+            AND (k.para_status=8 OR (k.para_status=9 AND k.para_settled_on>=d.cutoff)) THEN 1 ELSE 0 END is_open,
+          CASE WHEN k.para_settled_on>=TRUNC(d.cutoff,'YYYY')
+            AND k.para_settled_on<d.cutoff THEN 1 ELSE 0 END is_settled,
+          k.para_settled_on setteled_on,k.para_added_on,d.cutoff-1-TRUNC(k.para_added_on) aging_days,
+          COALESCE(h.recorded_cycle,CASE WHEN k.com_cycle=0 THEN 0 END) com_cycle,
+          h.last_movement_date,d.cutoff-1-TRUNC(h.last_movement_date) days_since_last_movement,
+          CAST(NULL AS NUMBER) para_status,CAST(NULL AS NUMBER) com_status,CAST(NULL AS NUMBER) com_stage
+        FROM V_EXEC_KPI_LIFECYCLE k JOIN V_EXEC_PARA_BASE b ON b.com_id=k.com_id
+        CROSS JOIN reporting_clock d LEFT JOIN history_asof h ON h.com_id=k.com_id
+        WHERE k.record_type='PARA' AND d.cutoff>TRUNC(d.cutoff,'YYYY')
+      ), scoped AS (
         SELECT p.*,
                CASE
                  WHEN p.entity_id = P_ROOT_ENTITY_ID THEN p.entity_id
@@ -2157,7 +2227,7 @@ END P_GET_CIA_EXEC_KPIS;
                  WHEN p.reporting_5 = P_ROOT_ENTITY_ID THEN p.reporting_4
                  WHEN p.reporting_6 = P_ROOT_ENTITY_ID THEN p.reporting_5
                END AS unit_id
-          FROM V_EXEC_PARA_BASE p
+          FROM management_position p
          WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
            AND (p.entity_id = P_ROOT_ENTITY_ID
                 OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
@@ -2170,8 +2240,8 @@ END P_GET_CIA_EXEC_KPIS;
              SUM(CASE WHEN s.is_open = 1 AND s.com_cycle > 3 THEN 1 ELSE 0 END) AS over_3_cycles,
              SUM(CASE WHEN s.is_settled = 1 THEN 1 ELSE 0 END) AS settled_total,
              SUM(CASE WHEN s.is_settled = 1
-                       AND s.setteled_on >= TRUNC(SYSDATE,'MM')
-                       AND s.setteled_on < ADD_MONTHS(TRUNC(SYSDATE,'MM'),1)
+                       AND s.setteled_on >= TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE),'YYYY')
+                       AND s.setteled_on < TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))
                       THEN 1 ELSE 0 END) AS settled_mtd
         FROM scoped s
         LEFT JOIN t_auditee_entities u ON u.entity_id = s.unit_id
@@ -2192,6 +2262,34 @@ END P_GET_CIA_EXEC_KPIS;
       RAISE_APPLICATION_ERROR(-20062,'Max rows is required');
     END IF;
     OPEN IO_CURSOR FOR
+      WITH reporting_clock AS (
+        SELECT TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) cutoff FROM dual
+      ), history_asof AS (
+        SELECT h.com_id,MAX(h.comment_on) last_movement_date,
+          MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+            CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST) recorded_cycle
+        FROM ais_t_au_post_compliance_history h CROSS JOIN reporting_clock d
+        WHERE h.comment_on<d.cutoff GROUP BY h.com_id
+      ), management_position AS (
+        -- Same historical-open rule as P_GET_SNAP_DISTRIBUTION. Opening stock
+        -- is retained; activity covers Jan 1 through yesterday, never today.
+        SELECT b.com_id,b.para_no,b.audit_period,b.gist_of_paras,b.entity_id,b.entity_name,
+          b.entity_type_id,b.division_id,b.division_name,b.business_group_id,b.business_group_name,
+          k.risk_id,b.risk_name,b.reporting_1,b.reporting_2,b.reporting_3,b.reporting_4,b.reporting_5,b.reporting_6,
+          CASE WHEN k.para_added_on<d.cutoff AND
+            (k.source_ind<>'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on<d.cutoff)
+            AND (k.para_status=8 OR (k.para_status=9 AND k.para_settled_on>=d.cutoff)) THEN 1 ELSE 0 END is_open,
+          CASE WHEN k.para_settled_on>=TRUNC(d.cutoff,'YYYY')
+            AND k.para_settled_on<d.cutoff THEN 1 ELSE 0 END is_settled,
+          k.para_settled_on setteled_on,k.para_added_on,d.cutoff-1-TRUNC(k.para_added_on) aging_days,
+          COALESCE(h.recorded_cycle,CASE WHEN k.com_cycle=0 THEN 0 END) com_cycle,
+          h.last_movement_date,d.cutoff-1-TRUNC(h.last_movement_date) days_since_last_movement,
+          CAST(NULL AS NUMBER) para_status,CAST(NULL AS NUMBER) com_status,CAST(NULL AS NUMBER) com_stage
+        FROM V_EXEC_KPI_LIFECYCLE k JOIN V_EXEC_PARA_BASE b ON b.com_id=k.com_id
+        CROSS JOIN reporting_clock d LEFT JOIN history_asof h ON h.com_id=k.com_id
+        WHERE k.record_type='PARA' AND d.cutoff>TRUNC(d.cutoff,'YYYY')
+      )
       SELECT * FROM (
         SELECT p.com_id, p.para_no, p.audit_period, p.gist_of_paras,
                p.entity_id, p.entity_name, p.division_id, p.division_name,
@@ -2204,7 +2302,7 @@ END P_GET_CIA_EXEC_KPIS;
                     WHEN p.aging_days > 365 THEN 'AGED_OVER_365'
                     WHEN p.com_cycle > 3 THEN 'REPEATED_COMPLIANCE'
                     ELSE 'NORMAL' END AS priority_reason
-          FROM V_EXEC_PARA_BASE p
+          FROM management_position p
          WHERE p.is_open = 1
            AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
            AND (p.entity_id = P_ROOT_ENTITY_ID

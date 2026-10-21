@@ -159,6 +159,7 @@ namespace AIS.Controllers
                     filters.StartDate = new DateTime(defaultEndDate.Year - (annualDefault ? 3 : 0), 1, 1).ToString("yyyy-MM-dd");
                     filters.EndDate = defaultEndDate.ToString("yyyy-MM-dd");
                 }
+                ManagementDashboardPeriod.Apply(filters, requestedType);
                 filters.EntityId = entityId;
                 filters.View = view;
                 filters.Validate();

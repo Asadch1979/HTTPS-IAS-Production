@@ -106,19 +106,32 @@ namespace AIS.Controllers
             if (officeId.HasValue && !result.Offices.Any(o => o.OfficeId == officeId))
                 throw new UnauthorizedAccessException();
             result.Engagements = GetHeadAuditEngagements(selected);
+            result.Plans = ReadHeadAudit("P_GET_PLAN_DETAILS", r => new HeadAuditPlanDetail {
+                PlanId=RoleLong(r,"PLAN_ID"), EngagementId=RoleNullableLong(r,"ENG_ID"),
+                Entity=RoleText(r,"ENTITY_NAME"), Days=RoleNullableInt(r,"NO_OF_DAYS"),
+                Start=RoleDate(r,"AUDIT_STARTDATE"), End=RoleDate(r,"AUDIT_ENDDATE"),
+                Team=RoleText(r,"TEAM_NAME"), Stage=RoleText(r,"STAGE"), Status=RoleText(r,"PLAN_STATUS")
+            }, periodId:selected);
             return result;
         }
 
         internal List<HeadAuditWorkRecord> GetHeadAuditWork(long engagementId, string section)
         {
             if (engagementId <= 0 || !HeadAuditMonitoringPolicy.Sections.Contains(section)) throw new ArgumentException();
+            if (new[] { "Plan", "Criteria", "Team" }.Contains(section)) section = "Tasks";
             var sections = section == "Workpapers" ? new[] { "WorkpapersLoan", "WorkpapersVoucher", "WorkpapersAccount", "WorkpapersAssets", "WorkpapersCash", "V2Headers", "V2Items", "V2Reviews", "V2Evidence" }
                 : section == "History" ? new[] { "History", "ObservationReviews", "ObservationResponses" }
                 : section == "DraftReport" ? new[] { "DraftReportMeta", "DraftReportText", "DraftReportParas", "DraftReportConclusion" } : new[] { section };
             return sections.SelectMany(part => ReadHeadAudit("P_GET_WORK", r => new HeadAuditWorkRecord
             {
-                Id = RoleLong(r, "RECORD_ID"), Title = RoleText(r, "TITLE"), Status = RoleText(r, "STATUS_NAME"),
-                Author = RoleText(r, "AUTHOR"), SavedOn = RoleDate(r, "SAVED_ON"), Content = RoleText(r, "CONTENT")
+                Id = RoleLong(r, "RECORD_ID"), Title = AIS.Services.HeadAuditReviewText.Plain(RoleText(r, "TITLE")), Status = RoleText(r, "STATUS_NAME"),
+                Author = RoleText(r, "AUTHOR"), SavedOn = RoleDate(r, "SAVED_ON"), Content = AIS.Services.HeadAuditReviewText.Plain(RoleText(r, "CONTENT")),
+                Start = part == "Tasks" ? RoleDate(r,"START_DATE") : null,
+                End = part == "Tasks" ? RoleDate(r,"END_DATE") : null,
+                Memo = part == "Observations" ? RoleText(r,"MEMO_NO") : null,
+                DraftPara = part == "Observations" ? RoleText(r,"DRAFT_PARA_NO") : null,
+                FinalPara = part == "Observations" ? RoleText(r,"FINAL_PARA_NO") : null,
+                Risk = part == "Observations" ? RoleText(r,"RISK_NAME") : null
             }, engagementId, part)).ToList();
         }
 

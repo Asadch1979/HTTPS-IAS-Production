@@ -59,9 +59,10 @@ namespace AIS.Controllers
                 return Error(400, "invalid_request", "Provide valid report parameters and dates.");
             try
             {
+                var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
+                ManagementDashboardPeriod.Apply(filters, scope.DashboardType);
                 if (filters.Validate() == null || (filters.View != null && filters.View != "reports"))
                     return Error(400, "invalid_request", "Both dates and the Reports view are required.");
-                var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
                 if (scope.DashboardType == "CCO") ComplianceDashboardPolicy.Validate(filters);
                 var superUser = user.UserRoleID == 1 && session.IsSuperUser();
                 if (!superUser) permissions.EnsurePermissionsCached(user);
@@ -79,6 +80,7 @@ namespace AIS.Controllers
                 // Reuse the existing GET report route and its page/API/portfolio permissions for PDF.
                 // Do not create an unregistered export endpoint or bypass the current scope.
                 var format = Request.Query["format"].ToString();
+                if (!string.IsNullOrEmpty(format) && !superUser) return Denied("ExportPermission", user, scope.DashboardType);
                 if (!string.IsNullOrEmpty(format) && !string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
                     return Error(400, "invalid_format", "Only PDF export is supported.");
                 var data = query(scope, filters);

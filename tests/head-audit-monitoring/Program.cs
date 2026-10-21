@@ -27,7 +27,7 @@ Check(actions.Length == 7, "Review the protected GET surface when adding actions
 foreach (var action in actions)
 {
     Check(action.GetCustomAttribute<HttpGetAttribute>() != null, $"Unexpected non-GET action {action.Name}.");
-    Check(action.GetParameters().All(p => p.Name is "engId" or "section" or "evidenceId" or "reportId"),
+    Check(action.GetParameters().All(p => p.Name is "engId" or "section" or "evidenceId" or "reportId" or "auditPeriodId" or "officeId" or "statusId" or "exception"),
         $"Browser-supplied authority on {action.Name}.");
 }
 Console.WriteLine("PASS: role/entity eligibility, authenticated GET-only surface, no-store, and no browser-supplied authority parameters.");
@@ -52,3 +52,21 @@ dates.EndDate=AuditParaSnapPolicy.Today.AddDays(1).ToString("yyyy-MM-dd");
 try { ComplianceDashboardPolicy.Validate(dates); throw new Exception("Compliance accepted future dates."); }
 catch (ArgumentException) { }
 Console.WriteLine("PASS: minimum/maximum dates, reversed periods, January boundary, All Divisions and CCO validation.");
+
+Check(ManagementDashboardPeriod.CompletedDays(new DateTime(2027,1,1)) == null, "Jan 1 must not expand into last year.");
+var leap = ManagementDashboardPeriod.CompletedDays(new DateTime(2028,3,1)).Value;
+Check(leap.Start == new DateTime(2028,1,1) && leap.End == new DateTime(2028,2,29), "Pakistan completed-day window handles leap day.");
+var managementDates = new ExecutiveDashboardFilterRequest { StartDate="2024-01-01",EndDate="2099-01-01" };
+ManagementDashboardPeriod.Apply(managementDates,"GROUP");
+Check(managementDates.StartDate == new DateTime(AuditParaSnapPolicy.Today.Year,1,1).ToString("yyyy-MM-dd") &&
+    managementDates.EndDate == AuditParaSnapPolicy.Today.AddDays(-1).ToString("yyyy-MM-dd"), "Browser dates cannot expand management period.");
+var portfolio = new HeadAuditDashboard { Offices = new() { new() { Planned=3,CompletedPlans=1,Completed=2 } },
+    Engagements = new() { new() { EngagementId=1,StatusId=14,DaysToEnd=-3 }, new() { EngagementId=2,StatusId=13 }, new() { EngagementId=3,StatusId=4,DaysToEnd=-1 } } };
+Check(portfolio.Total.Achievement == 33.3m, "Plan achievement counts completed plan entries, not engagements.");
+Check(!portfolio.Engagements[0].IsDelayed && !portfolio.Engagements[1].IsDelayed && portfolio.Engagements[1].HasPendingReport,
+    "Conclusion and missing deadlines must not become delays; report issuance is pending.");
+portfolio.Exception="delayed";
+Check(portfolio.Register.Single().EngagementId == 3, "Delayed filter uses recorded unfinished engagements.");
+var narrative = AIS.Services.HeadAuditReviewText.Plain("<p>First &amp; second</p><script>alert('x')</script><p>Next</p>");
+Check(narrative.Contains("First & second") && narrative.Contains("Next") && !narrative.Contains("alert") && !narrative.Contains("<p>"), "Saved rich text remains readable without active content.");
+Console.WriteLine("PASS: management window, forged dates, leap/January boundaries, plan reconciliation, missing deadlines and safe review narratives.");

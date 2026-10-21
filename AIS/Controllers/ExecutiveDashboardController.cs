@@ -221,6 +221,7 @@ namespace AIS.Controllers
                     if (scope.DashboardType != "RLM" || (root?.EntityTypeId != 21 && root?.EntityTypeId != 5))
                         throw new ExecutiveDashboardAccessException("RoleMapping", "The regional view requires a verified GM or region posting.");
                 }
+                ManagementDashboardPeriod.Apply(filters, scope.DashboardType);
                 var dates = filters.Validate();
                 if (scope.DashboardType == "CCO") ComplianceDashboardPolicy.Validate(filters);
                 if (ciaCommand && (ciaAuditPeriodId.GetValueOrDefault() <= 0 || filters.View != "command"))
@@ -238,7 +239,7 @@ namespace AIS.Controllers
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);
-                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = lifecycle || scope.DashboardType == "CCO",
+                return Ok(new { success = true, data = query(scope, filters), dateRangeApplied = lifecycle || scope.DashboardType == "CCO" || ManagementDashboardPeriod.Applies(scope.DashboardType),
                     organizationalDimensionsApplied = true, scopeMode = scope.DashboardType == "RLM" ? "loginReportingLine" : "authorizedHierarchy" });
             }
             catch (UnauthenticatedException)

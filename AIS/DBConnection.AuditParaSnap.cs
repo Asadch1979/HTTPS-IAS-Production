@@ -89,7 +89,7 @@ namespace AIS.Controllers
             command.Parameters.Add("P_ENTITY_TYPE_ID",OracleDbType.Int32).Value =
                 filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             command.Parameters.Add("P_AUDITED_BY_ID",OracleDbType.Int32).Value =
-                (object)(scope.DashboardType == "CCO" ? (filters.SelectBy == "auditedBy" ? filters.DimensionId : null) : filters.SnapDepartmentId) ?? DBNull.Value;
+                (object)((scope.DashboardType == "CCO" || ManagementDashboardPeriod.Applies(scope.DashboardType)) ? (filters.SelectBy == "auditedBy" ? filters.DimensionId : null) : filters.SnapDepartmentId) ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
