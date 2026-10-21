@@ -39,7 +39,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
   END;
 
   -- Current position within one audit-period cohort, not historical completion activity.
-  -- Approved plan entries: T_AU_PLAN statuses 1/2 (existing CIA plan definition).
+  -- Plan entries: T_AU_PLAN statuses 1/2 plus status 4 assigned by P_ApproveAuditEngagementPlan.
   -- Completed: current engagement status 14, written by PKG_HD at conclusion.
   -- 12 = Draft Report, 13 = Issue Final Report (PKG_HD dashboard labels).
   -- Neither 12 nor 13 is counted as completed; pending reports counts engagements,
@@ -66,7 +66,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
             AND e.auditby_id=p.auditedby AND e.status=14) THEN 1 ELSE 0 END done,
           CASE WHEN EXISTS (SELECT 1 FROM engagements e WHERE e.plan_id=p.id
             AND e.auditby_id=p.auditedby AND e.status BETWEEN 4 AND 13) THEN 1 ELSE 0 END ongoing
-        FROM t_au_plan p WHERE p.auditperiodid=P_PERIOD_ID AND p.status IN (1,2)
+        FROM t_au_plan p WHERE p.auditperiodid=P_PERIOD_ID AND p.status IN (1,2,4)
           AND EXISTS (SELECT 1 FROM offices o WHERE o.office_id=p.auditedby)
       ), plan_totals AS (
         SELECT office_id,COUNT(*) planned,COUNT(DISTINCT entity_id) planned_entities,
