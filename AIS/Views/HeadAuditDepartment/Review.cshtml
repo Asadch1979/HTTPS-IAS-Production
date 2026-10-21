@@ -7,18 +7,18 @@
 <link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
 <section class="engagement-workbench wb-redesigned" aria-labelledby="review-title">
     <div class="wb-appbar"><div class="wb-brand"><span class="wb-brand-icon">IAS</span>
-        <span><strong>Head Audit Department</strong><small>Audit Teams Monitoring</small></span></div>
+        <span><strong>Head Audit Department</strong><small>Head of Audit Dashboard</small></span></div>
         <span class="wb-appbar-meta">SUPERVISORY REVIEW · READ-ONLY</span></div>
     <header class="wb-hero"><div><span class="wb-eyebrow">ENGAGEMENT #@Model.Engagement.EngagementId</span>
         <h1 id="review-title">@Value(Model.Engagement.Entity)</h1>
         <p>@Value(Model.Engagement.Period) · @Value(Model.Engagement.Status)</p>
-        <a class="wb-table-action" href="@Url.Action("AuditTeamsMonitoring")">← All engagements</a></div></header>
+        <a class="wb-table-action" href="@Url.Action("AuditTeamsMonitoring", new { auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">← All engagements</a></div></header>
     <section class="wb-overview">
         <nav class="wb-review-nav" aria-label="Review saved work">
             @foreach (var section in AIS.Models.HeadAuditMonitoringPolicy.Sections)
             {
                 <a class="wb-state-badge" aria-current="@(section == Model.Section ? "page" : null)"
-                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section })">@(section)</a>
+                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">@(section)</a>
             }
         </nav>
         <h2>@Model.Section</h2>

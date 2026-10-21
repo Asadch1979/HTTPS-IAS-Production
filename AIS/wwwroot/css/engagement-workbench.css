@@ -78,3 +78,13 @@
 .wb-redesigned .wb-review-nav a[aria-current=page]{background:#17284b;color:#fff}
 .wb-redesigned .wb-review-record{margin:16px 0}
 .wb-redesigned .wb-saved-content{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:inherit;margin-top:12px}
+/* Management controls retain the existing workbench palette and components. */
+.wb-dashboard-filters{display:flex;gap:16px;align-items:end;flex-wrap:wrap;margin:20px 0}
+.wb-dashboard-filters label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.wb-dashboard-filters select{max-width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#26384c}
+.wb-dashboard-filters button{padding:9px 15px;border:1px solid #cbd5e1;border-radius:7px}
+.wb-period-note{font-size:13px;color:#536579;line-height:1.5}
+.wb-plan-chart{display:block;width:100%;max-height:75px;margin:15px 0}
+.wb-progress-table{width:100%;border-collapse:collapse;font-size:13px}
+.wb-progress-table th,.wb-progress-table td{padding:10px;text-align:left;border-bottom:1px solid #dbe3ec}
+@media(max-width:700px){.wb-progress-table{display:block;overflow:auto}.wb-dashboard-filters>div{width:100%}.wb-dashboard-filters select{width:100%}}

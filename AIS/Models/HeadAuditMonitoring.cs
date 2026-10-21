@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AIS.Models
 {
@@ -14,6 +15,20 @@ namespace AIS.Models
 
     public sealed class HeadAuditEngagement
     {
+        public int OfficeId { get; set; }
+        public int PeriodId { get; set; }
+        public DateTime? OperationStart { get; set; }
+        public bool IsCompleted => StatusId == 14;
+        public bool IsOngoing => StatusId >= 4 && StatusId <= 13;
+        public bool IsDelayed => IsOngoing && DaysToEnd < 0;
+        public bool HasPendingReport => StatusId == 12 || StatusId == 13;
+        public bool IsApproaching => IsOngoing && DaysToEnd >= 0 && DaysToEnd <= 7;
+        public string PendingAction => string.Join("; ", new[] {
+            IsDelayed ? "Past scheduled completion" : null,
+            StatusId == 12 ? "Draft report review" : StatusId == 13 ? "Final report issuance / conclusion" : null,
+            AwaitingReview > 0 ? "Supervisory observation review" : null,
+            IsApproaching ? "Completion due within 7 days" : null
+        }.Where(v => v != null));
         public long EngagementId { get; set; }
         public long? TeamId { get; set; }
         public string Entity { get; set; }
@@ -48,9 +63,63 @@ namespace AIS.Models
 
     public sealed class HeadAuditReview
     {
+        public int? AuditPeriodId { get; set; }
+        public int? OfficeId { get; set; }
+        public int? StatusId { get; set; }
+        public string Exception { get; set; }
         public HeadAuditEngagement Engagement { get; set; }
         public string Section { get; set; }
         public List<HeadAuditWorkRecord> Records { get; set; } = new();
+    }
+
+    public sealed class HeadAuditOfficeSummary
+    {
+        public int OfficeId { get; set; }
+        public string Office { get; set; }
+        public long Planned { get; set; }
+        public long PlannedEntities { get; set; }
+        public long CompletedPlans { get; set; }
+        public long OngoingPlans { get; set; }
+        public long NotStarted { get; set; }
+        public long Completed { get; set; }
+        public long Ongoing { get; set; }
+        public long Delayed { get; set; }
+        public long PendingReports { get; set; }
+        public long AwaitingReview { get; set; }
+        public decimal? Achievement => Planned > 0 ? Math.Round(100m * CompletedPlans / Planned, 1) : null;
+    }
+
+    public sealed class HeadAuditDashboard
+    {
+        public List<AuditPeriodModel> Periods { get; set; } = new();
+        public int? AuditPeriodId { get; set; }
+        public List<HeadAuditOfficeSummary> Offices { get; set; } = new();
+        public List<HeadAuditEngagement> Engagements { get; set; } = new();
+        public int? OfficeId { get; set; }
+        public int? StatusId { get; set; }
+        public string Exception { get; set; }
+        public HeadAuditOfficeSummary Total => new() {
+            Planned = Offices.Sum(o => o.Planned), CompletedPlans = Offices.Sum(o => o.CompletedPlans),
+            OngoingPlans = Offices.Sum(o => o.OngoingPlans), NotStarted = Offices.Sum(o => o.NotStarted),
+            Completed = Offices.Sum(o => o.Completed), Ongoing = Offices.Sum(o => o.Ongoing),
+            Delayed = Offices.Sum(o => o.Delayed), PendingReports = Offices.Sum(o => o.PendingReports),
+            AwaitingReview = Offices.Sum(o => o.AwaitingReview)
+        };
+        public int ActiveTeams => Engagements.Where(e => e.StatusId >= 4 && e.StatusId <= 11 &&
+            (e.OperationStart ?? e.Start)?.Date <= AuditParaSnapPolicy.Today && e.TeamId.HasValue)
+            .Select(e => e.TeamId).Distinct().Count();
+        public IEnumerable<HeadAuditEngagement> Register => Engagements.Where(e =>
+            (!OfficeId.HasValue || e.OfficeId == OfficeId) && (!StatusId.HasValue || e.StatusId == StatusId) &&
+            (string.IsNullOrEmpty(Exception) || Exception == "delayed" && e.IsDelayed ||
+             Exception == "reports" && e.HasPendingReport || Exception == "review" && e.AwaitingReview > 0 ||
+             Exception == "approaching" && e.IsApproaching));
+        public static bool ValidException(string value) => string.IsNullOrEmpty(value) ||
+            new[] { "delayed", "reports", "review", "approaching" }.Contains(value);
+        public static int? DefaultPeriod(IEnumerable<AuditPeriodModel> periods, DateTime today)
+        {
+            var current = periods.Where(p => p.START_DATE.Date <= today && p.END_DATE.Date >= today).ToList();
+            return current.Count == 1 ? current[0].AUDITPERIODID : (int?)null;
+        }
     }
 
     public sealed class HeadAuditDocument

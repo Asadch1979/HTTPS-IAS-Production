@@ -1,65 +1,93 @@
-@model System.Collections.Generic.List<AIS.Models.HeadAuditEngagement>
+@model AIS.Models.HeadAuditDashboard
+@using System.Globalization
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Head Audit Department | Audit Teams Monitoring";
+    ViewData["Title"] = "Head of Audit Dashboard";
+    var total = Model.Total;
+    var selectedPeriod = Model.Periods.FirstOrDefault(p => p.AUDITPERIODID == Model.AuditPeriodId);
     string Value(string value) => string.IsNullOrWhiteSpace(value) ? "N/A" : value;
+    string Rate(decimal? value) => value.HasValue ? value.Value.ToString("0.0") + "%" : "N/A";
+    string Width(long count) => (total.Planned > 0 ? 800m * count / total.Planned : 0).ToString(CultureInfo.InvariantCulture);
 }
 <link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
 <section class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
-    <div class="wb-appbar">
-        <div class="wb-brand"><span class="wb-brand-icon" aria-hidden="true">IAS</span>
-            <span><strong>ZTBL · Internal Audit</strong><small>TeamMate-inspired Engagement Workspace</small></span></div>
-        <span class="wb-appbar-meta">HEAD AUDIT DEPARTMENT · READ-ONLY</span>
+    <div class="wb-appbar"><div class="wb-brand"><span class="wb-brand-icon" aria-hidden="true">IAS</span>
+        <span><strong>ZTBL · Internal Audit</strong><small>Office performance and management oversight</small></span></div>
+        <span class="wb-appbar-meta">READ-ONLY · AUTHORIZED PORTFOLIO</span></div>
+    <header class="wb-hero"><div class="dashboard-title"><h1 id="workbench-title">Head of Audit Dashboard</h1>
+        <p>@ViewData["ScopeLabel"]</p></div>
+        <div class="wb-hero-meta"><strong>@Rate(total.Achievement)</strong><span>Approved plan achievement</span></div></header>
+    <form class="wb-dashboard-filters" method="get" action="@Url.Action("AuditTeamsMonitoring")">
+        <div><label for="head-period">Audit Period</label><select id="head-period" name="auditPeriodId" required>
+            <option value="">Select an audit period</option>
+            @foreach (var period in Model.Periods) { <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.AuditPeriodId)">@period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))</option> }
+        </select></div><button type="submit" class="wb-table-action">Apply period</button>
+    </form>
+    @if (!Model.AuditPeriodId.HasValue)
+    {
+        <p class="wb-lane-empty">Select an audit period. A unique current IAS period could not be identified; no portfolio data has been loaded.</p>
+    }
+    else
+    {
+    <p class="wb-period-note">@Value(selectedPeriod?.DESCRIPTION) · Current position for engagements assigned to this audit period, as of @AIS.Models.AuditParaSnapPolicy.Today.ToString("dd MMM yyyy") (Pakistan). This is not a historical completion-date report.</p>
+    <div class="wb-kpis" aria-label="Office executive KPIs">
+        <article class="wb-stat wb-stat-blue"><span>Planned Audits</span><strong>@total.Planned.ToString("N0")</strong><small>Approved plan entries, not distinct entities</small></article>
+        <article class="wb-stat wb-stat-teal"><span>Audits Completed</span><strong>@total.Completed.ToString("N0")</strong><small>Concluded engagements · @total.CompletedPlans completed plan entries</small></article>
+        <article class="wb-stat wb-stat-violet"><span>Audits in Progress</span><strong>@total.Ongoing.ToString("N0")</strong><small>Active engagements, including report stages</small></article>
+        <article class="wb-stat wb-stat-blue"><span>Plan Achievement</span><strong>@Rate(total.Achievement)</strong><small>Completed approved plans ÷ approved plans</small></article>
+        <article class="wb-stat wb-stat-amber"><span>Delayed Audits</span><strong>@total.Delayed.ToString("N0")</strong><small>Active engagements past recorded completion date</small></article>
+        <article class="wb-stat wb-stat-amber"><span>Pending Audit Reports</span><strong>@total.PendingReports.ToString("N0")</strong><small>Engagements at draft review or final issuance</small></article>
+        <article class="wb-stat wb-stat-violet"><span>Observations Awaiting Review</span><strong>@total.AwaitingReview.ToString("N0")</strong><small>Pending supervisory review</small></article>
+        <article class="wb-stat wb-stat-teal"><span>Teams Conducting Audits</span><strong>@Model.ActiveTeams.ToString("N0")</strong><small>Distinct active teams in the selected period</small></article>
     </div>
-    <header class="wb-hero">
-        <div class="dashboard-title"><span class="wb-eyebrow">HEAD AUDIT DEPARTMENT</span>
-            <h1 id="workbench-title">Audit Teams Monitoring</h1>
-            <p>@ViewData["ScopeLabel"]</p></div>
-        <div class="wb-hero-meta"><strong>@Model.Count.ToString("N0")</strong><span>Ongoing engagements</span>
-            <a class="wb-step-link" href="@Url.Action("AuditTeamsMonitoring")">Refresh saved information</a></div>
-    </header>
-    <div class="wb-kpis" aria-label="Department audit overview">
-        <article class="wb-stat wb-stat-blue"><span>Teams conducting audits</span>
-            <strong>@Model.Where(e => e.TeamId.HasValue).Select(e => e.TeamId).Distinct().Count().ToString("N0")</strong>
-            <small>Distinct assigned IAS team IDs</small></article>
-        <article class="wb-stat wb-stat-violet"><span>Active audit engagements</span><strong>@Model.Count.ToString("N0")</strong>
-            <small>Authorized ongoing IAS engagements</small></article>
-        <article class="wb-stat wb-stat-amber"><span>Approaching completion date</span>
-            <strong>@Model.Count(e => e.DaysToEnd >= 0 && e.DaysToEnd < 7).ToString("N0")</strong>
-            <small>Scheduled audit end within the next 7 days</small></article>
-        <article class="wb-stat wb-stat-teal"><span>Observations awaiting review</span>
-            <strong>@Model.Sum(e => e.AwaitingReview).ToString("N0")</strong>
-            <small>IAS status 3 · V2 workpapers in review: @(Model.Count > 0 && Model.All(e => e.WorkpapersAwaitingReview.HasValue) ? Model.Sum(e => e.WorkpapersAwaitingReview.Value).ToString("N0") : "N/A")</small></article>
-    </div>
-    <section class="wb-process" aria-labelledby="stages-title">
-        <div class="wb-section-heading"><div><span class="wb-eyebrow">LIVE IAS WORKFLOW</span>
-            <h2 id="stages-title">Engagement stages</h2></div></div>
-        <div class="wb-stage-ribbon">
-            @foreach (var stage in Model.GroupBy(e => new { e.StatusId, e.Status }).OrderBy(g => g.Key.StatusId))
-            {
-                <span class="wb-ribbon-step"><b>@stage.Count()</b>@Value(stage.Key.Status) <small>IAS @stage.Key.StatusId</small></span>
-            }
+    <section class="wb-process" aria-labelledby="plan-title"><div class="wb-section-heading"><h2 id="plan-title">Audit plan progress</h2></div>
+        @if (total.Planned == 0) { <p>No approved plans in this authorized period.</p> }
+        else {
+        <svg class="wb-plan-chart" viewBox="0 0 800 55" role="img" aria-label="Approved plans: @total.CompletedPlans completed, @total.OngoingPlans ongoing, @total.NotStarted not yet started">
+            <rect width="800" height="40" rx="6" fill="#e4e9ef" />
+            <rect width="@Width(total.CompletedPlans)" height="40" fill="#16836b" />
+            <rect x="@Width(total.CompletedPlans)" width="@Width(total.OngoingPlans)" height="40" fill="#4d66be" />
+        </svg> }
+        <table class="wb-progress-table"><thead><tr><th>Approved plans</th><th>Completed</th><th>Ongoing</th><th>Not yet started</th><th>Achievement</th><th>Delayed engagements</th></tr></thead>
+            <tbody><tr><td>@total.Planned</td><td>@total.CompletedPlans</td><td>@total.OngoingPlans</td><td>@total.NotStarted</td><td>@Rate(total.Achievement)</td><td>@total.Delayed</td></tr></tbody></table>
+        <p class="wb-period-note">Green: completed · Blue: ongoing · Grey: not yet started. Delayed engagements are a separate exception measure and are not added to the plan totals. Completion means audit conclusion; final-report issuance alone is not conclusion.</p>
+    </section>
+    <section class="wb-overview" aria-labelledby="offices-title"><div class="wb-section-heading"><h2 id="offices-title">Audit office performance</h2></div>
+        <div class="wb-table"><table><thead><tr><th>Audit office / cluster</th><th>Planned</th><th>Completed engagements</th><th>Completed plans</th><th>Ongoing</th><th>Delayed</th><th>Pending reports</th><th>Achievement</th></tr></thead>
+            <tbody>@foreach (var office in Model.Offices) { <tr><td>@Value(office.Office)</td><td>@office.Planned</td><td>@office.Completed</td><td>@office.CompletedPlans</td><td>@office.Ongoing</td><td>@office.Delayed</td><td>@office.PendingReports</td><td>@Rate(office.Achievement)</td></tr> }</tbody></table></div>
+    </section>
+    <section class="wb-overview" aria-labelledby="exceptions-title"><div class="wb-section-heading"><h2 id="exceptions-title">Pending actions and exceptions</h2></div>
+        <div class="wb-table"><table><thead><tr><th>Audit entity / engagement</th><th>Audit period</th><th>Responsible office</th><th>Scheduled completion</th><th>Current stage</th><th>Pending action</th></tr></thead>
+            <tbody>@foreach (var e in Model.Engagements.Where(e => !string.IsNullOrEmpty(e.PendingAction))) {
+                <tr><td>@Value(e.Entity) · #@e.EngagementId</td><td>@Value(e.Period)</td><td>@Value(e.Department)</td><td>@(e.End?.ToString("dd MMM yyyy") ?? "Not recorded")</td><td>@Value(e.Status)</td><td>@e.PendingAction</td></tr>
+            }</tbody></table>
+            @if (!Model.Engagements.Any(e => !string.IsNullOrEmpty(e.PendingAction))) { <p class="wb-lane-empty">No recorded exceptions in this authorized period.</p> }
         </div>
     </section>
-    <section class="wb-overview" aria-labelledby="register-title">
-        <div class="wb-section-heading"><div><span class="wb-eyebrow">AUTHORIZED DEPARTMENT PORTFOLIO</span>
-            <h2 id="register-title">Ongoing engagement register</h2></div></div>
-        <div class="wb-panel wb-register"><div class="wb-table" role="region" aria-label="Ongoing engagements" tabindex="0">
-            <table><thead><tr><th>Audit entity / team</th><th>Audit period / dates</th><th>Current stage / progress</th><th>Observations / reporting</th><th>Review</th></tr></thead>
-                <tbody>@foreach (var e in Model)
-                {
-                    <tr><td><strong>@Value(e.Entity)</strong><small>@Value(e.Department) · Engagement #@e.EngagementId</small>
-                        <small>@Value(e.Team) · Team ID @(e.TeamId?.ToString() ?? "N/A")</small><small>@Value(e.Members)</small></td>
-                        <td>@Value(e.Period)<small>@(e.Start?.ToString("dd MMM yyyy") ?? "N/A") – @(e.End?.ToString("dd MMM yyyy") ?? "N/A")</small></td>
-                        <td><span class="wb-state-badge">@Value(e.Status) · @e.StatusId</span><small>@Value(e.TaskProgress)</small>
-                            <small>@Value(e.WorkpaperProgress)</small></td>
-                        <td>@Value(e.ObservationCounts)<small>Saved reports: @e.Reports · @Value(e.ReportStatus)</small></td>
-                        <td><a class="wb-table-action" href="@Url.Action("Review", new { engId = e.EngagementId })">Open Engagement / Review Work →</a></td></tr>
-                }</tbody>
-            </table>
-            @if (Model.Count == 0) { <p class="wb-lane-empty">No ongoing engagements in your authorized department.</p> }
+    <section class="wb-overview" aria-labelledby="register-title"><div class="wb-section-heading"><h2 id="register-title">Engagement register</h2></div>
+        <form class="wb-dashboard-filters" method="get" action="@Url.Action("AuditTeamsMonitoring")">
+            <input type="hidden" name="auditPeriodId" value="@Model.AuditPeriodId" />
+            @if (Model.Offices.Count > 1) { <div><label for="head-office">Register audit office</label><select id="head-office" name="officeId"><option value="">All authorized offices</option>
+                @foreach (var office in Model.Offices) { <option value="@office.OfficeId" selected="@(office.OfficeId == Model.OfficeId)">@office.Office</option> }</select></div> }
+            <div><label for="head-status">Register status</label><select id="head-status" name="statusId"><option value="">All stages</option>
+                @foreach (var stage in Model.Engagements.GroupBy(e => new { e.StatusId, e.Status }).OrderBy(g => g.Key.StatusId)) { <option value="@stage.Key.StatusId" selected="@(stage.Key.StatusId == Model.StatusId)">@stage.Key.Status</option> }</select></div>
+            <div><label for="head-exception">Register exceptions</label><select id="head-exception" name="exception"><option value="">All engagements</option>
+                <option value="delayed" selected="@(Model.Exception == "delayed")">Delayed</option><option value="reports" selected="@(Model.Exception == "reports")">Pending reports</option>
+                <option value="review" selected="@(Model.Exception == "review")">Observations awaiting review</option><option value="approaching" selected="@(Model.Exception == "approaching")">Due within 7 days</option></select></div>
+            <button type="submit" class="wb-table-action">Filter register</button>
+        </form><p class="wb-period-note">Register filters narrow this table only. Executive figures and office comparisons show the entire authorized audit-period portfolio.</p>
+        <div class="wb-panel wb-register"><div class="wb-table" role="region" aria-label="Authorized engagements" tabindex="0">
+            <table><thead><tr><th>Audit entity / team</th><th>Responsible office</th><th>Audit period / dates</th><th>Current stage</th><th>Review / reporting</th><th>Review</th></tr></thead><tbody>
+            @foreach (var e in Model.Register) {
+                <tr><td><strong>@Value(e.Entity)</strong><small>Engagement #@e.EngagementId · @Value(e.Team)</small><small>@Value(e.Members)</small></td><td>@Value(e.Department)</td>
+                    <td>@Value(e.Period)<small>@(e.Start?.ToString("dd MMM yyyy") ?? "Not recorded") – @(e.End?.ToString("dd MMM yyyy") ?? "Not recorded")</small></td>
+                    <td><span class="wb-state-badge">@Value(e.Status)</span><small>@Value(e.TaskProgress)</small><small>@Value(e.WorkpaperProgress)</small></td>
+                    <td>@e.AwaitingReview awaiting review<small>@Value(e.ReportStatus)</small><small>@e.PendingAction</small></td>
+                    <td><a class="wb-table-action" href="@Url.Action("Review", new { engId=e.EngagementId, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">Review saved work →</a></td></tr>
+            }</tbody></table>
+            @if (!Model.Register.Any()) { <p class="wb-lane-empty">No engagements match this authorized period and register selection.</p> }
         </div></div>
     </section>
+    }
 </section>
-
 <partial name="_DashboardExportAssets" />

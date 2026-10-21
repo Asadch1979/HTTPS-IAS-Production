@@ -41,10 +41,12 @@ namespace AIS.Controllers
                 ViewData["TopMenu"] = menus.GetTopMenus();
                 ViewData["TopMenuPages"] = menus.GetTopMenusPages();
                 ViewData["HideTopHeader"] = true;
-                ViewData["ScopeLabel"] = user.UserEntityName + " and authorized subordinate offices";
+                ViewData["ScopeLabel"] = user.UserEntityName + " · Authorized Office and Subordinate Scope";
                 return action();
             }
             catch (OracleException ex) when (ex.Number == 20151 || ex.Number == 20152) { return StatusCode(403); }
+            catch (OracleException ex) when (ex.Number == 20153) { return BadRequest("Select a valid IAS audit period."); }
+            catch (ArgumentException) { return BadRequest("Invalid dashboard filters."); }
             catch (UnauthorizedAccessException) { return StatusCode(403); }
             catch (AIS.Session.UnauthenticatedException) { return Unauthorized(); }
             catch (FormatException ex)
@@ -60,23 +62,35 @@ namespace AIS.Controllers
         }
 
         [HttpGet]
-        public IActionResult AuditTeamsMonitoring() => Read(() =>
-            View("~/Views/Shared/EngagementWorkbench.cshtml", database.GetHeadAuditEngagements()));
+        public IActionResult AuditTeamsMonitoring(int? auditPeriodId = null, int? officeId = null,
+            int? statusId = null, string exception = null) => Read(() =>
+            View("~/Views/Shared/EngagementWorkbench.cshtml", database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception)));
 
         [HttpGet]
-        public IActionResult Review(long engId, string section = "Plan") => Read(() =>
+        public IActionResult Review(long engId, string section = "Plan", int? auditPeriodId = null,
+            int? officeId = null, int? statusId = null, string exception = null) => Read(() =>
         {
             if (engId <= 0 || !HeadAuditMonitoringPolicy.Sections.Contains(section)) return BadRequest();
-            var engagement = database.GetHeadAuditEngagements().SingleOrDefault(e => e.EngagementId == engId);
+            if (!auditPeriodId.HasValue)
+            {
+                var saved = database.GetHeadAuditEngagements().SingleOrDefault(e => e.EngagementId == engId);
+                if (saved == null) return StatusCode(403);
+                auditPeriodId = saved.PeriodId;
+            }
+            var dashboard = database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception);
+            var engagement = dashboard.Engagements.SingleOrDefault(e => e.EngagementId == engId);
             if (engagement == null) return StatusCode(403);
             return View("~/Views/HeadAuditDepartment/Review.cshtml", new HeadAuditReview
             {
-                Engagement = engagement, Section = section, Records = database.GetHeadAuditWork(engId, section)
+                Engagement = engagement, Section = section, Records = database.GetHeadAuditWork(engId, section),
+                AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
             });
         });
 
         [HttpGet("/api/HeadAuditDepartment/Engagements")]
-        public IActionResult Engagements() => Read(() => Json(database.GetHeadAuditEngagements()), api: true);
+        public IActionResult Engagements(int? auditPeriodId = null, int? officeId = null,
+            int? statusId = null, string exception = null) => Read(() =>
+            Json(database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception).Register), api: true);
 
         [HttpGet("/api/HeadAuditDepartment/Work")]
         public IActionResult Work(long engId, string section = "Plan") => Read(() =>
