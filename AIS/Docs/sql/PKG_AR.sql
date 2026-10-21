@@ -747,6 +747,7 @@ create or replace package body PKG_AR is
        inner join t_au_audit_team_tasklist_status s
           on s.status_id = t.status_id
        where t.teammember_ppno = P_P_NO
+         and t.isactive = 'Y'
          and p.status between 4 and 12;
   
   end P_GET_AR_DASHBOARD_DROPDOWN;
@@ -1467,8 +1468,31 @@ create or replace package body PKG_AR is
     OBS             NUMBER := 0;
     V_AUDIT_ENDDATE T_AU_PLAN_ENG.AUDIT_ENDDATE%type;
     V_ENTEREDDATE   T_AU_OBSERVATION.ENTEREDDATE%type;
+    V_AUTH_COUNT NUMBER := 0;
   begin
-  
+    -- Creation must not bypass the review/finalization workflow by
+    -- accepting a caller-selected final, settled or dropped status.
+    IF STATUS IS NULL OR STATUS <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20152,
+        'A new observation must enter IAS in initial status 1.');
+    END IF;
+
+    -- A caller can record an observation only for their active assigned audit.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
+       AND EXISTS (SELECT 1 FROM t_au_audit_team_tasklist t
+                    JOIN t_au_team_members m
+                      ON m.t_id = t.team_id
+                     AND m.member_ppno = t.teammember_ppno
+                   WHERE t.eng_plan_id = eg.eng_id
+                     AND t.teammember_ppno = P_NO
+                     AND t.isactive = 'Y');
+    IF V_AUTH_COUNT <> 1 OR P_NO IS NULL OR ENTEREDBY IS NULL
+       OR P_NO <> ENTEREDBY THEN
+      RAISE_APPLICATION_ERROR(-20151,
+        'Observation creation requires an active assigned auditor.');
+    END IF;
+
     SELECT SEQ_T_AU_OBSERVATION.NEXTVAL INTO OBS FROM DUAL;
     commit;
     commit;
@@ -1704,7 +1728,31 @@ create or replace package body PKG_AR is
     Z_B           number := 0;
     OBS           number := 0;
     V_ENTEREDDATE T_AU_OBSERVATION.ENTEREDDATE%type;
+    V_AUTH_COUNT NUMBER := 0;
   begin
+    -- Creation must not bypass the review/finalization workflow by
+    -- accepting a caller-selected final, settled or dropped status.
+    IF STATUS IS NULL OR STATUS <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20152,
+        'A new observation must enter IAS in initial status 1.');
+    END IF;
+
+    -- A caller can record an observation only for their active assigned audit.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = PLANID AND eg.status BETWEEN 4 AND 13
+       AND EXISTS (SELECT 1 FROM t_au_audit_team_tasklist t
+                    JOIN t_au_team_members m
+                      ON m.t_id = t.team_id
+                     AND m.member_ppno = t.teammember_ppno
+                   WHERE t.eng_plan_id = eg.eng_id
+                     AND t.teammember_ppno = P_NO
+                     AND t.isactive = 'Y');
+    IF V_AUTH_COUNT <> 1 OR P_NO IS NULL OR ENTEREDBY IS NULL
+       OR P_NO <> ENTEREDBY THEN
+      RAISE_APPLICATION_ERROR(-20151,
+        'Observation creation requires an active assigned auditor.');
+    END IF;
+
     Open V;
     Fetch V
       into vr1;
@@ -2056,12 +2104,16 @@ create or replace package body PKG_AR is
      inner join t_au_observation o
         on o.engplanid = t.eng_plan_id
      where o.id = obs_id
-       and t.teammember_ppno = P_NO;
+        and t.teammember_ppno = P_NO
+        and t.isactive = 'Y'
+        and exists (select 1 from t_au_plan_eng eg
+                     where eg.eng_id = o.engplanid
+                       and eg.status between 4 and 13);
     select nvl(s.status, 0)
       into V_F
       from t_au_observation s
      where s.id = OBS_ID;
-    if (V_F < 8 and N_F != 0) then
+    if (V_F IN (1, 2, 3, 5, 6, 7) and N_F != 0) then
       if (subprocessid = 0) then
         update T_AU_OBSERVATION_TEXT ot
            set ot.text            = obtext,
@@ -2107,14 +2159,9 @@ create or replace package body PKG_AR is
                                    P_NO      in number,
                                    R_ID      in number,
                                    io_cursor OUT t_cursor) is
-    V_F number := 0;
+    -- Authorization is based on the requesting PPNO, not the team's leader.
     T_L varchar(5) := 'N';
-    Z_B number := 0;
   begin
-  
-    commit;
-    commit;
-  
     select nvl(max(tm.isteamlead), 'N')
       into T_L
       from t_au_observation op
@@ -2122,10 +2169,13 @@ create or replace package body PKG_AR is
         on op.engplanid = tl.eng_plan_id
      inner join t_au_team_members tm
         on tl.team_id = tm.t_id
+       and tm.member_ppno = tl.teammember_ppno
      where tl.teammember_ppno = P_NO
-       and op.id = OBS_ID;
-  
-    select m.role_id into V_F from t_user_maping m where m.ppno = p_no;
+       and tl.isactive = 'Y'
+       and op.id = OBS_ID
+       and exists (select 1 from t_au_plan_eng eg
+                    where eg.eng_id = op.engplanid
+                      and eg.status between 4 and 13);
     if (T_L = 'Y') then
       UPDATE t_au_observation
          SET STATUS     = C_STATUS_DROPPED,
@@ -2133,7 +2183,7 @@ create or replace package body PKG_AR is
              SETTLED_BY = NULL,
              ISSUE_RECTIFIED = 0
        WHERE ID = OBS_ID
-         AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED);
+         AND STATUS NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED, C_STATUS_DROPPED);
     
       if SQL%ROWCOUNT = 0 then
         raise_application_error(-20031,
@@ -2202,7 +2252,11 @@ create or replace package body PKG_AR is
           on tl.team_id = tm.t_id
          and tm.member_ppno = tl.teammember_ppno
        where o.id = obs_id
-         and tl.teammember_ppno = P_NO;
+         and tl.teammember_ppno = P_NO
+          and tl.isactive = 'Y'
+          and exists (select 1 from t_au_plan_eng eg
+                       where eg.eng_id = o.engplanid
+                         and eg.status between 4 and 13);
     vr V%rowtype;
   begin
     Open V;
@@ -2466,7 +2520,11 @@ create or replace package body PKG_AR is
        and t.teammember_ppno = m.member_ppno
      inner join t_au_observation o
         on o.engplanid = t.eng_plan_id
+      inner join t_au_plan_eng eg
+        on eg.eng_id = o.engplanid
+       and eg.status between 4 and 13
      where m.member_ppno = P_NO
+       and t.isactive = 'Y'
        and o.id = obs_id;
   
     SELECT NVL(MAX(o.engplanid), 0)
@@ -2480,6 +2538,19 @@ create or replace package body PKG_AR is
     END IF;
 
     IF R_D = 'Y' THEN
+      -- Legacy Team Lead route accepts low-risk status 4 or draft status 5.
+      -- Verify the stored risk; HTTP RISK_ID is not an authority.
+      IF NEW_STATUS_ID NOT IN (4, C_STATUS_DRAFT) THEN
+        RAISE_APPLICATION_ERROR(-20038, 'Team Lead cannot finalize or settle a final para.');
+      END IF;
+      IF NEW_STATUS_ID = 4 THEN
+        SELECT COUNT(*) INTO V_DUP_COUNT FROM t_au_observation o
+         WHERE o.id = OBS_ID AND o.severity = 3
+           AND o.status NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED, C_STATUS_DROPPED);
+        IF V_DUP_COUNT <> 1 THEN
+          RAISE_APPLICATION_ERROR(-20039, 'Team Lead may settle only an eligible low-risk observation.');
+        END IF;
+      END IF;
     
       IF NEW_STATUS_ID = C_STATUS_DRAFT AND TRIM(D_PARA_NO) IS NULL THEN
         raise_application_error(-20032,
@@ -2535,20 +2606,21 @@ create or replace package body PKG_AR is
                                         o.Draft_Para_Added_On
                                      END,
              o.stelled_on = CASE
-                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
-                               SYSDATE
-                              ELSE
-                               NULL
-                            END,
+                               WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED) THEN
+                                SYSDATE
+                               ELSE
+                                NULL
+                             END,
              o.settled_by = CASE
-                              WHEN NEW_STATUS_ID = C_STATUS_SETTLED THEN
-                               P_NO
-                              ELSE
-                               NULL
-                            END,
-             o.issue_rectified = CASE WHEN NEW_STATUS_ID = C_STATUS_SETTLED
-                                      AND EXISTS (SELECT 1 FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
-                                      THEN 1 ELSE 0 END
+                               WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED) THEN
+                                P_NO
+                               ELSE
+                                NULL
+                             END,
+             o.issue_rectified = CASE WHEN NEW_STATUS_ID IN (4, C_STATUS_SETTLED)
+                                       AND EXISTS (SELECT 1 FROM t_au_plan_eng eg
+                                                   WHERE eg.eng_id = V_ENGPLANID AND eg.status BETWEEN 4 AND 13)
+                                       THEN 1 ELSE 0 END
        WHERE o.id = OBS_ID;
       COMMIT;
       open io_cursor for
@@ -2557,6 +2629,23 @@ create or replace package body PKG_AR is
          where r.statusid = NEW_STATUS_ID;
     else
       if (R_ID in (6, 7, 15) and R_D = 'O') then
+        IF NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
+          RAISE_APPLICATION_ERROR(-20040,
+            'Departmental Head may select only Final Report or settlement status.');
+        END IF;
+        SELECT COUNT(*) INTO V_DUP_COUNT FROM t_au_plan_eng eg
+         WHERE eg.eng_id = V_ENGPLANID
+           AND (eg.auditby_id = ENT_ID OR EXISTS (
+             SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+              WHERE h.entity_id = eg.auditby_id AND ENT_ID IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,
+                 h.reporting_4,h.reporting_5,h.reporting_6)))
+           AND EXISTS (SELECT 1 FROM t_user_maping m
+                        WHERE m.ppno = P_NO AND m.role_id = R_ID);
+        IF V_DUP_COUNT <> 1 THEN
+          RAISE_APPLICATION_ERROR(-20153,
+            'Observation does not belong to the authorized audit office.');
+        END IF;
         UPDATE T_AU_OBSERVATIONS_AUDITEE_RESPONSE e
            SET e.REMARKS         = Remarks,
                E.LASTUPDATEDBY   = P_NO,
@@ -6984,7 +7073,8 @@ create or replace package body PKG_AR is
       JOIN T_AU_PLAN_ENG P ON P.ENG_ID = T.ENG_PLAN_ID
      WHERE M.MEMBER_PPNO = P_NO
        AND P.STATUS BETWEEN 4 AND 12
-       AND T.ENG_PLAN_ID = V_ENGPLAN_ID;
+       AND T.ENG_PLAN_ID = V_ENGPLAN_ID
+        AND T.ISACTIVE = 'Y';
   
     IF V_ASSIGNED_MEMBERS = 0 THEN
       RAISE_APPLICATION_ERROR(-20003,
@@ -7056,6 +7146,7 @@ create or replace package body PKG_AR is
     V_ENGPLAN_ID NUMBER;
     V_ENG_STATUS NUMBER;
     V_DUP_COUNT  NUMBER := 0;
+    V_AUTH_COUNT NUMBER := 0;
   BEGIN
     IF P_NEW_STATUS_ID NOT IN (C_STATUS_FINAL, C_STATUS_SETTLED) THEN
       RAISE_APPLICATION_ERROR(-20010,
@@ -7086,6 +7177,20 @@ create or replace package body PKG_AR is
     SELECT eg.status INTO V_ENG_STATUS FROM t_au_plan_eng eg WHERE eg.eng_id = V_ENGPLAN_ID;
     IF V_ENG_STATUS = 14 THEN
       RAISE_APPLICATION_ERROR(-20037, 'Finalization requires an active audit; reverse the concluded audit through the authorized workflow first.');
+    END IF;
+    -- Departmental authority must be limited to the authenticated audit office.
+    SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_plan_eng eg
+     WHERE eg.eng_id = V_ENGPLAN_ID
+       AND (eg.auditby_id = P_ENT_ID OR EXISTS (
+         SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS h
+          WHERE h.entity_id = eg.auditby_id AND P_ENT_ID IN
+            (h.reporting_1,h.reporting_2,h.reporting_3,
+             h.reporting_4,h.reporting_5,h.reporting_6)))
+       AND EXISTS (SELECT 1 FROM t_user_maping m
+                    WHERE m.ppno = P_NO AND m.role_id = P_R_ID);
+    IF V_AUTH_COUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20153,
+        'Observation does not belong to the authorized audit office.');
     END IF;
   
     IF P_NEW_STATUS_ID = C_STATUS_FINAL THEN
@@ -7192,7 +7297,10 @@ create or replace package body PKG_AR is
         ON T.TEAM_ID = M.T_ID
        AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
      WHERE M.MEMBER_PPNO = P_P_NO
-       AND T.ENG_PLAN_ID = P_ENG_ID;
+       AND T.ENG_PLAN_ID = P_ENG_ID
+        AND T.ISACTIVE = 'Y'
+        AND EXISTS (SELECT 1 FROM t_au_plan_eng e
+                     WHERE e.eng_id = P_ENG_ID AND e.status BETWEEN 4 AND 13);
   
     IF V_IS_TEAM_LEAD <> 'Y' THEN
       OPEN IO_CURSOR FOR
@@ -7324,7 +7432,10 @@ create or replace package body PKG_AR is
        AND T.TEAMMEMBER_PPNO = M.MEMBER_PPNO
      WHERE M.MEMBER_PPNO = P_P_NO
        AND T.ENG_PLAN_ID = P_ENG_ID
-       AND M.ISTEAMLEAD = 'Y';
+        AND T.ISACTIVE = 'Y'
+        AND M.ISTEAMLEAD = 'Y'
+        AND EXISTS (SELECT 1 FROM t_au_plan_eng e
+                     WHERE e.eng_id = P_ENG_ID AND e.status BETWEEN 4 AND 13);
   
     IF V_ACCESS_COUNT = 0 THEN
       P_REMARKS := 'You are not authorized to update this engagement.';
