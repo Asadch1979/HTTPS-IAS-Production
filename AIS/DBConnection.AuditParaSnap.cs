@@ -27,9 +27,15 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("RoleMapping", "A verified Audit Para Snap scope is required.");
         }
         internal List<ExecutiveFilterOption> GetAuditParaSnapDepartments(
-            ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null)
+            ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null, bool ciaCommand = false)
         {
-            ValidateSnapScope(scope);
+            if (ciaCommand)
+            {
+                ValidateExecutiveDashboardSession(scope);
+                if (scope.DashboardType != "CIA" || scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA Command Center scope required.");
+            }
+            else ValidateSnapScope(scope);
             if (divisionCode == "1")
             {
                 if (selectedDepartmentId.HasValue) throw new ArgumentException("All Divisions does not accept a Department / Cluster.");
@@ -53,7 +59,7 @@ namespace AIS.Controllers
                 if (id <= 0) throw new InvalidOperationException("Invalid IAS audited-by ID.");
                 items.Add(new ExecutiveFilterOption { Id = id, Name = ExecutiveText(reader,"NAME") });
             }
-            ValidateSnapScope(scope);
+            if (ciaCommand) ValidateExecutiveDashboardSession(scope); else ValidateSnapScope(scope);
             if (items.Count == 0 || items.Select(e=>e.Id).Distinct().Count() != items.Count)
                 throw new InvalidOperationException("Audit division has no valid distinct mapped departments.");
             if (selectedDepartmentId.HasValue && !items.Any(e=>e.Id==selectedDepartmentId.Value))

@@ -4,6 +4,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace AIS.Controllers
 {
@@ -19,6 +20,9 @@ namespace AIS.Controllers
             if (auditPeriodId <= 0) throw new ArgumentException("Select a valid audit period.");
             filters ??= new ExecutiveDashboardFilterRequest();
             filters.Validate();
+            var position = CiaCommandPolicy.ResolvePosition(filters,
+                GetAuditPeriods().SingleOrDefault(p => p.AUDITPERIODID == auditPeriodId), AuditParaSnapPolicy.Today);
+            GetAuditParaSnapDepartments(scope, filters.SnapDivision, filters.SnapDepartmentId, ciaCommand: true);
 
             var rows = new List<T>();
             using var con = DatabaseConnection();
@@ -30,10 +34,12 @@ namespace AIS.Controllers
             command.Parameters.Add("P_DASHBOARD_TYPE", OracleDbType.Varchar2).Value = "CIA";
             command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)scope.EntityId ?? DBNull.Value;
             command.Parameters.Add("P_AUDIT_PERIOD_ID", OracleDbType.Int32).Value = auditPeriodId;
+            command.Parameters.Add("P_POSITION_AS_ON", OracleDbType.Date).Value = position;
+            command.Parameters.Add("P_SNAP_DIVISION_CODE", OracleDbType.Varchar2).Value = filters.SnapDivision;
             command.Parameters.Add("P_ENTITY_TYPE_ID", OracleDbType.Int32).Value =
                 filters.SelectBy == "entityType" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             command.Parameters.Add("P_AUDITED_BY_ID", OracleDbType.Int32).Value =
-                filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                (object)filters.SnapDepartmentId ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID", OracleDbType.Int32).Value =
                 (object)filters.ReportingOfficeId ?? DBNull.Value;
             command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
@@ -59,7 +65,8 @@ namespace AIS.Controllers
                     AuditPeriodId = RoleRequiredInt(r, "AUDIT_PERIOD_ID"),
                     AuditPeriodFrom = RoleDate(r, "AUDIT_PERIOD_FROM"),
                     AuditPeriodTo = RoleDate(r, "AUDIT_PERIOD_TO"),
-                    CurrentStateAsOf = RoleDate(r, "CURRENT_STATE_AS_OF")
+                    CurrentStateAsOf = RoleDate(r, "CURRENT_STATE_AS_OF"),
+                    PositionAsOn = RoleDate(r, "POSITION_AS_ON")
                 });
             if (items.Count != 1)
                 throw new InvalidOperationException("CIA command KPI cursor must return exactly one row.");

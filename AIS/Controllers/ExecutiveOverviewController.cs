@@ -219,7 +219,7 @@ namespace AIS.Controllers
                     database.NarrowExecutiveDashboardScope(scope, entityId);
                 if (needsGroup && (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Select a Group root before selecting organizational filters.");
-                var options = needsGroup || needsRlmRoot || (auditParaSnap || (requestedType != "CIA" && view != "regional")) ? new ExecutiveDashboardFilterOptions() :
+                var options = needsGroup || needsRlmRoot || (requestedType == "CIA" && !auditParaSnap) || (requestedType != "CIA" && view != "regional") ? new ExecutiveDashboardFilterOptions() :
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 // Load only the children of the selected audit division. An empty
                 // or unseeded division is unavailable, never a bank-wide fallback.
@@ -237,6 +237,11 @@ namespace AIS.Controllers
                     ? parsedPeriod : (int?)null;
                 var selectedCiaPeriod = SelectCiaAuditPeriod(ciaPeriods, requestedCiaPeriod,
                     DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(5)).Date);
+                if (!auditParaSnap && requestedType == "CIA" && selectedCiaPeriod.HasValue)
+                {
+                    CiaCommandPolicy.ResolvePosition(filters, ciaPeriods.Single(p => p.AUDITPERIODID == selectedCiaPeriod), AuditParaSnapPolicy.Today);
+                    snapDepartments = database.GetAuditParaSnapDepartments(scope, filters.SnapDivision, filters.SnapDepartmentId, ciaCommand: true);
+                }
                 var groups = superUser && scope.DashboardType == "GROUP" ?
                     database.GetExecutiveDashboardGroups(scope).OrderBy(n => n.EntityName).ToList() : new System.Collections.Generic.List<OrganizationNode>();
                 var rlmRoots = superUser && scope.DashboardType == "RLM"

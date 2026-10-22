@@ -1040,10 +1040,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
     P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
     P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
-    IO_CURSOR OUT SYS_REFCURSOR
+    IO_CURSOR OUT SYS_REFCURSOR,
+      P_POSITION_AS_ON IN DATE DEFAULT NULL,
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL
 ) AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
+    V_PERIOD_TO DATE;
+    V_POSITION DATE;
+    V_DIVISION VARCHAR2(3) := NVL(P_SNAP_DIVISION_CODE, '1');
 BEGIN
     -- Only the Audited By department controls audit portfolio scope.
     -- Retain obsolete parameters temporarily for C# compatibility.
@@ -1064,6 +1069,18 @@ BEGIN
         V_TO_EXCLUSIVE
     );
 
+    V_PERIOD_TO := V_TO_EXCLUSIVE - 1;
+    V_POSITION := NVL(TRUNC(P_POSITION_AS_ON), LEAST(V_PERIOD_TO, TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) - 1));
+    IF V_POSITION < V_FROM OR V_POSITION > V_PERIOD_TO OR V_POSITION > TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) THEN
+      RAISE_APPLICATION_ERROR(-20049,'Position as on is outside the audit period or in the future.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL OR P_ENTITY_TYPE_ID IS NOT NULL OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+      RAISE_APPLICATION_ERROR(-20048,'CIA Command Center accepts audit-portfolio filters only.');
+    END IF;
+    PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(V_DIVISION, P_AUDITED_BY_ID);
+    V_TO_EXCLUSIVE := V_POSITION + 1;
+
+
     OPEN IO_CURSOR FOR
     WITH plan_scope AS
     (
@@ -1075,7 +1092,11 @@ BEGIN
             ON s.entity_id = p.auditedby
         WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
           AND p.status IN (1, 2)
-          AND s.parent_id IN (112243, 113254)
+          AND EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = s.entity_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
           AND (
               P_AUDITED_BY_ID IS NULL
               OR s.entity_id = P_AUDITED_BY_ID
@@ -1098,7 +1119,11 @@ BEGIN
             ON a.entity_id = e.entity_id
         INNER JOIN v_exec_entity_scope s
             ON s.entity_id = e.auditby_id
-        WHERE s.parent_id IN (112243, 113254)
+        WHERE EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = s.entity_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
           AND (
               P_AUDITED_BY_ID IS NULL
               OR s.entity_id = P_AUDITED_BY_ID
@@ -1206,7 +1231,8 @@ BEGIN
            t.teams_conducting_audit,
            P_AUDIT_PERIOD_ID AS audit_period_id,
            V_FROM AS audit_period_from,
-           V_TO_EXCLUSIVE - 1 AS audit_period_to,
+           V_PERIOD_TO AS audit_period_to,
+           V_POSITION AS position_as_on,
            TRUNC(SYSDATE) AS current_state_as_of
     FROM coverage c
     CROSS JOIN delayed d
@@ -1231,13 +1257,30 @@ END P_GET_CIA_EXEC_KPIS;
       P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
       P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
-      IO_CURSOR OUT SYS_REFCURSOR) AS
+      IO_CURSOR OUT SYS_REFCURSOR,
+      P_POSITION_AS_ON IN DATE DEFAULT NULL,
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL) AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
+    V_PERIOD_TO DATE;
+    V_POSITION DATE;
+    V_DIVISION VARCHAR2(3) := NVL(P_SNAP_DIVISION_CODE, '1');
   BEGIN
     RESOLVE_CIA_COMMAND_PERIOD(
       P_DASHBOARD_TYPE, P_ENTITY_ID, P_AUDIT_PERIOD_ID,
       V_FROM, V_TO_EXCLUSIVE);
+
+    V_PERIOD_TO := V_TO_EXCLUSIVE - 1;
+    V_POSITION := NVL(TRUNC(P_POSITION_AS_ON), LEAST(V_PERIOD_TO, TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) - 1));
+    IF V_POSITION < V_FROM OR V_POSITION > V_PERIOD_TO OR V_POSITION > TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) THEN
+      RAISE_APPLICATION_ERROR(-20049,'Position as on is outside the audit period or in the future.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL OR P_ENTITY_TYPE_ID IS NOT NULL OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+      RAISE_APPLICATION_ERROR(-20048,'CIA Command Center accepts audit-portfolio filters only.');
+    END IF;
+    PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(V_DIVISION, P_AUDITED_BY_ID);
+    V_TO_EXCLUSIVE := V_POSITION + 1;
+
 
     OPEN IO_CURSOR FOR
       WITH categories AS
@@ -1268,7 +1311,12 @@ END P_GET_CIA_EXEC_KPIS;
           LEFT JOIN t_au_observation o ON o.id = k.observation_id
           LEFT JOIN v_ias_cia_issue_checklist_root croot
             ON croot.observation_id = k.observation_id
-         WHERE k.record_type = 'ISSUE'
+         WHERE EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = k.audited_by_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
+           AND k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
            AND k.period_id = P_AUDIT_PERIOD_ID
            AND k.issue_identified_on >= V_FROM

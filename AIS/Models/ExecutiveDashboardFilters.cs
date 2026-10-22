@@ -15,6 +15,7 @@ namespace AIS.Models
         public int? ReportingOfficeId { get; set; }
         public int? EntityId { get; set; }
         public string View { get; set; }
+        public string PositionAsOn { get; set; }
         // Audit Para Snap-specific audit-portfolio selectors; not business hierarchy IDs.
         public string SnapDivision { get; set; }
         public int? SnapDepartmentId { get; set; }

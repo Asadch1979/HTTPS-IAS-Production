@@ -60,7 +60,7 @@
             note.title = data.workflowVerificationNote || 'Workflow definitions require verification.';
         }
         main.querySelector('[data-cia-as-of]').textContent =
-            `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Current operational position as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
+            `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Activity cutoff: ${String(data.positionAsOn || '').slice(0,10)} · Coverage and workflow KPIs are current-state measures as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
     }
     function renderNature(rows) {
         // Oracle still returns ten source categories; the business presentation
@@ -209,8 +209,11 @@
         ring.setAttribute('aria-label',note);
     }
     period.addEventListener('change', () => {
-        const hidden = form.querySelector('[name=auditPeriodId]');
-        if (hidden) hidden.value = period.value;
+        const position = document.getElementById('cia-position');
+        const option = period.selectedOptions[0];
+        position.min = option?.dataset.start || '';
+        position.max = option?.dataset.end < position.dataset.today ? option.dataset.end : position.dataset.today;
+        position.value = option?.dataset.end < position.dataset.yesterday ? option.dataset.end : position.dataset.yesterday;
         const selected = app.querySelector('[data-cia-selected-period]');
         if (selected) selected.textContent = 'Selected: ' + (period.selectedOptions[0]?.textContent || '');
         const reset = app.querySelector('[data-cia-reset]');
@@ -222,18 +225,14 @@
         const url = new URL(location.href);
         url.searchParams.set('auditPeriodId',period.value);
         history.replaceState(null,'',url);
-        load();
+        form.requestSubmit();
     });
     form.addEventListener('submit', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');
         if (hidden) hidden.value = period.value;
     });
-    for (const [id,children] of [
-        ['exec-select-by',['exec-dimension','exec-office','exec-entity']],
-        ['exec-dimension',['exec-office','exec-entity']],
-        ['exec-office',['exec-entity']]
-    ]) document.getElementById(id)?.addEventListener('change', () => {
-        for (const child of children) document.getElementById(child)?.replaceChildren(new Option('All matching options',''));
+    document.getElementById('cia-division')?.addEventListener('change', () => {
+        document.getElementById('cia-department').value = '';
         form.requestSubmit();
     });
     load();
