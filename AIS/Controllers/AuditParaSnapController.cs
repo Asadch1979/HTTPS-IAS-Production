@@ -107,7 +107,7 @@ namespace AIS.Controllers
                 scope=database.NarrowExecutiveDashboardScope(scope,filters.EntityId);
                 var data=query(scope,filters);
                 if (report && string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase))
-                    return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath),
+                    return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath, hideSettlementSources: true),
                         "application/pdf",$"IAS_Report_{reportId}_{filters.StartDate}_to_{filters.EndDate}.pdf");
                 return Ok(new { success=true,data,dateRangeApplied=true,
                     startDate=filters.StartDate,endDate=filters.EndDate,organizationalDimensionsApplied=true,
