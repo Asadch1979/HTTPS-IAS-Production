@@ -100,6 +100,9 @@ namespace AIS.Controllers
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = (object)filters.SnapDivision ?? DBNull.Value;
+            if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
+                command.Parameters.Add("P_SNAP_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             var rows = new List<T>();
             using var reader = command.ExecuteReader();
             while (reader.Read())

@@ -28,3 +28,40 @@ $f.EntityId=42;$rejected=$false
 try { [void][AIS.Models.CiaCommandPolicy]::ResolvePosition($f,$period,$today) } catch { $rejected=$true }
 if (!$rejected) { throw 'CIA accepted forged auditee organization selector' }
 Write-Output '9 CIA cutoff/default/scope policy checks passed.'
+$rows=[System.Collections.Generic.List[AIS.Models.ExecutiveFilterEntity]]::new()
+$i=0
+foreach ($name in @('Group','Division','Department','GM Office','Branch')) {
+    $i++
+    $row=[AIS.Models.ExecutiveFilterEntity]::new()
+    $row.EntityId=1000+$i;$row.EntityTypeId=500+$i;$row.EntityTypeName=$name
+    $row.EntityName="Entity $i";$row.ReportingOfficeId=2000+$i;$row.ReportingOfficeName="Office $i"
+    $row.AuditedById=3000+$i;$row.AuditedByName="Audit office $i"
+    $rows.Add($row)
+}
+$f=[AIS.Models.ExecutiveDashboardFilterRequest]::new()
+$f.ValidateParentPerspective('SNAP')
+$options=[AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true)
+if (($options.Dimensions.Name | Sort-Object) -join ',' -ne 'Department,Division,GM Office,Group') { throw 'Snap entity type presentation restriction failed' }
+if ($options.Entities.Count -ne 5) { throw 'Presentation restriction removed reporting entities' }
+$f.DimensionId=503;$f.ReportingOfficeId=2003;$f.EntityId=1003
+$f.ValidateParentPerspective('SNAP')
+$options=[AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true)
+if ($options.Entities.Count -ne 1 -or $options.Entities[0].Id -ne 1003) { throw 'Scoped cascade failed' }
+foreach ($field in @('DimensionId','ReportingOfficeId','EntityId')) {
+    $f=[AIS.Models.ExecutiveDashboardFilterRequest]::new();$f.$field=999999;$rejected=$false
+    try { [void][AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true) } catch { $rejected=$true }
+    if (!$rejected) { throw "Forged $field accepted" }
+}
+$f=[AIS.Models.ExecutiveDashboardFilterRequest]::new();$f.DimensionId=505;$rejected=$false
+try { [void][AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true) } catch { $rejected=$true }
+if (!$rejected) { throw 'Restricted type ID accepted' }
+$f.SelectBy='auditedBy';$f.DimensionId=3005
+$options=[AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true)
+if ($options.Entities[0].Id -ne 1005) { throw 'Audited By incorrectly uses entity-type restriction' }
+$f=[AIS.Models.ExecutiveDashboardFilterRequest]::new();$f.EntityId=1003;$rejected=$false
+try { $f.ValidateParentPerspective('TOP') } catch { $rejected=$true }
+if (!$rejected) { throw 'Unrelated TOP parent contract weakened' }
+Write-Output '9 Snap presentation/cascade/forged-scope policy checks passed.'
+$references=@(Get-ChildItem "$PSHOME/ref" -Filter '*.dll' | ForEach-Object FullName)+@($assemblies.Values)+@((Resolve-Path $AssemblyPath).Path)
+Add-Type -Path "$PSScriptRoot/AuditParaSnapAccessChecks.cs" -ReferencedAssemblies $references -CompilerOptions '/nowarn:1701'
+[AuditParaSnapAccessChecks]::Run()

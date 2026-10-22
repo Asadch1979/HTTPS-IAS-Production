@@ -13,11 +13,19 @@
 - JS syntax check passed. Oracle has NOT been compiled or deployed. Production reconciliation remains required.
 
 ## Pending (in user-specified order)
-1. Finish focused CIA tests and synchronize F8 deployment artifacts; commit Stage 1.
-2. Snap organizational selectors and independent audit-portfolio intersections through lifecycle/distribution/critical and Reports A–E, preserving scoped authorization.
-3. Remove critical register from glance only.
-4. Department comparison, then settlement analytics, secure para text, aging percentages, report-column cleanup.
-5. Focused security/regression tests and final deployment documentation.
+1. Remove critical register from glance only (next action).
+2. Department comparison, then settlement analytics, secure para text, aging percentages, report-column cleanup.
+3. Focused security/regression tests and final deployment documentation.
+
+## Stage 2
+- Stage 1 commit: `300d139a`. Nine compiled CIA cutoff/default/scope checks pass; F8 CIA spec/body synchronized.
+- Snap now shows dates, Select By, contextual Entity Type/Audited By, Reporting Office, Entity, Division, Department/Cluster in order.
+- SNAP-specific parent contract accepts organizational controls; TOP/GROUP/RLM/CCO contract remains unchanged. Page and every existing Snap API still validate role, page, exact API grant, entity hierarchy and mapped audit department before querying.
+- Dropdown type IDs come from scoped IAS directory data, filtered by master names Group/Division/Department/GM Office; other reporting entities are retained. Unknown names fail closed. Live master naming still requires staging confirmation.
+- Appended `P_SNAP_AUDITED_BY_ID` to lifecycle, Snap distribution/critical and all five report procedures. It intersects independently with the portfolio department (existing P_AUDITED_BY_ID). Unrelated callers do not bind the new parameter.
+- Report validator preserves its mutually exclusive organizational dimension rule for unrelated callers; Snap portfolio department is independently verified by REQUIRE_SELECTION before reading.
+- Build: 0 errors, 57 warnings. Nine compiled Snap cascade/presentation/forged-ID checks and 18 controller authorization/role/session/exact-route checks pass without Oracle. JS syntax and diff whitespace checks pass.
+- Oracle compile, authorized successful database reads and live population reconciliation are pending; no production deployment.
 
 ## Oracle deployment (draft, not production-ready)
 1. Existing `V_IAS_ENTITY_REPORTING_NAMES`, lifecycle, para base, CIA nature/checklist/rectification dependency views must be valid.

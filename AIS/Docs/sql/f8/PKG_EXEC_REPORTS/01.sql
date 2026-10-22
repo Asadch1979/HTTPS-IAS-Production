@@ -9,7 +9,8 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_REPORTS AUTHID DEFINER AS
                                     P_REPORTING_OFFICE_ID IN NUMBER,
                                     P_ENTITY_ID           IN NUMBER,
                                     IO_CURSOR             OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL);
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
   PROCEDURE P_FIELD_OFFICE_POSITION(P_DASHBOARD_TYPE      IN VARCHAR2,
                                     P_SCOPE_ROOT_ID       IN NUMBER,
                                     P_START_DATE          IN DATE,
@@ -19,7 +20,8 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_REPORTS AUTHID DEFINER AS
                                     P_REPORTING_OFFICE_ID IN NUMBER,
                                     P_ENTITY_ID           IN NUMBER,
                                     IO_CURSOR             OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL);
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
   PROCEDURE P_GM_REGION_POSITION(P_DASHBOARD_TYPE      IN VARCHAR2,
                                  P_SCOPE_ROOT_ID       IN NUMBER,
                                  P_START_DATE          IN DATE,
@@ -29,7 +31,8 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_REPORTS AUTHID DEFINER AS
                                  P_REPORTING_OFFICE_ID IN NUMBER,
                                  P_ENTITY_ID           IN NUMBER,
                                  IO_CURSOR             OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL);
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
   PROCEDURE P_REGION_RANKINGS(P_DASHBOARD_TYPE      IN VARCHAR2,
                               P_SCOPE_ROOT_ID       IN NUMBER,
                               P_START_DATE          IN DATE,
@@ -39,7 +42,8 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_REPORTS AUTHID DEFINER AS
                               P_REPORTING_OFFICE_ID IN NUMBER,
                               P_ENTITY_ID           IN NUMBER,
                               IO_CURSOR             OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL);
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
   PROCEDURE P_MANAGEMENT_SETTLEMENT(P_DASHBOARD_TYPE      IN VARCHAR2,
                                     P_SCOPE_ROOT_ID       IN NUMBER,
                                     P_START_DATE          IN DATE,
@@ -49,5 +53,6 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_REPORTS AUTHID DEFINER AS
                                     P_REPORTING_OFFICE_ID IN NUMBER,
                                     P_ENTITY_ID           IN NUMBER,
                                     IO_CURSOR             OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL);
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
 END PKG_EXEC_REPORTS;

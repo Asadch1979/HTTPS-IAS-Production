@@ -76,6 +76,13 @@
         navigation();
         if (validDates()) form.requestSubmit();
     });
+    if (!reports) for (const [id,children] of [
+        ['exec-select-by',['exec-dimension','exec-office','exec-entity']],
+        ['exec-dimension',['exec-office','exec-entity']], ['exec-office',['exec-entity']]
+    ]) document.getElementById(id)?.addEventListener('change', () => {
+        for (const child of children) document.getElementById(child)?.replaceChildren(new Option('All matching options',''));
+        navigation(); if (validDates()) form.requestSubmit();
+    });
     navigation();
     if (reports) return;
     async function read(action, signal) {

@@ -9,6 +9,10 @@
     <div class="snap-period-toolbar" role="group" aria-label="Common reporting period">
         <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" name="startDate" value="@Model.Filters.StartDate" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" required /></div>
         <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" name="endDate" value="@Model.Filters.EndDate" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" required /></div>
+        <div><label for="exec-select-by">Select By</label><select id="exec-select-by" name="selectBy"><option value="entityType" selected="@(Model.Filters.SelectBy == "entityType")">Entity Type</option><option value="auditedBy" selected="@(Model.Filters.SelectBy == "auditedBy")">Audited By</option></select></div>
+        <div><label for="exec-dimension">@(Model.Filters.SelectBy == "entityType" ? "Entity Type" : "Audited By")</label><select id="exec-dimension" name="dimensionId"><option value="">All in authorized scope</option>@foreach (var option in Model.FilterOptions.Dimensions) { <option value="@option.Id" selected="@(option.Id == Model.Filters.DimensionId)">@option.Name</option> }</select></div>
+        <div><label for="exec-office">Reporting Office</label><select id="exec-office" name="reportingOfficeId"><option value="">All matching offices</option>@foreach (var option in Model.FilterOptions.ReportingOffices) { <option value="@option.Id" selected="@(option.Id == Model.Filters.ReportingOfficeId)">@option.Name</option> }</select></div>
+        <div><label for="exec-entity">Entity</label><select id="exec-entity" name="entityId"><option value="">All matching entities</option>@foreach (var option in Model.FilterOptions.Entities) { <option value="@option.Id" selected="@(option.Id == Model.Filters.EntityId)">@option.Name</option> }</select></div>
         <div><label for="snap-division">Division</label>
             <select id="snap-division" name="snapDivision" required>
                 <option value="1" selected="@(Model.Filters.SnapDivision == "1")">All Divisions</option>
