@@ -1,5 +1,7 @@
 # Dashboard follow-up checkpoint — 21 October 2026
 
+**Closed locally on 22 October 2026.** The remaining source review and canonical workbook registration are complete. See `DashboardFollowup-2026-10-22-verification.md` for results and manual Oracle/UAT requirements. The historical checkpoint below is retained for traceability; its resume steps are superseded.
+
 Branch main. Latest request implemented; final source/security review and earlier registration verification remain. No Oracle connection or deployment occurred. Last credit check 91% used; stop before 97%. Reset advertised: 2026-10-21 12:44:20 UTC / 17:44:20 Pakistan.
 
 Completed this checkpoint:
