@@ -88,8 +88,11 @@ namespace AIS.Models
                 ? new ExecutiveFilterOption { Id = e.EntityTypeId ?? 0, Name = e.EntityTypeName }
                 : new ExecutiveFilterOption { Id = e.AuditedById ?? 0, Name = e.AuditedByName }));
             if (snapEntityTypes && filters.SelectBy == "entityType")
-                result.Dimensions = result.Dimensions.Where(o => new[] { "GROUP", "DIVISION", "DEPARTMENT", "GM OFFICE" }
-                    .Contains((o.Name ?? "").Trim().ToUpperInvariant())).ToList();
+            {
+                var allowed = new[] { "GROUP", "DIVISION", "DEPARTMENT", "GM OFFICE" };
+                result.Dimensions = result.Dimensions.Where(o => allowed.Contains((o.Name ?? "").Trim().ToUpperInvariant()))
+                    .OrderBy(o => Array.IndexOf(allowed, (o.Name ?? "").Trim().ToUpperInvariant())).ThenBy(o => o.Id).ToList();
+            }
             RequireOption(result.Dimensions, filters.DimensionId);
             if (filters.DimensionId.HasValue) rows = rows.Where(e => (filters.SelectBy == "entityType" ? e.EntityTypeId : e.AuditedById) == filters.DimensionId).ToList();
             result.ReportingOffices = Options(rows.Select(e => new ExecutiveFilterOption { Id = e.ReportingOfficeId ?? 0, Name = e.ReportingOfficeName }));

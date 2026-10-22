@@ -46,15 +46,16 @@ function fixture({enabled=true,periodValue='12'}={}) {
     const form=new Element(), hidden={value:periodValue};
     form.querySelector=()=>hidden;
     form.requestSubmit=()=>form.fire('submit');
-    const period=new Element();period.value=periodValue;period.selectedOptions=[{textContent:'2026'}];
+    const period=new Element();period.value=periodValue;period.selectedOptions=[{textContent:'2026',dataset:{start:'2026-01-01',end:'2026-12-31'}}];
+    const position=new Element();position.value='2026-10-21';position.dataset={today:'2026-10-22',yesterday:'2026-10-21'};
     const status=new Element(), results=new Element(), selected=new Element(), reset=new Element();
     reset.href='https://ias.test/ZTBLAIS/ExecutiveOverview/CIA?auditPeriodId=12';
     const app=new Element();
     app.dataset={apiUrl:'/ZTBLAIS/api/ExecutiveDashboard/',dashboardType:'CIA'};
     app.querySelector=key=>key==='.cia-command-center' ? main : key==='[data-cia-reset]' ? reset : selected;
     const doc={getElementById:id=>({'executive-dashboard':app,'exec-filters':form,'cia-period':period,
-        'exec-status':status,'exec-results':results}[id]||null)};
-    class FormDataFixture { *[Symbol.iterator]() { yield ['view','command'];yield ['auditPeriodId',hidden.value];yield ['entityId','123']; } }
+        'exec-status':status,'exec-results':results,'cia-position':position}[id]||null)};
+    class FormDataFixture { *[Symbol.iterator]() { yield ['view','command'];yield ['auditPeriodId',period.value];yield ['positionAsOn',position.value];yield ['snapDivision','FAD']; } }
     const requests=[];
     const fetch=(url,options)=>new Promise(resolve=>requests.push({url,options,resolve}));
     runInNewContext(source,{document:doc,fetch,FormData:FormDataFixture,URLSearchParams,URL,AbortController,
@@ -66,7 +67,7 @@ function fixture({enabled=true,periodValue='12'}={}) {
             json:async()=>{if(invalidJson)throw new SyntaxError('invalid');return {success:statusCode===200,data,message:statusCode===200?undefined:'Test section failure'};}});
     };
     return {app,main,form,period,hidden,status,requests,field,cards,reply,selected,reset,
-        changePeriod(value){period.value=value;period.selectedOptions=[{textContent:value}];period.fire('change');}};
+        changePeriod(value){period.value=value;hidden.value=value;period.selectedOptions=[{textContent:value,dataset:{start:'2026-01-01',end:'2026-12-31'}}];period.fire('change');}};
 }
 test('authorized development client sends both correctly scoped requests with PathBase',()=>{
     const f=fixture();
@@ -75,7 +76,8 @@ test('authorized development client sends both correctly scoped requests with Pa
         assert.match(request.url,/^\/ZTBLAIS\/api\/ExecutiveDashboard\/GetCia/);
         const q=new URL(request.url,'https://ias.test').searchParams;
         assert.equal(q.get('view'),'command');assert.equal(q.get('auditPeriodId'),'12');
-        assert.equal(q.get('dashboardType'),'CIA');assert.equal(q.get('entityId'),'123');
+        assert.equal(q.get('dashboardType'),'CIA');assert.equal(q.get('entityId'),null);
+        assert.equal(q.get('positionAsOn'),'2026-10-21');assert.equal(q.get('snapDivision'),'FAD');
         assert.equal(request.options.credentials,'same-origin');
     }
 });

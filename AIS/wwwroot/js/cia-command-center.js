@@ -224,8 +224,9 @@
         }
         const url = new URL(location.href);
         url.searchParams.set('auditPeriodId',period.value);
+        url.searchParams.set('positionAsOn',position.value);
         history.replaceState(null,'',url);
-        form.requestSubmit();
+        load();
     });
     form.addEventListener('submit', () => {
         const hidden = form.querySelector('[name=auditPeriodId]');

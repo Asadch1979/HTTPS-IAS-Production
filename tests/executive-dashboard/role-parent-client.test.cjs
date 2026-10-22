@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const script = fs.readFileSync(path.join(__dirname, '../../AIS/wwwroot/js/executive-dashboard.js'), 'utf8');
 
-test('role parents own dates and navigation; organizational controls remain CIA-only', () => {
+test('role parents own dates and navigation; organizational controls stay confined to CIA/Snap', () => {
     const views = path.join(__dirname, '../../AIS/Views/ExecutiveOverview');
     for (const role of ['TOP', 'CCO', 'GROUP', 'RLM']) {
         const page = fs.readFileSync(path.join(views, `${role}.cshtml`), 'utf8');
@@ -17,8 +17,10 @@ test('role parents own dates and navigation; organizational controls remain CIA-
         assert.doesNotMatch(page, /OrganizationStructure|name="_Filters"/);
     }
     const snapFilters = fs.readFileSync(path.join(views, '_AuditParaSnapFilters.cshtml'), 'utf8');
-    assert.doesNotMatch(snapFilters, /name="(?:entityId|dimensionId|reportingOfficeId|selectBy)"/);
-    assert.doesNotMatch(snapFilters, /dimensionId|reportingOfficeId|entityId/);
+    for(const name of ['entityId','dimensionId','reportingOfficeId','selectBy','snapDivision','snapDepartmentId'])
+        assert.match(snapFilters,new RegExp('name="'+name+'"'));
+    const ciaFilters=fs.readFileSync(path.join(views,'_CiaCommandFilters.cshtml'),'utf8');
+    assert.doesNotMatch(ciaFilters,/name="(?:entityId|dimensionId|reportingOfficeId|selectBy)"/);
     const group = fs.readFileSync(path.join(views, 'GROUP.cshtml'), 'utf8');
     assert.ok(group.indexOf('mgmt-hero') < group.indexOf('data-view-navigation'));
     assert.ok(group.indexOf('data-view-navigation') < group.indexOf('id="exec-filters"'));

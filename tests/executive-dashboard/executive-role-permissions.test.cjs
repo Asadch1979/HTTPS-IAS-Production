@@ -19,13 +19,13 @@ test('distinct Razor parents match the page registrations', () => {
   assert.match(permissions, /REGISTER_PAGE\(1000305,'RLM'/);
   assert.doesNotMatch(permissions, /GRANT_PAGE\(V_RLM_PAGE_ID/);
 });
-test('all 20 declared GET endpoints are covered exactly once', () => {
+test('all 22 declared GET endpoints are covered exactly once', () => {
   const registrations = [...permissions.matchAll(/REGISTER_GET\('([^']+)','([^']+)',\d+,'[^']+'\);/g)];
-  assert.equal(registrations.length, 20);
-  assert.equal(new Set(registrations.map(r => r[1]+'/'+r[2])).size,20);
+  assert.equal(registrations.length, 22);
+  assert.equal(new Set(registrations.map(r => r[1]+'/'+r[2])).size,22);
   for (const [ctrl,actions] of [
     ['ExecutiveDashboard',['GetKpiSummary','GetRiskSummary','GetAgingSummary','GetCycleSummary','GetSettlementTrend','GetCriticalItems','GetKpiLifecycle','GetCiaCommandKpis','GetCiaIssueNature','GetRoleEntityHeatmap','GetRoleUnitComparison','GetRoleFollowups']],
-    ['AuditParaSnap',['GetKpis','GetDistribution','GetCriticalItems','GetReportA','GetReportB','GetReportC','GetReportD','GetReportE']]
+    ['AuditParaSnap',['GetPerformance','GetParaText','GetKpis','GetDistribution','GetCriticalItems','GetReportA','GetReportB','GetReportC','GetReportD','GetReportE']]
   ]) {
     const controller = ctrl==='ExecutiveDashboard'?executive:snap;
     for (const a of actions) {

@@ -235,6 +235,9 @@ namespace AIS.Controllers
                 int parsedPeriod;
                 var requestedCiaPeriod = int.TryParse(Request.Query["auditPeriodId"].ToString(), out parsedPeriod)
                     ? parsedPeriod : (int?)null;
+                if (!auditParaSnap && requestedType == "CIA" && Request.Query.ContainsKey("auditPeriodId") &&
+                    (!requestedCiaPeriod.HasValue || !ciaPeriods.Any(p => p.AUDITPERIODID == requestedCiaPeriod)))
+                    throw new ArgumentException("Select a valid IAS audit period.");
                 var selectedCiaPeriod = SelectCiaAuditPeriod(ciaPeriods, requestedCiaPeriod,
                     DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(5)).Date);
                 if (!auditParaSnap && requestedType == "CIA" && selectedCiaPeriod.HasValue)

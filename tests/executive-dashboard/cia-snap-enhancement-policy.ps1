@@ -41,7 +41,7 @@ foreach ($name in @('Group','Division','Department','GM Office','Branch')) {
 $f=[AIS.Models.ExecutiveDashboardFilterRequest]::new()
 $f.ValidateParentPerspective('SNAP')
 $options=[AIS.Models.ExecutiveDashboardFilterOptions]::FromScopedEntities($rows,$f,$null,$true)
-if (($options.Dimensions.Name | Sort-Object) -join ',' -ne 'Department,Division,GM Office,Group') { throw 'Snap entity type presentation restriction failed' }
+if ($options.Dimensions.Name -join ',' -ne 'Group,Division,Department,GM Office') { throw 'Snap entity type presentation restriction/order failed' }
 if ($options.Entities.Count -ne 5) { throw 'Presentation restriction removed reporting entities' }
 $f.DimensionId=503;$f.ReportingOfficeId=2003;$f.EntityId=1003
 $f.ValidateParentPerspective('SNAP')
@@ -77,3 +77,20 @@ Write-Output '4 performance denominator/reconciliation checks passed.'
 $references=@(Get-ChildItem "$PSHOME/ref" -Filter '*.dll' | ForEach-Object FullName)+@($assemblies.Values)+@((Resolve-Path $AssemblyPath).Path)
 Add-Type -Path "$PSScriptRoot/AuditParaSnapAccessChecks.cs" -ReferencedAssemblies $references -CompilerOptions '/nowarn:1701'
 [AuditParaSnapAccessChecks]::Run()
+foreach ($dll in Get-ChildItem (Split-Path $AssemblyPath) -Filter 'itext*.dll') { [void][System.Reflection.Assembly]::LoadFrom($dll.FullName) }
+$report=[AIS.Models.ExecutiveReportResult]::new()
+$report.DashboardType='CIA';$report.Filters=[AIS.Models.ExecutiveDashboardFilterRequest]::new()
+$report.Rows=[System.Collections.Generic.List[AIS.Models.ExecutiveReportRow]]::new()
+$report.Filters.StartDate='2026-01-01';$report.Filters.EndDate='2026-10-21'
+$record=[AIS.Models.ExecutiveReportRow]::new();$record.RowKind='DETAIL';$record.ItemName='<script>unsafe</script>'
+$record.GroupName='GM Field Offices';$record.OutstandingParas=12
+$report.Rows.Add($record)
+$htmlMethod=[AIS.Services.ExecutiveReportsPdfGenerator].GetMethod('BuildHtml',[System.Reflection.BindingFlags]'NonPublic,Static')
+$snapHtml=$htmlMethod.Invoke($null,@('B',$report,$true))
+$otherHtml=$htmlMethod.Invoke($null,@('B',$report,$false))
+if ($snapHtml -match '<th>(Compliance|Audit|Unknown)</th>') { throw 'Snap PDF still displays settlement source columns' }
+if ($otherHtml -notmatch '<th>Compliance</th>' -or $otherHtml -notmatch '<th>Audit</th>' -or $otherHtml -notmatch '<th>Unknown</th>') { throw 'Unrelated PDF presentation changed' }
+if ($snapHtml -match '<script>unsafe</script>' -or $snapHtml -notmatch '&lt;script&gt;unsafe&lt;/script&gt;') { throw 'PDF stored labels are not encoded' }
+$body=[regex]::Match($snapHtml,'<tbody>([\s\S]*?)</tbody>').Groups[1].Value
+if ([regex]::Matches($body,'<td\b').Count -ne 11) { throw 'Snap PDF row/header columns differ' }
+Write-Output '4 PDF scope/column/encoding checks passed.'
