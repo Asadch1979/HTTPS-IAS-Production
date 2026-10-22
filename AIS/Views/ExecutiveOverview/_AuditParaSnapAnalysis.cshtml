@@ -46,4 +46,6 @@
 @if (Model.SelectedView.Id == "risk")
 {
     <partial name="_Critical" />
+    <dialog id="snap-para-dialog" aria-labelledby="snap-para-title"><h2 id="snap-para-title">Para text (read only)</h2><pre id="snap-para-text"></pre><button type="button" id="snap-para-close">Close</button></dialog>
+    <article class="exec-panel"><h2>Critical exposure analysis</h2><div id="snap-exposure"></div><div id="snap-critical-departments" class="exec-table-wrap"></div><p class="exec-note">Historical exposure is estimated using current risk/audit-office mapping; N/A preserves insufficient cycle evidence.</p></article>
 }

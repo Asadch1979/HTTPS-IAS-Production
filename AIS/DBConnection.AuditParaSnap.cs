@@ -76,7 +76,7 @@ namespace AIS.Controllers
             return result;
         }
         private List<T> ReadSnap<T>(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters,
-            string procedure, Func<OracleDataReader,T> map, int? maxRows = null)
+            string procedure, Func<OracleDataReader,T> map, int? maxRows = null, int? comId = null)
         {
             ValidateDatedDashboardScope(scope, filters);
             var dates = filters.Validate();
@@ -98,6 +98,7 @@ namespace AIS.Controllers
                 (object)((scope.DashboardType == "CCO" || ManagementDashboardPeriod.Applies(scope.DashboardType)) ? (filters.SelectBy == "auditedBy" ? filters.DimensionId : null) : filters.SnapDepartmentId) ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
+            if (comId.HasValue) command.Parameters.Add("P_COM_ID",OracleDbType.Int32).Value = comId.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = (object)filters.SnapDivision ?? DBNull.Value;
             if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
@@ -112,6 +113,29 @@ namespace AIS.Controllers
             }
             ValidateDatedDashboardScope(scope, filters);
             return rows;
+        }
+        internal string GetAuditParaSnapText(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int comId)
+        {
+            ValidateSnapScope(scope);
+            AuditParaSnapPolicy.Validate(filters);
+            if (comId <= 0 || filters.View != "risk") throw new ArgumentException("Invalid para request.");
+            void RequirePara()
+            {
+                // The COM_ID predicate is applied before ranking/capping, with
+                // the exact same dates, eligibility and scope as the register.
+                var matches = ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",
+                    r => ExecutiveCount(r,"COM_ID"),1,comId);
+                if (matches.Count != 1 || matches[0] != comId)
+                    throw new ExecutiveDashboardAccessException("EntityScope", "Para is not available in the selected authorized scope.");
+            }
+            RequirePara();
+            // Same bound, parameterized PKG_HD retrieval as the reference page;
+            // never call its unprotected HTTP route. Check entitlement again
+            // after reading so revoked sessions/scope changes discard the text.
+            var text = GetAllParaText(comId);
+            RequirePara();
+            ValidateSnapScope(scope);
+            return text;
         }
         internal List<AuditParaSnapBucket> GetAuditParaSnapDistribution(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
             => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_DISTRIBUTION",r => new AuditParaSnapBucket

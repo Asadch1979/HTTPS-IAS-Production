@@ -13,7 +13,7 @@
 - JS syntax check passed. Oracle has NOT been compiled or deployed. Production reconciliation remains required.
 
 ## Pending (in user-specified order)
-1. Secure para text/critical exposure, then aging percentages, report-column cleanup.
+1. Aging percentages, then report-column cleanup and final focused regression/documentation.
 3. Focused security/regression tests and final deployment documentation.
 
 ## Stage 2
@@ -41,6 +41,13 @@
 - Department rankings reuse exact performance permission and source; zero/missing/inconsistent denominators and non-zero reconciliation differences are excluded. Rankings are explicitly indicative estimates.
 - No confirmed-inactivity list: historical baseline is not complete; UI explains missing history cannot establish inactivity.
 - Build 0 errors/57 existing warnings; 42 compiled policy/controller checks pass; JS syntax and diff whitespace checks pass. Oracle compile/live reconciliation pending.
+
+## Stage 6
+- Critical Audit Observations renamed, no repeated risk-distribution chart. Register is confined to this tab, shows audit period/para, recorded movement age and explicit 100-record limit.
+- Exact new GET `/api/AuditParaSnap/GetParaText`, page 1000304, SNAP CIA/Super User grants added to permission registration script. Read-only dialog uses textContent, never stored HTML injection; closes/cancels/clears on filter changes.
+- `P_GET_SNAP_CRITICAL` appends optional `P_COM_ID`; predicate applies before rank/cap. Text retrieval is only after this exact selected-scope eligibility check and rechecked afterward. Uses existing bound `PKG_HD.P_GET_ALL_PARA_TEXT`, never its legacy HTTP endpoint. Requires existing PKG_HD execute privilege, no broader privilege.
+- High-risk-by-audit-office uses performance source; high-risk over-year/over-three-cycles uses new exposure distribution. Insufficient cycle evidence gives N/A.
+- Build 0 errors/57 existing warnings. Exact para API denials tested for CIA and Super User without the new grant; live authorized/unauthorized COM_ID requests remain staging-only QA.
 
 ## Oracle deployment (draft, not production-ready)
 1. Existing `V_IAS_ENTITY_REPORTING_NAMES`, lifecycle, para base, CIA nature/checklist/rectification dependency views must be valid.

@@ -275,6 +275,7 @@ BEGIN
   REGISTER_GET('AuditParaSnap','GetDistribution',1000304,'SNAP');
   REGISTER_GET('AuditParaSnap','GetCriticalItems',1000304,'SNAP');
   REGISTER_GET('AuditParaSnap','GetPerformance',1000304,'SNAP');
+  REGISTER_GET('AuditParaSnap','GetParaText',1000304,'SNAP');
   REGISTER_GET('AuditParaSnap','GetReportA',1000304,'SNAP');
   REGISTER_GET('AuditParaSnap','GetReportB',1000304,'SNAP');
   REGISTER_GET('AuditParaSnap','GetReportC',1000304,'SNAP');

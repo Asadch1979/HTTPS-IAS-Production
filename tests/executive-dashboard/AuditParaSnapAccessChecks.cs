@@ -88,6 +88,8 @@ public static class AuditParaSnapAccessChecks
             // Missing dates must be rejected before all directory/Oracle access.
             var result=path.EndsWith("/GetPerformance",StringComparison.Ordinal)
                 ? controller.GetPerformance(new ExecutiveDashboardFilterRequest { View="position" })
+                : path.EndsWith("/GetParaText",StringComparison.Ordinal)
+                ? controller.GetParaText(new ExecutiveDashboardFilterRequest { View="risk" },123456)
                 : controller.GetKpis(new ExecutiveDashboardFilterRequest { View="glance" });
             return ((ObjectResult)result).StatusCode ?? 0;
         }
@@ -106,6 +108,8 @@ public static class AuditParaSnapAccessChecks
         check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetCriticalItems"),403);
         check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetPerformance"),403);
         check(request(1,true,true,true,1000304,path:"/api/AuditParaSnap/GetPerformance"),403);
+        check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetParaText"),403);
+        check(request(1,true,true,true,1000304,path:"/api/AuditParaSnap/GetParaText"),403);
         return count+" compiled-controller access checks passed (no Oracle).";
     }
 }

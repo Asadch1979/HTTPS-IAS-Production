@@ -40,6 +40,9 @@
     let request = null;
     function resetResults(note) {
         performance = null;
+        paraRequest?.abort();
+        document.getElementById('snap-para-dialog')?.close();
+        document.getElementById('snap-para-text')?.replaceChildren();
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             card.querySelector('[data-snap-kpi]').textContent = 'N/A';
             card.querySelector('[data-snap-kpi-note]').textContent = note;
@@ -48,7 +51,7 @@
             const target = document.getElementById('exec-' + name);
             if (target) target.replaceChildren(element('p',note,'exec-empty'));
         }
-        for (const id of ['snap-clearance','snap-movement','snap-rankings']) document.getElementById(id)?.replaceChildren(element('p',note,'exec-empty'));
+        for (const id of ['snap-clearance','snap-movement','snap-rankings','snap-exposure','snap-critical-departments']) document.getElementById(id)?.replaceChildren(element('p',note,'exec-empty'));
         document.getElementById('snap-performance')?.replaceChildren(element('p',note,'exec-empty'));
         document.getElementById('exec-critical')?.replaceChildren();
         const criticalNote = document.getElementById('exec-critical-note');
@@ -88,8 +91,9 @@
     });
     navigation();
     if (reports) return;
-    async function read(action, signal) {
+    async function read(action, signal, extra = {}) {
         const query = new URLSearchParams(new FormData(form));
+        for (const [key,value] of Object.entries(extra)) query.set(key,value);
         const response = await fetch(app.dataset.apiUrl + action + '?' + query, {
             signal, credentials:'same-origin', cache:'no-store',
             headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}
@@ -244,6 +248,12 @@
     }
     function renderDistribution(rows) {
         renderMovement(rows);
+        const exposure=document.getElementById('snap-exposure');
+        if(exposure) {
+            const entries=rows.filter(r=>r.dataset==='exposure');
+            if(entries.length!==3)throw new Error('Missing critical exposure analysis.');
+            exposure.replaceChildren(...entries.map(r=>element('p',r.bucketName+': '+(r.qualityCode==='N'?'N/A · insufficient history':number(r.paraCount)))));
+        }
         if (!Array.isArray(rows)) throw new Error('Invalid distribution cursor.');
         for (const name of ['risk','aging','cycle','trend']) {
             const target = document.getElementById('exec-' + name);
@@ -336,6 +346,24 @@
         document.getElementById('snap-performance-note').textContent=notes.join(' ');
     }
     document.getElementById('snap-performance-sort')?.addEventListener('change',()=>{if(performance)renderPerformance(performance);});
+    function renderCriticalDepartments(data) {
+        const table=element('table',null,'exec-table'),head=element('thead'),tr=element('tr'),body=element('tbody');
+        for(const label of ['Audit Division','Department / Cluster','High-risk Open'])tr.append(element('th',label));head.append(tr);
+        for(const row of data.rows){const tr=element('tr');for(const value of [row.division,row.department,number(row.position.highRiskOpenParas)])tr.append(element('td',value));body.append(tr);}
+        table.append(head,body);document.getElementById('snap-critical-departments').replaceChildren(table);
+    }
+    let paraRequest=null;
+    const dialog=document.getElementById('snap-para-dialog');
+    dialog?.addEventListener('close',()=>{paraRequest?.abort();document.getElementById('snap-para-text').replaceChildren();});
+    document.getElementById('snap-para-close')?.addEventListener('click',()=>dialog.close());
+    async function viewPara(comId) {
+        paraRequest?.abort();paraRequest=new AbortController();const active=paraRequest;
+        const text=document.getElementById('snap-para-text');text.textContent='Loading authorized para text…';dialog.showModal();
+        try {
+            const data=await read('GetParaText',active.signal,{comId});
+            if(!active.signal.aborted){if(data.comId!==comId || typeof data.text!=='string')throw new Error('Invalid para text response.');text.textContent=data.text || 'No para text is recorded.';}
+        } catch(error){if(!active.signal.aborted)text.textContent='Para text unavailable: '+error.message;}
+    }
     let criticalRows = [];
     function renderCritical() {
         const target = document.getElementById('exec-critical');
@@ -344,9 +372,11 @@
         for (const row of criticalRows.filter(row => !selectedRisk || row.riskName === selectedRisk)) {
             const tr = element('tr'), entity = element('td');
             entity.textContent = row.entityName || 'Unknown entity';
-            tr.append(entity,element('td',row.paraNo || 'Unnumbered'),element('td',row.riskName),
+            tr.append(entity,element('td',(row.auditPeriod || 'Unknown audit period')+' / '+(row.paraNo || 'Unnumbered')),element('td',row.riskName),
                 element('td',number(row.comCycle)),element('td',number(row.agingDays)),
-                element('td','N/A'),element('td',row.gistOfParas || ''));
+                element('td',number(row.daysSinceLastMovement)),element('td',row.gistOfParas || ''));
+            const view=element('button','View Para','org-button');view.type='button';
+            view.addEventListener('click',()=>viewPara(row.comId));tr.lastElementChild.append(' ',view);
             target.append(tr);
         }
         if (!target.children.length) {
@@ -362,7 +392,7 @@
         for (const value of [...new Set(rows.map(row => row.riskName))]) risk.add(new Option(value,value));
         renderCritical();
         document.getElementById('exec-critical-note').textContent =
-            'Critical = open High-Risk paras (ZTBL). Showing ' + rows.length + ' of up to 100.';
+            'Critical = open High-Risk paras (ZTBL). Showing ' + rows.length + ' returned (limit 100). This capped list is not the entire population.';
     }
     document.getElementById('exec-critical-risk')?.addEventListener('change',renderCritical);
     async function load() {
@@ -376,7 +406,8 @@
             tasks.push(['GetDistribution',renderDistribution]);
         if (document.getElementById('snap-performance')) tasks.push(['GetPerformance',renderPerformance]);
         if (document.getElementById('snap-rankings')) tasks.push(['GetPerformance',renderRankings]);
-        if (document.getElementById('snap-movement')) tasks.push(['GetDistribution',renderDistribution]);
+        if (document.getElementById('snap-movement') || document.getElementById('snap-exposure')) tasks.push(['GetDistribution',renderDistribution]);
+        if (document.getElementById('snap-critical-departments')) tasks.push(['GetPerformance',renderCriticalDepartments]);
         if (document.getElementById('exec-critical')) tasks.push(['GetCriticalItems',loadCritical]);
         const results = await Promise.allSettled(tasks.map(async ([action,render]) => {
             const data = await read(action,request.signal);

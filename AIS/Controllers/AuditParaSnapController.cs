@@ -44,8 +44,15 @@ namespace AIS.Controllers
         public IActionResult GetPerformance([FromQuery] ExecutiveDashboardFilterRequest filters)
             => Execute(filters,(scope,f) =>
             {
-                if (f.View != "position" && f.View != "settlement") throw new ArgumentException("Department comparison requires the performance view.");
+                if (f.View != "position" && f.View != "settlement" && f.View != "risk") throw new ArgumentException("Department comparison requires the performance view.");
                 return database.GetAuditParaSnapPerformance(scope,f);
+            });
+        [HttpGet]
+        public IActionResult GetParaText([FromQuery] ExecutiveDashboardFilterRequest filters, int comId)
+            => Execute(filters,(scope,f) =>
+            {
+                if (f.View != "risk" || comId <= 0) throw new ArgumentException("A valid para and critical observations view are required.");
+                return new { comId, text = database.GetAuditParaSnapText(scope,f,comId) };
             });
         // Reuse the approved A-E data readers, PDF generator and report presentation.
         // Their existing routes, grants and behavior remain untouched.

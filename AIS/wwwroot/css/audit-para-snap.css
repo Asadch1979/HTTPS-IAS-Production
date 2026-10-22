@@ -38,3 +38,7 @@
 .exec-snap .exec-bar-row > strong {text-align:right;font-variant-numeric:tabular-nums}
 .exec-snap[data-view="risk"] .exec-charts {grid-template-columns:minmax(0,1fr)}
 @media(max-width:600px) { .exec-snap .snap-period-toolbar>div { flex:1 1 100%; } .exec-snap .snap-period-toolbar input,.exec-snap .snap-period-toolbar select { width:100%; } }
+
+#snap-para-dialog { width: min(90vw, 1100px); max-height: 85vh; border: 1px solid #476574; border-radius: 8px; padding: 24px; }
+#snap-para-dialog::backdrop { background: #102c42aa; }
+#snap-para-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; font: inherit; }

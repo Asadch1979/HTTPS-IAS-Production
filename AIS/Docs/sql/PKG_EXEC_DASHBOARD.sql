@@ -441,7 +441,8 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       P_MAX_ROWS IN NUMBER DEFAULT 100,
       IO_CURSOR OUT SYS_REFCURSOR,
       P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
-      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL);
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_COM_ID IN NUMBER DEFAULT NULL);
 
   -- Additional read-only cursors for Group, Division, GM and Region views.
   -- P_ROOT_ENTITY_ID must be a server-authorized hierarchy root.
@@ -1978,6 +1979,9 @@ END P_GET_CIA_EXEC_KPIS;
         UNION ALL SELECT 'risk','2','Medium',2 FROM dual
         UNION ALL SELECT 'risk','3','Low',3 FROM dual
         UNION ALL SELECT 'risk','0','Unrated',4 FROM dual
+        UNION ALL SELECT 'exposure','high','High-risk open',1 FROM dual
+        UNION ALL SELECT 'exposure','year','High-risk over one year',2 FROM dual
+        UNION ALL SELECT 'exposure','cycles','High-risk over three compliance cycles',3 FROM dual
         UNION ALL SELECT 'aging','1','0-90 days',1 FROM dual
         UNION ALL SELECT 'aging','2','91-180 days',2 FROM dual
         UNION ALL SELECT 'aging','3','181-365 days',3 FROM dual
@@ -1994,6 +1998,10 @@ END P_GET_CIA_EXEC_KPIS;
         SELECT 'risk' dataset, risk_id,
                CASE WHEN risk_id IN (1,2,3) THEN TO_CHAR(risk_id) ELSE '0' END bucket_code
           FROM scoped WHERE snap_open = 1
+        UNION ALL
+        SELECT 'exposure', risk_id, 'high' FROM scoped WHERE snap_open=1 AND risk_id=1
+        UNION ALL SELECT 'exposure', risk_id, 'year' FROM scoped WHERE snap_open=1 AND risk_id=1 AND snap_age>365
+        UNION ALL SELECT 'exposure', risk_id, 'cycles' FROM scoped WHERE snap_open=1 AND risk_id=1 AND snap_cycle>3
         UNION ALL
         SELECT 'aging', risk_id,
                CASE WHEN snap_age IS NULL THEN '0' WHEN snap_age <= 90 THEN '1'
@@ -2023,7 +2031,9 @@ END P_GET_CIA_EXEC_KPIS;
         SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
                NVL(n.para_count,0) AS para_count,
                NVL(n.high_risk_count,0) AS high_risk_count,
-               CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+               CASE WHEN c.dataset='exposure' AND c.bucket_code='cycles' AND EXISTS
+                    (SELECT 1 FROM scoped z WHERE z.snap_open=1 AND z.risk_id=1 AND z.snap_cycle IS NULL) THEN 'N'
+                    WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
           FROM categories c LEFT JOIN counts n
             ON n.dataset = c.dataset AND n.bucket_code = c.bucket_code
         UNION ALL
@@ -2075,7 +2085,8 @@ END P_GET_CIA_EXEC_KPIS;
       P_MAX_ROWS IN NUMBER DEFAULT 100,
       IO_CURSOR OUT SYS_REFCURSOR,
       P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
-      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL) AS
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_COM_ID IN NUMBER DEFAULT NULL) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
     V_FROM DATE;
     V_TO DATE;
@@ -2109,6 +2120,9 @@ END P_GET_CIA_EXEC_KPIS;
     END IF;
     IF P_SNAP_AUDITED_BY_ID IS NOT NULL AND (P_SNAP_DIVISION_CODE IS NULL OR P_SNAP_AUDITED_BY_ID <= 0 OR P_SNAP_AUDITED_BY_ID <> TRUNC(P_SNAP_AUDITED_BY_ID)) THEN
       RAISE_APPLICATION_ERROR(-20047,'Invalid Snap audited-by selection.');
+    END IF;
+    IF P_COM_ID IS NOT NULL AND (P_COM_ID <= 0 OR P_COM_ID <> TRUNC(P_COM_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid para identifier.');
     END IF;
     OPEN IO_CURSOR FOR
       -- Last recorded cycle and movement as of the selected End Date.
@@ -2144,6 +2158,7 @@ END P_GET_CIA_EXEC_KPIS;
           FROM V_EXEC_KPI_LIFECYCLE k
           LEFT JOIN history_asof h ON h.com_id = k.com_id
          WHERE k.record_type = 'PARA'
+           AND (P_COM_ID IS NULL OR k.com_id = P_COM_ID)
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
            AND (P_SNAP_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_SNAP_AUDITED_BY_ID)
