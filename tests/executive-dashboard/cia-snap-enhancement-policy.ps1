@@ -62,6 +62,18 @@ $f=[AIS.Models.ExecutiveDashboardFilterRequest]::new();$f.EntityId=1003;$rejecte
 try { $f.ValidateParentPerspective('TOP') } catch { $rejected=$true }
 if (!$rejected) { throw 'Unrelated TOP parent contract weakened' }
 Write-Output '9 Snap presentation/cascade/forged-scope policy checks passed.'
+$row=[AIS.Models.AuditParaSnapPerformanceRow]::new()
+$row.Position=[AIS.Models.ExecutiveKpiLifecycle]::new()
+$row.Position.OpeningEstimated=$true
+$row.Position.OpeningOpenParas=80;$row.Position.ParaAdded=20;$row.Position.ParasSettled=30;$row.Position.ClosingOpenParas=72
+if ($row.SettlementPercentage -ne 30 -or $row.NetChange -ne -8 -or $row.ArithmeticDifference -ne 2) { throw 'Comparison rate/net change/reconciliation changed' }
+$row.Position.ParasSettled=101
+if ($null -ne $row.SettlementPercentage) { throw 'Incomparable settlement denominator accepted' }
+$row.Position.OpeningOpenParas=0;$row.Position.ParaAdded=0;$row.Position.ParasSettled=0
+if ($null -ne $row.SettlementPercentage) { throw 'Zero denominator presented as verified percentage' }
+$row.Position.OpeningOpenParas=80;$row.Position.OpeningEstimated=$false
+if ($null -ne $row.SettlementPercentage) { throw 'Unavailable historical baseline presented as verified rate' }
+Write-Output '4 performance denominator/reconciliation checks passed.'
 $references=@(Get-ChildItem "$PSHOME/ref" -Filter '*.dll' | ForEach-Object FullName)+@($assemblies.Values)+@((Resolve-Path $AssemblyPath).Path)
 Add-Type -Path "$PSScriptRoot/AuditParaSnapAccessChecks.cs" -ReferencedAssemblies $references -CompilerOptions '/nowarn:1701'
 [AuditParaSnapAccessChecks]::Run()

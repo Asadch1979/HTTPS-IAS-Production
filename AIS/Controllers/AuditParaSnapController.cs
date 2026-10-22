@@ -40,6 +40,13 @@ namespace AIS.Controllers
         [HttpGet]
         public IActionResult GetCriticalItems([FromQuery] ExecutiveDashboardFilterRequest filters,int maxRows=100)
             => Execute(filters,(scope,f) => database.GetAuditParaSnapCritical(scope,f,maxRows));
+        [HttpGet]
+        public IActionResult GetPerformance([FromQuery] ExecutiveDashboardFilterRequest filters)
+            => Execute(filters,(scope,f) =>
+            {
+                if (f.View != "position") throw new ArgumentException("Department comparison requires the performance view.");
+                return database.GetAuditParaSnapPerformance(scope,f);
+            });
         // Reuse the approved A-E data readers, PDF generator and report presentation.
         // Their existing routes, grants and behavior remain untouched.
         [HttpGet]

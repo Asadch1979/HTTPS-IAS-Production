@@ -19,6 +19,17 @@
         <article class="exec-kpi" data-snap-card="@card.Key"><span>@card.Label</span><strong data-snap-kpi="@card.Key">N/A</strong><small data-snap-kpi-note>Awaiting verified Oracle response</small></article>
     }
 </div>
+@if (Model.SelectedView.Id == "position")
+{
+    <article class="exec-panel">
+        <h2>Audit department / cluster comparison</h2>
+        <p class="exec-note">Audit offices own the portfolio; Entity Type, Reporting Office and Entity describe the auditee hierarchy.</p>
+        <label for="snap-performance-sort">Sort departments within division</label>
+        <select id="snap-performance-sort"><option value="closing">Closing outstanding (highest first)</option><option value="rate">Settlement percentage (highest first)</option><option value="change">Net change (highest first)</option></select>
+        <div id="snap-performance" class="exec-table-wrap" role="region" aria-label="Audit department comparison" tabindex="0">Loading comparison…</div>
+        <p class="exec-note" id="snap-performance-note"></p>
+    </article>
+}
 <div class="exec-charts">
     @foreach (var section in Model.SelectedView.Sections)
     {

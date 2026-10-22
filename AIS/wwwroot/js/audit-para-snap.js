@@ -39,6 +39,7 @@
     }
     let request = null;
     function resetResults(note) {
+        performance = null;
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             card.querySelector('[data-snap-kpi]').textContent = 'N/A';
             card.querySelector('[data-snap-kpi-note]').textContent = note;
@@ -47,6 +48,7 @@
             const target = document.getElementById('exec-' + name);
             if (target) target.replaceChildren(element('p',note,'exec-empty'));
         }
+        document.getElementById('snap-performance')?.replaceChildren(element('p',note,'exec-empty'));
         document.getElementById('exec-critical')?.replaceChildren();
         const criticalNote = document.getElementById('exec-critical-note');
         if (criticalNote) criticalNote.textContent = note;
@@ -257,6 +259,51 @@
                 target.append(element('p','Historical cycle breakdown unavailable.','exec-empty'));
         }
     }
+    let performance = null;
+    function renderPerformance(data) {
+        if (!data || !Array.isArray(data.rows) || data.rows.length > 205) throw new Error('Invalid department comparison.');
+        performance = data;
+        const target = document.getElementById('snap-performance');
+        const table = element('table',null,'exec-table'), head = element('thead'), header=element('tr'),body=element('tbody');
+        for (const label of ['Audit Division','Audit Department / Cluster','Opening Balance','Paras Added','Paras Settled','Closing Balance','Settlement %','Net Change','Reconciliation Difference']) {
+            const th=element('th',label);th.scope='col';header.append(th);
+        }
+        head.append(header);
+        const mode=document.getElementById('snap-performance-sort').value;
+        const value=row => mode==='rate' ? row.settlementPercentage : mode==='change' ? row.netChange : row.position.closingOpenParas;
+        const rows=[];
+        for (const division of ['FAD','MAD']) {
+            rows.push(...data.rows.filter(r=>r.rowKind==='department' && r.division===division)
+                .sort((a,b)=>(value(b) ?? -Infinity)-(value(a) ?? -Infinity) || a.department.localeCompare(b.department)));
+            rows.push(...data.rows.filter(r=>r.rowKind==='subtotal' && r.division===division));
+        }
+        rows.push(...data.rows.filter(r=>r.rowKind==='total'));
+        for (const row of rows) {
+            const k=row.position;
+            if (!k) throw new Error('Missing lifecycle comparison.');
+            const tr=element('tr');
+            if (row.rowKind!=='department') tr.className='exec-total';
+            const fields=[row.division==='1'?'All Divisions':row.division,row.department,
+                number(k.openingOpenParas),number(k.paraAdded),number(k.parasSettled),number(k.closingOpenParas),
+                row.settlementPercentage==null?'N/A':Number(row.settlementPercentage).toFixed(2)+'%',
+                number(row.netChange),number(row.arithmeticDifference)];
+            for (const text of fields) tr.append(element('td',text));
+            body.append(tr);
+        }
+        table.append(head,body); target.replaceChildren(table);
+        const notes=[data.limitations];
+        for (const row of data.rows.filter(r=>r.rowKind==='subtotal')) {
+            const departments=data.rows.filter(r=>r.rowKind==='department' && r.division===row.division);
+            for (const key of ['openingOpenParas','paraAdded','parasSettled','closingOpenParas']) {
+                if (row.position[key]!=null && departments.every(d=>d.position[key]!=null)) {
+                    const difference=row.position[key]-departments.reduce((sum,d)=>sum+d.position[key],0);
+                    if (difference!==0) notes.push(row.division+' '+key+': portfolio total minus listed department sum = '+number(difference)+'.');
+                }
+            }
+        }
+        document.getElementById('snap-performance-note').textContent=notes.join(' ');
+    }
+    document.getElementById('snap-performance-sort')?.addEventListener('change',()=>{if(performance)renderPerformance(performance);});
     let criticalRows = [];
     function renderCritical() {
         const target = document.getElementById('exec-critical');
@@ -295,6 +342,7 @@
         if (app.querySelector('[data-snap-card]')) tasks.push(['GetKpis',renderKpis]);
         if (['risk','aging','cycle','trend'].some(name => document.getElementById('exec-' + name)))
             tasks.push(['GetDistribution',renderDistribution]);
+        if (document.getElementById('snap-performance')) tasks.push(['GetPerformance',renderPerformance]);
         if (document.getElementById('exec-critical')) tasks.push(['GetCriticalItems',loadCritical]);
         const results = await Promise.allSettled(tasks.map(async ([action,render]) => {
             const data = await read(action,request.signal);
