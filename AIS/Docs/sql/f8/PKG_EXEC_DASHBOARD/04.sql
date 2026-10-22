@@ -1572,9 +1572,32 @@ END P_GET_CIA_EXEC_KPIS;
            AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
          GROUP BY m.month_start
       )
-      SELECT dataset, bucket_code, bucket_name, para_count,
-             high_risk_count, quality_code
-        FROM results ORDER BY dataset, ord;
+      , movement AS
+      (
+        SELECT m.month_start,
+               COUNT(CASE WHEN s.para_added_on >= GREATEST(m.month_start,V_FROM)
+                           AND s.para_added_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
+                           AND (s.para_status = 8 OR (s.para_status = 9 AND s.excluded_pre_finalization = 0))
+                          THEN s.com_id END) AS paras_added,
+               COUNT(CASE WHEN s.para_settled_on >= GREATEST(m.month_start,V_FROM)
+                           AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
+                          THEN s.com_id END) AS paras_settled
+          FROM months m LEFT JOIN scoped s
+            ON (s.para_added_on >= GREATEST(m.month_start,V_FROM)
+                AND s.para_added_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO))
+            OR (s.para_settled_on >= GREATEST(m.month_start,V_FROM)
+                AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO))
+         GROUP BY m.month_start
+      )
+      SELECT dataset,bucket_code,bucket_name,para_count,high_risk_count,quality_code,paras_added,paras_settled
+      FROM (
+        SELECT dataset,bucket_code,bucket_name,para_count,high_risk_count,quality_code,ord,
+               CAST(NULL AS NUMBER) paras_added,CAST(NULL AS NUMBER) paras_settled FROM results
+        UNION ALL
+        SELECT 'movement',TO_CHAR(month_start,'YYYY-MM'),TO_CHAR(month_start,'YYYY-MM'),
+               CAST(NULL AS NUMBER),CAST(NULL AS NUMBER),'E',ROW_NUMBER() OVER(ORDER BY month_start),
+               paras_added,paras_settled FROM movement
+      ) ORDER BY dataset,ord;
   END P_GET_SNAP_DISTRIBUTION;
 
   PROCEDURE P_GET_SNAP_CRITICAL(

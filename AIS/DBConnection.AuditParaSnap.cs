@@ -107,7 +107,7 @@ namespace AIS.Controllers
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                if (rows.Count >= (maxRows ?? 1213)) throw new InvalidOperationException("Snap cursor exceeded its bound.");
+                if (rows.Count >= (maxRows ?? 2420)) throw new InvalidOperationException("Snap cursor exceeded its bound.");
                 rows.Add(map(reader));
             }
             ValidateDatedDashboardScope(scope, filters);
@@ -119,7 +119,8 @@ namespace AIS.Controllers
                 Dataset=ExecutiveText(r,"DATASET"),BucketCode=ExecutiveText(r,"BUCKET_CODE"),
                 BucketName=ExecutiveText(r,"BUCKET_NAME"),ParaCount=ExecutiveNullableCount(r,"PARA_COUNT"),
                 HighRiskCount=ExecutiveNullableCount(r,"HIGH_RISK_COUNT"),
-                QualityCode=ExecutiveText(r,"QUALITY_CODE")
+                QualityCode=ExecutiveText(r,"QUALITY_CODE"),
+                ParasAdded=ExecutiveNullableCount(r,"PARAS_ADDED"), ParasSettled=ExecutiveNullableCount(r,"PARAS_SETTLED")
             });
         internal List<AuditParaSnapCritical> GetAuditParaSnapCritical(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int maxRows)
             => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",r => new AuditParaSnapCritical

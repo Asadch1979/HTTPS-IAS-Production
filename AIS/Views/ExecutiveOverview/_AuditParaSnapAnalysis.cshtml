@@ -30,6 +30,13 @@
         <p class="exec-note" id="snap-performance-note"></p>
     </article>
 }
+@if (Model.SelectedView.Id == "settlement")
+{
+    <article class="exec-panel"><h2>Clearance ratio</h2><strong id="snap-clearance">N/A</strong><p class="exec-note">Paras settled / paras added, only when additions are positive and the selected-period stock and movements reconcile. A ratio above 100% can reflect clearance of the opening backlog.</p></article>
+    <article class="exec-panel"><h2>Monthly additions versus settlements</h2><div id="snap-movement"></div><p class="exec-note">Same scoped lifecycle population and reporting dates; estimates use latest qualifying IAS records.</p></article>
+    <article class="exec-panel"><h2>Department / Cluster settlement rankings</h2><div id="snap-rankings"></div><p class="exec-note">Indicative estimates, not verified performance. Departments with unavailable, zero or inconsistent denominators or a non-zero stock/movement reconciliation difference are excluded.</p></article>
+    <article class="exec-panel"><h2>Outstanding paras requiring follow-up</h2><p class="exec-note">Confirmed absence of compliance movement is unavailable: the available history has no verified complete baseline. Missing history is not classified as inactivity. Review the Critical Audit Observations register for recorded movement dates.</p></article>
+}
 <div class="exec-charts">
     @foreach (var section in Model.SelectedView.Sections)
     {

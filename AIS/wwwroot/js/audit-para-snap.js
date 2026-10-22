@@ -48,6 +48,7 @@
             const target = document.getElementById('exec-' + name);
             if (target) target.replaceChildren(element('p',note,'exec-empty'));
         }
+        for (const id of ['snap-clearance','snap-movement','snap-rankings']) document.getElementById(id)?.replaceChildren(element('p',note,'exec-empty'));
         document.getElementById('snap-performance')?.replaceChildren(element('p',note,'exec-empty'));
         document.getElementById('exec-critical')?.replaceChildren();
         const criticalNote = document.getElementById('exec-critical-note');
@@ -102,6 +103,12 @@
         return body.data;
     }
     function renderKpis(data) {
+        const clearance=document.getElementById('snap-clearance');
+        if(clearance) {
+            const comparable=data.paraAdded>0 && data.parasSettled!=null && data.openingOpenParas!=null && data.closingOpenParas!=null &&
+                data.closingOpenParas===data.openingOpenParas+data.paraAdded-data.parasSettled;
+            clearance.textContent=comparable ? (data.parasSettled/data.paraAdded*100).toFixed(2)+'% · estimated' : 'N/A · unavailable or incomparable denominator';
+        }
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             const key = card.dataset.snapCard;
             const opening = key === 'openingOpenParas';
@@ -211,7 +218,32 @@
         return panel;
     }
 
+    function renderMovement(rows) {
+        const target=document.getElementById('snap-movement');if(!target)return;
+        const subset=rows.filter(r=>r.dataset==='movement');
+        if(!subset.length)throw new Error('Monthly additions/settlements unavailable.');
+        const adapted=subset.map(r=>({...r,paraCount:r.parasAdded,highRiskCount:r.parasSettled}));
+        const panel=renderMonthlyTrend(adapted);
+        panel.querySelector('.exec-legend').textContent='━━ Paras Added (blue) · ┄┄ Paras Settled (red)';
+        const svg=panel.querySelector('svg');svg.setAttribute('aria-label','Monthly additions versus settlements');
+        svg.querySelector('title').textContent='Monthly additions versus settlements';
+        for(const node of svg.querySelectorAll('circle title'))node.textContent=node.textContent.replace('High risk settled ','Paras settled ').replace(': Settled ',': Paras added ');
+        const headings=panel.querySelectorAll('th');headings[1].textContent='Paras Added';headings[2].textContent='Paras Settled';
+        target.replaceChildren(panel);
+    }
+    function renderRankings(data) {
+        const target=document.getElementById('snap-rankings');
+        const rows=data.rows.filter(r=>r.rowKind==='department' && r.settlementPercentage!=null && r.arithmeticDifference===0);
+        if(!rows.length){target.replaceChildren(element('p','N/A · No departments have a comparable denominator.','exec-empty'));return;}
+        const table=element('table',null,'exec-table'),thead=element('thead'),head=element('tr'),body=element('tbody');
+        for(const label of ['Ranking','Division / Department','Settlement %','Paras Added','Paras Settled','Closing Outstanding'])head.append(element('th',label));
+        thead.append(head);
+        for(const [label,items] of [['Top',rows.slice().sort((a,b)=>b.settlementPercentage-a.settlementPercentage).slice(0,5)],['Lowest',rows.slice().sort((a,b)=>a.settlementPercentage-b.settlementPercentage).slice(0,5)]])
+            for(const row of items){const tr=element('tr');for(const text of [label,row.division+' / '+row.department,row.settlementPercentage.toFixed(2)+'% · estimated',number(row.position.paraAdded),number(row.position.parasSettled),number(row.position.closingOpenParas)])tr.append(element('td',text));body.append(tr);}
+        table.append(thead,body);target.replaceChildren(table);
+    }
     function renderDistribution(rows) {
+        renderMovement(rows);
         if (!Array.isArray(rows)) throw new Error('Invalid distribution cursor.');
         for (const name of ['risk','aging','cycle','trend']) {
             const target = document.getElementById('exec-' + name);
@@ -343,6 +375,8 @@
         if (['risk','aging','cycle','trend'].some(name => document.getElementById('exec-' + name)))
             tasks.push(['GetDistribution',renderDistribution]);
         if (document.getElementById('snap-performance')) tasks.push(['GetPerformance',renderPerformance]);
+        if (document.getElementById('snap-rankings')) tasks.push(['GetPerformance',renderRankings]);
+        if (document.getElementById('snap-movement')) tasks.push(['GetDistribution',renderDistribution]);
         if (document.getElementById('exec-critical')) tasks.push(['GetCriticalItems',loadCritical]);
         const results = await Promise.allSettled(tasks.map(async ([action,render]) => {
             const data = await read(action,request.signal);

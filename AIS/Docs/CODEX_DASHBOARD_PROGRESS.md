@@ -13,7 +13,7 @@
 - JS syntax check passed. Oracle has NOT been compiled or deployed. Production reconciliation remains required.
 
 ## Pending (in user-specified order)
-1. Settlement analytics, then secure para text/critical exposure, aging percentages, report-column cleanup.
+1. Secure para text/critical exposure, then aging percentages, report-column cleanup.
 3. Focused security/regression tests and final deployment documentation.
 
 ## Stage 2
@@ -34,6 +34,13 @@
 - New exact GET permission: `/api/AuditParaSnap/GetPerformance`, page `1000304`, SNAP grants only CIA (3) and verified Super User (1), via existing `REGISTER_GET` in `executive_dashboard_permissions.sql`. Register on staging before using the new tab; do not grant wildcard APIs.
 - Build: 0 errors/57 existing warnings. 9 CIA + 9 Snap + 4 comparison policy checks and 20 controller access checks pass. New endpoint rejects reuse of GetKpis grant for CIA and Super User. JS syntax/diff checks pass.
 - Pending database compilation, staging reads, live reconciliation and browser/session QA apply to all stages.
+
+## Stage 5
+- Settlement Effectiveness replaces the old tab title; total settled/selected-period rate retained, clearance ratio only when positive additions and stock/movement reconciliation permit it.
+- Added monthly `movement` dataset to existing `P_GET_SNAP_DISTRIBUTION`; independent ParasAdded/ParasSettled output columns preserve existing trend/risk/aging/cycle datasets. Added SQL uses the same lifecycle Para Added status-8/status-9/excluded_pre_finalization rules and settlement timestamps as KPI reader.
+- Department rankings reuse exact performance permission and source; zero/missing/inconsistent denominators and non-zero reconciliation differences are excluded. Rankings are explicitly indicative estimates.
+- No confirmed-inactivity list: historical baseline is not complete; UI explains missing history cannot establish inactivity.
+- Build 0 errors/57 existing warnings; 42 compiled policy/controller checks pass; JS syntax and diff whitespace checks pass. Oracle compile/live reconciliation pending.
 
 ## Oracle deployment (draft, not production-ready)
 1. Existing `V_IAS_ENTITY_REPORTING_NAMES`, lifecycle, para base, CIA nature/checklist/rectification dependency views must be valid.

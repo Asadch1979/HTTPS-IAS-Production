@@ -44,7 +44,7 @@ namespace AIS.Controllers
         public IActionResult GetPerformance([FromQuery] ExecutiveDashboardFilterRequest filters)
             => Execute(filters,(scope,f) =>
             {
-                if (f.View != "position") throw new ArgumentException("Department comparison requires the performance view.");
+                if (f.View != "position" && f.View != "settlement") throw new ArgumentException("Department comparison requires the performance view.");
                 return database.GetAuditParaSnapPerformance(scope,f);
             });
         // Reuse the approved A-E data readers, PDF generator and report presentation.
