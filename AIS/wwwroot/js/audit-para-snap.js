@@ -40,6 +40,7 @@
     let request = null;
     function resetResults(note) {
         performance = null;
+        agingPosition=null; agingDistribution=null;
         paraRequest?.abort();
         document.getElementById('snap-para-dialog')?.close();
         document.getElementById('snap-para-text')?.replaceChildren();
@@ -106,7 +107,12 @@
             throw new Error(body.message || 'A consistent dated result was not returned.');
         return body.data;
     }
+    let agingPosition=null, agingDistribution=null;
     function renderKpis(data) {
+        if(app.dataset.view==='aging') {
+            agingPosition=data;
+            if(agingDistribution)renderDistribution(agingDistribution);
+        }
         const clearance=document.getElementById('snap-clearance');
         if(clearance) {
             const comparable=data.paraAdded>0 && data.parasSettled!=null && data.openingOpenParas!=null && data.closingOpenParas!=null &&
@@ -247,6 +253,7 @@
         table.append(thead,body);target.replaceChildren(table);
     }
     function renderDistribution(rows) {
+        if(app.dataset.view==='aging')agingDistribution=rows;
         renderMovement(rows);
         const exposure=document.getElementById('snap-exposure');
         if(exposure) {
@@ -269,7 +276,13 @@
             }
             const table = element('table',null,'exec-table snap-bucket-table');
             const head = element('thead'), header = element('tr'), body = element('tbody');
+            const aging=app.dataset.view==='aging';
+            const closing=agingPosition?.closingOpenParas;
+            const comparable=aging && (agingPosition?.closingAsofVerified || agingPosition?.closingEstimated) && closing>0 &&
+                subset.every(row=>row.qualityCode!=='N' && Number.isSafeInteger(row.paraCount)) &&
+                subset.reduce((sum,row)=>sum+row.paraCount,0)===closing;
             header.append(element('th','Category'),element('th','Paras'));
+            if(aging)header.append(element('th','% of closing outstanding · estimated'));
             for (const th of header.children) th.scope = 'col';
             head.append(header);
             for (const row of subset) {
@@ -279,6 +292,7 @@
                 tr.title = row.qualityCode === 'N' ? 'Historical source evidence unavailable'
                     : row.qualityCode === 'E' ? 'Calculated from available IAS history' : 'Current IAS status';
                 tr.append(label,element('td',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
+                if(aging)tr.append(element('td',comparable?(row.paraCount/closing*100).toFixed(2)+'%':'N/A'));
                 body.append(tr);
             }
             table.append(head,body);
