@@ -1,4 +1,5 @@
 @model System.Collections.Generic.List<AIS.Models.HeadAuditPlanDetail>
+@{ var totals = AIS.Services.HeadAuditPlanTotals.From(Model); }
 <div class="wb-table" role="region" aria-label="Audit plan details" tabindex="0">
     <table><thead><tr><th>Audit entity</th><th>No. of days</th><th>Start date – End date</th><th>Engagement team</th><th>Current stage</th><th>Status</th></tr></thead><tbody>
     @foreach (var plan in Model)
@@ -9,5 +10,5 @@
             <td>@(string.IsNullOrWhiteSpace(plan.Stage) ? "N/A" : plan.Stage)</td><td>@plan.Status</td></tr>
     }
     @if (Model.Count == 0) { <tr><td colspan="6">No approved audit plan details available.</td></tr> }
-    </tbody></table>
+    </tbody><tfoot><tr class="wb-plan-total"><th scope="row">Total distinct approved plans: @totals.Plans</th><td>@(totals.Days?.ToString() ?? "Unavailable (missing/conflicting days)")</td><td colspan="3">Planned days count each PlanId once</td><td>Distinct engagements: @totals.Engagements</td></tr></tfoot></table>
 </div>

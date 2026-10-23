@@ -22,3 +22,5 @@ No Oracle connection/compilation, authenticated browser UAT or live figure recon
 Reporting-date checkpoint: source added, application build passed (57 existing warnings, zero errors). Oracle not compiled. Next: selective tab data loading.
 
 Checkpoint dbaa44f3: reporting date. Tab checkpoint: conditional server rendering plus selected queries; progress uses summary and distinct-team query; details uses plans only; exceptions omits task/report/workpaper queries; register includes scoped detail readers. Cached tabs recheck authorization without Oracle datasets. Build passed. Official allowance 94% remaining. Next: totals.
+
+Plan totals implemented: group by PlanId, count each planned-day value once, report unavailable if missing/conflicting. Distinct engagements are a separate count. Next: exports; focused total tests pending.
