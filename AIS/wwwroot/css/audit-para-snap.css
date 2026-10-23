@@ -39,6 +39,20 @@
 .exec-snap[data-view="risk"] .exec-charts {grid-template-columns:minmax(0,1fr)}
 @media(max-width:600px) { .exec-snap .snap-period-toolbar>div { flex:1 1 100%; } .exec-snap .snap-period-toolbar input,.exec-snap .snap-period-toolbar select { width:100%; } }
 
-#snap-para-dialog { width: min(90vw, 1100px); max-height: 85vh; border: 1px solid #476574; border-radius: 8px; padding: 24px; }
+#snap-para-dialog { width: 90vw; max-width: 90vw; max-height: 90vh; border: 1px solid #476574; border-radius: 8px; padding: 0; overflow: hidden; }
 #snap-para-dialog::backdrop { background: #102c42aa; }
-#snap-para-text { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; font: inherit; }
+#snap-para-text { overflow-wrap: anywhere; font: inherit; }
+
+#snap-para-dialog .snap-para-header { display:flex; align-items:center; justify-content:space-between; background:#dc3545; color:white; padding:16px 24px; }
+#snap-para-dialog .snap-para-header h2 { margin:0; color:inherit; font-size:1.25rem; }
+#snap-para-dialog .snap-para-body { max-height:65vh; overflow:auto; padding:16px; }
+#snap-para-dialog .snap-para-document { border:1px solid #ced4da; border-radius:4px; padding:12px; background:white; color:#212529; line-height:1.6; overflow-wrap:anywhere; }
+#snap-para-dialog .snap-para-document p { margin:0 0 1em; }
+#snap-para-dialog .snap-para-document table { border-collapse:collapse; max-width:100%; width:100%; margin:1em 0; }
+#snap-para-dialog .snap-para-document td, #snap-para-dialog .snap-para-document th { border:1px solid #b5b5b5; padding:6px 8px; vertical-align:top; }
+#snap-para-dialog .snap-para-document pre { white-space:pre-wrap; }
+#snap-para-dialog .snap-para-document h1, #snap-para-dialog .snap-para-document h2, #snap-para-dialog .snap-para-document h3 { margin:1em 0 .5em; }
+#snap-para-dialog .snap-para-footer { padding:12px 24px; border-top:1px solid #ddd; text-align:right; }
+
+#snap-para-dialog .snap-para-document > :first-child { margin-top:0; }
+#snap-para-dialog .snap-para-header > span { margin-left:auto; margin-right:16px; }

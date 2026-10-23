@@ -370,12 +370,18 @@
     const dialog=document.getElementById('snap-para-dialog');
     dialog?.addEventListener('close',()=>{paraRequest?.abort();document.getElementById('snap-para-text').replaceChildren();});
     document.getElementById('snap-para-close')?.addEventListener('click',()=>dialog.close());
+    document.getElementById('snap-para-dismiss')?.addEventListener('click',()=>dialog.close());
     async function viewPara(comId) {
         paraRequest?.abort();paraRequest=new AbortController();const active=paraRequest;
         const text=document.getElementById('snap-para-text');text.textContent='Loading authorized para text…';dialog.showModal();
         try {
             const data=await read('GetParaText',active.signal,{comId});
-            if(!active.signal.aborted){if(data.comId!==comId || typeof data.text!=='string')throw new Error('Invalid para text response.');text.textContent=data.text || 'No para text is recorded.';}
+            if(!active.signal.aborted && dialog.open){
+                if(data.comId!==comId || typeof data.html!=='string')throw new Error('Invalid para text response.');
+                // The secured GetParaText API returns allowlist-sanitized display HTML only.
+                // Never insert the original stored text or content from the legacy HTTP endpoint.
+                if(data.html) text.innerHTML=data.html; else text.textContent='No para text is recorded.';
+            }
         } catch(error){if(!active.signal.aborted)text.textContent='Para text unavailable: '+error.message;}
     }
     let criticalRows = [];

@@ -12,7 +12,7 @@ test('unrelated Oracle procedure bodies and lifecycle calculations remain unchan
   if(!allowed.has(match[1]))assert.equal(body(after,match[1]),body(before,match[1]),match[1]);
  const calculations=s=>{const p=body(s,'P_GET_KPI_LIFECYCLE');return p.slice(p.indexOf('\n      SELECT'),p.indexOf('FROM V_EXEC_KPI_LIFECYCLE'));};
  assert.equal(calculations(after),calculations(before));
- for(const file of ['AIS/Docs/sql/V_EXEC_KPI_LIFECYCLE.sql','AIS/Docs/sql/PKG_HEAD_AUDIT_MONITOR.sql','AIS/Models/ExecutiveDashboardModels.cs','AIS/Models/ExecutiveReportModels.cs'])
+ for(const file of ['AIS/Docs/sql/V_EXEC_KPI_LIFECYCLE.sql','AIS/Models/ExecutiveDashboardModels.cs','AIS/Models/ExecutiveReportModels.cs'])
   assert.equal(read(file),baseline(file),file);
 });
 test('Oracle extended signatures match their package bodies and exact-COM_ID precedes ranking',()=>{
@@ -40,8 +40,9 @@ test('nine glance KPI keys, two charts and nature reconciliation remain intact',
 });
 class Element {
  constructor(tag='div'){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events={};this.classList={add(){},contains:()=>false};this.value='';this._text='';}
- set textContent(value){this._text=String(value);this.children=[];}get textContent(){return this._text+this.children.map(c=>c.textContent??c).join('');}
- append(...items){this.children.push(...items);}replaceChildren(...items){this._text='';this.children=items;}
+ set textContent(value){this._text=String(value);this._html='';this.children=[];}get textContent(){return this._text+this.children.map(c=>c.textContent??c).join('');}
+ set innerHTML(value){this._html=value;this._text='';this.children=[];}get innerHTML(){return this._html||'';}
+ append(...items){this.children.push(...items);}replaceChildren(...items){this._text='';this._html='';this.children=items;}
  addEventListener(name,fn){this.events[name]=fn;}setAttribute(){}querySelectorAll(){return [];}checkValidity(){return true;}
  showModal(){this.open=true;}close(){this.open=false;this.events.close?.();}
 }
@@ -64,15 +65,15 @@ test('actual aging renderer shows percentages only with reconciled scoped closin
  c.api.renderKpis({closingOpenParas:11,closingEstimated:true});assert.doesNotMatch(c.ids['exec-aging'].textContent,/20.00%/);assert.match(c.ids['exec-aging'].textContent,/N\/A/);
  rows[2].qualityCode='N';c.api.renderKpis({closingOpenParas:10,closingEstimated:true});c.api.renderDistribution(rows);assert.match(c.ids['exec-cycle'].textContent,/N\/A/);
 });
-test('actual para modal renders malicious stored HTML literally and clears on filter invalidation',async()=>{
- const text='<img src=x onerror=alert(1)><script>attack()</script>',c=client('risk',{data:{comId:42,text}});
- await c.api.viewPara(42);assert.equal(c.ids['snap-para-dialog'].open,true);assert.equal(c.ids['snap-para-text'].textContent,text);assert.equal(c.ids['snap-para-text'].children.length,0);
+test('actual para modal renders secured sanitized HTML and clears on filter invalidation',async()=>{
+ const html='<p>Readable <strong>finding</strong></p>',c=client('risk',{data:{comId:42,html}});
+ await c.api.viewPara(42);assert.equal(c.ids['snap-para-dialog'].open,true);assert.equal(c.ids['snap-para-text'].innerHTML,html);assert.equal(c.ids['snap-para-text'].children.length,0);
  assert.match(c.requestUrl,/GetParaText\?/);assert.match(c.requestUrl,/comId=42/);
  c.api.resetResults('Changed scope');assert.equal(c.ids['snap-para-dialog'].open,false);assert.equal(c.ids['snap-para-text'].textContent,'');
 });
 test('actual para modal never displays another COM_ID or an API denial payload',async()=>{
- const mismatch=client('risk',{data:{comId:99,text:'OTHER PARA'}});await mismatch.api.viewPara(42);assert.doesNotMatch(mismatch.ids['snap-para-text'].textContent,/OTHER PARA/);
- const denied=client('risk',{success:false,message:'Denied',data:{comId:42,text:'SECRET'}});await denied.api.viewPara(42);assert.doesNotMatch(denied.ids['snap-para-text'].textContent,/SECRET/);
+ const mismatch=client('risk',{data:{comId:99,html:'OTHER PARA'}});await mismatch.api.viewPara(42);assert.doesNotMatch(mismatch.ids['snap-para-text'].textContent+mismatch.ids['snap-para-text'].innerHTML,/OTHER PARA/);
+ const denied=client('risk',{success:false,message:'Denied',data:{comId:42,html:'SECRET'}});await denied.api.viewPara(42);assert.doesNotMatch(denied.ids['snap-para-text'].textContent+denied.ids['snap-para-text'].innerHTML,/SECRET/);
 });
 test('actual report table removes settlement sources only for Snap, including the CSV DOM source',()=>{
  const source=read('AIS/wwwroot/js/executive-reports.js');

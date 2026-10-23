@@ -52,7 +52,7 @@ namespace AIS.Controllers
             => Execute(filters,(scope,f) =>
             {
                 if (f.View != "risk" || comId <= 0) throw new ArgumentException("A valid para and critical observations view are required.");
-                return new { comId, text = database.GetAuditParaSnapText(scope,f,comId) };
+                return new { comId, html = ParaDisplayHtml.Sanitize(database.GetAuditParaSnapText(scope,f,comId)) };
             });
         // Reuse the approved A-E data readers, PDF generator and report presentation.
         // Their existing routes, grants and behavior remain untouched.
