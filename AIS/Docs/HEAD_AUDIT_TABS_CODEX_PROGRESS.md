@@ -13,7 +13,7 @@ Base: `fa64939fe1764e7315407d836326da1676e2e20b`, latest remote main verified th
 | fc1bdf26 | Five scoped local ExcelJS exports, typed cells and formula injection protection |
 | 649f6b9c | Allowlist sanitized HM-style read-only para document |
 
-Regression work ready to commit: separate unknown-history plan counts; ambiguous status-10 handling; period-scoped workpaper counts; cheap authorized office options including offices without records; assignment-bound tab/export consistency checks; formatted modal QA; focused tests and review/deployment notes in HEAD_AUDIT_TABS_REVIEW.md.
+Checkpoint `1685efffb2b3a33036bc7d1b4a35e06b2ba4aec3` completed: separate unknown-history plan counts; ambiguous status-10 handling; period-scoped workpaper counts; cheap authorized office options including offices without records; assignment-bound tab/export consistency checks; formatted modal QA; focused tests and review/deployment notes in HEAD_AUDIT_TABS_REVIEW.md.
 
 ## Tests
 
@@ -33,8 +33,12 @@ Pre-existing appsettings.json, NuGet obj changes and .vs files are excluded from
 
 ## Scheduler and credit
 
-One native heartbeat: `resume-head-audit-tabs-and-para-formatting`, currently ACTIVE every five hours. No old resume-ias-cia-and-snap-implementation schedule was present. Official allowance last checked at 86% remaining; 5% checkpoint / stop-before-2% rules remain applicable. Scheduler must be paused and verified before final handoff.
+One native heartbeat: `resume-head-audit-tabs-and-para-formatting`, PAUSED through the supported automation_update control after source/tests/review documentation completion. A subsequent view and local automation.toml inspection confirmed PAUSED. It will not initiate another scheduled session. The local inventory contains no other continuation schedules. No old resume-ias-cia-and-snap-implementation schedule was present. Official allowance last checked at 80% remaining; 5% checkpoint / stop-before-2% rules remain applicable. Scheduler shutdown verified on 23 October 2026 (Pakistan date).
 
-## Next exact step
+## Final handoff / next exact step
 
-Run final focused/browser/build checks after regression edits; commit source/tests/review notes. Pause the single heartbeat using supported controls and verify PAUSED, record final status here, commit final documentation, and hand off the local feature branch. Live Oracle/UAT remains an explicit reviewer prerequisite, not unattended work to fabricate.
+Source work, focused validation and review documentation are complete. Final application build succeeded (incremental: zero warnings/errors; full builds showed 57 existing warnings). All focused C#, Node, browser and compiled Snap gate checks passed after the regression edits. No unattended implementation step remains.
+
+Next reviewer step: compile the synchronized Oracle package/F8 files in a controlled test database, run live reconciliation/security/UAT from HEAD_AUDIT_TABS_REVIEW.md, and inspect the local feature branch in Visual Studio. Do not merge or deploy without that validation. The paused schedule must remain paused; live UAT cannot be fabricated through unattended continuation.
+
+Remote handoff: feature-branch push failed because this host could not connect to github.com:443. All commits are local and preserved. Retry from a connected shell: git push -u origin codex/head-audit-tabs-and-para-format. Validation logs are preserved in C:\Users\Asad\AppData\Local\Temp\ias-head-audit-validation-20261023.

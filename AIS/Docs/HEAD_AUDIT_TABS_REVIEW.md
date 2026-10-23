@@ -64,3 +64,9 @@ Do not run the deployment files against production as part of this task. Use a c
 - Run CIA, Snap's other views, CCO, Group/RLM and unrelated dashboard smoke tests in Visual Studio. Their source/security/calculation files were unchanged except for the requested Snap para presentation.
 
 Start Visual Studio from the feature branch with the user's existing local settings. Local `AIS/appsettings.json`, NuGet `obj` changes and `.vs` files predated this task and are excluded from its commits.
+
+## Continuation shutdown
+
+Native heartbeat `resume-head-audit-tabs-and-para-formatting` was paused through supported scheduler controls after source work and focused validation completed. A subsequent view and the saved scheduler inventory confirmed `PAUSED`; there are no other local continuation schedules. The old `resume-ias-cia-and-snap-implementation` was absent. No scheduled continuation will initiate another session. Final official five-hour usage check: 80% remaining.
+
+Remote push was attempted and failed on github.com:443 connectivity. The branch is local; retry git push -u origin codex/head-audit-tabs-and-para-format from a connected shell. No PR, merge or deployment was created.
