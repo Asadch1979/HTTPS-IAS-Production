@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '../../AIS/wwwroot');
 const ExcelJS = require('../../AIS/wwwroot/lib/dashboard-export/exceljs-4.4.0.min.js');
 const titles = { progress: ['Audit plan progress', 'Audit office performance'], details: ['Audit plan details'], exceptions: ['Pending actions and exceptions'], register: ['Engagement register'] };
 const requests = [], folder = fs.mkdtempSync(path.join(os.tmpdir(), 'ias-head-audit-'));
-let authorized = true, contextKey = 'scope-a';
+let authorized = true, contextKey = 'scope-a', errorStatus = 403;
 function fixture(tab) {
     const query = name => '/head?auditPeriodId=77&positionAsOn=2026-10-22&officeId=9&statusId=4&exception=delayed&tab=' + name;
     return `<!doctype html><html><head><link rel="stylesheet" href="/css/engagement-workbench.css"></head><body>
@@ -22,8 +22,8 @@ const server = http.createServer((req, res) => {
     if (url.pathname === '/head') {
         res.setHeader('X-Head-Audit-Context', contextKey);
         requests.push({ tab: url.searchParams.get('tab') || 'progress', check: url.searchParams.has('checkOnly') });
-        if (!authorized) { res.writeHead(403); res.end('Denied'); return; }
-        if (url.searchParams.has('checkOnly')) { res.writeHead(204); res.end(); return; }
+        if (!authorized) { res.writeHead(errorStatus); res.end('Denied'); return; }
+
         res.setHeader('Content-Type', 'text/html'); res.end(fixture(url.searchParams.get('tab') || 'progress')); return;
     }
     const file = path.resolve(root, '.' + url.pathname);
@@ -56,11 +56,12 @@ const server = http.createServer((req, res) => {
             assert.equal(new URL(page.url()).searchParams.get('tab') || 'progress', tab);
             assert.equal(await page.locator('.wb-dashboard-filters input[name="tab"]').inputValue(), tab);
         }
-        assert.deepEqual(requests.filter(r => !r.check).map(r => r.tab), ['progress', 'details', 'exceptions', 'register']);
+        assert.equal(requests.length, 9, 'Initial page, three tab reads and five fresh export reads');
+        assert.ok(requests.every(r => !r.check), 'No cached authorization probes');
         await page.locator('a.head-tab', { hasText: 'progress' }).click();
         await page.waitForFunction(() => document.querySelector('.wb-hero-meta').textContent === 'progress');
-        assert.equal(requests.filter(r => !r.check).length, 4, 'Revisiting initial tab must not reload a dataset');
-        assert.equal(requests.at(-1).check, true, 'Cached tabs must recheck authorization');
+        assert.equal(requests.length, 10, 'Revisiting initial tab must reload the dataset');
+        assert.equal(requests.at(-1).check, false, 'Revisited tabs use secured data retrieval');
         await page.locator('#head-period').selectOption('66'); assert.equal(await page.locator('#head-position').inputValue(), '');
         contextKey = 'scope-b'; await page.locator('a.head-tab', { hasText: 'details' }).click();
         await page.waitForFunction(() => document.getElementById('head-tab-content').textContent.includes('assignment changed'));
@@ -69,8 +70,31 @@ const server = http.createServer((req, res) => {
         await page.locator('a.head-tab', { hasText: 'register' }).click();
         await page.waitForFunction(() => document.getElementById('head-tab-content').textContent.includes('assignment changed'));
         assert.equal(await page.locator('#head-tab-content table').count(), 0, 'Revoked access must clear data');
+        for (const status of [401,403,400,503]) {
+            authorized=true; await page.reload(); authorized=false; errorStatus=status;
+            await page.locator('#head-tab-content button').first().click();
+            await page.waitForFunction(() => !document.querySelector('#head-tab-content table'));
+            assert.equal(await page.locator('#head-tab-content button').count(),0,'Export failure removes all protected controls');
+            assert.equal(await page.locator('.wb-hero-meta').textContent(),'');
+            assert.equal(await page.locator('.engagement-workbench').getAttribute('data-scope'),null);
+            authorized=true; await page.locator('a.head-tab', {hasText:'details'}).click();
+            await page.waitForFunction(() => !!document.querySelector('#head-tab-content table'));
+        }
+        // Hold a real fetch while a second tab wins: the old table disappears immediately.
+        let release, reached;
+        const held = new Promise(resolve => { reached=resolve; });
+        await page.route('**/head?**tab=register', async route => {
+            reached(); await new Promise(resolve => { release=resolve; });
+            await route.fulfill({status:200,headers:{'X-Head-Audit-Context':'scope-a'},contentType:'text/html',body:fixture('register')}).catch(()=>{});
+        });
+        await page.locator('a.head-tab', {hasText:'register'}).click(); await held;
+        assert.equal(await page.locator('#head-tab-content table').count(),0,'In-flight request hides previously authorized content');
+        await page.locator('a.head-tab', {hasText:'progress'}).click();
+        await page.waitForFunction(() => document.querySelector('.wb-hero-meta').textContent==='progress');
+        release(); await page.unroute('**/head?**tab=register');
+        assert.equal(await page.locator('#head-tab-content table').count(),2,'Aborted stale request cannot restore another tab');
         assert.deepEqual(errors, []);
-        console.log('PASS: four tabs, five real browser XLSX downloads, exact displayed rows/filters, typed cells/totals, memory cache, authorization failure clearing, and period change.');
+        console.log('PASS: four tabs, five real browser XLSX downloads, exact displayed rows/filters, typed cells/totals, fresh repeated reads, 401/403/400/503 export clearing, and period change.');
         // Review the production modal/CSS using formatted synthetic content at desktop and narrow widths.
         const partial = fs.readFileSync(path.resolve(root, '../Views/ExecutiveOverview/_AuditParaSnapAnalysis.cshtml'), 'utf8');
         const modal = partial.match(/<dialog id="snap-para-dialog"[\s\S]*?<\/dialog>/)[0];

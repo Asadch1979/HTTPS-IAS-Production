@@ -44,20 +44,22 @@ static class HeadAuditAccessChecks
                 IPAddress="127.0.0.1", MACAddress="test", FirstMACCardAddress="test" });
             context.Session.SetString(SessionKeys.AllowedViewIds, page ? "[1000401]" : "[]");
             if (revoked) context.Session.Remove(SessionKeys.SessionStamp);
-            // Null DB and menus prove a successful cached-tab authorization probe does no data access.
+            // A null database must now be reached, proving checkOnly cannot return an authorization success without a database read.
             var controller = new HeadAuditDepartmentController(null, session, new Permissions(), null, NullLogger<HeadAuditDepartmentController>.Instance) {
                 ControllerContext = new ControllerContext { HttpContext = context }
             };
-            var result = api ? controller.Engagements() : controller.AuditTeamsMonitoring(tab:tab, checkOnly:true);
+            IActionResult result;
+            try { result = api ? controller.Engagements() : controller.AuditTeamsMonitoring(tab:tab, checkOnly:true); }
+            catch (NullReferenceException) { return -1; }
             return result is StatusCodeResult status ? status.StatusCode : throw new Exception("Unexpected result");
         }
         if (Request(signedIn:false)!=401 || Request(page:false)!=403 || Request(revoked:true)!=401 || Request(entity:null)!=403 || Request(api:true)!=403 || Request(tab:"review")!=400)
             throw new Exception("Head Audit controller gates regressed.");
-        foreach (var tab in new[] { "progress", "details", "exceptions", "register" }) if (Request(tab:tab)!=204) throw new Exception("Authorization probe queried Oracle or rejected an allowed tab.");
+        foreach (var tab in new[] { "progress", "details", "exceptions", "register" }) if (Request(tab:tab)!=-1) throw new Exception("Legacy probe bypassed the required database path.");
         var user = new SessionUser { ID=1, UserRoleID=5, UserEntityID=9 };
         var first = HeadAuditDisplayContext.Key(user);
         user.UserEntityID=10;
         if (HeadAuditDisplayContext.Key(user)==first) throw new Exception("Assignment changes must invalidate cached display context.");
-        Console.WriteLine("PASS: 10 compiled Head Audit controller/session/page/API/tab gates, Oracle-free cache probes and context invalidation.");
+        Console.WriteLine("PASS: 10 compiled Head Audit controller/session/page/API/tab gates, mandatory database path for legacy probes and context invalidation.");
     }
 }

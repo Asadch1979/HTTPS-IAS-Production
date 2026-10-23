@@ -75,7 +75,7 @@ var today = new DateTime(2026,10,23);
 var auditPeriod = new AuditPeriodModel { AUDITPERIODID=77, START_DATE=new DateTime(2026,1,1), END_DATE=new DateTime(2026,12,31) };
 Check(HeadAuditDashboard.ReportingDate(auditPeriod,null,today)==today.AddDays(-1), "Current period must default to Pakistan yesterday.");
 Check(HeadAuditDashboard.ReportingDate(auditPeriod,new DateTime(2026,5,2),today)==new DateTime(2026,5,2), "Explicit cutoff must survive navigation.");
-foreach (var invalid in new[] { new DateTime(2025,12,31),new DateTime(2026,10,24),new DateTime(2027,1,1) }) {
+foreach (var invalid in new[] { new DateTime(2025,12,31),today,new DateTime(2026,10,24),new DateTime(2027,1,1) }) {
     var rejected=false; try { HeadAuditDashboard.ReportingDate(auditPeriod,invalid,today); } catch(ArgumentException) { rejected=true; }
     Check(rejected,"Invalid period/future cutoff accepted.");
 }
@@ -115,3 +115,10 @@ var oversized=AIS.Services.ParaDisplayHtml.Sanitize("<table><tr><td colspan='999
 Check(!oversized.Contains("99999999"),"Unbounded table spans retained.");
 Console.WriteLine("PASS: reporting boundaries/defaults, distinct plan totals, formatted/plain/malformed/encoded/long para and stored active-content attacks.");
 HeadAuditAccessChecks.Run();
+
+foreach (var start in new[] { today, today.AddDays(1) }) {
+    var empty = new AuditPeriodModel { START_DATE=start, END_DATE=start.AddDays(30) };
+    try { HeadAuditDashboard.ReportingDate(empty,null,today); throw new Exception("No-completed-day period accepted"); }
+    catch (HeadAuditReportingDateException ex) { Check(ex.Message.Contains("no completed eligible day"), "Clear empty-period message required"); }
+}
+Check(HeadAuditDashboard.ReportingDate(new AuditPeriodModel { START_DATE=new DateTime(2028,1,1), END_DATE=new DateTime(2028,12,31) },null,new DateTime(2028,3,1))==new DateTime(2028,2,29),"Leap completed day");
