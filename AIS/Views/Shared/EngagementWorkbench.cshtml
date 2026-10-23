@@ -10,7 +10,7 @@
     string Width(long count) => (total.Planned > 0 ? 800m * count / total.Planned : 0).ToString(CultureInfo.InvariantCulture);
 }
 <link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
-<section class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
+<section data-period="Audit period: @selectedPeriod?.DESCRIPTION (IAS ID @Model.AuditPeriodId)" data-position="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" data-scope="@ViewData["ScopeLabel"]" data-limitations="@AIS.Models.HeadAuditDashboard.HistoricalLimitations" class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
     <div class="wb-appbar"><div class="wb-brand"><span class="wb-brand-icon" aria-hidden="true">IAS</span>
         <span><strong>ZTBL · Internal Audit</strong><small>Office performance and management oversight</small></span></div>
         <span class="wb-appbar-meta">READ-ONLY · AUTHORIZED PORTFOLIO</span></div>
@@ -85,7 +85,7 @@
     </section>
     }
     else if (Model.Tab == "register") {
-    <section class="wb-overview" aria-labelledby="register-title"><div class="wb-section-heading"><h2 id="register-title">Engagement register</h2></div>
+    <section data-filters="Office @(Model.OfficeId?.ToString() ?? "All authorized"); status @(Model.StatusId?.ToString() ?? "All"); exception @(Model.Exception ?? "All")" class="wb-overview" aria-labelledby="register-title"><div class="wb-section-heading"><h2 id="register-title">Engagement register</h2></div>
         <form class="wb-dashboard-filters" method="get" action="@Url.Action("AuditTeamsMonitoring")">
             <input type="hidden" name="tab" value="register" /><input type="hidden" name="positionAsOn" value="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" /><input type="hidden" name="auditPeriodId" value="@Model.AuditPeriodId" />
             @if (Model.Offices.Count > 1) { <div><label for="head-office">Register audit office</label><select id="head-office" name="officeId"><option value="">All authorized offices</option>
@@ -113,3 +113,6 @@
     }
 </section>
 <script defer src="~/js/head-audit-dashboard.js" asp-append-version="true"></script>
+
+<script defer src="~/lib/dashboard-export/exceljs-4.4.0.min.js" asp-append-version="true"></script>
+<script defer src="~/js/head-audit-export.js" asp-append-version="true"></script>
