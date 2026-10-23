@@ -78,7 +78,7 @@
                     if (!security || !table.isConnected) throw new Error('Reload the dashboard before exporting.');
                     const generation = security.generation();
                     const check = new URL(location.href);
-                    const response = await fetch(check, { credentials: 'same-origin', cache: 'no-store', redirect: 'error' });
+                    const response = await fetch(check, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store', redirect: 'error' });
                     if (!response.ok || response.headers.get('X-Head-Audit-Context') !== root.dataset.contextKey)
                         throw new Error('An active authorized Head Audit session with the same assignment is required. Reload the page.');
                     const page = new DOMParser().parseFromString(await response.text(), 'text/html');

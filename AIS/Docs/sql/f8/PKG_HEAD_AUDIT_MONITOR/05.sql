@@ -32,6 +32,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     END IF;
   END;
 
+  PROCEDURE P_VALIDATE_SCOPE(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
+    P_CONTEXT_ID NUMBER,P_GROUP_ID NUMBER,P_SESSION_ID VARCHAR2) AS n NUMBER;
+  BEGIN
+    REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
+    SELECT COUNT(*) INTO n FROM t_user_session s JOIN t_user u ON u.ppno=s.user_pp_number
+      WHERE u.userid=P_USER_ID AND s.session_id=P_SESSION_ID AND s.session_active='Y'
+        AND s.logged_out_date IS NULL AND s.role_id=P_ROLE_ID
+        AND s.entity_id=P_DEPT_ID AND s.group_id=P_GROUP_ID;
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20154,'Inactive Head audit session.'); END IF;
+    SELECT COUNT(*) INTO n FROM t_user u WHERE u.userid=P_USER_ID AND
+      ((P_CONTEXT_ID IS NOT NULL AND EXISTS (SELECT 1 FROM t_user_context_assignment c
+        WHERE c.user_context_id=P_CONTEXT_ID AND c.user_id=u.userid
+          AND NVL(c.group_id,c.role_id)=P_GROUP_ID))
+       OR (P_CONTEXT_ID IS NULL AND EXISTS (SELECT 1 FROM t_user_maping m
+        WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID AND m.group_id=P_GROUP_ID)))
+      AND EXISTS (SELECT 1 FROM t_menu_pages mp JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+        WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=P_GROUP_ID);
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20151,'Head audit assignment or page allocation changed.'); END IF;
+  END;
+
   PROCEDURE REQUIRE_PERIOD(P_PERIOD_ID NUMBER) AS n NUMBER;
   BEGIN
     SELECT COUNT(*) INTO n FROM t_au_period WHERE auditperiodid=P_PERIOD_ID;

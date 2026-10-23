@@ -25,7 +25,7 @@
         const current = new AbortController(); request = current;
         clear(); content.setAttribute('aria-busy', 'true');
         try {
-            const response = await fetch(link.href, { signal: current.signal, credentials: 'same-origin', cache: 'no-store', redirect: 'error' });
+            const response = await fetch(link.href, { signal: current.signal, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store', redirect: 'error' });
             if (!response.ok || response.headers.get('X-Head-Audit-Context') !== root.dataset.contextKey)
                 throw new Error('Dashboard access or assignment changed. Reload the page to continue.');
             const page = new DOMParser().parseFromString(await response.text(), 'text/html');

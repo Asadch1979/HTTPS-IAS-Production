@@ -24,6 +24,7 @@ namespace AIS.Controllers
             if (!GetTopMenuPages(user).Any(p => p.PageId == HeadAuditMonitoringPolicy.PageId))
                 throw new UnauthorizedAccessException();
             using var connection = DatabaseConnection();
+            ValidateHeadAuditScope(connection, user);
             using var command = connection.CreateCommand();
             command.CommandType = CommandType.StoredProcedure;
             command.CommandText = "PKG_HEAD_AUDIT_MONITOR." + procedure;
@@ -47,7 +48,24 @@ namespace AIS.Controllers
             if (session.IsSessionRevoked(current) || current.ID != user.ID || current.SessionId != user.SessionId ||
                 current.UserContextAssignmentId != user.UserContextAssignmentId || current.UserRoleID != user.UserRoleID ||
                 current.UserEntityID != user.UserEntityID || current.UserGroupID != user.UserGroupID) throw new UnauthenticatedException();
+            ValidateHeadAuditScope(connection, current);
             return rows;
+        }
+
+        private void ValidateHeadAuditScope(OracleConnection connection, SessionUser user)
+        {
+            using var command = connection.CreateCommand();
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PKG_HEAD_AUDIT_MONITOR.P_VALIDATE_SCOPE";
+            command.BindByName = true;
+            GuardAgainstDynamicSql(command);
+            command.Parameters.Add("P_USER_ID", OracleDbType.Int32).Value = user.ID;
+            command.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = user.UserRoleID;
+            command.Parameters.Add("P_DEPT_ID", OracleDbType.Int32).Value = user.UserEntityID.Value;
+            command.Parameters.Add("P_CONTEXT_ID", OracleDbType.Int32).Value = (object)user.UserContextAssignmentId ?? DBNull.Value;
+            command.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = user.UserGroupID;
+            command.Parameters.Add("P_SESSION_ID", OracleDbType.Varchar2).Value = (object)user.SessionId ?? DBNull.Value;
+            command.ExecuteNonQuery();
         }
 
         internal List<HeadAuditEngagement> GetHeadAuditEngagements(int? periodId = null, DateTime? positionAsOn = null, bool details = true)
