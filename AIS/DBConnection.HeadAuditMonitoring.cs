@@ -69,7 +69,7 @@ namespace AIS.Controllers
             {
                 EngId = RoleLong(r, "ENG_ID"), Review = RoleNullableLong(r, "AWAITING_REVIEW"),
                 Progress = RoleText(r, "ITEM_PROGRESS")
-            }).ToDictionary(r => r.EngId);
+            }, periodId:periodId).ToDictionary(r => r.EngId);
             foreach (var engagement in engagements)
                 if (counts.TryGetValue(engagement.EngagementId, out var count))
                 {
@@ -101,31 +101,33 @@ namespace AIS.Controllers
             result.PositionAsOn = HeadAuditDashboard.ReportingDate(periods.Single(p => p.AUDITPERIODID == selected), positionAsOn, AuditParaSnapPolicy.Today);
             if (tab == "progress")
             {
-            result.Offices = ReadHeadAudit("P_GET_OFFICE_SUMMARY", r => new HeadAuditOfficeSummary {
-                OfficeId=RoleRequiredInt(r,"OFFICE_ID"), Office=RoleText(r,"OFFICE_NAME"),
-                Planned=RoleLong(r,"PLANNED"), PlannedEntities=RoleLong(r,"PLANNED_ENTITIES"),
-                CompletedPlans=RoleLong(r,"COMPLETED_PLANS"), OngoingPlans=RoleLong(r,"ONGOING_PLANS"),
-                NotStarted=RoleLong(r,"NOT_STARTED"), Completed=RoleLong(r,"COMPLETED"),
-                Ongoing=RoleLong(r,"ONGOING"), Delayed=RoleLong(r,"DELAYED"),
-                PendingReports=RoleLong(r,"PENDING_REPORTS"), AwaitingReview=RoleLong(r,"AWAITING_REVIEW")
-            }, periodId:selected, positionAsOn:result.PositionAsOn);
+                result.Offices = ReadHeadAudit("P_GET_OFFICE_SUMMARY", r => new HeadAuditOfficeSummary {
+                    OfficeId=RoleRequiredInt(r,"OFFICE_ID"), Office=RoleText(r,"OFFICE_NAME"),
+                    Planned=RoleLong(r,"PLANNED"), PlannedEntities=RoleLong(r,"PLANNED_ENTITIES"),
+                    CompletedPlans=RoleLong(r,"COMPLETED_PLANS"), OngoingPlans=RoleLong(r,"ONGOING_PLANS"),
+                    NotStarted=RoleLong(r,"NOT_STARTED"), UnknownPlans=RoleLong(r,"UNKNOWN_PLANS"), Completed=RoleLong(r,"COMPLETED"),
+                    Ongoing=RoleLong(r,"ONGOING"), Delayed=RoleLong(r,"DELAYED"),
+                    PendingReports=RoleLong(r,"PENDING_REPORTS"), AwaitingReview=RoleLong(r,"AWAITING_REVIEW")
+                }, periodId:selected, positionAsOn:result.PositionAsOn);
                 result.ActiveTeamCount = ReadHeadAudit("P_GET_ACTIVE_TEAMS", r => RoleLong(r,"TEAM_ID"),
                     periodId:selected, positionAsOn:result.PositionAsOn).Distinct().Count();
             }
-            else if (tab == "register" || officeId.HasValue)
-                result.Offices = ReadHeadAudit("P_GET_OFFICES", r => new HeadAuditOfficeSummary {
+            if (tab == "register" || officeId.HasValue)
+            {
+                var options = ReadHeadAudit("P_GET_OFFICES", r => new HeadAuditOfficeSummary {
                     OfficeId=RoleRequiredInt(r,"OFFICE_ID"), Office=RoleText(r,"OFFICE_NAME") });
-            if (officeId.HasValue && !result.Offices.Any(o => o.OfficeId == officeId))
-                throw new UnauthorizedAccessException();
+                if (officeId.HasValue && !options.Any(o => o.OfficeId == officeId)) throw new UnauthorizedAccessException();
+                if (tab == "register") result.Offices = options;
+            }
             if (tab == "register" || tab == "exceptions" || tab == "review")
                 result.Engagements = GetHeadAuditEngagements(selected, result.PositionAsOn, details: tab != "exceptions");
             if (tab == "details" || tab == "review")
-            result.Plans = ReadHeadAudit("P_GET_PLAN_DETAILS", r => new HeadAuditPlanDetail {
-                PlanId=RoleLong(r,"PLAN_ID"), EngagementId=RoleNullableLong(r,"ENG_ID"),
-                Entity=RoleText(r,"ENTITY_NAME"), Days=RoleNullableInt(r,"NO_OF_DAYS"),
-                Start=RoleDate(r,"AUDIT_STARTDATE"), End=RoleDate(r,"AUDIT_ENDDATE"),
-                Team=RoleText(r,"TEAM_NAME"), Stage=RoleText(r,"STAGE"), Status=RoleText(r,"PLAN_STATUS")
-            }, periodId:selected, positionAsOn:result.PositionAsOn);
+                result.Plans = ReadHeadAudit("P_GET_PLAN_DETAILS", r => new HeadAuditPlanDetail {
+                    PlanId=RoleLong(r,"PLAN_ID"), EngagementId=RoleNullableLong(r,"ENG_ID"),
+                    Entity=RoleText(r,"ENTITY_NAME"), Days=RoleNullableInt(r,"NO_OF_DAYS"),
+                    Start=RoleDate(r,"AUDIT_STARTDATE"), End=RoleDate(r,"AUDIT_ENDDATE"),
+                    Team=RoleText(r,"TEAM_NAME"), Stage=RoleText(r,"STAGE"), Status=RoleText(r,"PLAN_STATUS")
+                }, periodId:selected, positionAsOn:result.PositionAsOn);
             return result;
         }
 

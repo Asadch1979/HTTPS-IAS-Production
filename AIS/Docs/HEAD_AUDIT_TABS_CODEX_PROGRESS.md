@@ -1,30 +1,40 @@
 # Head Audit tabs and para format progress
 
 Branch: `codex/head-audit-tabs-and-para-format`
-Base: local main/origin main `fa64939fe1764e7315407d836326da1676e2e20b`. GitHub fetch failed (network); retry before final review.
-Pre-existing appsettings.json, obj output and .vs files are excluded from commits.
+Base: `fa64939fe1764e7315407d836326da1676e2e20b`, latest remote main verified through the GitHub connector on 23 October 2026. Shell GitHub network fetch is unavailable.
 
-## Completed
-- Initial inspection; official five-hour balance 99% remaining.
-- Native heartbeat `resume-head-audit-tabs-and-para-formatting` ACTIVE every five hours. No old resume-ias-cia-and-snap-implementation in local automation inventory. Must shut down on completion.
+## Completed checkpoints
 
-## Remaining / next exact step
-1. Implement and build reporting cutoff; synchronize F8 SQL and commit.
-2. Selective tab loading, preserved navigation and browser memory cache.
-3. Distinct plan totals.
-4. Scoped local ExcelJS exports.
-5. Allowlist sanitized HM-style para document.
-6. Focused regression checks, build, documentation, final commits and scheduler shutdown.
+| Commit | Work |
+| --- | --- |
+| dbaa44f3 | Reporting date, validation, workflow-log cutoff and explicit historical limitations |
+| 4ede1fb1 | Four independently queried/rendered tabs and authorized memory caching |
+| ea3477b4 | Distinct PlanId totals with no duplicate planned days |
+| fc1bdf26 | Five scoped local ExcelJS exports, typed cells and formula injection protection |
+| 649f6b9c | Allowlist sanitized HM-style read-only para document |
 
-## Validation boundaries
-No Oracle connection/compilation, authenticated browser UAT or live figure reconciliation performed. Workflow evidence includes T_AU_PLAN_ENG_LOG CREATED_ON/LAST_UPDATED_ON and reversal code with misleading status 10. Historical deleted records, plans and child-workflow snapshots are incomplete; do not claim full reconstruction.
+Regression work ready to commit: separate unknown-history plan counts; ambiguous status-10 handling; period-scoped workpaper counts; cheap authorized office options including offices without records; assignment-bound tab/export consistency checks; formatted modal QA; focused tests and review/deployment notes in HEAD_AUDIT_TABS_REVIEW.md.
 
-Reporting-date checkpoint: source added, application build passed (57 existing warnings, zero errors). Oracle not compiled. Next: selective tab data loading.
+## Tests
 
-Checkpoint dbaa44f3: reporting date. Tab checkpoint: conditional server rendering plus selected queries; progress uses summary and distinct-team query; details uses plans only; exceptions omits task/report/workpaper queries; register includes scoped detail readers. Cached tabs recheck authorization without Oracle datasets. Build passed. Official allowance 94% remaining. Next: totals.
+- Application builds: zero errors, 57 existing warnings.
+- C# policy/date/totals/sanitizer checks passed, including plain, formatted, malformed, encoded, stored active content and long observations. Ten compiled Head Audit access/cache-probe gates passed without Oracle. Run under installed .NET 9 using `dotnet --roll-forward LatestMajor tests/head-audit-monitoring/bin/Debug/net8.0/HeadAuditMonitoring.Checks.dll` because the existing app dependency graph references System.Text.Json 9.
+- 16 focused Node checks passed, including actual XLSX roundtrips for all five tables and SQL/F8/spec/body consistency.
+- Headless Edge fixtures passed all four tab loads, five downloaded XLSX files, rows/metadata/totals, cache reuse, assignment/access failure clearing and period changes. HM/reference and corrected para desktop/mobile screenshots inspected. No authenticated live UAT claimed.
+- Existing CIA/Snap policy script: 9 + 9 + 4 + 26 + 4 checks passed, including compiled Snap access gates.
+- Broader executive suite: 14 failures and 3 skips reproduced on isolated unchanged main; no additional failures on this branch. Temporary baseline checkout removed.
+- Unrelated dashboard/Oracle/export-gate and exact para eligibility source files verified unchanged against main.
 
-Plan totals implemented: group by PlanId, count each planned-day value once, report unavailable if missing/conflicting. Distinct engagements are a separate count. Next: exports; focused total tests pending.
+## Validation boundaries / blockers
 
-Checkpoints: 4ede1fb1 tabs; ea3477b4 plan totals. Excel exports implemented for all five dashboard tables using local ExcelJS and rendered data only, with metadata, typed cells, total rows, widths and formula-text neutralization. Shared Super User exports untouched. JS syntax and application build passed. Next: secure View Para correction.
+Oracle compilation, live query traces/timings, historical workflow sample reconciliation, equivalent-condition KPI comparison, live unauthorized office/engagement/COM_ID checks and authenticated Visual Studio UAT were not performed. They require the controlled IAS/Oracle environment. Package and F8 source are synchronized; compilation order and prerequisites are in HEAD_AUDIT_TABS_REVIEW.md. No database/application deployment or merge performed.
 
-Checkpoint fc1bdf26 exports. View Para correction: allowlist display sanitizer, active-content removal, safe formatted HTML response, HM-style wide read-only document dialog, existing secured retrieval and cancellation preserved. Build passed; next: focused sanitizer/security/export/tab tests and regression fixes.
+Pre-existing appsettings.json, NuGet obj changes and .vs files are excluded from commits and preserved.
+
+## Scheduler and credit
+
+One native heartbeat: `resume-head-audit-tabs-and-para-formatting`, currently ACTIVE every five hours. No old resume-ias-cia-and-snap-implementation schedule was present. Official allowance last checked at 86% remaining; 5% checkpoint / stop-before-2% rules remain applicable. Scheduler must be paused and verified before final handoff.
+
+## Next exact step
+
+Run final focused/browser/build checks after regression edits; commit source/tests/review notes. Pause the single heartbeat using supported controls and verify PAUSED, record final status here, commit final documentation, and hand off the local feature branch. Live Oracle/UAT remains an explicit reviewer prerequisite, not unattended work to fabricate.

@@ -25,7 +25,8 @@
             const readUrl = new URL(url);
             if (cached) readUrl.searchParams.set('checkOnly', 'true');
             const response = await fetch(readUrl, { signal: current.signal, credentials: 'same-origin', cache: 'no-store', redirect: 'error' });
-            if (!response.ok) throw new Error('Dashboard access or data is unavailable.');
+            if (!response.ok || response.headers.get('X-Head-Audit-Context') !== document.querySelector('.engagement-workbench').dataset.contextKey)
+                throw new Error('Dashboard access or assignment changed. Reload the page to continue.');
             let next = cached;
             if (!cached) {
                 const page = new DOMParser().parseFromString(await response.text(), 'text/html');

@@ -1,7 +1,7 @@
 @model System.Collections.Generic.List<AIS.Models.HeadAuditPlanDetail>
 @{ var totals = AIS.Services.HeadAuditPlanTotals.From(Model); }
 <div class="wb-table" role="region" aria-label="Audit plan details" tabindex="0">
-    <table><thead><tr><th>Audit entity</th><th>No. of days</th><th>Start date – End date</th><th>Engagement team</th><th>Current stage</th><th>Status</th></tr></thead><tbody>
+    <table><thead><tr><th>Audit entity</th><th>No. of days</th><th>Start date – End date</th><th>Engagement team</th><th>Recorded stage at cutoff</th><th>Status</th></tr></thead><tbody>
     @foreach (var plan in Model)
     {
         <tr><td>@(string.IsNullOrWhiteSpace(plan.Entity) ? "N/A" : plan.Entity)</td><td>@(plan.Days?.ToString() ?? "N/A")</td>

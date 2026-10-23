@@ -26,7 +26,7 @@ namespace AIS.Controllers
             this.menus = menus; this.logger = logger;
         }
 
-        private IActionResult Read(Func<IActionResult> action, bool api = false)
+        private IActionResult Read(Func<IActionResult> action, bool api = false, bool includeMenus = true)
         {
             if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
             permissions.EnsurePermissionsCached(user);
@@ -38,8 +38,14 @@ namespace AIS.Controllers
             if (!ModelState.IsValid) return BadRequest();
             try
             {
-                ViewData["TopMenu"] = menus.GetTopMenus();
-                ViewData["TopMenuPages"] = menus.GetTopMenusPages();
+                if (!api && includeMenus)
+                {
+                    ViewData["TopMenu"] = menus.GetTopMenus();
+                    ViewData["TopMenuPages"] = menus.GetTopMenusPages();
+                }
+                var displayContext = HeadAuditDisplayContext.Key(user);
+                Response.Headers["X-Head-Audit-Context"] = displayContext;
+                ViewData["HeadAuditContext"] = displayContext;
                 ViewData["HideTopHeader"] = true;
                 ViewData["ScopeLabel"] = user.UserEntityName + " · Authorized Office and Subordinate Scope";
                 return action();
@@ -69,7 +75,7 @@ namespace AIS.Controllers
             if (checkOnly) return NoContent(); // Recheck session/page permission before displaying a cached tab.
             return View("~/Views/Shared/EngagementWorkbench.cshtml",
                 database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, tab));
-        });
+        }, includeMenus: !checkOnly);
 
         [HttpGet]
         public IActionResult Review(long engId, string section = "Plan", int? auditPeriodId = null,
@@ -80,7 +86,7 @@ namespace AIS.Controllers
             if (new[] { "Plan", "Criteria", "Team" }.Contains(section)) section = "Tasks";
             if (!auditPeriodId.HasValue)
             {
-                var saved = database.GetHeadAuditEngagements().SingleOrDefault(e => e.EngagementId == engId);
+                var saved = database.GetHeadAuditEngagements(details:false).SingleOrDefault(e => e.EngagementId == engId);
                 if (saved == null) return StatusCode(403);
                 auditPeriodId = saved.PeriodId;
             }

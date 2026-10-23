@@ -90,6 +90,7 @@ namespace AIS.Models
         public long CompletedPlans { get; set; }
         public long OngoingPlans { get; set; }
         public long NotStarted { get; set; }
+        public long UnknownPlans { get; set; }
         public long Completed { get; set; }
         public long Ongoing { get; set; }
         public long Delayed { get; set; }
@@ -102,9 +103,10 @@ namespace AIS.Models
     {
         public DateTime? PositionAsOn { get; set; }
         public string Tab { get; set; } = "progress";
-        public const string HistoricalLimitations = "Engagement stages use the latest recorded workflow event by cutoff (Pakistan end of day); missing or ambiguous events are Unknown. History is incomplete; deleted engagements cannot be reconstructed. Approved-plan membership/days, schedules, office/team assignments, observation reviews, task/workpaper and report summaries reflect current saved records, not verified historical values. Plan progress classifies the current approved-plan cohort using available engagement history; unknown history may appear in not yet started. Review Saved Work shows current saved work.";
+        public const string HistoricalLimitations = "Engagement stages use the latest recorded workflow event by cutoff (Pakistan end of day); missing or ambiguous events are Unknown. History is incomplete; deleted engagements cannot be reconstructed. Approved-plan membership/days, schedules, office/team assignments, observation reviews, task/workpaper and report summaries reflect current saved records, not verified historical values. Plan progress classifies the current approved-plan cohort using available engagement history; unclassified plans are reported separately as unknown history. Review Saved Work shows current saved work.";
         public static DateTime ReportingDate(AuditPeriodModel period, DateTime? requested, DateTime today)
         {
+            if (period == null || period.START_DATE.Date > period.END_DATE.Date) throw new ArgumentException("Select a valid IAS audit period.");
             var last = period.END_DATE.Date < today.Date ? period.END_DATE.Date : today.Date.AddDays(-1);
             var date = (requested ?? last).Date;
             if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > today.Date)
@@ -121,7 +123,7 @@ namespace AIS.Models
         public string Exception { get; set; }
         public HeadAuditOfficeSummary Total => new() {
             Planned = Offices.Sum(o => o.Planned), CompletedPlans = Offices.Sum(o => o.CompletedPlans),
-            OngoingPlans = Offices.Sum(o => o.OngoingPlans), NotStarted = Offices.Sum(o => o.NotStarted),
+            OngoingPlans = Offices.Sum(o => o.OngoingPlans), NotStarted = Offices.Sum(o => o.NotStarted), UnknownPlans=Offices.Sum(o => o.UnknownPlans),
             Completed = Offices.Sum(o => o.Completed), Ongoing = Offices.Sum(o => o.Ongoing),
             Delayed = Offices.Sum(o => o.Delayed), PendingReports = Offices.Sum(o => o.PendingReports),
             AwaitingReview = Offices.Sum(o => o.AwaitingReview)

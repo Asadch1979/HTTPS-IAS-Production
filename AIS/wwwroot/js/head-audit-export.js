@@ -40,7 +40,15 @@
         sheet.autoFilter = { from: { row: header.number, column: 1 }, to: { row: header.number + rows.length, column: columns } };
         sheet.columns.forEach((column, index) => {
             const lengths = [headings, ...rows, ...totals].map(row => String(row[index] ?? '').length);
-            column.width = Math.min(60, Math.max(16, ...lengths.map(n => Math.min(60, n + 2))));
+            column.width = Math.min(60, lengths.reduce((max, n) => Math.max(max, Math.min(60, n + 2)), 16));
+        });
+        const fullWidth = sheet.columns.reduce((sum, column) => sum + column.width, 0);
+        sheet.eachRow(row => {
+            const lines = row.number < header.number
+                ? Math.ceil(String(row.getCell(1).value ?? '').length / Math.max(40, fullWidth - 8))
+                : Math.max(1, ...row.values.slice(1).map((value, i) => String(value ?? '').split('\n').reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / Math.max(8, sheet.getColumn(i + 1).width - 3))), 0)));
+            row.height = Math.max(row.number === 1 ? 28 : 24, Math.min(400, lines * 16 + 8));
+            row.alignment = { ...row.alignment, wrapText: true, vertical: 'top' };
         });
         return book;
     }
@@ -68,7 +76,8 @@
                 try {
                     const check = new URL(location.href); check.searchParams.set('checkOnly', 'true');
                     const response = await fetch(check, { credentials: 'same-origin', cache: 'no-store', redirect: 'error' });
-                    if (!response.ok) throw new Error('An active authorized Head Audit session is required.');
+                    if (!response.ok || response.headers.get('X-Head-Audit-Context') !== root.dataset.contextKey)
+                        throw new Error('An active authorized Head Audit session with the same assignment is required. Reload the page.');
                     if (!window.ExcelJS) throw new Error('The local Excel library could not be loaded.');
                     const metadata = [root.dataset.period, 'Position as on: ' + root.dataset.position + ' (Pakistan, end of day)',
                         root.dataset.scope, 'Applied register filters: ' + (table.closest('[data-filters]')?.dataset.filters || 'Not applicable'), root.dataset.limitations];

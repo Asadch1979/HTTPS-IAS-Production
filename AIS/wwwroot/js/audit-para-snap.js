@@ -370,6 +370,7 @@
     const dialog=document.getElementById('snap-para-dialog');
     dialog?.addEventListener('close',()=>{paraRequest?.abort();document.getElementById('snap-para-text').replaceChildren();});
     document.getElementById('snap-para-close')?.addEventListener('click',()=>dialog.close());
+    document.getElementById('snap-para-dismiss')?.addEventListener('click',()=>dialog.close());
     async function viewPara(comId) {
         paraRequest?.abort();paraRequest=new AbortController();const active=paraRequest;
         const text=document.getElementById('snap-para-text');text.textContent='Loading authorized para text…';dialog.showModal();

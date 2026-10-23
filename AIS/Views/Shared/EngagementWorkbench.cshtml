@@ -10,7 +10,7 @@
     string Width(long count) => (total.Planned > 0 ? 800m * count / total.Planned : 0).ToString(CultureInfo.InvariantCulture);
 }
 <link rel="stylesheet" href="~/css/engagement-workbench.css" asp-append-version="true" />
-<section data-period="Audit period: @selectedPeriod?.DESCRIPTION (IAS ID @Model.AuditPeriodId)" data-position="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" data-scope="@ViewData["ScopeLabel"]" data-limitations="@AIS.Models.HeadAuditDashboard.HistoricalLimitations" class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
+<section data-context-key="@ViewData["HeadAuditContext"]" data-period="Audit period: @selectedPeriod?.DESCRIPTION (IAS ID @Model.AuditPeriodId)" data-position="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" data-scope="@ViewData["ScopeLabel"]" data-limitations="@AIS.Models.HeadAuditDashboard.HistoricalLimitations" class="engagement-workbench wb-redesigned" aria-labelledby="workbench-title">
     <div class="wb-appbar"><div class="wb-brand"><span class="wb-brand-icon" aria-hidden="true">IAS</span>
         <span><strong>ZTBL · Internal Audit</strong><small>Office performance and management oversight</small></span></div>
         <span class="wb-appbar-meta">READ-ONLY · AUTHORIZED PORTFOLIO</span></div>
@@ -53,18 +53,18 @@
     <section class="wb-process" aria-labelledby="plan-title"><div class="wb-section-heading"><h2 id="plan-title">Audit plan progress</h2></div>
         @if (total.Planned == 0) { <p>No approved plans in this authorized period.</p> }
         else {
-        <svg class="wb-plan-chart" viewBox="0 0 800 55" role="img" aria-label="Approved plans: @total.CompletedPlans completed, @total.OngoingPlans ongoing, @total.NotStarted not yet started">
+        <svg class="wb-plan-chart" viewBox="0 0 800 55" role="img" aria-label="Approved plans: @total.CompletedPlans completed, @total.OngoingPlans ongoing, @total.NotStarted not yet started, @total.UnknownPlans unknown history">
             <rect width="800" height="40" rx="6" fill="#e4e9ef" />
             <rect width="@Width(total.CompletedPlans)" height="40" fill="#16836b" />
             <rect x="@Width(total.CompletedPlans)" width="@Width(total.OngoingPlans)" height="40" fill="#4d66be" />
         </svg> }
-        <table class="wb-progress-table"><thead><tr><th>Approved plans</th><th>Completed</th><th>Ongoing</th><th>Not yet started</th><th>Achievement</th><th>Delayed engagements</th></tr></thead>
-            <tbody><tr><td>@total.Planned</td><td>@total.CompletedPlans</td><td>@total.OngoingPlans</td><td>@total.NotStarted</td><td>@Rate(total.Achievement)</td><td>@total.Delayed</td></tr></tbody></table>
-        <p class="wb-period-note">Green: completed · Blue: ongoing · Grey: not yet started. Delayed engagements are a separate exception measure and are not added to the plan totals. Completion means audit conclusion; final-report issuance alone is not conclusion.</p>
+        <table class="wb-progress-table"><thead><tr><th>Approved plans</th><th>Completed</th><th>Ongoing</th><th>Not yet started</th><th>Unknown history</th><th>Achievement</th><th>Delayed engagements</th></tr></thead>
+            <tbody><tr><td>@total.Planned</td><td>@total.CompletedPlans</td><td>@total.OngoingPlans</td><td>@total.NotStarted</td><td>@total.UnknownPlans</td><td>@Rate(total.Achievement)</td><td>@total.Delayed</td></tr></tbody></table>
+        <p class="wb-period-note">Green: completed · Blue: ongoing · Grey: not yet started or unknown history (separately counted in the table). Delayed engagements are a separate exception measure and are not added to the plan totals. Completion means audit conclusion; final-report issuance alone is not conclusion.</p>
     </section>
     <section class="wb-overview" aria-labelledby="offices-title"><div class="wb-section-heading"><h2 id="offices-title">Audit office performance</h2></div>
-        <div class="wb-table"><table><thead><tr><th>Audit office / cluster</th><th>Planned</th><th>Completed engagements</th><th>Completed plans</th><th>Ongoing</th><th>Delayed</th><th>Pending reports</th><th>Achievement</th></tr></thead>
-            <tbody>@foreach (var office in Model.Offices) { <tr><td>@Value(office.Office)</td><td>@office.Planned</td><td>@office.Completed</td><td>@office.CompletedPlans</td><td>@office.Ongoing</td><td>@office.Delayed</td><td>@office.PendingReports</td><td>@Rate(office.Achievement)</td></tr> }</tbody></table></div>
+        <div class="wb-table"><table><thead><tr><th>Audit office / cluster</th><th>Planned</th><th>Completed engagements</th><th>Completed plans</th><th>Unknown plan history</th><th>Ongoing</th><th>Delayed</th><th>Pending reports</th><th>Achievement</th></tr></thead>
+            <tbody>@foreach (var office in Model.Offices) { <tr><td>@Value(office.Office)</td><td>@office.Planned</td><td>@office.Completed</td><td>@office.CompletedPlans</td><td>@office.UnknownPlans</td><td>@office.Ongoing</td><td>@office.Delayed</td><td>@office.PendingReports</td><td>@Rate(office.Achievement)</td></tr> }</tbody></table></div>
     </section>
     }
     else if (Model.Tab == "details") {
@@ -76,7 +76,7 @@
     }
     else if (Model.Tab == "exceptions") {
     <section class="wb-overview" aria-labelledby="exceptions-title"><div class="wb-section-heading"><h2 id="exceptions-title">Pending actions and exceptions</h2></div>
-        <div class="wb-table"><table><thead><tr><th>Audit entity / engagement</th><th>Audit period</th><th>Responsible office</th><th>Scheduled completion</th><th>Current stage</th><th>Pending action</th></tr></thead>
+        <div class="wb-table"><table><thead><tr><th>Audit entity / engagement</th><th>Audit period</th><th>Responsible office</th><th>Scheduled completion</th><th>Recorded stage at cutoff</th><th>Pending action</th></tr></thead>
             <tbody>@foreach (var e in Model.Engagements.Where(e => !string.IsNullOrEmpty(e.PendingAction))) {
                 <tr><td>@Value(e.Entity) · #@e.EngagementId</td><td>@Value(e.Period)</td><td>@Value(e.Department)</td><td>@(e.End?.ToString("dd MMM yyyy") ?? "Not recorded")</td><td>@Value(e.Status)</td><td>@e.PendingAction</td></tr>
             }</tbody></table>
@@ -98,7 +98,7 @@
             <button type="submit" class="wb-table-action">Filter register</button>
         </form><p class="wb-period-note">Register filters narrow this table only. Executive figures and office comparisons show the entire authorized audit-period portfolio.</p>
         <div class="wb-panel wb-register"><div class="wb-table" role="region" aria-label="Authorized engagements" tabindex="0">
-            <table><thead><tr><th>Audit entity / team</th><th>Responsible office</th><th>Audit period / dates</th><th>Current stage</th><th>Review / reporting</th><th>Review</th></tr></thead><tbody>
+            <table><thead><tr><th>Audit entity / team</th><th>Responsible office</th><th>Audit period / dates</th><th>Recorded stage at cutoff</th><th>Review / reporting</th><th>Review</th></tr></thead><tbody>
             @foreach (var e in Model.Register) {
                 <tr><td><strong>@Value(e.Entity)</strong><small>Engagement #@e.EngagementId · @Value(e.Team)</small><small>@Value(e.Members)</small></td><td>@Value(e.Department)</td>
                     <td>@Value(e.Period)<small>@(e.Start?.ToString("dd MMM yyyy") ?? "Not recorded") – @(e.End?.ToString("dd MMM yyyy") ?? "Not recorded")</small></td>
