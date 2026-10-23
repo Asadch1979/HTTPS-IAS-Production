@@ -63,7 +63,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
       FROM t_au_plan p LEFT JOIN t_auditee_entities a ON a.entity_id=p.entity_id
       LEFT JOIN (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -82,7 +83,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
 
   -- Current approved-plan cohort classified by cutoff workflow evidence, not a complete historical snapshot.
   -- Plan entries: T_AU_PLAN statuses 1/2 plus status 4 assigned by P_ApproveAuditEngagementPlan.
-  -- Completed: current engagement status 14, written by PKG_HD at conclusion.
+  -- Completed at cutoff: recorded status 14 with AUDIT CONCLUDED evidence.
+  -- NULL cutoff retains the legacy current-state contract for existing Oracle callers.
   -- 12 = Draft Report, 13 = Issue Final Report (PKG_HD dashboard labels).
   -- Neither 12 nor 13 is counted as completed; pending reports counts engagements,
   -- not report versions. Active engagement stages 4..13; active teams use 4..11.
@@ -102,7 +104,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
       ), engagements AS (
         SELECT e.* FROM (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -179,7 +182,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
           WITHIN GROUP(ORDER BY r.report_version) FROM t_frpt_report_meta r WHERE r.eng_id=e.eng_id) END report_status
        FROM v_head_audit_eng_scope sc JOIN (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -213,7 +217,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     REQUIRE_CUTOFF(P_PERIOD_ID,P_AS_OF);
     OPEN IO_CURSOR FOR SELECT DISTINCT e.team_id FROM (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
