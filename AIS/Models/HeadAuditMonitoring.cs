@@ -4,6 +4,11 @@ using System.Linq;
 
 namespace AIS.Models
 {
+    public sealed class HeadAuditReportingDateException : ArgumentException
+    {
+        public HeadAuditReportingDateException(string message) : base(message) { }
+    }
+
     public static class HeadAuditMonitoringPolicy
     {
         public const int PageId = 1000401;
@@ -103,14 +108,15 @@ namespace AIS.Models
     {
         public DateTime? PositionAsOn { get; set; }
         public string Tab { get; set; } = "progress";
-        public const string HistoricalLimitations = "Engagement stages use the latest recorded workflow event by cutoff (Pakistan end of day); missing or ambiguous events are Unknown. History is incomplete; deleted engagements cannot be reconstructed. Approved-plan membership/days, schedules, office/team assignments, observation reviews, task/workpaper and report summaries reflect current saved records, not verified historical values. Plan progress classifies the current approved-plan cohort using available engagement history; unclassified plans are reported separately as unknown history. Review Saved Work shows current saved work.";
+        public const string HistoricalLimitations = "Reconstructed historical position (not a verified historical snapshot): engagement stages use the latest recorded workflow event by cutoff (Pakistan end of day); missing, unsupported or ambiguous events are Unknown / Historical Data Unavailable. History is incomplete; deleted engagements cannot be reconstructed. Current-state information: approved-plan membership/days, schedules, office/team assignments, observation reviews, task/workpaper and report summaries reflect current saved records, not verified historical values. Plan progress classifies the current approved-plan cohort using available engagement history; unclassified plans are reported separately as unknown history. Review Saved Work shows current saved work.";
         public static DateTime ReportingDate(AuditPeriodModel period, DateTime? requested, DateTime today)
         {
             if (period == null || period.START_DATE.Date > period.END_DATE.Date) throw new ArgumentException("Select a valid IAS audit period.");
             var last = period.END_DATE.Date < today.Date ? period.END_DATE.Date : today.Date.AddDays(-1);
+            if (last < period.START_DATE.Date) throw new HeadAuditReportingDateException("The selected IAS audit period has no completed eligible day yet (Pakistan time).");
             var date = (requested ?? last).Date;
-            if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > today.Date)
-                throw new ArgumentException("Position as on must be within the audit period and cannot be in the future.");
+            if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > last)
+                throw new HeadAuditReportingDateException("Position as on must be within the selected IAS audit period and no later than yesterday (Pakistan time).");
             return date;
         }
         public List<AuditPeriodModel> Periods { get; set; } = new();

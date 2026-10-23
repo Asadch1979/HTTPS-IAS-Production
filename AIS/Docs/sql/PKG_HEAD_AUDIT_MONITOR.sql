@@ -28,6 +28,8 @@ SELECT DISTINCT d.dept_id,e.eng_id
 /
 
 CREATE OR REPLACE PACKAGE PKG_HEAD_AUDIT_MONITOR AS
+  PROCEDURE P_VALIDATE_SCOPE(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
+    P_CONTEXT_ID NUMBER,P_GROUP_ID NUMBER,P_SESSION_ID VARCHAR2);
   PROCEDURE P_GET_PERIODS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
   PROCEDURE P_GET_PLAN_DETAILS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
@@ -66,9 +68,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
           WHERE c.user_context_id=P_CONTEXT_ID AND c.user_id=u.userid
             AND c.role_id=P_ROLE_ID AND c.entity_id=P_DEPT_ID AND c.is_active='Y'
             AND (c.effective_from IS NULL OR c.effective_from<=SYSDATE)
-            AND (c.effective_to IS NULL OR c.effective_to>=TRUNC(SYSDATE))))
+            AND (c.effective_to IS NULL OR c.effective_to>=TRUNC(SYSDATE))
+            AND EXISTS (SELECT 1 FROM t_menu_pages mp
+              JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+              JOIN t_groups g ON g.group_id=mpg.group_id AND g.role_id=P_ROLE_ID AND g.status='Y'
+              WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=NVL(c.group_id,c.role_id))))
          OR (P_CONTEXT_ID IS NULL AND u.entity_id=P_DEPT_ID AND EXISTS (
-           SELECT 1 FROM t_user_maping m WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID)))
+           SELECT 1 FROM t_user_maping m WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID
+             AND EXISTS (SELECT 1 FROM t_menu_pages mp
+               JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+               JOIN t_groups g ON g.group_id=mpg.group_id AND g.role_id=P_ROLE_ID AND g.status='Y'
+               WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=m.group_id))))
        AND EXISTS (SELECT 1 FROM v_exec_entity_scope sc WHERE sc.entity_id=P_DEPT_ID);
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20151,'Unauthorized Head audit department context.'); END IF;
     IF P_ENG_ID IS NOT NULL THEN
@@ -76,6 +86,28 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
        WHERE dept_id=P_DEPT_ID AND eng_id=P_ENG_ID;
       IF n<>1 THEN RAISE_APPLICATION_ERROR(-20152,'Engagement outside authorized ongoing audit portfolio.'); END IF;
     END IF;
+  END;
+
+  PROCEDURE P_VALIDATE_SCOPE(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
+    P_CONTEXT_ID NUMBER,P_GROUP_ID NUMBER,P_SESSION_ID VARCHAR2) AS n NUMBER;
+  BEGIN
+    REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
+    SELECT COUNT(*) INTO n FROM t_user_session s JOIN t_user u ON u.ppno=s.user_pp_number
+      WHERE u.userid=P_USER_ID AND s.session_id=P_SESSION_ID AND s.session_active='Y'
+        AND s.logged_out_date IS NULL AND s.role_id=P_ROLE_ID
+        AND s.entity_id=P_DEPT_ID AND s.group_id=P_GROUP_ID;
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20154,'Inactive Head audit session.'); END IF;
+    SELECT COUNT(*) INTO n FROM t_user u WHERE u.userid=P_USER_ID
+      AND EXISTS (SELECT 1 FROM t_groups g WHERE g.group_id=P_GROUP_ID
+        AND g.role_id=P_ROLE_ID AND g.status='Y') AND
+      ((P_CONTEXT_ID IS NOT NULL AND EXISTS (SELECT 1 FROM t_user_context_assignment c
+        WHERE c.user_context_id=P_CONTEXT_ID AND c.user_id=u.userid
+          AND NVL(c.group_id,c.role_id)=P_GROUP_ID))
+       OR (P_CONTEXT_ID IS NULL AND EXISTS (SELECT 1 FROM t_user_maping m
+        WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID AND m.group_id=P_GROUP_ID)))
+      AND EXISTS (SELECT 1 FROM t_menu_pages mp JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+        WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=P_GROUP_ID);
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20151,'Head audit assignment or page allocation changed.'); END IF;
   END;
 
   PROCEDURE REQUIRE_PERIOD(P_PERIOD_ID NUMBER) AS n NUMBER;
@@ -89,7 +121,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     IF P_AS_OF IS NULL THEN RETURN; END IF;
     SELECT COUNT(*) INTO n FROM t_au_period p WHERE p.auditperiodid=P_PERIOD_ID
       AND TRUNC(P_AS_OF) BETWEEN TRUNC(p.start_date) AND TRUNC(p.end_date)
-      AND TRUNC(P_AS_OF)<=TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE));
+      AND TRUNC(P_AS_OF)<TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE));
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20153,'Invalid reporting cutoff.'); END IF;
   END;
 
@@ -117,7 +149,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
       FROM t_au_plan p LEFT JOIN t_auditee_entities a ON a.entity_id=p.entity_id
       LEFT JOIN (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -136,7 +169,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
 
   -- Current approved-plan cohort classified by cutoff workflow evidence, not a complete historical snapshot.
   -- Plan entries: T_AU_PLAN statuses 1/2 plus status 4 assigned by P_ApproveAuditEngagementPlan.
-  -- Completed: current engagement status 14, written by PKG_HD at conclusion.
+  -- Completed at cutoff: recorded status 14 with AUDIT CONCLUDED evidence.
+  -- NULL cutoff retains the legacy current-state contract for existing Oracle callers.
   -- 12 = Draft Report, 13 = Issue Final Report (PKG_HD dashboard labels).
   -- Neither 12 nor 13 is counted as completed; pending reports counts engagements,
   -- not report versions. Active engagement stages 4..13; active teams use 4..11.
@@ -156,7 +190,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
       ), engagements AS (
         SELECT e.* FROM (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -233,7 +268,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
           WITHIN GROUP(ORDER BY r.report_version) FROM t_frpt_report_meta r WHERE r.eng_id=e.eng_id) END report_status
        FROM v_head_audit_eng_scope sc JOIN (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
@@ -267,7 +303,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     REQUIRE_CUTOFF(P_PERIOD_ID,P_AS_OF);
     OPEN IO_CURSOR FOR SELECT DISTINCT e.team_id FROM (SELECT master.*,
           CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
-            (SELECT CASE WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+            (SELECT CASE WHEN l.status_id NOT BETWEEN 1 AND 14 THEN NULL
+                         WHEN l.status_id=10 OR UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
                          WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
                          ELSE l.status_id END
                FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id

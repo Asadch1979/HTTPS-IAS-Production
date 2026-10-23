@@ -28,16 +28,16 @@ namespace AIS.Controllers
 
         private IActionResult Read(Func<IActionResult> action, bool api = false, bool includeMenus = true)
         {
-            if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
-            permissions.EnsurePermissionsCached(user);
-            if (!HeadAuditMonitoringPolicy.IsEligible(user) ||
-                !session.TryGetAllowedViewIds(out var pages) ||
-                !pages.Contains(HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);
-            if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))
-                return StatusCode(403);
-            if (!ModelState.IsValid) return BadRequest();
             try
             {
+                if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
+                permissions.EnsurePermissionsCached(user);
+                if (!HeadAuditMonitoringPolicy.IsEligible(user) ||
+                    !session.TryGetAllowedViewIds(out var pages) ||
+                    !pages.Contains(HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);
+                if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))
+                    return StatusCode(403);
+                if (!ModelState.IsValid) return BadRequest();
                 if (!api && includeMenus)
                 {
                     ViewData["TopMenu"] = menus.GetTopMenus();
@@ -51,7 +51,9 @@ namespace AIS.Controllers
                 return action();
             }
             catch (OracleException ex) when (ex.Number == 20151 || ex.Number == 20152) { return StatusCode(403); }
-            catch (OracleException ex) when (ex.Number == 20153) { return BadRequest("Select a valid IAS audit period."); }
+            catch (OracleException ex) when (ex.Number == 20154) { return Unauthorized(); }
+            catch (OracleException ex) when (ex.Number == 20153) { return BadRequest("Select a valid IAS audit period and a completed reporting day (no later than Pakistan yesterday)."); }
+            catch (HeadAuditReportingDateException ex) { return BadRequest(ex.Message); }
             catch (ArgumentException) { return BadRequest("Invalid dashboard filters."); }
             catch (UnauthorizedAccessException) { return StatusCode(403); }
             catch (AIS.Session.UnauthenticatedException) { return Unauthorized(); }
@@ -72,7 +74,7 @@ namespace AIS.Controllers
             int? statusId = null, string exception = null, DateTime? positionAsOn = null, string tab = "progress", bool checkOnly = false) => Read(() =>
         {
             if (!new[] { "progress", "details", "exceptions", "register" }.Contains(tab)) return BadRequest();
-            if (checkOnly) return NoContent(); // Recheck session/page permission before displaying a cached tab.
+            // Legacy checkOnly callers also execute the full Oracle-authorized read.
             return View("~/Views/Shared/EngagementWorkbench.cshtml",
                 database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, tab));
         }, includeMenus: !checkOnly);

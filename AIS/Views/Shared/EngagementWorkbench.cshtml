@@ -22,7 +22,7 @@
         <div><label for="head-period">Audit Period</label><select id="head-period" name="auditPeriodId" required>
             <option value="">Select an audit period</option>
             @foreach (var period in Model.Periods) { <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.AuditPeriodId)">@period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))</option> }
-        </select></div><div><label for="head-position">Position as on</label><input id="head-position" type="date" name="positionAsOn" value="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" min="@selectedPeriod?.START_DATE.ToString("yyyy-MM-dd")" max="@((selectedPeriod?.END_DATE.Date < AIS.Models.AuditParaSnapPolicy.Today ? selectedPeriod.END_DATE.Date : AIS.Models.AuditParaSnapPolicy.Today).ToString("yyyy-MM-dd"))" /></div><button type="submit" class="wb-table-action">Apply period</button>
+        </select></div><div><label for="head-position">Position as on</label><input id="head-position" type="date" name="positionAsOn" value="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" min="@selectedPeriod?.START_DATE.ToString("yyyy-MM-dd")" max="@((selectedPeriod?.END_DATE.Date < AIS.Models.AuditParaSnapPolicy.Today ? selectedPeriod.END_DATE.Date : AIS.Models.AuditParaSnapPolicy.Today.AddDays(-1)).ToString("yyyy-MM-dd"))" /></div><button type="submit" class="wb-table-action">Apply period</button>
     </form>
     @if (!Model.AuditPeriodId.HasValue)
     {

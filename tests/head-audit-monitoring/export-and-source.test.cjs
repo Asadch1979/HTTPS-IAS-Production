@@ -54,3 +54,14 @@ test('unrelated dashboards, exact para eligibility, and shared Super User export
         assert.equal(read(file), execFileSync('git', ['show', 'fa64939f:' + file], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n'), file);
     }
 });
+
+test('security paths require current Oracle session, assignment, page and cutoff checks', () => {
+    const db=read('AIS/DBConnection.HeadAuditMonitoring.cs'), sql=read('AIS/Docs/sql/PKG_HEAD_AUDIT_MONITOR.sql'), mvc=read('AIS/Controllers/HeadAuditDepartmentController.cs');
+    assert.ok(!mvc.includes('return NoContent()'));
+    assert.ok(db.indexOf('ValidateHeadAuditScope(connection, user)') < db.indexOf('command.ExecuteReader()'));
+    assert.ok(db.indexOf('ValidateHeadAuditScope(connection, current)') > db.indexOf('command.ExecuteReader()'));
+    for(const clause of ["s.session_id=P_SESSION_ID", "s.session_active='Y'", 's.group_id=P_GROUP_ID', 'mp.id=1000401', 'mpg.group_id=NVL(c.group_id,c.role_id)', 'mpg.group_id=m.group_id']) assert.ok(sql.includes(clause),clause);
+    assert.ok(sql.includes("AND TRUNC(P_AS_OF)<TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))"));
+    assert.ok(mvc.includes('ex.Number == 20154) { return Unauthorized(); }'));
+    assert.ok(sql.includes('IF P_AS_OF IS NULL THEN RETURN; END IF;'),'Legacy optional-cutoff contract');
+});
