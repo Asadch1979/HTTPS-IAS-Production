@@ -66,9 +66,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
           WHERE c.user_context_id=P_CONTEXT_ID AND c.user_id=u.userid
             AND c.role_id=P_ROLE_ID AND c.entity_id=P_DEPT_ID AND c.is_active='Y'
             AND (c.effective_from IS NULL OR c.effective_from<=SYSDATE)
-            AND (c.effective_to IS NULL OR c.effective_to>=TRUNC(SYSDATE))))
+            AND (c.effective_to IS NULL OR c.effective_to>=TRUNC(SYSDATE))
+            AND EXISTS (SELECT 1 FROM t_menu_pages mp
+              JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+              JOIN t_groups g ON g.group_id=mpg.group_id AND g.role_id=P_ROLE_ID AND g.status='Y'
+              WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=NVL(c.group_id,c.role_id))))
          OR (P_CONTEXT_ID IS NULL AND u.entity_id=P_DEPT_ID AND EXISTS (
-           SELECT 1 FROM t_user_maping m WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID)))
+           SELECT 1 FROM t_user_maping m WHERE m.userid=u.userid AND m.role_id=P_ROLE_ID
+             AND EXISTS (SELECT 1 FROM t_menu_pages mp
+               JOIN t_menu_pages_groupmap mpg ON mpg.page_id=mp.id
+               JOIN t_groups g ON g.group_id=mpg.group_id AND g.role_id=P_ROLE_ID AND g.status='Y'
+               WHERE mp.id=1000401 AND mp.status='A' AND mpg.group_id=m.group_id))))
        AND EXISTS (SELECT 1 FROM v_exec_entity_scope sc WHERE sc.entity_id=P_DEPT_ID);
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20151,'Unauthorized Head audit department context.'); END IF;
     IF P_ENG_ID IS NOT NULL THEN

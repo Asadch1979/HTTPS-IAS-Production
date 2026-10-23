@@ -28,6 +28,8 @@ namespace AIS.Controllers
 
         private IActionResult Read(Func<IActionResult> action, bool api = false, bool includeMenus = true)
         {
+            try
+            {
             if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
             permissions.EnsurePermissionsCached(user);
             if (!HeadAuditMonitoringPolicy.IsEligible(user) ||
@@ -36,8 +38,6 @@ namespace AIS.Controllers
             if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))
                 return StatusCode(403);
             if (!ModelState.IsValid) return BadRequest();
-            try
-            {
                 if (!api && includeMenus)
                 {
                     ViewData["TopMenu"] = menus.GetTopMenus();

@@ -46,7 +46,7 @@ namespace AIS.Controllers
             var current = session.GetUserOrThrow();
             if (session.IsSessionRevoked(current) || current.ID != user.ID || current.SessionId != user.SessionId ||
                 current.UserContextAssignmentId != user.UserContextAssignmentId || current.UserRoleID != user.UserRoleID ||
-                current.UserEntityID != user.UserEntityID) throw new UnauthenticatedException();
+                current.UserEntityID != user.UserEntityID || current.UserGroupID != user.UserGroupID) throw new UnauthenticatedException();
             return rows;
         }
 
