@@ -26,3 +26,5 @@ Checkpoint dbaa44f3: reporting date. Tab checkpoint: conditional server renderin
 Plan totals implemented: group by PlanId, count each planned-day value once, report unavailable if missing/conflicting. Distinct engagements are a separate count. Next: exports; focused total tests pending.
 
 Checkpoints: 4ede1fb1 tabs; ea3477b4 plan totals. Excel exports implemented for all five dashboard tables using local ExcelJS and rendered data only, with metadata, typed cells, total rows, widths and formula-text neutralization. Shared Super User exports untouched. JS syntax and application build passed. Next: secure View Para correction.
+
+Checkpoint fc1bdf26 exports. View Para correction: allowlist display sanitizer, active-content removal, safe formatted HTML response, HM-style wide read-only document dialog, existing secured retrieval and cancellation preserved. Build passed; next: focused sanitizer/security/export/tab tests and regression fixes.
