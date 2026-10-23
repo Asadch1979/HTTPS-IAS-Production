@@ -21,7 +21,7 @@
         <div><label for="head-period">Audit Period</label><select id="head-period" name="auditPeriodId" required>
             <option value="">Select an audit period</option>
             @foreach (var period in Model.Periods) { <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.AuditPeriodId)">@period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))</option> }
-        </select></div><button type="submit" class="wb-table-action">Apply period</button>
+        </select></div><div><label for="head-position">Position as on</label><input id="head-position" type="date" name="positionAsOn" value="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" min="@selectedPeriod?.START_DATE.ToString("yyyy-MM-dd")" max="@((selectedPeriod?.END_DATE.Date < AIS.Models.AuditParaSnapPolicy.Today ? selectedPeriod.END_DATE.Date : AIS.Models.AuditParaSnapPolicy.Today).ToString("yyyy-MM-dd"))" /></div><button type="submit" class="wb-table-action">Apply period</button>
     </form>
     @if (!Model.AuditPeriodId.HasValue)
     {
@@ -29,7 +29,8 @@
     }
     else
     {
-    <p class="wb-period-note">@Value(selectedPeriod?.DESCRIPTION) · Current position for engagements assigned to this audit period, as of @AIS.Models.AuditParaSnapPolicy.Today.ToString("dd MMM yyyy") (Pakistan). This is not a historical completion-date report.</p>
+    <p class="wb-period-note">@Value(selectedPeriod?.DESCRIPTION) · Position as on @Model.PositionAsOn?.ToString("dd MMM yyyy") (Pakistan, end of day).</p>
+    <p class="wb-period-note">@AIS.Models.HeadAuditDashboard.HistoricalLimitations</p>
     <div class="wb-kpis" aria-label="Office executive KPIs">
         <article class="wb-stat wb-stat-blue"><span>Planned Audits</span><strong>@total.Planned.ToString("N0")</strong><small>Approved plan entries, not distinct entities</small></article>
         <article class="wb-stat wb-stat-teal"><span>Audits Completed</span><strong>@total.Completed.ToString("N0")</strong><small>Concluded engagements · @total.CompletedPlans completed plan entries</small></article>
@@ -71,7 +72,7 @@
     </section>
     <section class="wb-overview" aria-labelledby="register-title"><div class="wb-section-heading"><h2 id="register-title">Engagement register</h2></div>
         <form class="wb-dashboard-filters" method="get" action="@Url.Action("AuditTeamsMonitoring")">
-            <input type="hidden" name="auditPeriodId" value="@Model.AuditPeriodId" />
+            <input type="hidden" name="positionAsOn" value="@Model.PositionAsOn?.ToString("yyyy-MM-dd")" /><input type="hidden" name="auditPeriodId" value="@Model.AuditPeriodId" />
             @if (Model.Offices.Count > 1) { <div><label for="head-office">Register audit office</label><select id="head-office" name="officeId"><option value="">All authorized offices</option>
                 @foreach (var office in Model.Offices) { <option value="@office.OfficeId" selected="@(office.OfficeId == Model.OfficeId)">@office.Office</option> }</select></div> }
             <div><label for="head-status">Register status</label><select id="head-status" name="statusId"><option value="">All stages</option>
@@ -88,7 +89,7 @@
                     <td>@Value(e.Period)<small>@(e.Start?.ToString("dd MMM yyyy") ?? "Not recorded") – @(e.End?.ToString("dd MMM yyyy") ?? "Not recorded")</small></td>
                     <td><span class="wb-state-badge">@Value(e.Status)</span><small>@Value(e.TaskProgress)</small><small>@Value(e.WorkpaperProgress)</small></td>
                     <td>@e.AwaitingReview awaiting review<small>@Value(e.ReportStatus)</small><small>@e.PendingAction</small></td>
-                    <td><a class="wb-table-action" href="@Url.Action("Review", new { engId=e.EngagementId, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception })">Review saved work →</a></td></tr>
+                    <td><a class="wb-table-action" href="@Url.Action("Review", new { engId=e.EngagementId, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception, positionAsOn=Model.PositionAsOn?.ToString("yyyy-MM-dd") })">Review saved work →</a></td></tr>
             }</tbody></table>
             @if (!Model.Register.Any()) { <p class="wb-lane-empty">No engagements match this authorized period and register selection.</p> }
         </div></div>

@@ -69,6 +69,8 @@ namespace AIS.Models
 
     public sealed class HeadAuditReview
     {
+        public DateTime? PositionAsOn { get; set; }
+        public string Tab { get; set; } = "register";
         public int? AuditPeriodId { get; set; }
         public int? OfficeId { get; set; }
         public int? StatusId { get; set; }
@@ -98,6 +100,17 @@ namespace AIS.Models
 
     public sealed class HeadAuditDashboard
     {
+        public DateTime? PositionAsOn { get; set; }
+        public string Tab { get; set; } = "progress";
+        public const string HistoricalLimitations = "Engagement stages use the latest recorded workflow event by cutoff (Pakistan end of day); missing or ambiguous events are Unknown. History is incomplete; deleted engagements cannot be reconstructed. Approved-plan membership/days, schedules, office/team assignments, observation reviews, task/workpaper and report summaries reflect current saved records, not verified historical values. Plan progress classifies the current approved-plan cohort using available engagement history; unknown history may appear in not yet started. Review Saved Work shows current saved work.";
+        public static DateTime ReportingDate(AuditPeriodModel period, DateTime? requested, DateTime today)
+        {
+            var last = period.END_DATE.Date < today.Date ? period.END_DATE.Date : today.Date.AddDays(-1);
+            var date = (requested ?? last).Date;
+            if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > today.Date)
+                throw new ArgumentException("Position as on must be within the audit period and cannot be in the future.");
+            return date;
+        }
         public List<AuditPeriodModel> Periods { get; set; } = new();
         public int? AuditPeriodId { get; set; }
         public List<HeadAuditOfficeSummary> Offices { get; set; } = new();
@@ -114,7 +127,7 @@ namespace AIS.Models
             AwaitingReview = Offices.Sum(o => o.AwaitingReview)
         };
         public int ActiveTeams => Engagements.Where(e => e.StatusId >= 4 && e.StatusId <= 11 &&
-            (e.OperationStart ?? e.Start)?.Date <= AuditParaSnapPolicy.Today && e.TeamId.HasValue)
+            (e.OperationStart ?? e.Start)?.Date <= (PositionAsOn ?? AuditParaSnapPolicy.Today) && e.TeamId.HasValue)
             .Select(e => e.TeamId).Distinct().Count();
         public IEnumerable<HeadAuditEngagement> Register => Engagements.Where(e =>
             (!OfficeId.HasValue || e.OfficeId == OfficeId) && (!StatusId.HasValue || e.StatusId == StatusId) &&

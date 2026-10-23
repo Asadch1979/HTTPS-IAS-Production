@@ -31,11 +31,11 @@ CREATE OR REPLACE PACKAGE PKG_HEAD_AUDIT_MONITOR AS
   PROCEDURE P_GET_PERIODS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
   PROCEDURE P_GET_PLAN_DETAILS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_AS_OF DATE DEFAULT NULL);
   PROCEDURE P_GET_OFFICE_SUMMARY(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_AS_OF DATE DEFAULT NULL);
   PROCEDURE P_GET_ENGAGEMENTS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_PERIOD_ID NUMBER DEFAULT NULL);
+    P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_PERIOD_ID NUMBER DEFAULT NULL,P_AS_OF DATE DEFAULT NULL);
   PROCEDURE P_GET_WP_COUNTS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
   PROCEDURE P_GET_WORK(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
@@ -80,6 +80,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20153,'Select a valid IAS audit period.'); END IF;
   END;
 
+  PROCEDURE REQUIRE_CUTOFF(P_PERIOD_ID NUMBER,P_AS_OF DATE) AS n NUMBER;
+  BEGIN
+    IF P_AS_OF IS NULL THEN RETURN; END IF;
+    SELECT COUNT(*) INTO n FROM t_au_period p WHERE p.auditperiodid=P_PERIOD_ID
+      AND TRUNC(P_AS_OF) BETWEEN TRUNC(p.start_date) AND TRUNC(p.end_date)
+      AND TRUNC(P_AS_OF)<=TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE));
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20153,'Invalid reporting cutoff.'); END IF;
+  END;
+
   PROCEDURE P_GET_PERIODS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
     P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR) AS
   BEGIN
@@ -89,22 +98,32 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
   END;
 
   PROCEDURE P_GET_PLAN_DETAILS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR) AS
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_AS_OF DATE DEFAULT NULL) AS
   BEGIN
     REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
     REQUIRE_PERIOD(P_PERIOD_ID);
+    REQUIRE_CUTOFF(P_PERIOD_ID,P_AS_OF);
     OPEN IO_CURSOR FOR
       -- Retain approved plans with no engagement. A plan with several saved
       -- engagements has one detail row per engagement; KPI plan IDs count once.
       SELECT p.id plan_id,e.eng_id,a.name entity_name,p.no_of_days,
-        e.audit_startdate,e.audit_enddate,e.team_name,s.status stage,
-        CASE WHEN e.status=14 THEN 'Completed'
-             WHEN e.status BETWEEN 4 AND 13 THEN 'InProgress' ELSE 'Planned' END plan_status
+        e.audit_startdate,e.audit_enddate,e.team_name,NVL(s.status,'Unknown (history unavailable)') stage,
+        CASE WHEN e.position_status=14 THEN 'Completed'
+             WHEN e.position_status BETWEEN 4 AND 13 THEN 'InProgress' WHEN e.eng_id IS NOT NULL AND e.position_status IS NULL THEN 'Unknown history' ELSE 'Planned' END plan_status
       FROM t_au_plan p LEFT JOIN t_auditee_entities a ON a.entity_id=p.entity_id
-      LEFT JOIN t_au_plan_eng e ON e.plan_id=p.id AND e.auditby_id=p.auditedby
+      LEFT JOIN (SELECT master.*,
+          CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
+            (SELECT CASE WHEN UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+                         WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
+                         ELSE l.status_id END
+               FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
+                 AND NVL(l.last_updated_on,l.created_on) < TRUNC(P_AS_OF)+1
+               ORDER BY NVL(l.last_updated_on,l.created_on) DESC,l.id DESC
+               FETCH FIRST 1 ROW ONLY) END position_status
+          FROM t_au_plan_eng master) e ON e.plan_id=p.id AND e.auditby_id=p.auditedby
         AND e.period_id=P_PERIOD_ID AND EXISTS (SELECT 1 FROM v_head_audit_eng_scope sc
           WHERE sc.dept_id=P_DEPT_ID AND sc.eng_id=e.eng_id)
-      LEFT JOIN t_au_plan_eng_status s ON s.id=e.status
+      LEFT JOIN t_au_plan_eng_status s ON s.id=e.position_status
       WHERE p.auditperiodid=P_PERIOD_ID AND p.status IN (1,2,4)
         AND EXISTS (SELECT 1 FROM v_head_audit_office_scope sc
           WHERE sc.dept_id=P_DEPT_ID AND sc.office_id=p.auditedby)
@@ -122,23 +141,33 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
   -- auditee entities are separate and must never be summed across office rows.
   -- Delays use only recorded AUDIT_ENDDATE; no invented report SLA/date.
   PROCEDURE P_GET_OFFICE_SUMMARY(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR) AS
+    P_CONTEXT_ID NUMBER,P_PERIOD_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_AS_OF DATE DEFAULT NULL) AS
   BEGIN
     REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
     REQUIRE_PERIOD(P_PERIOD_ID);
+    REQUIRE_CUTOFF(P_PERIOD_ID,P_AS_OF);
     OPEN IO_CURSOR FOR
       WITH offices AS (
         SELECT office_id FROM v_head_audit_office_scope WHERE dept_id=P_DEPT_ID
       ), engagements AS (
-        SELECT e.* FROM t_au_plan_eng e
+        SELECT e.* FROM (SELECT master.*,
+          CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
+            (SELECT CASE WHEN UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+                         WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
+                         ELSE l.status_id END
+               FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
+                 AND NVL(l.last_updated_on,l.created_on) < TRUNC(P_AS_OF)+1
+               ORDER BY NVL(l.last_updated_on,l.created_on) DESC,l.id DESC
+               FETCH FIRST 1 ROW ONLY) END position_status
+          FROM t_au_plan_eng master) e
          WHERE e.period_id=P_PERIOD_ID AND EXISTS
           (SELECT 1 FROM offices o WHERE o.office_id=e.auditby_id)
       ), plans AS (
         SELECT p.id,p.entity_id,p.auditedby office_id,
           CASE WHEN EXISTS (SELECT 1 FROM engagements e WHERE e.plan_id=p.id
-            AND e.auditby_id=p.auditedby AND e.status=14) THEN 1 ELSE 0 END done,
+            AND e.auditby_id=p.auditedby AND e.position_status=14) THEN 1 ELSE 0 END done,
           CASE WHEN EXISTS (SELECT 1 FROM engagements e WHERE e.plan_id=p.id
-            AND e.auditby_id=p.auditedby AND e.status BETWEEN 4 AND 13) THEN 1 ELSE 0 END ongoing
+            AND e.auditby_id=p.auditedby AND e.position_status BETWEEN 4 AND 13) THEN 1 ELSE 0 END ongoing
         FROM t_au_plan p WHERE p.auditperiodid=P_PERIOD_ID AND p.status IN (1,2,4)
           AND EXISTS (SELECT 1 FROM offices o WHERE o.office_id=p.auditedby)
       ), plan_totals AS (
@@ -148,11 +177,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
         FROM plans GROUP BY office_id
       ), engagement_totals AS (
         SELECT e.auditby_id office_id,
-          COUNT(CASE WHEN e.status=14 THEN 1 END) completed,
-          COUNT(CASE WHEN e.status BETWEEN 4 AND 13 THEN 1 END) ongoing,
-          COUNT(CASE WHEN e.status BETWEEN 4 AND 13 AND e.audit_enddate <
-            TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) THEN 1 END) delayed,
-          COUNT(CASE WHEN e.status IN (12,13) THEN 1 END) pending_reports,
+          COUNT(CASE WHEN e.position_status=14 THEN 1 END) completed,
+          COUNT(CASE WHEN e.position_status BETWEEN 4 AND 13 THEN 1 END) ongoing,
+          COUNT(CASE WHEN e.position_status BETWEEN 4 AND 13 AND e.audit_enddate <
+            NVL(TRUNC(P_AS_OF),TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))) THEN 1 END) delayed,
+          COUNT(CASE WHEN e.position_status IN (12,13) THEN 1 END) pending_reports,
           SUM((SELECT COUNT(*) FROM t_au_observation ob WHERE ob.engplanid=e.eng_id AND ob.status=3)) awaiting_review
         FROM engagements e GROUP BY e.auditby_id
       )
@@ -169,17 +198,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
   END;
 
   PROCEDURE P_GET_ENGAGEMENTS(P_USER_ID NUMBER,P_ROLE_ID NUMBER,P_DEPT_ID NUMBER,
-    P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_PERIOD_ID NUMBER DEFAULT NULL) AS
+    P_CONTEXT_ID NUMBER,IO_CURSOR OUT SYS_REFCURSOR,P_PERIOD_ID NUMBER DEFAULT NULL,P_AS_OF DATE DEFAULT NULL) AS
   BEGIN
     REQUIRE_SCOPE(P_USER_ID,P_ROLE_ID,P_DEPT_ID,P_CONTEXT_ID);
     IF P_PERIOD_ID IS NOT NULL THEN REQUIRE_PERIOD(P_PERIOD_ID); END IF;
+    REQUIRE_CUTOFF(P_PERIOD_ID,P_AS_OF);
     OPEN IO_CURSOR FOR
       SELECT e.eng_id,e.team_id,e.auditby_id office_id,e.period_id,e.operation_startdate,
         ent.name entity_name,NVL(d.deptname,office.name) department_name,
-        e.team_name,p.description audit_period,e.status status_id,s.status status_name,
+        e.team_name,p.description audit_period,NVL(e.position_status,-1) status_id,NVL(s.status,'Unknown (history unavailable)') status_name,
         (SELECT LISTAGG(m.member_name||CASE WHEN m.isteamlead='Y' THEN ' (Lead)' END, '; ' ON OVERFLOW TRUNCATE)
            WITHIN GROUP(ORDER BY m.isteamlead DESC,m.member_name) FROM t_au_team_members m WHERE m.t_id=e.team_id) team_members,
-        e.audit_startdate,e.audit_enddate,TRUNC(e.audit_enddate)-TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) days_to_end,
+        e.audit_startdate,e.audit_enddate,TRUNC(e.audit_enddate)-NVL(TRUNC(P_AS_OF),TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))) days_to_end,
         (SELECT COUNT(*) FROM t_au_observation o WHERE o.engplanid=e.eng_id AND o.status=3) awaiting_review,
         (SELECT LISTAGG(status_label||': '||cnt,'; ') WITHIN GROUP(ORDER BY status_id)
            FROM (SELECT t.eng_plan_id,t.status_id,NVL(ts.description,TO_CHAR(t.status_id)) status_label,COUNT(*) cnt
@@ -194,14 +224,23 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
         (SELECT COUNT(*) FROM t_audit_reports r WHERE r.eng_id=e.eng_id) report_count,
         (SELECT LISTAGG('v'||r.report_version||': '||r.report_status,'; ' ON OVERFLOW TRUNCATE)
           WITHIN GROUP(ORDER BY r.report_version) FROM t_frpt_report_meta r WHERE r.eng_id=e.eng_id) report_status
-       FROM v_head_audit_eng_scope sc JOIN t_au_plan_eng e ON e.eng_id=sc.eng_id
+       FROM v_head_audit_eng_scope sc JOIN (SELECT master.*,
+          CASE WHEN P_AS_OF IS NULL THEN master.status ELSE
+            (SELECT CASE WHEN UPPER(l.remarks) LIKE '%REVERS%' THEN NULL
+                         WHEN l.status_id=14 AND NVL(UPPER(TRIM(l.remarks)),'?') <> 'AUDIT CONCLUDED' THEN NULL
+                         ELSE l.status_id END
+               FROM t_au_plan_eng_log l WHERE l.e_id=master.eng_id
+                 AND NVL(l.last_updated_on,l.created_on) < TRUNC(P_AS_OF)+1
+               ORDER BY NVL(l.last_updated_on,l.created_on) DESC,l.id DESC
+               FETCH FIRST 1 ROW ONLY) END position_status
+          FROM t_au_plan_eng master) e ON e.eng_id=sc.eng_id
        LEFT JOIN t_auditee_entities ent ON ent.entity_id=e.entity_id
        LEFT JOIN (SELECT entity_id, MAX(deptname) deptname
                     FROM t_audit_departments GROUP BY entity_id) d
          ON d.entity_id=e.auditby_id
        LEFT JOIN t_auditee_entities office ON office.entity_id=e.auditby_id
        LEFT JOIN t_au_period p ON p.auditperiodid=e.period_id
-       LEFT JOIN t_au_plan_eng_status s ON s.id=e.status
+       LEFT JOIN t_au_plan_eng_status s ON s.id=e.position_status
       WHERE sc.dept_id=P_DEPT_ID AND (P_PERIOD_ID IS NULL OR e.period_id=P_PERIOD_ID) ORDER BY e.audit_enddate NULLS LAST,e.eng_id;
   END;
 

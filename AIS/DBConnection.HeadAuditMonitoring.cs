@@ -13,7 +13,7 @@ namespace AIS.Controllers
         // No department, role or PPNO can be supplied by the browser. Oracle independently
         // rechecks the active IAS assignment and the authorized entity hierarchy.
         private List<T> ReadHeadAudit<T>(string procedure, Func<OracleDataReader, T> map,
-            long? engagementId = null, string section = null, long? evidenceId = null, int? periodId = null)
+            long? engagementId = null, string section = null, long? evidenceId = null, int? periodId = null, DateTime? positionAsOn = null)
         {
             var session = CreateSessionHandler();
             var user = session.GetUserOrThrow();
@@ -35,6 +35,7 @@ namespace AIS.Controllers
             if (section != null) command.Parameters.Add("P_SECTION", OracleDbType.Varchar2).Value = section;
             if (evidenceId.HasValue) command.Parameters.Add("P_EVIDENCE_ID", OracleDbType.Int64).Value = evidenceId.Value;
             if (periodId.HasValue) command.Parameters.Add("P_PERIOD_ID", OracleDbType.Int32).Value = periodId.Value;
+            if (positionAsOn.HasValue) command.Parameters.Add("P_AS_OF", OracleDbType.Date).Value = positionAsOn.Value.Date;
             command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             var rows = new List<T>();
             using var reader = command.ExecuteReader();
@@ -46,7 +47,7 @@ namespace AIS.Controllers
             return rows;
         }
 
-        internal List<HeadAuditEngagement> GetHeadAuditEngagements(int? periodId = null)
+        internal List<HeadAuditEngagement> GetHeadAuditEngagements(int? periodId = null, DateTime? positionAsOn = null)
         {
             var engagements = ReadHeadAudit("P_GET_ENGAGEMENTS", r => new HeadAuditEngagement
             {
@@ -61,7 +62,7 @@ namespace AIS.Controllers
             DaysToEnd = RoleNullableInt(r, "DAYS_TO_END"), AwaitingReview = RoleLong(r, "AWAITING_REVIEW"),
             TaskProgress = RoleText(r, "TASK_PROGRESS"), ObservationCounts = RoleText(r, "OBSERVATION_COUNTS"),
             Reports = RoleLong(r, "REPORT_COUNT"), ReportStatus = RoleText(r, "REPORT_STATUS")
-            }, periodId: periodId);
+            }, periodId: periodId, positionAsOn: positionAsOn);
             var counts = ReadHeadAudit("P_GET_WP_COUNTS", r => new
             {
                 EngId = RoleLong(r, "ENG_ID"), Review = RoleNullableLong(r, "AWAITING_REVIEW"),
@@ -76,7 +77,7 @@ namespace AIS.Controllers
             return engagements;
         }
 
-        internal HeadAuditDashboard GetHeadAuditDashboard(int? auditPeriodId, int? officeId, int? statusId, string exception)
+        internal HeadAuditDashboard GetHeadAuditDashboard(int? auditPeriodId, int? officeId, int? statusId, string exception, DateTime? positionAsOn = null)
         {
             if (!HeadAuditDashboard.ValidException(exception) || auditPeriodId <= 0 || officeId <= 0 || statusId < 0)
                 throw new ArgumentException("Invalid dashboard filters.");
@@ -95,6 +96,7 @@ namespace AIS.Controllers
                 if (officeId.HasValue) throw new UnauthorizedAccessException();
                 return result;
             }
+            result.PositionAsOn = HeadAuditDashboard.ReportingDate(periods.Single(p => p.AUDITPERIODID == selected), positionAsOn, AuditParaSnapPolicy.Today);
             result.Offices = ReadHeadAudit("P_GET_OFFICE_SUMMARY", r => new HeadAuditOfficeSummary {
                 OfficeId=RoleRequiredInt(r,"OFFICE_ID"), Office=RoleText(r,"OFFICE_NAME"),
                 Planned=RoleLong(r,"PLANNED"), PlannedEntities=RoleLong(r,"PLANNED_ENTITIES"),
@@ -102,16 +104,16 @@ namespace AIS.Controllers
                 NotStarted=RoleLong(r,"NOT_STARTED"), Completed=RoleLong(r,"COMPLETED"),
                 Ongoing=RoleLong(r,"ONGOING"), Delayed=RoleLong(r,"DELAYED"),
                 PendingReports=RoleLong(r,"PENDING_REPORTS"), AwaitingReview=RoleLong(r,"AWAITING_REVIEW")
-            }, periodId:selected);
+            }, periodId:selected, positionAsOn:result.PositionAsOn);
             if (officeId.HasValue && !result.Offices.Any(o => o.OfficeId == officeId))
                 throw new UnauthorizedAccessException();
-            result.Engagements = GetHeadAuditEngagements(selected);
+            result.Engagements = GetHeadAuditEngagements(selected, result.PositionAsOn);
             result.Plans = ReadHeadAudit("P_GET_PLAN_DETAILS", r => new HeadAuditPlanDetail {
                 PlanId=RoleLong(r,"PLAN_ID"), EngagementId=RoleNullableLong(r,"ENG_ID"),
                 Entity=RoleText(r,"ENTITY_NAME"), Days=RoleNullableInt(r,"NO_OF_DAYS"),
                 Start=RoleDate(r,"AUDIT_STARTDATE"), End=RoleDate(r,"AUDIT_ENDDATE"),
                 Team=RoleText(r,"TEAM_NAME"), Stage=RoleText(r,"STAGE"), Status=RoleText(r,"PLAN_STATUS")
-            }, periodId:selected);
+            }, periodId:selected, positionAsOn:result.PositionAsOn);
             return result;
         }
 

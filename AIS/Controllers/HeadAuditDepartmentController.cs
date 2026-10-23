@@ -63,12 +63,12 @@ namespace AIS.Controllers
 
         [HttpGet]
         public IActionResult AuditTeamsMonitoring(int? auditPeriodId = null, int? officeId = null,
-            int? statusId = null, string exception = null) => Read(() =>
-            View("~/Views/Shared/EngagementWorkbench.cshtml", database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception)));
+            int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
+            View("~/Views/Shared/EngagementWorkbench.cshtml", database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn)));
 
         [HttpGet]
         public IActionResult Review(long engId, string section = "Plan", int? auditPeriodId = null,
-            int? officeId = null, int? statusId = null, string exception = null) => Read(() =>
+            int? officeId = null, int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
         {
             if (engId <= 0 || !HeadAuditMonitoringPolicy.Sections.Contains(section)) return BadRequest();
             if (new[] { "Plan", "Criteria", "Team" }.Contains(section)) section = "Tasks";
@@ -78,21 +78,21 @@ namespace AIS.Controllers
                 if (saved == null) return StatusCode(403);
                 auditPeriodId = saved.PeriodId;
             }
-            var dashboard = database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception);
+            var dashboard = database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn);
             var engagement = dashboard.Engagements.SingleOrDefault(e => e.EngagementId == engId);
             if (engagement == null) return StatusCode(403);
             return View("~/Views/HeadAuditDepartment/Review.cshtml", new HeadAuditReview
             {
                 Engagement = engagement, Section = section, Records = database.GetHeadAuditWork(engId, section),
                 Plans = dashboard.Plans.Where(p => p.EngagementId == engId).ToList(),
-                AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
+                PositionAsOn=dashboard.PositionAsOn, AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
             });
         });
 
         [HttpGet("/api/HeadAuditDepartment/Engagements")]
         public IActionResult Engagements(int? auditPeriodId = null, int? officeId = null,
-            int? statusId = null, string exception = null) => Read(() =>
-            Json(database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception).Register), api: true);
+            int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
+            Json(database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn).Register), api: true);
 
         [HttpGet("/api/HeadAuditDepartment/Work")]
         public IActionResult Work(long engId, string section = "Plan") => Read(() =>
