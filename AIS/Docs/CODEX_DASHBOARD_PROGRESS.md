@@ -3,6 +3,7 @@
 ## Working state
 - Worktree: `C:/Users/Asad/.codex/worktrees/cia-snap-enhancements/HTTPS-IAS-Production`
 - Branch: `codex/cia-snap-enhancements`, based on verified GitHub main `8f18681f2c9d795b7c92fcf854191f7c578aa9ef`.
+- Source/QA checkpoint: `d566a76845f2b0371237ef1c4369486a357570a2`. Final documentation is a subsequent commit; inspect `git log -1` for the current HEAD before resuming.
 - Original checkout has pre-existing SQL/obj/.vs changes. Leave it untouched.
 - Git shell cannot resolve github.com. Imported the two missing upstream commits using connected GitHub data; verified exact blob, tree and commit SHA hashes before advancing feature branch. No remote mutation.
 
@@ -12,9 +13,11 @@
 - Application build: `dotnet build AIS/AIS.csproj --no-restore -v quiet`: 0 errors, 57 existing warnings.
 - JS syntax check passed. Oracle has NOT been compiled or deployed. Production reconciliation remains required.
 
-## Pending (in user-specified order)
-1. Aging percentages, then report-column cleanup and final focused regression/documentation.
-3. Focused security/regression tests and final deployment documentation.
+## Current status and exact next action
+- All requested source stages and focused local QA are complete. Oracle and live browser acceptance are **not** complete; this is not production-ready.
+- Read `CIA_SNAP_DEPLOYMENT_AND_VALIDATION.md` for full object/parameter inventory, manual compilation order, exact inactive permission registrations, test evidence and staging matrix.
+- **Next action:** obtain an explicitly approved non-production IAS target, then have its DBA compile the documented package specifications/bodies and provision only the two exact API grants. Inspect USER_ERRORS and run the staged acceptance matrix before application release. No approved staging target was provided in this chat; never infer one from application connection strings.
+- Until that target is available, do not repeat local tests, repair unrelated baseline failures, or attempt a production database connection. Preserve the recoverable branch.
 
 ## Stage 2
 - Stage 1 commit: `300d139a`. Nine compiled CIA cutoff/default/scope checks pass; F8 CIA spec/body synchronized.
@@ -53,13 +56,33 @@
 1. Existing `V_IAS_ENTITY_REPORTING_NAMES`, lifecycle, para base, CIA nature/checklist/rectification dependency views must be valid.
 2. `snap_audit_division_scope.sql` spec then body (existing approved mapping).
 3. `PKG_EXEC_DASHBOARD.sql` spec then body, with existing dependent views retained.
-4. Updated reports package when Stage 2 requires it.
+4. Updated `PKG_EXEC_REPORTS` specification then body.
 5. Inspect USER_ERRORS and reconcile known scopes on staging before deploying application.
 - Amended CIA procedures: `P_GET_CIA_EXEC_KPIS`, `P_GET_CIA_ISSUE_NATURE`; append optional `P_POSITION_AS_ON`, `P_SNAP_DIVISION_CODE` after existing parameters.
 - Existing exact CIA API grants retained; no new endpoint in Stage 1.
 
 ## Quota and continuation
-- Official five-hour usage last observed: 41% used / 59% remaining on 2026-10-22.
+- Official five-hour usage last observed after the host interruption/reset on 2026-10-23: 0% used / 100% remaining. No quota bypass or reset was requested. Earlier work remained below the 2% stopping threshold.
 - Native same-chat heartbeat ACTIVE: `resume-ias-cia-and-snap-implementation`, every five hours. Checks official quota, reads this file and resumes first pending work. Requires local Codex host to remain available; scheduling does not guarantee execution or quota.
 - Stop before 2% remaining; checkpoint near 5%. No unsupported polling.
 - Restart prompt: `Continue the CIA/Snap task from AIS/Docs/CODEX_DASHBOARD_PROGRESS.md in the cia-snap-enhancements worktree; check official quota first.`
+
+## Stages 7–9 and commit inventory
+- Aging percentages are shown only when the selected distribution reconciles to scoped closing stock; unavailable/inconsistent denominators remain N/A. Unknown/zero-cycle and over-three-year buckets remain present.
+- Snap-only browser/CSV/PDF column cleanup preserves underlying calculations/models and unrelated dashboard presentations. Exact report grants and Super User-only exports remain enforced.
+- Final build: 0 errors, 57 existing warnings. 52 compiled policy/controller/PDF checks pass. 20 focused Node client/source checks pass. Broad suite: 86 tests, 70 pass, 13 pre-existing failures, 3 skips; verified upstream baseline has the same 13 failures. No new failures remain after updating feature-affected expectations.
+- No Oracle procedure was compiled or deployed; no authenticated live COM_ID/portfolio reconciliation or PDF visual acceptance is claimed.
+
+| Stage | Commit |
+|---|---|
+| CIA filters/cutoff | `300d139a` |
+| Snap authorized filters | `295d08c3` |
+| Glance register removal | `db78e27c` |
+| Performance comparison | `b78d3e83` |
+| Settlement effectiveness | `fd98069f` |
+| Critical observations/secure para text | `167c413c` |
+| Aging percentages | `40f8757d` |
+| Report presentation cleanup | `d32041e4` |
+| Focused regression/validation hardening | `d566a768` |
+
+The original checkout, TOP/GROUP/RLM/CCO/Head Audit views and unrelated Oracle procedure bodies are unchanged. Feature scope uses shared readers only through optional Snap-specific arguments.
