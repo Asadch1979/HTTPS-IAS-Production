@@ -74,20 +74,30 @@
             button.addEventListener('click', async () => {
                 button.disabled = true; feedback.textContent = '';
                 try {
-                    const check = new URL(location.href); check.searchParams.set('checkOnly', 'true');
+                    const security = window.headAuditSecurity;
+                    if (!security || !table.isConnected) throw new Error('Reload the dashboard before exporting.');
+                    const generation = security.generation();
+                    const check = new URL(location.href);
                     const response = await fetch(check, { credentials: 'same-origin', cache: 'no-store', redirect: 'error' });
                     if (!response.ok || response.headers.get('X-Head-Audit-Context') !== root.dataset.contextKey)
                         throw new Error('An active authorized Head Audit session with the same assignment is required. Reload the page.');
+                    const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                    const freshRoot = page.querySelector('.engagement-workbench');
+                    const freshTable = Array.from(page.querySelectorAll('#head-tab-content table')).find(t =>
+                        t.closest('section')?.querySelector('h2')?.textContent === title);
+                    if (!freshRoot || !freshTable || generation !== security.generation() || !table.isConnected)
+                        throw new Error('Dashboard changed during export. Request the tab again.');
                     if (!window.ExcelJS) throw new Error('The local Excel library could not be loaded.');
-                    const metadata = [root.dataset.period, 'Position as on: ' + root.dataset.position + ' (Pakistan, end of day)',
-                        root.dataset.scope, 'Applied register filters: ' + (table.closest('[data-filters]')?.dataset.filters || 'Not applicable'), root.dataset.limitations];
-                    const book = workbook(window.ExcelJS, title, metadata, values(table.tHead.rows[0]),
-                        Array.from(table.tBodies[0].rows, values), table.tFoot ? Array.from(table.tFoot.rows, values) : []);
+                    const metadata = [freshRoot.dataset.period, 'Position as on: ' + freshRoot.dataset.position + ' (Pakistan, end of day)',
+                        freshRoot.dataset.scope, 'Applied register filters: ' + (freshTable.closest('[data-filters]')?.dataset.filters || 'Not applicable'), freshRoot.dataset.limitations];
+                    const book = workbook(window.ExcelJS, title, metadata, values(freshTable.tHead.rows[0]),
+                        Array.from(freshTable.tBodies[0].rows, values), freshTable.tFoot ? Array.from(freshTable.tFoot.rows, values) : []);
                     const blob = new Blob([await book.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    if (generation !== security.generation() || !table.isConnected) throw new Error('Dashboard changed during export.');
                     const url = URL.createObjectURL(blob), link = document.createElement('a');
-                    link.href = url; link.download = 'Head_Audit_' + root.dataset.position + '_' + title.replace(/[^a-z0-9]+/gi, '_') + '.xlsx';
+                    link.href = url; link.download = 'Head_Audit_' + freshRoot.dataset.position + '_' + title.replace(/[^a-z0-9]+/gi, '_') + '.xlsx';
                     document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-                } catch (error) { feedback.textContent = error.message; }
+                } catch (error) { window.headAuditSecurity?.fail(error.message); feedback.textContent = error.message; }
                 finally { button.disabled = false; }
             });
         });

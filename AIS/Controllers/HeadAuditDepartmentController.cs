@@ -72,7 +72,7 @@ namespace AIS.Controllers
             int? statusId = null, string exception = null, DateTime? positionAsOn = null, string tab = "progress", bool checkOnly = false) => Read(() =>
         {
             if (!new[] { "progress", "details", "exceptions", "register" }.Contains(tab)) return BadRequest();
-            if (checkOnly) return NoContent(); // Recheck session/page permission before displaying a cached tab.
+            // Legacy checkOnly callers also execute the full Oracle-authorized read.
             return View("~/Views/Shared/EngagementWorkbench.cshtml",
                 database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, tab));
         }, includeMenus: !checkOnly);
