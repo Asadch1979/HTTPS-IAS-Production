@@ -12,14 +12,14 @@
     <header class="wb-hero"><div><span class="wb-eyebrow">ENGAGEMENT #@Model.Engagement.EngagementId</span>
         <h1 id="review-title">@Value(Model.Engagement.Entity)</h1>
         <p>@Value(Model.Engagement.Period) · @Value(Model.Engagement.Status)</p>
-        <a class="wb-table-action" href="@Url.Action("AuditTeamsMonitoring", new { auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception, positionAsOn=Model.PositionAsOn?.ToString("yyyy-MM-dd") })">← All engagements</a></div></header>
+        <a class="wb-table-action" href="@Url.Action("AuditTeamsMonitoring", new { auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception, tab=Model.Tab, positionAsOn=Model.PositionAsOn?.ToString("yyyy-MM-dd") })">← All engagements</a></div></header>
     <p class="wb-period-note">Reporting cutoff @Model.PositionAsOn?.ToString("dd MMM yyyy") · Current saved work; not a historical snapshot.</p>
     <section class="wb-overview">
         <nav class="wb-review-nav" aria-label="Review saved work">
             @foreach (var section in AIS.Models.HeadAuditMonitoringPolicy.Sections.Where(s => s != "Plan" && s != "Criteria" && s != "Team"))
             {
                 <a class="wb-state-badge" aria-current="@(section == Model.Section ? "page" : null)"
-                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception, positionAsOn=Model.PositionAsOn?.ToString("yyyy-MM-dd") })">@(section == "Tasks" ? "Plan & job assignments" : section)</a>
+                   href="@Url.Action("Review", new { engId = Model.Engagement.EngagementId, section, auditPeriodId=Model.AuditPeriodId, officeId=Model.OfficeId, statusId=Model.StatusId, exception=Model.Exception, tab=Model.Tab, positionAsOn=Model.PositionAsOn?.ToString("yyyy-MM-dd") })">@(section == "Tasks" ? "Plan & job assignments" : section)</a>
             }
         </nav>
         @if (Model.Section == "Tasks")

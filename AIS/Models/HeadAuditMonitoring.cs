@@ -126,7 +126,9 @@ namespace AIS.Models
             Delayed = Offices.Sum(o => o.Delayed), PendingReports = Offices.Sum(o => o.PendingReports),
             AwaitingReview = Offices.Sum(o => o.AwaitingReview)
         };
-        public int ActiveTeams => Engagements.Where(e => e.StatusId >= 4 && e.StatusId <= 11 &&
+        public int? ActiveTeamCount { get; set; }
+        public int ActiveTeams => ActiveTeamCount ?? CountActiveTeams();
+        private int CountActiveTeams() => Engagements.Where(e => e.StatusId >= 4 && e.StatusId <= 11 &&
             (e.OperationStart ?? e.Start)?.Date <= (PositionAsOn ?? AuditParaSnapPolicy.Today) && e.TeamId.HasValue)
             .Select(e => e.TeamId).Distinct().Count();
         public IEnumerable<HeadAuditEngagement> Register => Engagements.Where(e =>

@@ -63,13 +63,19 @@ namespace AIS.Controllers
 
         [HttpGet]
         public IActionResult AuditTeamsMonitoring(int? auditPeriodId = null, int? officeId = null,
-            int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
-            View("~/Views/Shared/EngagementWorkbench.cshtml", database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn)));
+            int? statusId = null, string exception = null, DateTime? positionAsOn = null, string tab = "progress", bool checkOnly = false) => Read(() =>
+        {
+            if (!new[] { "progress", "details", "exceptions", "register" }.Contains(tab)) return BadRequest();
+            if (checkOnly) return NoContent(); // Recheck session/page permission before displaying a cached tab.
+            return View("~/Views/Shared/EngagementWorkbench.cshtml",
+                database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, tab));
+        });
 
         [HttpGet]
         public IActionResult Review(long engId, string section = "Plan", int? auditPeriodId = null,
-            int? officeId = null, int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
+            int? officeId = null, int? statusId = null, string exception = null, DateTime? positionAsOn = null, string tab = "register") => Read(() =>
         {
+            if (!new[] { "progress", "details", "exceptions", "register" }.Contains(tab)) return BadRequest();
             if (engId <= 0 || !HeadAuditMonitoringPolicy.Sections.Contains(section)) return BadRequest();
             if (new[] { "Plan", "Criteria", "Team" }.Contains(section)) section = "Tasks";
             if (!auditPeriodId.HasValue)
@@ -78,21 +84,21 @@ namespace AIS.Controllers
                 if (saved == null) return StatusCode(403);
                 auditPeriodId = saved.PeriodId;
             }
-            var dashboard = database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn);
+            var dashboard = database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, "review");
             var engagement = dashboard.Engagements.SingleOrDefault(e => e.EngagementId == engId);
             if (engagement == null) return StatusCode(403);
             return View("~/Views/HeadAuditDepartment/Review.cshtml", new HeadAuditReview
             {
                 Engagement = engagement, Section = section, Records = database.GetHeadAuditWork(engId, section),
                 Plans = dashboard.Plans.Where(p => p.EngagementId == engId).ToList(),
-                PositionAsOn=dashboard.PositionAsOn, AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
+                Tab=tab, PositionAsOn=dashboard.PositionAsOn, AuditPeriodId=dashboard.AuditPeriodId, OfficeId=officeId, StatusId=statusId, Exception=exception
             });
         });
 
         [HttpGet("/api/HeadAuditDepartment/Engagements")]
         public IActionResult Engagements(int? auditPeriodId = null, int? officeId = null,
             int? statusId = null, string exception = null, DateTime? positionAsOn = null) => Read(() =>
-            Json(database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn).Register), api: true);
+            Json(database.GetHeadAuditDashboard(auditPeriodId, officeId, statusId, exception, positionAsOn, "register").Register), api: true);
 
         [HttpGet("/api/HeadAuditDepartment/Work")]
         public IActionResult Work(long engId, string section = "Plan") => Read(() =>

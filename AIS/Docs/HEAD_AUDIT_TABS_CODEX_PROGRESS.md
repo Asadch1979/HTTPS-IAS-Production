@@ -20,3 +20,5 @@ Pre-existing appsettings.json, obj output and .vs files are excluded from commit
 No Oracle connection/compilation, authenticated browser UAT or live figure reconciliation performed. Workflow evidence includes T_AU_PLAN_ENG_LOG CREATED_ON/LAST_UPDATED_ON and reversal code with misleading status 10. Historical deleted records, plans and child-workflow snapshots are incomplete; do not claim full reconstruction.
 
 Reporting-date checkpoint: source added, application build passed (57 existing warnings, zero errors). Oracle not compiled. Next: selective tab data loading.
+
+Checkpoint dbaa44f3: reporting date. Tab checkpoint: conditional server rendering plus selected queries; progress uses summary and distinct-team query; details uses plans only; exceptions omits task/report/workpaper queries; register includes scoped detail readers. Cached tabs recheck authorization without Oracle datasets. Build passed. Official allowance 94% remaining. Next: totals.
