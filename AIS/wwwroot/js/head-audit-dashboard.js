@@ -35,7 +35,7 @@
             content.replaceChildren(...panel.childNodes);
             document.querySelector('.wb-hero-meta').replaceWith(hero);
             const scopeLabel = document.querySelector('.dashboard-title p');
-            if (scopeLabel) scopeLabel.textContent = nextRoot.dataset.scope || ''; 
+            if (scopeLabel) scopeLabel.textContent = nextRoot.dataset.scope || '';
             for (const key of ['period', 'position', 'scope', 'limitations']) root.dataset[key] = nextRoot.dataset[key] || '';
             history.replaceState(null, '', link.href);
             document.querySelector('.wb-dashboard-filters input[name="tab"]').value = new URL(link.href).searchParams.get('tab');

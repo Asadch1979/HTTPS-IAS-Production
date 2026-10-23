@@ -41,6 +41,8 @@ No continuation schedule was created for this hardening task; automatic resumpti
 
 ## Next exact step / pending
 
-Finish PR publication and record the final published SHA/link. Then obtain the explicitly approved non-production IAS schema and connection method, run the dependency/schema preflight, compile F8 04 then 05 then 06, inspect USER_ERRORS/USER_OBJECTS, and execute the authorization/cutoff/history and authenticated staging matrix in the review document. Do not request production approval while those checks remain pending.
+Draft review PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/340 (not merged). Documentation checkpoint: local 59aba1ff, published 4703b0e2683f506144b0ef155fd39af23460e860. The final handoff commit adds this PR reference and an exact selected-group active-status guard; its SHA is the branch tip and is reported in the final response.
+
+Next: obtain the explicitly approved non-production IAS schema and connection method, run the dependency/schema preflight, compile F8 04 then 05 then 06, inspect USER_ERRORS/USER_OBJECTS, and execute the authorization/cutoff/history and authenticated staging matrix in the review document. Do not request production approval while those checks remain pending.
 
 At any permitted continuation: verify branch, working tree, official credit allowance and first unfinished step. Preserve the original checkout's appsettings/obj/.vs changes. Only this isolated worktree's generated obj changes may be restored; no user source changes are included.

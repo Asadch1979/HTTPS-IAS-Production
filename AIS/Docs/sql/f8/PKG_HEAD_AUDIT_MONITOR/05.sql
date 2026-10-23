@@ -41,7 +41,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_HEAD_AUDIT_MONITOR AS
         AND s.logged_out_date IS NULL AND s.role_id=P_ROLE_ID
         AND s.entity_id=P_DEPT_ID AND s.group_id=P_GROUP_ID;
     IF n<>1 THEN RAISE_APPLICATION_ERROR(-20154,'Inactive Head audit session.'); END IF;
-    SELECT COUNT(*) INTO n FROM t_user u WHERE u.userid=P_USER_ID AND
+    SELECT COUNT(*) INTO n FROM t_user u WHERE u.userid=P_USER_ID
+      AND EXISTS (SELECT 1 FROM t_groups g WHERE g.group_id=P_GROUP_ID
+        AND g.role_id=P_ROLE_ID AND g.status='Y') AND
       ((P_CONTEXT_ID IS NOT NULL AND EXISTS (SELECT 1 FROM t_user_context_assignment c
         WHERE c.user_context_id=P_CONTEXT_ID AND c.user_id=u.userid
           AND NVL(c.group_id,c.role_id)=P_GROUP_ID))

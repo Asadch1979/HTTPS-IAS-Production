@@ -30,13 +30,13 @@ namespace AIS.Controllers
         {
             try
             {
-                if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();    
-                permissions.EnsurePermissionsCached(user);    
-                if (!HeadAuditMonitoringPolicy.IsEligible(user) ||    
-                    !session.TryGetAllowedViewIds(out var pages) ||    
-                    !pages.Contains(HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);    
-                if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))    
-                    return StatusCode(403);    
+                if (!session.TryGetUser(out var user) || session.IsSessionRevoked(user)) return Unauthorized();
+                permissions.EnsurePermissionsCached(user);
+                if (!HeadAuditMonitoringPolicy.IsEligible(user) ||
+                    !session.TryGetAllowedViewIds(out var pages) ||
+                    !pages.Contains(HeadAuditMonitoringPolicy.PageId)) return StatusCode(403);
+                if (api && !permissions.HasApiPermissionForPath(user, "GET", Request.PathBase.Value, Request.Path.Value))
+                    return StatusCode(403);
                 if (!ModelState.IsValid) return BadRequest();
                 if (!api && includeMenus)
                 {
