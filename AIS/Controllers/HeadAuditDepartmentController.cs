@@ -51,7 +51,8 @@ namespace AIS.Controllers
                 return action();
             }
             catch (OracleException ex) when (ex.Number == 20151 || ex.Number == 20152) { return StatusCode(403); }
-            catch (OracleException ex) when (ex.Number == 20153) { return BadRequest("Select a valid IAS audit period."); }
+            catch (OracleException ex) when (ex.Number == 20153) { return BadRequest("Select a valid IAS audit period and a completed reporting day (no later than Pakistan yesterday)."); }
+            catch (HeadAuditReportingDateException ex) { return BadRequest(ex.Message); }
             catch (ArgumentException) { return BadRequest("Invalid dashboard filters."); }
             catch (UnauthorizedAccessException) { return StatusCode(403); }
             catch (AIS.Session.UnauthenticatedException) { return Unauthorized(); }

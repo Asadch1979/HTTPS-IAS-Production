@@ -15,6 +15,8 @@ namespace AIS.Controllers
         private List<T> ReadHeadAudit<T>(string procedure, Func<OracleDataReader, T> map,
             long? engagementId = null, string section = null, long? evidenceId = null, int? periodId = null, DateTime? positionAsOn = null, bool? details = null)
         {
+            if (positionAsOn.HasValue && positionAsOn.Value.Date >= AuditParaSnapPolicy.Today)
+                throw new HeadAuditReportingDateException("Position as on cannot exceed the last completed Pakistan calendar day.");
             var session = CreateSessionHandler();
             var user = session.GetUserOrThrow();
             if (session.IsSessionRevoked(user)) throw new UnauthenticatedException();
@@ -81,7 +83,7 @@ namespace AIS.Controllers
 
         internal HeadAuditDashboard GetHeadAuditDashboard(int? auditPeriodId, int? officeId, int? statusId, string exception, DateTime? positionAsOn = null, string tab = "progress")
         {
-            if (!HeadAuditDashboard.ValidException(exception) || auditPeriodId <= 0 || officeId <= 0 || statusId < -1 || !new[] { "progress", "details", "exceptions", "register", "review" }.Contains(tab))
+            if (!HeadAuditDashboard.ValidException(exception) || auditPeriodId <= 0 || officeId <= 0 || statusId < -1 || statusId > 14 || !new[] { "progress", "details", "exceptions", "register", "review" }.Contains(tab))
                 throw new ArgumentException("Invalid dashboard filters.");
             var periods = ReadHeadAudit("P_GET_PERIODS", r => new AuditPeriodModel {
                 AUDITPERIODID = RoleRequiredInt(r,"AUDITPERIODID"), DESCRIPTION = RoleText(r,"DESCRIPTION"),

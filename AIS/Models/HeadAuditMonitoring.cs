@@ -4,6 +4,11 @@ using System.Linq;
 
 namespace AIS.Models
 {
+    public sealed class HeadAuditReportingDateException : ArgumentException
+    {
+        public HeadAuditReportingDateException(string message) : base(message) { }
+    }
+
     public static class HeadAuditMonitoringPolicy
     {
         public const int PageId = 1000401;
@@ -108,9 +113,10 @@ namespace AIS.Models
         {
             if (period == null || period.START_DATE.Date > period.END_DATE.Date) throw new ArgumentException("Select a valid IAS audit period.");
             var last = period.END_DATE.Date < today.Date ? period.END_DATE.Date : today.Date.AddDays(-1);
+            if (last < period.START_DATE.Date) throw new HeadAuditReportingDateException("The selected IAS audit period has no completed eligible day yet (Pakistan time).");
             var date = (requested ?? last).Date;
-            if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > today.Date)
-                throw new ArgumentException("Position as on must be within the audit period and cannot be in the future.");
+            if (date < period.START_DATE.Date || date > period.END_DATE.Date || date > last)
+                throw new HeadAuditReportingDateException("Position as on must be within the selected IAS audit period and no later than yesterday (Pakistan time).");
             return date;
         }
         public List<AuditPeriodModel> Periods { get; set; } = new();
