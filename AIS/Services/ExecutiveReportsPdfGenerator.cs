@@ -61,14 +61,14 @@ namespace AIS.Services
             ("Compliance","compliance"), ("Audit","audit"), ("Unknown","unknown")
         };
 
-        public static byte[] Create(string reportId, ExecutiveReportResult report, string webRootPath)
+        public static byte[] Create(string reportId, ExecutiveReportResult report, string webRootPath, bool hideSettlementSources = false)
         {
             if (report == null || report.Rows == null)
                 throw new ArgumentException("Validated report rows are required.", nameof(report));
             if (reportId == null || !"ABCDE".Contains(reportId) || reportId.Length != 1)
                 throw new ArgumentException("Unknown executive report.", nameof(reportId));
 
-            var html = BuildHtml(reportId, report);
+            var html = BuildHtml(reportId, report, hideSettlementSources);
             using var baseStream = new MemoryStream();
             // iText pdfHTML writes real searchable text and paginates tables;
             // nothing is rasterized or taken from a browser screenshot.
@@ -125,9 +125,10 @@ namespace AIS.Services
                 .MoveText(x, y).ShowText(value).EndText();
         }
 
-        private static string BuildHtml(string id, ExecutiveReportResult data)
+        private static string BuildHtml(string id, ExecutiveReportResult data, bool hideSettlementSources = false)
         {
             var rows = data.Rows;
+            var columns = hideSettlementSources ? Position.Where(c => c.Key != "compliance" && c.Key != "audit" && c.Key != "unknown").ToArray() : Position;
             var html = new StringBuilder();
             // Per-report visual identity. Numbers, rows and PDF structure are unchanged.
             // Colors intentionally match the on-screen report A-E palettes.
@@ -185,7 +186,7 @@ namespace AIS.Services
             else if (id == "B")
             {
                 html.Append("<h2>Field office paras position</h2>");
-                AddPosition(html, rows, r => r.ItemName, true);
+                AddPosition(html, rows, r => r.ItemName, true, columns: columns);
             }
             else if (id == "C")
             {
@@ -193,7 +194,7 @@ namespace AIS.Services
                 var gm = rows.Where(r => r.RowKind == "SUBTOTAL").ToList();
                 var total = rows.FirstOrDefault(r => r.RowKind == "TOTAL");
                 if (total != null) gm.Add(total);
-                AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false, true);
+                AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false, true, columns);
                 html.Append("<h2>GM / region paras position</h2>");
                 AddPosition(html, rows, r => r.ItemName, true);
             }
@@ -226,10 +227,10 @@ namespace AIS.Services
         }
 
         private static void AddPosition(StringBuilder html, IList<ExecutiveReportRow> rows,
-            Func<ExecutiveReportRow,string> label, bool group, bool gmSummary = false)
+            Func<ExecutiveReportRow,string> label, bool group, bool gmSummary = false, (string Label, string Key)[] columns = null)
         {
             html.Append("<table><thead><tr><th class='left'>Office / Region</th>");
-            foreach (var col in Position)
+            foreach (var col in columns ?? Position)
                 html.Append("<th>").Append(H(col.Label)).Append("</th>");
             html.Append("</tr></thead><tbody>");
             string last = null;
@@ -248,7 +249,7 @@ namespace AIS.Services
                     .Append("'><td>").Append(H(kind == "TOTAL" ? "Grand total"
                         : kind == "SUBTOTAL" ? (gmSummary ? Family(r.GroupName) : "Subtotal · " + Family(r.GroupName))
                         : label(r))).Append("</td>");
-                foreach (var col in Position)
+                foreach (var col in columns ?? Position)
                     html.Append("<td class='num'>").Append(H(V(r, col.Key))).Append("</td>");
                 html.Append("</tr>");
             }

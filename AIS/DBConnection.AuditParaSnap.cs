@@ -27,9 +27,15 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("RoleMapping", "A verified Audit Para Snap scope is required.");
         }
         internal List<ExecutiveFilterOption> GetAuditParaSnapDepartments(
-            ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null)
+            ExecutiveDashboardScope scope, string divisionCode, int? selectedDepartmentId = null, bool ciaCommand = false)
         {
-            ValidateSnapScope(scope);
+            if (ciaCommand)
+            {
+                ValidateExecutiveDashboardSession(scope);
+                if (scope.DashboardType != "CIA" || scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "CIA Command Center scope required.");
+            }
+            else ValidateSnapScope(scope);
             if (divisionCode == "1")
             {
                 if (selectedDepartmentId.HasValue) throw new ArgumentException("All Divisions does not accept a Department / Cluster.");
@@ -53,7 +59,7 @@ namespace AIS.Controllers
                 if (id <= 0) throw new InvalidOperationException("Invalid IAS audited-by ID.");
                 items.Add(new ExecutiveFilterOption { Id = id, Name = ExecutiveText(reader,"NAME") });
             }
-            ValidateSnapScope(scope);
+            if (ciaCommand) ValidateExecutiveDashboardSession(scope); else ValidateSnapScope(scope);
             if (items.Count == 0 || items.Select(e=>e.Id).Distinct().Count() != items.Count)
                 throw new InvalidOperationException("Audit division has no valid distinct mapped departments.");
             if (selectedDepartmentId.HasValue && !items.Any(e=>e.Id==selectedDepartmentId.Value))
@@ -70,7 +76,7 @@ namespace AIS.Controllers
             return result;
         }
         private List<T> ReadSnap<T>(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters,
-            string procedure, Func<OracleDataReader,T> map, int? maxRows = null)
+            string procedure, Func<OracleDataReader,T> map, int? maxRows = null, int? comId = null)
         {
             ValidateDatedDashboardScope(scope, filters);
             var dates = filters.Validate();
@@ -92,17 +98,44 @@ namespace AIS.Controllers
                 (object)((scope.DashboardType == "CCO" || ManagementDashboardPeriod.Applies(scope.DashboardType)) ? (filters.SelectBy == "auditedBy" ? filters.DimensionId : null) : filters.SnapDepartmentId) ?? DBNull.Value;
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
+            if (comId.HasValue) command.Parameters.Add("P_COM_ID",OracleDbType.Int32).Value = comId.Value;
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = (object)filters.SnapDivision ?? DBNull.Value;
+            if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
+                command.Parameters.Add("P_SNAP_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                    filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
             var rows = new List<T>();
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                if (rows.Count >= (maxRows ?? 1213)) throw new InvalidOperationException("Snap cursor exceeded its bound.");
+                if (rows.Count >= (maxRows ?? 2420)) throw new InvalidOperationException("Snap cursor exceeded its bound.");
                 rows.Add(map(reader));
             }
             ValidateDatedDashboardScope(scope, filters);
             return rows;
+        }
+        internal string GetAuditParaSnapText(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int comId)
+        {
+            ValidateSnapScope(scope);
+            AuditParaSnapPolicy.Validate(filters);
+            if (comId <= 0 || filters.View != "risk") throw new ArgumentException("Invalid para request.");
+            void RequirePara()
+            {
+                // The COM_ID predicate is applied before ranking/capping, with
+                // the exact same dates, eligibility and scope as the register.
+                var matches = ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",
+                    r => ExecutiveCount(r,"COM_ID"),1,comId);
+                if (matches.Count != 1 || matches[0] != comId)
+                    throw new ExecutiveDashboardAccessException("EntityScope", "Para is not available in the selected authorized scope.");
+            }
+            RequirePara();
+            // Same bound, parameterized PKG_HD retrieval as the reference page;
+            // never call its unprotected HTTP route. Check entitlement again
+            // after reading so revoked sessions/scope changes discard the text.
+            var text = GetAllParaText(comId);
+            RequirePara();
+            ValidateSnapScope(scope);
+            return text;
         }
         internal List<AuditParaSnapBucket> GetAuditParaSnapDistribution(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
             => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_DISTRIBUTION",r => new AuditParaSnapBucket
@@ -110,7 +143,8 @@ namespace AIS.Controllers
                 Dataset=ExecutiveText(r,"DATASET"),BucketCode=ExecutiveText(r,"BUCKET_CODE"),
                 BucketName=ExecutiveText(r,"BUCKET_NAME"),ParaCount=ExecutiveNullableCount(r,"PARA_COUNT"),
                 HighRiskCount=ExecutiveNullableCount(r,"HIGH_RISK_COUNT"),
-                QualityCode=ExecutiveText(r,"QUALITY_CODE")
+                QualityCode=ExecutiveText(r,"QUALITY_CODE"),
+                ParasAdded=ExecutiveNullableCount(r,"PARAS_ADDED"), ParasSettled=ExecutiveNullableCount(r,"PARAS_SETTLED")
             });
         internal List<AuditParaSnapCritical> GetAuditParaSnapCritical(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int maxRows)
             => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",r => new AuditParaSnapCritical

@@ -19,13 +19,33 @@
         <article class="exec-kpi" data-snap-card="@card.Key"><span>@card.Label</span><strong data-snap-kpi="@card.Key">N/A</strong><small data-snap-kpi-note>Awaiting verified Oracle response</small></article>
     }
 </div>
+@if (Model.SelectedView.Id == "position")
+{
+    <article class="exec-panel">
+        <h2>Audit department / cluster comparison</h2>
+        <p class="exec-note">Audit offices own the portfolio; Entity Type, Reporting Office and Entity describe the auditee hierarchy.</p>
+        <label for="snap-performance-sort">Sort departments within division</label>
+        <select id="snap-performance-sort"><option value="closing">Closing outstanding (highest first)</option><option value="rate">Settlement percentage (highest first)</option><option value="change">Net change (highest first)</option></select>
+        <div id="snap-performance" class="exec-table-wrap" role="region" aria-label="Audit department comparison" tabindex="0">Loading comparison…</div>
+        <p class="exec-note" id="snap-performance-note"></p>
+    </article>
+}
+@if (Model.SelectedView.Id == "settlement")
+{
+    <article class="exec-panel"><h2>Clearance ratio</h2><strong id="snap-clearance">N/A</strong><p class="exec-note">Paras settled / paras added, only when additions are positive and the selected-period stock and movements reconcile. A ratio above 100% can reflect clearance of the opening backlog.</p></article>
+    <article class="exec-panel"><h2>Monthly additions versus settlements</h2><div id="snap-movement"></div><p class="exec-note">Same scoped lifecycle population and reporting dates; estimates use latest qualifying IAS records.</p></article>
+    <article class="exec-panel"><h2>Department / Cluster settlement rankings</h2><div id="snap-rankings"></div><p class="exec-note">Indicative estimates, not verified performance. Departments with unavailable, zero or inconsistent denominators or a non-zero stock/movement reconciliation difference are excluded.</p></article>
+    <article class="exec-panel"><h2>Outstanding paras requiring follow-up</h2><p class="exec-note">Confirmed absence of compliance movement is unavailable: the available history has no verified complete baseline. Missing history is not classified as inactivity. Review the Critical Audit Observations register for recorded movement dates.</p></article>
+}
 <div class="exec-charts">
     @foreach (var section in Model.SelectedView.Sections)
     {
         <partial name="_Chart" model="section" />
     }
 </div>
-@if (Model.SelectedView.Id == "risk" || Model.SelectedView.Id == "glance")
+@if (Model.SelectedView.Id == "risk")
 {
     <partial name="_Critical" />
+    <dialog id="snap-para-dialog" aria-labelledby="snap-para-title"><h2 id="snap-para-title">Para text (read only)</h2><pre id="snap-para-text"></pre><button type="button" id="snap-para-close">Close</button></dialog>
+    <article class="exec-panel"><h2>Critical exposure analysis</h2><div id="snap-exposure"></div><div id="snap-critical-departments" class="exec-table-wrap"></div><p class="exec-note">Historical exposure is estimated using current risk/audit-office mapping; N/A preserves insufficient cycle evidence.</p></article>
 }

@@ -70,13 +70,13 @@ test('all IAS Snap KPI, risk, trend, critical and report cursors apply the mappe
  const kpi=read('Docs/sql/PKG_EXEC_DASHBOARD.sql');
  const reports=read('Docs/sql/PKG_EXEC_REPORTS.sql');
  const count=(s,x)=>(s.match(x)||[]).length;
- assert.equal(count(kpi,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),6);
- assert.equal(count(kpi,/V_IAS_ENTITY_REPORTING_NAMES h/g),3);
+ assert.equal(count(kpi,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),10);
+ assert.equal(count(kpi,/V_IAS_ENTITY_REPORTING_NAMES h/g),6);
  assert.equal(count(reports,/P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL/g),10);
  assert.equal(count(reports,/V_IAS_ENTITY_REPORTING_NAMES h/g),2);
  assert.doesNotMatch(kpi,/T_IAS_SNAP_AUDIT_SCOPE/);
  assert.doesNotMatch(reports,/T_IAS_SNAP_AUDIT_SCOPE/);
- assert.equal(count(reports,/IO_CURSOR, P_SNAP_DIVISION_CODE\);/g),5);
+ assert.equal(count(reports,/IO_CURSOR, P_SNAP_DIVISION_CODE, P_SNAP_AUDITED_BY_ID\);/g),5);
  assert.match(read('DBConnection.ExecutiveDashboardReports.cs'),/P_SNAP_DIVISION_CODE/);
  assert.match(read('DBConnection.ExecutiveDashboard.cs'),/P_SNAP_DIVISION_CODE/);
  assert.match(read('DBConnection.AuditParaSnap.cs'),/P_SNAP_DIVISION_CODE/);

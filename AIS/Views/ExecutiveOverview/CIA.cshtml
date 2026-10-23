@@ -34,20 +34,6 @@
                 @if (Model.CanViewOrganization) { <a href="@Url.Action("Index","OrganizationStructure")">Organization Structure</a> }
             </nav>
         </div>
-        <div class="cia-period-selection">
-            <label for="cia-period">IAS audit year / period</label>
-            <select id="cia-period" aria-label="Select audit period" disabled="@(Model.CiaPeriods.Count == 0)">
-                @if (!Model.SelectedCiaPeriodId.HasValue)
-                {
-                    <option value="" selected>Select an IAS audit period</option>
-                }
-                @foreach (var period in Model.CiaPeriods)
-                {
-                    <option value="@period.AUDITPERIODID" selected="@(period.AUDITPERIODID == Model.SelectedCiaPeriodId)">@period.DESCRIPTION (@period.START_DATE.ToString("dd MMM yyyy") – @period.END_DATE.ToString("dd MMM yyyy"))</option>
-                }
-            </select>
-            <p data-cia-selected-period>@(selectedPeriod == null ? "No started period available; choose a period." : "Selected: " + selectedPeriod.DESCRIPTION)</p>
-        </div>
     </header>
     <partial name="_CiaCommandFilters" model="Model" />
     <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading CIA Command Center…</p>

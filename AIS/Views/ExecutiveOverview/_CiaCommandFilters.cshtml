@@ -1,13 +1,22 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<form id="exec-filters" class="cia-organization-filters" method="get" action="@Url.Action("CIA","ExecutiveOverview")" aria-label="Organizational filters">
+@{
+    var selected = Model.CiaPeriods.FirstOrDefault(p => p.AUDITPERIODID == Model.SelectedCiaPeriodId);
+    var today = AIS.Models.AuditParaSnapPolicy.Today;
+    var maximum = selected == null || selected.END_DATE.Date > today ? today : selected.END_DATE.Date;
+}
+<form id="exec-filters" class="cia-organization-filters" method="get" action="@Url.Action("CIA","ExecutiveOverview")" aria-label="Audit portfolio filters">
     <input type="hidden" name="view" value="command" />
-    <input type="hidden" name="auditPeriodId" value="@Model.SelectedCiaPeriodId" />
-    <div><label for="exec-select-by">Select By</label><select id="exec-select-by" name="selectBy"><option value="entityType" selected="@(Model.Filters.SelectBy == "entityType")">Entity Type</option><option value="auditedBy" selected="@(Model.Filters.SelectBy == "auditedBy")">Audited By</option></select></div>
-    <div><label for="exec-dimension">@(Model.Filters.SelectBy == "entityType" ? "Entity Type" : "Audited By")</label><select id="exec-dimension" name="dimensionId"><option value="">All in authorized scope</option>@foreach (var option in Model.FilterOptions.Dimensions) { <option value="@option.Id" selected="@(option.Id == Model.Filters.DimensionId)">@option.Name (@option.Id)</option> }</select></div>
-    <div><label for="exec-office">Reporting Office</label><select id="exec-office" name="reportingOfficeId"><option value="">All matching offices</option>@foreach (var option in Model.FilterOptions.ReportingOffices) { <option value="@option.Id" selected="@(option.Id == Model.Filters.ReportingOfficeId)">@option.Name (@option.Id)</option> }</select></div>
-    <div><label for="exec-entity">Entity</label><select id="exec-entity" name="entityId"><option value="">All matching entities</option>@foreach (var option in Model.FilterOptions.Entities) { <option value="@option.Id" selected="@(option.Id == Model.Filters.EntityId)">@option.Name (@option.Id)</option> }</select></div>
-    <div class="cia-filter-actions">
-        <button class="org-button" type="submit">Apply</button>
-        <a class="org-button" data-cia-reset href="@Url.Action("CIA","ExecutiveOverview",new { auditPeriodId = Model.SelectedCiaPeriodId })">Reset filters</a>
-    </div>
+    <div><label for="cia-period">Audit Period</label><select id="cia-period" name="auditPeriodId" required>
+        @foreach (var period in Model.CiaPeriods) { <option value="@period.AUDITPERIODID" data-start="@period.START_DATE.ToString("yyyy-MM-dd")" data-end="@period.END_DATE.ToString("yyyy-MM-dd")" selected="@(period.AUDITPERIODID == Model.SelectedCiaPeriodId)">@period.DESCRIPTION</option> }
+    </select></div>
+    <div><label for="cia-position">Position as on</label><input id="cia-position" name="positionAsOn" type="date" value="@Model.Filters.PositionAsOn" min="@(selected?.START_DATE.ToString("yyyy-MM-dd"))" max="@maximum.ToString("yyyy-MM-dd")" data-today="@today.ToString("yyyy-MM-dd")" data-yesterday="@today.AddDays(-1).ToString("yyyy-MM-dd")" required /></div>
+    <div><label for="cia-division">Division</label><select id="cia-division" name="snapDivision">
+        <option value="1" selected="@(Model.Filters.SnapDivision == "1")">All Divisions</option>
+        <option value="FAD" selected="@(Model.Filters.SnapDivision == "FAD")">Field Audit Division</option>
+        <option value="MAD" selected="@(Model.Filters.SnapDivision == "MAD")">Management Audit Division</option>
+    </select></div>
+    <div><label for="cia-department">Department / Cluster</label><select id="cia-department" name="snapDepartmentId" disabled="@(Model.Filters.SnapDivision == "1")"><option value="">All</option>
+        @foreach (var item in Model.SnapDepartments) { <option value="@item.Id" selected="@(item.Id == Model.Filters.SnapDepartmentId)">@item.Name</option> }
+    </select></div>
+    <div class="cia-filter-actions"><button class="org-button" type="submit">Apply</button><a class="org-button" data-cia-reset href="@Url.Action("CIA","ExecutiveOverview",new { auditPeriodId = Model.SelectedCiaPeriodId })">Reset</a></div>
 </form>

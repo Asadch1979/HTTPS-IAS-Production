@@ -40,6 +40,20 @@ namespace AIS.Controllers
         [HttpGet]
         public IActionResult GetCriticalItems([FromQuery] ExecutiveDashboardFilterRequest filters,int maxRows=100)
             => Execute(filters,(scope,f) => database.GetAuditParaSnapCritical(scope,f,maxRows));
+        [HttpGet]
+        public IActionResult GetPerformance([FromQuery] ExecutiveDashboardFilterRequest filters)
+            => Execute(filters,(scope,f) =>
+            {
+                if (f.View != "position" && f.View != "settlement" && f.View != "risk") throw new ArgumentException("Department comparison requires the performance view.");
+                return database.GetAuditParaSnapPerformance(scope,f);
+            });
+        [HttpGet]
+        public IActionResult GetParaText([FromQuery] ExecutiveDashboardFilterRequest filters, int comId)
+            => Execute(filters,(scope,f) =>
+            {
+                if (f.View != "risk" || comId <= 0) throw new ArgumentException("A valid para and critical observations view are required.");
+                return new { comId, text = database.GetAuditParaSnapText(scope,f,comId) };
+            });
         // Reuse the approved A-E data readers, PDF generator and report presentation.
         // Their existing routes, grants and behavior remain untouched.
         [HttpGet]
@@ -93,7 +107,7 @@ namespace AIS.Controllers
                 scope=database.NarrowExecutiveDashboardScope(scope,filters.EntityId);
                 var data=query(scope,filters);
                 if (report && string.Equals(format,"pdf",StringComparison.OrdinalIgnoreCase))
-                    return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath),
+                    return File(ExecutiveReportsPdfGenerator.Create(reportId,(ExecutiveReportResult)(object)data,environment.WebRootPath, hideSettlementSources: true),
                         "application/pdf",$"IAS_Report_{reportId}_{filters.StartDate}_to_{filters.EndDate}.pdf");
                 return Ok(new { success=true,data,dateRangeApplied=true,
                     startDate=filters.StartDate,endDate=filters.EndDate,organizationalDimensionsApplied=true,

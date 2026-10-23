@@ -646,7 +646,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
       IO_CURSOR OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL) AS
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
@@ -676,6 +677,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     IF P_SNAP_DIVISION_CODE IS NOT NULL THEN
       PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(
         P_SNAP_DIVISION_CODE,P_AUDITED_BY_ID);
+    END IF;
+    IF P_SNAP_AUDITED_BY_ID IS NOT NULL AND (P_SNAP_DIVISION_CODE IS NULL OR P_SNAP_AUDITED_BY_ID <= 0 OR P_SNAP_AUDITED_BY_ID <> TRUNC(P_SNAP_AUDITED_BY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid Snap audited-by selection.');
     END IF;
     OPEN IO_CURSOR FOR
       SELECT
@@ -822,6 +826,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
       FROM V_EXEC_KPI_LIFECYCLE k
       WHERE (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
         AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+           AND (P_SNAP_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_SNAP_AUDITED_BY_ID)
            AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
                 SELECT 1 FROM (
                   SELECT 112243 division_id, 'FAD' division_code FROM dual
@@ -1040,10 +1045,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
     P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
     P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
     P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
-    IO_CURSOR OUT SYS_REFCURSOR
+    IO_CURSOR OUT SYS_REFCURSOR,
+      P_POSITION_AS_ON IN DATE DEFAULT NULL,
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL
 ) AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
+    V_PERIOD_TO DATE;
+    V_POSITION DATE;
+    V_DIVISION VARCHAR2(3) := NVL(P_SNAP_DIVISION_CODE, '1');
 BEGIN
     -- Only the Audited By department controls audit portfolio scope.
     -- Retain obsolete parameters temporarily for C# compatibility.
@@ -1064,6 +1074,18 @@ BEGIN
         V_TO_EXCLUSIVE
     );
 
+    V_PERIOD_TO := V_TO_EXCLUSIVE - 1;
+    V_POSITION := NVL(TRUNC(P_POSITION_AS_ON), LEAST(V_PERIOD_TO, TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) - 1));
+    IF V_POSITION < V_FROM OR V_POSITION > V_PERIOD_TO OR V_POSITION > TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) THEN
+      RAISE_APPLICATION_ERROR(-20049,'Position as on is outside the audit period or in the future.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL OR P_ENTITY_TYPE_ID IS NOT NULL OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+      RAISE_APPLICATION_ERROR(-20048,'CIA Command Center accepts audit-portfolio filters only.');
+    END IF;
+    PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(V_DIVISION, P_AUDITED_BY_ID);
+    V_TO_EXCLUSIVE := V_POSITION + 1;
+
+
     OPEN IO_CURSOR FOR
     WITH plan_scope AS
     (
@@ -1075,7 +1097,11 @@ BEGIN
             ON s.entity_id = p.auditedby
         WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
           AND p.status IN (1, 2)
-          AND s.parent_id IN (112243, 113254)
+          AND EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = s.entity_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
           AND (
               P_AUDITED_BY_ID IS NULL
               OR s.entity_id = P_AUDITED_BY_ID
@@ -1098,7 +1124,11 @@ BEGIN
             ON a.entity_id = e.entity_id
         INNER JOIN v_exec_entity_scope s
             ON s.entity_id = e.auditby_id
-        WHERE s.parent_id IN (112243, 113254)
+        WHERE EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = s.entity_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
           AND (
               P_AUDITED_BY_ID IS NULL
               OR s.entity_id = P_AUDITED_BY_ID
@@ -1206,7 +1236,8 @@ BEGIN
            t.teams_conducting_audit,
            P_AUDIT_PERIOD_ID AS audit_period_id,
            V_FROM AS audit_period_from,
-           V_TO_EXCLUSIVE - 1 AS audit_period_to,
+           V_PERIOD_TO AS audit_period_to,
+           V_POSITION AS position_as_on,
            TRUNC(SYSDATE) AS current_state_as_of
     FROM coverage c
     CROSS JOIN delayed d
@@ -1231,13 +1262,30 @@ END P_GET_CIA_EXEC_KPIS;
       P_ENTITY_TYPE_ID IN NUMBER DEFAULT NULL,
       P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
-      IO_CURSOR OUT SYS_REFCURSOR) AS
+      IO_CURSOR OUT SYS_REFCURSOR,
+      P_POSITION_AS_ON IN DATE DEFAULT NULL,
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL) AS
     V_FROM DATE;
     V_TO_EXCLUSIVE DATE;
+    V_PERIOD_TO DATE;
+    V_POSITION DATE;
+    V_DIVISION VARCHAR2(3) := NVL(P_SNAP_DIVISION_CODE, '1');
   BEGIN
     RESOLVE_CIA_COMMAND_PERIOD(
       P_DASHBOARD_TYPE, P_ENTITY_ID, P_AUDIT_PERIOD_ID,
       V_FROM, V_TO_EXCLUSIVE);
+
+    V_PERIOD_TO := V_TO_EXCLUSIVE - 1;
+    V_POSITION := NVL(TRUNC(P_POSITION_AS_ON), LEAST(V_PERIOD_TO, TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) - 1));
+    IF V_POSITION < V_FROM OR V_POSITION > V_PERIOD_TO OR V_POSITION > TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) THEN
+      RAISE_APPLICATION_ERROR(-20049,'Position as on is outside the audit period or in the future.');
+    END IF;
+    IF P_ENTITY_ID IS NOT NULL OR P_ENTITY_TYPE_ID IS NOT NULL OR P_REPORTING_OFFICE_ID IS NOT NULL THEN
+      RAISE_APPLICATION_ERROR(-20048,'CIA Command Center accepts audit-portfolio filters only.');
+    END IF;
+    PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(V_DIVISION, P_AUDITED_BY_ID);
+    V_TO_EXCLUSIVE := V_POSITION + 1;
+
 
     OPEN IO_CURSOR FOR
       WITH categories AS
@@ -1268,7 +1316,12 @@ END P_GET_CIA_EXEC_KPIS;
           LEFT JOIN t_au_observation o ON o.id = k.observation_id
           LEFT JOIN v_ias_cia_issue_checklist_root croot
             ON croot.observation_id = k.observation_id
-         WHERE k.record_type = 'ISSUE'
+         WHERE EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
+              (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
+              WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
+                AND h.entity_id = k.audited_by_id AND (h.entity_id = d.parent_id OR d.parent_id IN
+                (h.reporting_1,h.reporting_2,h.reporting_3,h.reporting_4,h.reporting_5,h.reporting_6)))
+           AND k.record_type = 'ISSUE'
            AND k.issue_eligible = 1
            AND k.period_id = P_AUDIT_PERIOD_ID
            AND k.issue_identified_on >= V_FROM
@@ -1371,7 +1424,8 @@ END P_GET_CIA_EXEC_KPIS;
       P_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
       IO_CURSOR OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL) AS
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
     V_FROM DATE;
     V_TO DATE;
@@ -1398,6 +1452,9 @@ END P_GET_CIA_EXEC_KPIS;
     IF P_SNAP_DIVISION_CODE IS NOT NULL THEN
       PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(
         P_SNAP_DIVISION_CODE,P_AUDITED_BY_ID);
+    END IF;
+    IF P_SNAP_AUDITED_BY_ID IS NOT NULL AND (P_SNAP_DIVISION_CODE IS NULL OR P_SNAP_AUDITED_BY_ID <= 0 OR P_SNAP_AUDITED_BY_ID <> TRUNC(P_SNAP_AUDITED_BY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid Snap audited-by selection.');
     END IF;
     OPEN IO_CURSOR FOR
       -- Read the latest compliance-cycle entry no later than the selected
@@ -1434,6 +1491,7 @@ END P_GET_CIA_EXEC_KPIS;
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+           AND (P_SNAP_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_SNAP_AUDITED_BY_ID)
            AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
                 SELECT 1 FROM (
                   SELECT 112243 division_id, 'FAD' division_code FROM dual
@@ -1456,6 +1514,9 @@ END P_GET_CIA_EXEC_KPIS;
         UNION ALL SELECT 'risk','2','Medium',2 FROM dual
         UNION ALL SELECT 'risk','3','Low',3 FROM dual
         UNION ALL SELECT 'risk','0','Unrated',4 FROM dual
+        UNION ALL SELECT 'exposure','high','High-risk open',1 FROM dual
+        UNION ALL SELECT 'exposure','year','High-risk over one year',2 FROM dual
+        UNION ALL SELECT 'exposure','cycles','High-risk over three compliance cycles',3 FROM dual
         UNION ALL SELECT 'aging','1','0-90 days',1 FROM dual
         UNION ALL SELECT 'aging','2','91-180 days',2 FROM dual
         UNION ALL SELECT 'aging','3','181-365 days',3 FROM dual
@@ -1472,6 +1533,10 @@ END P_GET_CIA_EXEC_KPIS;
         SELECT 'risk' dataset, risk_id,
                CASE WHEN risk_id IN (1,2,3) THEN TO_CHAR(risk_id) ELSE '0' END bucket_code
           FROM scoped WHERE snap_open = 1
+        UNION ALL
+        SELECT 'exposure', risk_id, 'high' FROM scoped WHERE snap_open=1 AND risk_id=1
+        UNION ALL SELECT 'exposure', risk_id, 'year' FROM scoped WHERE snap_open=1 AND risk_id=1 AND snap_age>365
+        UNION ALL SELECT 'exposure', risk_id, 'cycles' FROM scoped WHERE snap_open=1 AND risk_id=1 AND snap_cycle>3
         UNION ALL
         SELECT 'aging', risk_id,
                CASE WHEN snap_age IS NULL THEN '0' WHEN snap_age <= 90 THEN '1'
@@ -1501,7 +1566,9 @@ END P_GET_CIA_EXEC_KPIS;
         SELECT c.dataset, c.bucket_code, c.bucket_name, c.ord,
                NVL(n.para_count,0) AS para_count,
                NVL(n.high_risk_count,0) AS high_risk_count,
-               CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
+               CASE WHEN c.dataset='exposure' AND c.bucket_code='cycles' AND EXISTS
+                    (SELECT 1 FROM scoped z WHERE z.snap_open=1 AND z.risk_id=1 AND z.snap_cycle IS NULL) THEN 'N'
+                    WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code
           FROM categories c LEFT JOIN counts n
             ON n.dataset = c.dataset AND n.bucket_code = c.bucket_code
         UNION ALL
@@ -1514,9 +1581,32 @@ END P_GET_CIA_EXEC_KPIS;
            AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
          GROUP BY m.month_start
       )
-      SELECT dataset, bucket_code, bucket_name, para_count,
-             high_risk_count, quality_code
-        FROM results ORDER BY dataset, ord;
+      , movement AS
+      (
+        SELECT m.month_start,
+               COUNT(CASE WHEN s.para_added_on >= GREATEST(m.month_start,V_FROM)
+                           AND s.para_added_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
+                           AND (s.para_status = 8 OR (s.para_status = 9 AND s.excluded_pre_finalization = 0))
+                          THEN s.com_id END) AS paras_added,
+               COUNT(CASE WHEN s.para_settled_on >= GREATEST(m.month_start,V_FROM)
+                           AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO)
+                          THEN s.com_id END) AS paras_settled
+          FROM months m LEFT JOIN scoped s
+            ON (s.para_added_on >= GREATEST(m.month_start,V_FROM)
+                AND s.para_added_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO))
+            OR (s.para_settled_on >= GREATEST(m.month_start,V_FROM)
+                AND s.para_settled_on < LEAST(ADD_MONTHS(m.month_start,1),V_TO))
+         GROUP BY m.month_start
+      )
+      SELECT dataset,bucket_code,bucket_name,para_count,high_risk_count,quality_code,paras_added,paras_settled
+      FROM (
+        SELECT dataset,bucket_code,bucket_name,para_count,high_risk_count,quality_code,ord,
+               CAST(NULL AS NUMBER) paras_added,CAST(NULL AS NUMBER) paras_settled FROM results
+        UNION ALL
+        SELECT 'movement',TO_CHAR(month_start,'YYYY-MM'),TO_CHAR(month_start,'YYYY-MM'),
+               CAST(NULL AS NUMBER),CAST(NULL AS NUMBER),'E',ROW_NUMBER() OVER(ORDER BY month_start),
+               paras_added,paras_settled FROM movement
+      ) ORDER BY dataset,ord;
   END P_GET_SNAP_DISTRIBUTION;
 
   PROCEDURE P_GET_SNAP_CRITICAL(
@@ -1529,7 +1619,9 @@ END P_GET_CIA_EXEC_KPIS;
       P_REPORTING_OFFICE_ID IN NUMBER DEFAULT NULL,
       P_MAX_ROWS IN NUMBER DEFAULT 100,
       IO_CURSOR OUT SYS_REFCURSOR,
-      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL) AS
+      P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
+      P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
+      P_COM_ID IN NUMBER DEFAULT NULL) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
     V_FROM DATE;
     V_TO DATE;
@@ -1560,6 +1652,12 @@ END P_GET_CIA_EXEC_KPIS;
     IF P_SNAP_DIVISION_CODE IS NOT NULL THEN
       PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION(
         P_SNAP_DIVISION_CODE,P_AUDITED_BY_ID);
+    END IF;
+    IF P_SNAP_AUDITED_BY_ID IS NOT NULL AND (P_SNAP_DIVISION_CODE IS NULL OR P_SNAP_AUDITED_BY_ID <= 0 OR P_SNAP_AUDITED_BY_ID <> TRUNC(P_SNAP_AUDITED_BY_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid Snap audited-by selection.');
+    END IF;
+    IF P_COM_ID IS NOT NULL AND (P_COM_ID <= 0 OR P_COM_ID <> TRUNC(P_COM_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid para identifier.');
     END IF;
     OPEN IO_CURSOR FOR
       -- Last recorded cycle and movement as of the selected End Date.
@@ -1595,8 +1693,10 @@ END P_GET_CIA_EXEC_KPIS;
           FROM V_EXEC_KPI_LIFECYCLE k
           LEFT JOIN history_asof h ON h.com_id = k.com_id
          WHERE k.record_type = 'PARA'
+           AND (P_COM_ID IS NULL OR k.com_id = P_COM_ID)
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
+           AND (P_SNAP_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_SNAP_AUDITED_BY_ID)
            AND (P_SNAP_DIVISION_CODE IS NULL OR EXISTS (
                 SELECT 1 FROM (
                   SELECT 112243 division_id, 'FAD' division_code FROM dual

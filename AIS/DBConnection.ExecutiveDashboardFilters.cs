@@ -41,12 +41,12 @@ namespace AIS.Controllers
                     ReportingOfficeId = office?.EntityId, ReportingOfficeName = office?.EntityName });
             }
             ValidateExecutiveDashboardSession(scope);
-            return ExecutiveDashboardFilterOptions.FromScopedEntities(rows, filters, scope.DashboardType != "RLM" ? null : (entityId, officeId) =>
+            return ExecutiveDashboardFilterOptions.FromScopedEntities(rows, filters, scope.DashboardType != "RLM" && scope.PermissionPagePath != AuditParaSnapPolicy.PagePath ? null : (entityId, officeId) =>
             {
                 var node = nodes[entityId];
                 return node.EntityId == officeId || node.Reporting1 == officeId || node.Reporting2 == officeId ||
                     node.Reporting3 == officeId || node.Reporting4 == officeId || node.Reporting5 == officeId || node.Reporting6 == officeId;
-            });
+            }, snapEntityTypes: scope.PermissionPagePath == AuditParaSnapPolicy.PagePath);
         }
     }
 }

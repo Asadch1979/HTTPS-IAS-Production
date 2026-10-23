@@ -47,12 +47,12 @@ namespace AIS.Models
                     new[]{"openingOpenParas","issueIdentified","issueRectified","paraAdded","parasSettled",
                         "closingOpenParas","highRiskOpenParas","over1YearParas","over3ComplianceCycles"},
                     new[]{"trend","risk"}),
-                Definition("position","Audit Para Position",
-                    new[]{"openingOpenParas","paraAdded","parasSettled","closingOpenParas"},
+                Definition("position","Audit Performance Analysis",
+                    Array.Empty<string>(),
                     Array.Empty<string>()),
-                Definition("settlement","Settlement & Performance",
-                    new[]{"parasSettled","periodSettlementRate"},new[]{"trend"}),
-                Definition("risk","Risk",new[]{"highRiskOpenParas"},new[]{"risk"}),
+                Definition("settlement","Settlement Effectiveness",
+                    new[]{"parasSettled","periodSettlementRate"},Array.Empty<string>()),
+                Definition("risk","Critical Audit Observations",new[]{"highRiskOpenParas"},Array.Empty<string>()),
                 Definition("aging","Aging & Compliance",
                     new[]{"over1YearParas","over3ComplianceCycles"},new[]{"aging","cycle"}),
                 new() { Id="reports", Title="Reports", Partial="_Reports", Kpis=Array.Empty<string>(),
@@ -73,6 +73,8 @@ namespace AIS.Models
         // For monthly trend only: settled high-risk paras in the same month.
         public long? HighRiskCount { get; set; }
         public string QualityCode { get; set; }
+        public long? ParasAdded { get; set; }
+        public long? ParasSettled { get; set; }
     }
     public sealed class AuditParaSnapCritical
     {

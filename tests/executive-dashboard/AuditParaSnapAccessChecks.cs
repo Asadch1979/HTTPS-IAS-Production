@@ -37,11 +37,12 @@ public static class AuditParaSnapAccessChecks
     sealed class Permissions : IPermissionService
     {
         public bool Page,Api;
+        public string GrantedPath="/api/AuditParaSnap/GetKpis";
         public void EnsurePermissionsCached(SessionUser user) {}
         public void PreloadPermissions(SessionUser user) {}
         public bool HasViewPermission(SessionUser user,int pageId) => Page && pageId==1000304;
         public bool HasApiPermissionForPath(SessionUser user,string method,string pathBase,string path)
-            => Api && method=="GET" && path=="/api/AuditParaSnap/GetKpis";
+            => Api && method=="GET" && path==GrantedPath;
         public bool HasPermissionToExecuteAction(SessionUser user,string id) => false;
         public bool HasRole(SessionUser user,string code) => false;
     }
@@ -61,7 +62,7 @@ public static class AuditParaSnapAccessChecks
             count++;
         };
         int request(int role,bool superFlag,bool pageGrant,bool apiGrant,int resolvedId,
-            bool revoked=false,string method="GET",string path="/api/AuditParaSnap/GetKpis")
+            bool revoked=false,string method="GET",string path="/api/AuditParaSnap/GetKpis",string grantedPath=null)
         {
             var context=new DefaultHttpContext { Session=new MemorySession() };
             context.Request.Method=method;
@@ -79,14 +80,18 @@ public static class AuditParaSnapAccessChecks
             context.Session.SetString(SessionKeys.AllowedViewIds,pageGrant ? "[1000304]" : "[]");
             if (revoked) context.Session.Remove(SessionKeys.SessionStamp);
             session.CacheApiPermissions(apiGrant ? new[]{new ApiPermissionModel {
-                ApiPath="/api/AuditParaSnap/GetKpis",HttpMethod="GET" }} : Array.Empty<ApiPermissionModel>());
+                ApiPath=grantedPath ?? "/api/AuditParaSnap/GetKpis",HttpMethod="GET" }} : Array.Empty<ApiPermissionModel>());
             var database=(DBConnection)RuntimeHelpers.GetUninitializedObject(typeof(DBConnection));
             typeof(DBConnection).GetField("sessionHandler",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(database,session);
-            var controller=new AuditParaSnapController(database,session,new Permissions { Page=pageGrant,Api=apiGrant },
+            var controller=new AuditParaSnapController(database,session,new Permissions { Page=pageGrant,Api=apiGrant,GrantedPath=grantedPath ?? "/api/AuditParaSnap/GetKpis" },
                 new Resolver { Id=resolvedId },configuration,NullLogger<AuditParaSnapController>.Instance,null);
             controller.ControllerContext=new ControllerContext { HttpContext=context };
             // Missing dates must be rejected before all directory/Oracle access.
-            var result=controller.GetKpis(new ExecutiveDashboardFilterRequest { View="glance" });
+            var result=path.EndsWith("/GetPerformance",StringComparison.Ordinal)
+                ? controller.GetPerformance(new ExecutiveDashboardFilterRequest { View="position" })
+                : path.EndsWith("/GetParaText",StringComparison.Ordinal)
+                ? controller.GetParaText(new ExecutiveDashboardFilterRequest { View="risk" },123456)
+                : controller.GetKpis(new ExecutiveDashboardFilterRequest { View="glance" });
             return ((ObjectResult)result).StatusCode ?? 0;
         }
         check(request(0,false,false,false,1000304),401);
@@ -102,6 +107,16 @@ public static class AuditParaSnapAccessChecks
         check(request(3,false,true,true,1000304,revoked:true),401);
         check(request(3,false,true,true,1000304,method:"POST"),403);
         check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetCriticalItems"),403);
+        check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetPerformance"),403);
+        check(request(1,true,true,true,1000304,path:"/api/AuditParaSnap/GetPerformance"),403);
+        check(request(3,false,true,true,1000304,path:"/api/AuditParaSnap/GetParaText"),403);
+        check(request(1,true,true,true,1000304,path:"/api/AuditParaSnap/GetParaText"),403);
+        foreach (var api in new[]{"GetPerformance","GetParaText"})
+        {
+            var path="/api/AuditParaSnap/"+api;
+            check(request(3,false,true,true,1000304,path:path,grantedPath:path),400);
+            check(request(1,true,true,true,1000304,path:path,grantedPath:path),400);
+        }
         return count+" compiled-controller access checks passed (no Oracle).";
     }
 }

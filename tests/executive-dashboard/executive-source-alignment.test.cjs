@@ -28,7 +28,9 @@ test('CIA KPI scope follows Audited By and rejects unsupported filters', () => {
   assert.match(body, /P_DASHBOARD_TYPE,\s*NULL,\s*P_AUDIT_PERIOD_ID/);
   assert.match(body, /ON s\.entity_id = p\.auditedby/);
   assert.match(body, /ON s\.entity_id = e\.auditby_id/);
-  assert.equal((body.match(/s\.parent_id IN \(112243, 113254\)/g) || []).length, 2);
+  assert.equal((body.match(/h\.entity_id = s\.entity_id/g) || []).length, 2);
+  assert.equal((body.match(/V_DIVISION = '1' OR d\.division_code = V_DIVISION/g) || []).length, 2);
+  assert.match(body,/PKG_AUDIT_SNAP_SCOPE.REQUIRE_SELECTION\(V_DIVISION, P_AUDITED_BY_ID\)/);
   assert.match(body, /completed_entities AS/);
   assert.match(body, /e\.period_id = P_AUDIT_PERIOD_ID/);
   assert.match(body, /ON ce\.entity_id = p\.entity_id/);

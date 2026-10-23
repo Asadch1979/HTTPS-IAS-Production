@@ -15,6 +15,7 @@ namespace AIS.Models
         public int? ReportingOfficeId { get; set; }
         public int? EntityId { get; set; }
         public string View { get; set; }
+        public string PositionAsOn { get; set; }
         // Audit Para Snap-specific audit-portfolio selectors; not business hierarchy IDs.
         public string SnapDivision { get; set; }
         public int? SnapDepartmentId { get; set; }
@@ -23,7 +24,7 @@ namespace AIS.Models
         // their existing independently validated organizational contract.
         public void ValidateParentPerspective(string perspective)
         {
-            if (perspective != "CIA" && (SelectBy != "entityType" || DimensionId.HasValue ||
+            if (perspective != "CIA" && perspective != "SNAP" && (SelectBy != "entityType" || DimensionId.HasValue ||
                 ReportingOfficeId.HasValue || EntityId.HasValue))
                 throw new ArgumentException("This dashboard accepts dates only; its hierarchy comes from the authenticated IAS scope.");
         }
@@ -78,7 +79,7 @@ namespace AIS.Models
         public List<ExecutiveFilterOption> Entities { get; set; } = new();
 
         // Input is already intersected with the authenticated organizational scope.
-        public static ExecutiveDashboardFilterOptions FromScopedEntities(IEnumerable<ExecutiveFilterEntity> entities, ExecutiveDashboardFilterRequest filters, Func<int, int, bool> withinReportingOffice = null)
+        public static ExecutiveDashboardFilterOptions FromScopedEntities(IEnumerable<ExecutiveFilterEntity> entities, ExecutiveDashboardFilterRequest filters, Func<int, int, bool> withinReportingOffice = null, bool snapEntityTypes = false)
         {
             filters.Validate();
             var rows = entities.ToList();
@@ -86,6 +87,12 @@ namespace AIS.Models
             result.Dimensions = Options(rows.Select(e => filters.SelectBy == "entityType"
                 ? new ExecutiveFilterOption { Id = e.EntityTypeId ?? 0, Name = e.EntityTypeName }
                 : new ExecutiveFilterOption { Id = e.AuditedById ?? 0, Name = e.AuditedByName }));
+            if (snapEntityTypes && filters.SelectBy == "entityType")
+            {
+                var allowed = new[] { "GROUP", "DIVISION", "DEPARTMENT", "GM OFFICE" };
+                result.Dimensions = result.Dimensions.Where(o => allowed.Contains((o.Name ?? "").Trim().ToUpperInvariant()))
+                    .OrderBy(o => Array.IndexOf(allowed, (o.Name ?? "").Trim().ToUpperInvariant())).ThenBy(o => o.Id).ToList();
+            }
             RequireOption(result.Dimensions, filters.DimensionId);
             if (filters.DimensionId.HasValue) rows = rows.Where(e => (filters.SelectBy == "entityType" ? e.EntityTypeId : e.AuditedById) == filters.DimensionId).ToList();
             result.ReportingOffices = Options(rows.Select(e => new ExecutiveFilterOption { Id = e.ReportingOfficeId ?? 0, Name = e.ReportingOfficeName }));

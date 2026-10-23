@@ -3,6 +3,8 @@
     const root = document.getElementById('exec-reports');
     if (!root) return;
     const app = document.getElementById('executive-dashboard');
+    const snap=app?.classList.contains('exec-snap') === true;
+    const settlementSources=new Set(['settledByCompliance','settledByAudit','settledByUnknown']);
     const $ = id => document.getElementById(`exec-${id}`);
     const form = $('filters'), selection = $('report-selection');
     const buttons = [...root.querySelectorAll('[data-report]')];
@@ -34,6 +36,7 @@
     const rankingColumns = [column('Rank', 'rankPosition'), column('Region', 'itemName', plain), column('Total paras', 'totalParas'),
         column('Settlement %', 'settlementPercentage', percent), column('Outstanding paras', 'outstandingParas')];
     function table(target, title, columns, rows, grouped = false) {
+        if(snap) columns=columns.filter(col=>!settlementSources.has(col.key));
         const wrap = node('div', null, 'exec-table-wrap exec-report-table-wrap');
         wrap.tabIndex = 0; wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', title);
         const table = node('table', null, 'exec-table exec-report-table');
@@ -195,6 +198,7 @@
         } else {
             table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], rows);
         }
+        if (!snap) {
         const sources = node('details', null, 'exec-data'); sources.open = false;
         sources.append(node('summary', 'IAS Settlement Attribution and Reconciliation'));
         table(sources, 'IAS Settlement Attribution and Reconciliation', [
@@ -204,6 +208,7 @@
             column('Unknown', 'settledByUnknown')
         ], rows);
         target.append(sources);
+        }
     }
     // Only a successful response from an authorized report API is exportable.
     const exportCsvButton = $('report-export-csv'), exportPrintButton = $('report-export-print');

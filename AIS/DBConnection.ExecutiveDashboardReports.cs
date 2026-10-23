@@ -49,7 +49,11 @@ namespace AIS.Controllers
             command.Parameters.Add("P_ENTITY_ID", OracleDbType.Int32).Value = (object)filters.EntityId ?? DBNull.Value;
             command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
-                command.Parameters.Add("P_SNAP_DIVISION_CODE", OracleDbType.Varchar2).Value = filters.SnapDivision;
+                {
+                    command.Parameters.Add("P_SNAP_DIVISION_CODE", OracleDbType.Varchar2).Value = filters.SnapDivision;
+                    command.Parameters.Add("P_SNAP_AUDITED_BY_ID", OracleDbType.Int32).Value =
+                        filters.SelectBy == "auditedBy" ? (object)filters.DimensionId ?? DBNull.Value : DBNull.Value;
+                }
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
