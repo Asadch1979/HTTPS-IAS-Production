@@ -474,11 +474,14 @@ create or replace package PKG_HD is
   -- Two-person, scoped deletion of a tentative audit plan.
   PROCEDURE P_REQUEST_PLAN_DELETION(
     P_PLAN_ID IN NUMBER, P_REASON IN VARCHAR2, P_ENT_ID IN NUMBER,
-    P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER, P_RESULT OUT VARCHAR2);
+    P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+    P_SESSION_ID IN VARCHAR2, P_CONTEXT_ID IN NUMBER,
+    P_RESULT OUT VARCHAR2);
 
   PROCEDURE P_GET_PLAN_DELETION_REQUESTS(
     P_ENT_ID IN NUMBER, P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER,
-    IO_CURSOR OUT T_CURSOR);
+    P_GROUP_ID IN NUMBER, P_SESSION_ID IN VARCHAR2,
+    P_CONTEXT_ID IN NUMBER, IO_CURSOR OUT T_CURSOR);
 
   PROCEDURE P_AUTHORIZE_PLAN_DELETION(
     P_REQUEST_ID IN NUMBER, P_ENT_ID IN NUMBER, P_PPNO IN NUMBER,
@@ -4576,57 +4579,92 @@ create or replace package body PKG_HD is
   end P_get_BackOfficeDashboardEngagements;
 
 
-  -- Revalidate user, active assignment, group and page entitlement in Oracle.
-  -- UI page checks alone must never authorize a destructive procedure.
+  -- Verify the actual IAS login session, selected role/group/context and page grant.
+  -- A supplied ROLE_ID=1 alone is never evidence of Super User authority.
   PROCEDURE REQUIRE_PLAN_DELETION_ACCESS(
-    P_ENT_ID NUMBER, P_PPNO NUMBER, P_ROLE_ID NUMBER, P_AUTHORIZER VARCHAR2)
+    P_ENT_ID NUMBER, P_PPNO NUMBER, P_ROLE_ID NUMBER,
+    P_GROUP_ID NUMBER, P_SESSION_ID VARCHAR2, P_CONTEXT_ID NUMBER,
+    P_AUTHORIZER VARCHAR2)
   AS
     L_COUNT NUMBER;
   BEGIN
-    IF P_ENT_ID IS NULL OR P_PPNO IS NULL OR P_ROLE_ID IS NULL THEN
-      RAISE_APPLICATION_ERROR(-20210, 'Missing audit plan deletion identity.');
+    IF P_ENT_ID IS NULL OR P_ENT_ID <= 0
+       OR P_PPNO IS NULL OR P_PPNO <= 0
+       OR P_ROLE_ID IS NULL OR P_ROLE_ID <= 0
+       OR P_GROUP_ID IS NULL OR P_GROUP_ID <= 0
+       OR P_SESSION_ID IS NULL OR P_AUTHORIZER NOT IN ('Y','N') THEN
+      RAISE_APPLICATION_ERROR(-20210,'Missing or invalid IAS deletion session.');
     END IF;
+
     SELECT COUNT(*) INTO L_COUNT
       FROM T_USER U
-     WHERE U.PPNO = P_PPNO AND U.ISACTIVE = 'Y'
+     WHERE U.PPNO=P_PPNO AND U.ISACTIVE='Y'
+       AND EXISTS (
+         SELECT 1 FROM T_USER_SESSION S
+          WHERE S.USER_PP_NUMBER=U.PPNO
+            AND S.SESSION_ID=P_SESSION_ID
+            AND S.ROLE_ID=P_ROLE_ID
+            AND S.GROUP_ID=P_GROUP_ID
+            AND S.ENTITY_ID=P_ENT_ID
+            AND S.SESSION_ACTIVE='Y'
+            AND S.LOGGED_OUT_DATE IS NULL)
        AND EXISTS (
          SELECT 1 FROM T_GROUPS G
-         JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.GROUP_ID = G.GROUP_ID
-         JOIN T_MENU_PAGES MP ON MP.ID = MPG.PAGE_ID
-          WHERE G.ROLE_ID = P_ROLE_ID AND G.STATUS = 'Y'
-            AND MP.STATUS = 'A'
+          WHERE G.GROUP_ID=P_GROUP_ID
+            AND G.ROLE_ID=P_ROLE_ID
+            AND G.STATUS='Y')
+       AND (
+         (P_CONTEXT_ID IS NOT NULL AND EXISTS (
+           SELECT 1 FROM T_USER_CONTEXT_ASSIGNMENT C
+            WHERE C.USER_CONTEXT_ID=P_CONTEXT_ID
+              AND C.USER_ID=U.USERID
+              AND C.PPNO=P_PPNO
+              AND C.ROLE_ID=P_ROLE_ID
+              AND NVL(C.GROUP_ID,C.ROLE_ID)=P_GROUP_ID
+              AND C.ENTITY_ID=P_ENT_ID
+              AND C.IS_ACTIVE='Y'
+              AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM<=SYSDATE)
+              AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO>=TRUNC(SYSDATE))))
+         OR
+         (P_CONTEXT_ID IS NULL AND EXISTS (
+           SELECT 1 FROM T_USER_MAPING M
+            WHERE (M.USERID=U.USERID OR M.PPNO=U.PPNO)
+              AND M.ROLE_ID=P_ROLE_ID
+              AND M.GROUP_ID=P_GROUP_ID
+              AND U.ENTITY_ID=P_ENT_ID))
+       )
+       AND EXISTS (
+         SELECT 1 FROM T_MENU_PAGES MP
+         JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.PAGE_ID=MP.ID
+          WHERE MPG.GROUP_ID=P_GROUP_ID AND MP.STATUS='A'
             AND (
-               (P_AUTHORIZER = 'Y' AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) =
-                   'planning/audit_plan_deletion_authorization')
-               OR
-               (P_AUTHORIZER = 'N' AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) IN
-                   ('planning/tentative_audit_plan','planning/planning'))
-            )
-            AND (
-              EXISTS (
-                SELECT 1 FROM T_USER_MAPING M
-                 WHERE M.USERID = U.USERID AND M.ROLE_ID = P_ROLE_ID
-                   AND M.GROUP_ID = G.GROUP_ID AND U.ENTITY_ID = P_ENT_ID)
-              OR EXISTS (
-                SELECT 1 FROM T_USER_CONTEXT_ASSIGNMENT C
-                 WHERE C.USER_ID = U.USERID AND C.ROLE_ID = P_ROLE_ID
-                   AND C.ENTITY_ID = P_ENT_ID
-                   AND NVL(C.GROUP_ID,C.ROLE_ID) = G.GROUP_ID
-                   AND C.IS_ACTIVE = 'Y'
-                   AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM <= SYSDATE)
-                   AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO >= TRUNC(SYSDATE))
-              )
-            )
-       );
-    IF L_COUNT <> 1 THEN
-      RAISE_APPLICATION_ERROR(-20211, 'Not authorized for audit plan deletion.');
+              (P_AUTHORIZER='Y'
+                 AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH))=
+                     'planning/audit_plan_deletion_authorization')
+              OR
+              (P_AUTHORIZER='N'
+                 AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) IN (
+                   'planning/tentative_audit_plan',
+                   'planning/planning'))
+              OR
+              (P_AUTHORIZER='N' AND P_ROLE_ID=1
+                 AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH))=
+                     'planning/audit_plan_deletion_authorization')
+            ));
+    IF L_COUNT<>1 THEN
+      RAISE_APPLICATION_ERROR(-20211,
+        'Active session, group, context or page grant not authorized.');
     END IF;
   END REQUIRE_PLAN_DELETION_ACCESS;
 
-  FUNCTION PLAN_DELETE_IN_SCOPE(P_PLAN_AUDITEDBY NUMBER, P_ENT_ID NUMBER)
+  -- Role 1 is granted global audit-portfolio scope ONLY after
+  -- REQUIRE_PLAN_DELETION_ACCESS validates live IAS session and page grant.
+  FUNCTION PLAN_DELETE_IN_SCOPE(
+    P_PLAN_AUDITEDBY NUMBER, P_ENT_ID NUMBER, P_ROLE_ID NUMBER)
     RETURN BOOLEAN
   IS L_COUNT NUMBER;
   BEGIN
+    IF P_ROLE_ID=1 THEN RETURN TRUE; END IF;
     IF P_PLAN_AUDITEDBY = P_ENT_ID THEN RETURN TRUE; END IF;
     SELECT COUNT(*) INTO L_COUNT
       FROM V_IAS_ENTITY_REPORTING_NAMES H
@@ -4648,11 +4686,14 @@ create or replace package body PKG_HD is
 
   PROCEDURE P_REQUEST_PLAN_DELETION(
     P_PLAN_ID IN NUMBER, P_REASON IN VARCHAR2, P_ENT_ID IN NUMBER,
-    P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER, P_RESULT OUT VARCHAR2)
+    P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+    P_SESSION_ID IN VARCHAR2, P_CONTEXT_ID IN NUMBER,
+    P_RESULT OUT VARCHAR2)
   AS
     L_PLAN T_AU_PLAN%ROWTYPE;
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'N');
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,
+      P_GROUP_ID,P_SESSION_ID,P_CONTEXT_ID,'N');
     IF P_PLAN_ID IS NULL OR P_REASON IS NULL OR LENGTH(TRIM(P_REASON)) < 10
        OR LENGTH(P_REASON) > 2000 THEN
        RAISE_APPLICATION_ERROR(-20213,
@@ -4661,7 +4702,7 @@ create or replace package body PKG_HD is
     SELECT * INTO L_PLAN FROM T_AU_PLAN
      WHERE ID = P_PLAN_ID FOR UPDATE;
     IF L_PLAN.STATUS <> '1'
-       OR NOT PLAN_DELETE_IN_SCOPE(L_PLAN.AUDITEDBY,P_ENT_ID) THEN
+       OR NOT PLAN_DELETE_IN_SCOPE(L_PLAN.AUDITEDBY,P_ENT_ID,P_ROLE_ID) THEN
       RAISE_APPLICATION_ERROR(-20211,
         'Audit plan outside authorized scope or not tentative.');
     END IF;
@@ -4695,10 +4736,12 @@ create or replace package body PKG_HD is
 
   PROCEDURE P_GET_PLAN_DELETION_REQUESTS(
     P_ENT_ID IN NUMBER, P_PPNO IN NUMBER, P_ROLE_ID IN NUMBER,
-    IO_CURSOR OUT T_CURSOR)
+    P_GROUP_ID IN NUMBER, P_SESSION_ID IN VARCHAR2,
+    P_CONTEXT_ID IN NUMBER, IO_CURSOR OUT T_CURSOR)
   AS
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'Y');
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,
+      P_GROUP_ID,P_SESSION_ID,P_CONTEXT_ID,'Y');
     OPEN IO_CURSOR FOR
       SELECT D.ID REQUEST_ID, D.PLAN_ID, D.AUDITPERIODID,
              D.ENTITY_ID, D.AUDITEDBY, D.REASON, D.REQUESTED_BY,
@@ -4710,7 +4753,7 @@ create or replace package body PKG_HD is
         LEFT JOIN T_AU_PERIOD P ON P.AUDITPERIODID = D.AUDITPERIODID
        WHERE D.STATUS = 'PENDING'
          AND D.REQUESTED_BY <> P_PPNO
-         AND (D.AUDITEDBY = P_ENT_ID OR EXISTS (
+         AND (P_ROLE_ID=1 OR D.AUDITEDBY=P_ENT_ID OR EXISTS (
            SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES H
             WHERE H.ENTITY_ID = D.AUDITEDBY
               AND P_ENT_ID IN (H.REPORTING_1,H.REPORTING_2,H.REPORTING_3,
@@ -4725,12 +4768,13 @@ create or replace package body PKG_HD is
     L_REQUEST T_AU_PLAN_DISABLED%ROWTYPE;
     L_PLAN T_AU_PLAN%ROWTYPE;
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'Y');
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,
+      P_GROUP_ID,P_SESSION_ID,P_CONTEXT_ID,'Y');
     SELECT * INTO L_REQUEST FROM T_AU_PLAN_DISABLED
      WHERE ID = P_REQUEST_ID FOR UPDATE;
     IF L_REQUEST.STATUS <> 'PENDING'
        OR L_REQUEST.REQUESTED_BY = P_PPNO
-       OR NOT PLAN_DELETE_IN_SCOPE(L_REQUEST.AUDITEDBY,P_ENT_ID) THEN
+       OR NOT PLAN_DELETE_IN_SCOPE(L_REQUEST.AUDITEDBY,P_ENT_ID,P_ROLE_ID) THEN
       RAISE_APPLICATION_ERROR(-20211,
         'Request is not pending or cannot be authorized by this user.');
     END IF;
