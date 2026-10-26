@@ -2571,6 +2571,7 @@ namespace AIS.Controllers
                     {
                     TentativePlanModel tplan = new TentativePlanModel();
                     tplan.PLAN_ID = Convert.ToInt32(rdr["PLAN_ID"]);
+                    tplan.DELETION_PENDING = Convert.ToInt32(rdr["DELETION_PENDING"]) == 1;
                     tplan.CRITERIA_ID = Convert.ToInt32(rdr["CRITERIA_ID"]);
                     tplan.AUDIT_PERIOD_ID = Convert.ToInt32(rdr["AUDITPERIODID"]);
                     tplan.AUDITEDBY = Convert.ToInt32(rdr["AUDITEDBY"]);
