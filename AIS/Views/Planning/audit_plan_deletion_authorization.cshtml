@@ -1,0 +1,61 @@
+@model IEnumerable<AIS.Models.Planning.AuditPlanDeletionRequestModel>
+@{
+    ViewData["Title"] = "Audit Plan Deletion Authorization";
+    Layout = "_Layout";
+}
+<div class="container-fluid mt-3">
+    <h3>Audit Plan Deletion Authorization</h3>
+    <p class="text-muted">Pending requests within your authorized audit portfolio. Authorization requires a different user from the requester.</p>
+
+    @if (TempData["PlanDeletionMessage"] != null)
+    {
+        <div class="alert alert-success" role="status">@TempData["PlanDeletionMessage"]</div>
+    }
+    @if (TempData["PlanDeletionError"] != null)
+    {
+        <div class="alert alert-danger" role="alert">@TempData["PlanDeletionError"]</div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Request</th><th>Plan ID</th><th>Audit Period</th><th>Audit Entity</th>
+                    <th>Audited By</th><th>Requested By</th><th>Requested On</th>
+                    <th>Deletion Reason (Read only)</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.RequestId</td>
+                        <td>@item.PlanId</td>
+                        <td>@item.PeriodName</td>
+                        <td>@item.EntityName</td>
+                        <td>@item.AuditedBy</td>
+                        <td>@item.RequestedBy</td>
+                        <td>@item.RequestedOn.ToString("dd-MMM-yyyy HH:mm")</td>
+                        <td style="white-space:pre-wrap; max-width:360px;">@item.Reason</td>
+                        <td>
+                            <form method="post" action="@Url.Action("AuthorizeAuditPlanDeletion", "Planning")"
+                                  class="js-plan-delete-approval">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="RequestId" value="@item.RequestId" />
+                                <button type="submit" class="btn btn-sm btn-danger"
+                                        aria-label="Authorize deletion of plan @item.PlanId">
+                                    Authorize Deletion
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="9" class="text-center text-muted">No pending requests available for your authorization.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<script src="~/js/csp/Views_Planning_audit_plan_deletion_authorization.js?v=1"></script>
