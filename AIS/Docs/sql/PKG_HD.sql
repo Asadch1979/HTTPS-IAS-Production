@@ -4653,7 +4653,7 @@ create or replace package body PKG_HD is
     L_PLAN T_AU_PLAN%ROWTYPE;
   BEGIN
     REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'N');
-    IF P_PLAN_ID IS NULL OR LENGTH(TRIM(P_REASON)) < 10
+    IF P_PLAN_ID IS NULL OR P_REASON IS NULL OR LENGTH(TRIM(P_REASON)) < 10
        OR LENGTH(P_REASON) > 2000 THEN
        RAISE_APPLICATION_ERROR(-20213,
          'Select an audit plan and enter a reason (10 to 2000 characters).');
