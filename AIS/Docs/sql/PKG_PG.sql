@@ -2322,6 +2322,7 @@ create or replace package body PKG_PG is
     END IF;
 
     if (OP_STARTDATE = OP_ENDDATE or OP_STARTDATE is null) then
+      ROLLBACK; -- Release plan-row lock on validation failure.
       open io_cursor for
         select r.ref, r.remarks from t_au_remarks r where r.id = 25;
     else
@@ -2423,11 +2424,13 @@ create or replace package body PKG_PG is
           OPEN io_cursor FOR
             select r.ref, r.remarks from t_au_remarks r where r.id = 1;
         else
+          ROLLBACK; -- No engagement created; release locked plan.
           OPEN io_cursor FOR
             select r.ref, r.remarks from t_au_remarks r where r.id = 2;
         
         end if;
       else
+        ROLLBACK; -- Existing engagement; release locked plan.
         OPEN io_cursor FOR
           select r.ref, r.remarks from t_au_remarks r where r.id = 3;
       
