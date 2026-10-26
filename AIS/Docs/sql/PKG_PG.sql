@@ -2117,6 +2117,9 @@ create or replace package body PKG_PG is
         SELECT a.criteria_id           AS CRITERIA_ID,
                et.entitytypedesc       AS ent_type,
                a.ID                    AS PLAN_ID,
+                CASE WHEN EXISTS (SELECT 1 FROM T_AU_PLAN_DISABLED D
+                                  WHERE D.PLAN_ID=A.ID AND D.STATUS='PENDING')
+                  THEN 1 ELSE 0 END AS DELETION_PENDING,
                a.AUDITPERIODID         AS AUDITPERIODID,
                e.auditby_id            AS AUDITEDBY,
                ess.description         AS AUDITEE_SIZE,
@@ -2158,6 +2161,9 @@ create or replace package body PKG_PG is
       OPEN io_cursor FOR
         SELECT a.criteria_id           AS CRITERIA_ID,
                a.ID                    AS PLAN_ID,
+                CASE WHEN EXISTS (SELECT 1 FROM T_AU_PLAN_DISABLED D
+                                  WHERE D.PLAN_ID=A.ID AND D.STATUS='PENDING')
+                  THEN 1 ELSE 0 END AS DELETION_PENDING,
                et.entitytypedesc       AS ent_type,
                a.AUDITPERIODID         AS AUDITPERIODID,
                e.auditby_id            AS AUDITEDBY,
@@ -2200,6 +2206,9 @@ create or replace package body PKG_PG is
       OPEN io_cursor FOR
         SELECT a.criteria_id           AS CRITERIA_ID,
                a.ID                    AS PLAN_ID,
+                CASE WHEN EXISTS (SELECT 1 FROM T_AU_PLAN_DISABLED D
+                                  WHERE D.PLAN_ID=A.ID AND D.STATUS='PENDING')
+                  THEN 1 ELSE 0 END AS DELETION_PENDING,
                et.entitytypedesc       AS ent_type,
                a.AUDITPERIODID         AS AUDITPERIODID,
                e.auditby_id            AS AUDITEDBY,
@@ -2279,12 +2288,41 @@ create or replace package body PKG_PG is
     E_P number := 0;
     T_I number := 0;
     E_F number := 0;
+    V_PLAN_LOCK_ID T_AU_PLAN.ID%TYPE;
+    V_DELETION_COUNT NUMBER := 0;
   begin
   
     commit;
     commit;
-  
+
+    -- Serialize engagement creation against plan deletion requests.
+    -- Both writers lock this same plan row before checking their conditions.
+    BEGIN
+      SELECT P.ID INTO V_PLAN_LOCK_ID
+        FROM T_AU_PLAN P
+       WHERE P.ID = PLANID AND P.STATUS='1'
+         FOR UPDATE WAIT 5;
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        OPEN io_cursor FOR
+          SELECT 'PLAN_NOT_TENTATIVE' REF,
+                 'The selected audit plan is no longer tentative.' REMARKS
+            FROM DUAL;
+        RETURN;
+    END;
+    SELECT COUNT(*) INTO V_DELETION_COUNT
+      FROM T_AU_PLAN_DISABLED D WHERE D.PLAN_ID=PLANID;
+    IF V_DELETION_COUNT > 0 THEN
+      ROLLBACK;
+      OPEN io_cursor FOR
+        SELECT 'PLAN_DELETION_PENDING' REF,
+               'An audit plan deletion request already exists.' REMARKS
+          FROM DUAL;
+      RETURN;
+    END IF;
+
     if (OP_STARTDATE = OP_ENDDATE or OP_STARTDATE is null) then
+      ROLLBACK; -- Release plan-row lock on validation failure.
       open io_cursor for
         select r.ref, r.remarks from t_au_remarks r where r.id = 25;
     else
@@ -2386,11 +2424,13 @@ create or replace package body PKG_PG is
           OPEN io_cursor FOR
             select r.ref, r.remarks from t_au_remarks r where r.id = 1;
         else
+          ROLLBACK; -- No engagement created; release locked plan.
           OPEN io_cursor FOR
             select r.ref, r.remarks from t_au_remarks r where r.id = 2;
         
         end if;
       else
+        ROLLBACK; -- Existing engagement; release locked plan.
         OPEN io_cursor FOR
           select r.ref, r.remarks from t_au_remarks r where r.id = 3;
       

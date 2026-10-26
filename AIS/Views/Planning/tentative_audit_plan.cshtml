@@ -71,7 +71,29 @@
                                     <td align="center">@item.RISK</td>
                                     <td align="center">@item.FREQUENCY_DESCRIPTION</td>
                                     <td align="center">@item.NO_OF_DAYS</td>
-                                <td align="center"><small data-onclick="createAuditEngagement(@item.PLAN_ID,'@item.ENTITY_NAME','@item.BR_SIZE','@item.RISK','@item.FREQUENCY_DESCRIPTION','@item.NO_OF_DAYS', '@item.PERIOD_NAME','@item.AUDIT_PERIOD_ID','@item.CODE','@item.AUDITEDBY','@item.ENTITY_ID', '@item.ENTITY_TYPE_ID');" class="text-center text-danger text-hover">Create</small></td>
+                                <td align="center">
+                                    @if (item.DELETION_PENDING)
+                                    {
+                                        <span class="badge bg-warning text-dark">Deletion Pending</span>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-primary js-create-audit-engagement"
+                                                data-plan-id="@item.PLAN_ID" data-name="@item.ENTITY_NAME"
+                                                data-size="@item.BR_SIZE" data-risk="@item.RISK"
+                                                data-freq="@item.FREQUENCY_DESCRIPTION" data-days="@item.NO_OF_DAYS"
+                                                data-period="@item.PERIOD_NAME" data-period-id="@item.AUDIT_PERIOD_ID"
+                                                data-code="@item.CODE" data-zone-id="@item.AUDITEDBY"
+                                                data-entity-id="@item.ENTITY_ID" data-entity-type="@item.ENTITY_TYPE_ID">
+                                            Create
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger js-request-plan-deletion"
+                                                data-plan-id="@item.PLAN_ID" data-entity-name="@item.ENTITY_NAME"
+                                                data-period-name="@item.PERIOD_NAME">
+                                            Request Deletion
+                                        </button>
+                                    }
+                                </td>
                                 </tr>
                             sr = sr + 1;
                         }
@@ -98,4 +120,29 @@
         </div>
     </div>
 </div>
-<script src="~/js/csp/Views_Planning_tentative_audit_plan.js?v=2"></script>
+
+@if (TempData["PlanDeletionMessage"] != null)
+{
+    <div class="alert alert-success" role="status">@TempData["PlanDeletionMessage"]</div>
+}
+@if (TempData["PlanDeletionError"] != null)
+{
+    <div class="alert alert-danger" role="alert">@TempData["PlanDeletionError"]</div>
+}
+<dialog id="planDeletionDialog" aria-labelledby="planDeletionDialogTitle" class="rounded border p-4" style="max-width: 520px; width: 90%;">
+    <h4 id="planDeletionDialogTitle">Request Audit Plan Deletion</h4>
+    <p id="planDeletionSummary" class="small text-muted"></p>
+    <form id="planDeletionRequestForm" method="post" action="@Url.Action("RequestAuditPlanDeletion", "Planning")">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="planDeletionPlanId" name="PlanId" />
+        <label for="planDeletionReason" class="form-label">Reason for deletion (required)</label>
+        <textarea id="planDeletionReason" name="Reason" class="form-control" rows="4"
+                  required minlength="10" maxlength="2000" aria-required="true"></textarea>
+        <div id="planDeletionValidation" class="text-danger small mt-1" aria-live="polite"></div>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" id="cancelPlanDeletion" class="btn btn-outline-secondary">Cancel</button>
+            <button type="submit" id="submitPlanDeletion" class="btn btn-danger">Submit Request</button>
+        </div>
+    </form>
+</dialog>
+<script src="~/js/csp/Views_Planning_tentative_audit_plan.js?v=3"></script>
