@@ -4776,11 +4776,14 @@ create or replace package body PKG_HD is
       P_GROUP_ID,P_SESSION_ID,P_CONTEXT_ID,'Y');
     SELECT * INTO L_REQUEST FROM T_AU_PLAN_DISABLED
      WHERE ID = P_REQUEST_ID FOR UPDATE;
+    IF L_REQUEST.REQUESTED_BY = P_PPNO THEN
+      RAISE_APPLICATION_ERROR(-20219,
+        'A deletion request cannot be authorized by its requester.');
+    END IF;
     IF L_REQUEST.STATUS <> 'PENDING'
-       OR L_REQUEST.REQUESTED_BY = P_PPNO
        OR NOT PLAN_DELETE_IN_SCOPE(L_REQUEST.AUDITEDBY,P_ENT_ID,P_ROLE_ID) THEN
       RAISE_APPLICATION_ERROR(-20211,
-        'Request is not pending or cannot be authorized by this user.');
+        'Request is not pending or outside the authorized audit portfolio.');
     END IF;
     SELECT * INTO L_PLAN FROM T_AU_PLAN
      WHERE ID = L_REQUEST.PLAN_ID FOR UPDATE;
