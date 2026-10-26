@@ -29,7 +29,7 @@ namespace AIS.Controllers
         [ValidateAntiForgeryToken]
         [ApplicationAudit("AUDIT_PLAN_DELETE_REQUEST", "AUDIT_PLANNING",
             "PLAN_DELETION", "PKG_HD", "P_REQUEST_PLAN_DELETION",
-            ObjectType = "AUDIT_PLAN", ObjectId = "PlanId",
+            ObjectType = "AUDIT_PLAN", ObjectIdItem = "IAS_PLAN_DELETION_OBJECT_ID",
             RequireItem = "IAS_PLAN_DELETION_CONFIRMED")]
         public IActionResult RequestAuditPlanDeletion(PlanDeletionRequestInputModel input)
         {
@@ -45,6 +45,7 @@ namespace AIS.Controllers
                 if (dBConnection.RequestAuditPlanDeletion(input.PlanId, input.Reason) != "REQUESTED")
                     throw new InvalidOperationException("Unexpected request result.");
                 HttpContext.Items["IAS_PLAN_DELETION_CONFIRMED"] = true;
+                HttpContext.Items["IAS_PLAN_DELETION_OBJECT_ID"] = input.PlanId.ToString();
                 TempData["PlanDeletionMessage"] = "Deletion request submitted for authorization.";
             }
             catch (OracleException ex)
@@ -85,7 +86,7 @@ namespace AIS.Controllers
         [ValidateAntiForgeryToken]
         [ApplicationAudit("AUDIT_PLAN_DELETE_AUTHORIZED", "AUDIT_PLANNING",
             "PLAN_DELETION", "PKG_HD", "P_AUTHORIZE_PLAN_DELETION",
-            ObjectType = "AUDIT_PLAN_DELETE_REQUEST", ObjectId = "RequestId",
+            ObjectType = "AUDIT_PLAN_DELETE_REQUEST", ObjectIdItem = "IAS_PLAN_DELETION_OBJECT_ID",
             RequireItem = "IAS_PLAN_DELETION_CONFIRMED")]
         public IActionResult AuthorizeAuditPlanDeletion(PlanDeletionAuthorizationInputModel input)
         {
@@ -96,6 +97,7 @@ namespace AIS.Controllers
                 if (dBConnection.AuthorizeAuditPlanDeletion(input.RequestId) != "AUTHORIZED")
                     throw new InvalidOperationException("Unexpected authorization result.");
                 HttpContext.Items["IAS_PLAN_DELETION_CONFIRMED"] = true;
+                HttpContext.Items["IAS_PLAN_DELETION_OBJECT_ID"] = input.RequestId.ToString();
                 TempData["PlanDeletionMessage"] = "Audit plan deletion authorized.";
             }
             catch (OracleException ex)
