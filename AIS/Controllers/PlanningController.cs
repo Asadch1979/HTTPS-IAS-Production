@@ -11,7 +11,7 @@ using System.Linq;
 namespace AIS.Controllers
     {
 
-    public class PlanningController : Controller
+    public partial class PlanningController : Controller
         {
         private readonly ILogger<PlanningController> _logger;
         private readonly TopMenus tm;
