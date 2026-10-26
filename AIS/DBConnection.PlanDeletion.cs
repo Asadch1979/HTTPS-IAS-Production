@@ -8,13 +8,16 @@ namespace AIS.Controllers
 {
     public partial class DBConnection
     {
-        private (int EntityId, int PpNo, int RoleId) RequirePlanDeletionSession()
+        private (int EntityId, int PpNo, int RoleId, int GroupId, string SessionId, int? ContextId) RequirePlanDeletionSession()
         {
             var user = CreateSessionHandler().GetUser();
             if (user == null || user.UserEntityID.GetValueOrDefault() <= 0 ||
-                user.UserRoleID <= 0 || !int.TryParse(user.PPNumber, out var ppNo) || ppNo <= 0)
+                user.UserRoleID <= 0 || user.UserGroupID <= 0 ||
+                string.IsNullOrWhiteSpace(user.SessionId) ||
+                !int.TryParse(user.PPNumber, out var ppNo) || ppNo <= 0)
                 throw new UnauthorizedAccessException("Active IAS session is required.");
-            return (user.UserEntityID.Value, ppNo, user.UserRoleID);
+            return (user.UserEntityID.Value, ppNo, user.UserRoleID,
+                user.UserGroupID, user.SessionId, user.UserContextAssignmentId);
         }
 
         public string RequestAuditPlanDeletion(int planId, string reason)
@@ -37,7 +40,7 @@ namespace AIS.Controllers
 
         private string CallPlanDeletionProcedure(
             string procedure, string idParameter, int id,
-            (int EntityId, int PpNo, int RoleId) actor, string reason)
+            (int EntityId, int PpNo, int RoleId, int GroupId, string SessionId, int? ContextId) actor, string reason)
         {
             using var con = DatabaseConnection();
             using var cmd = con.CreateCommand();
@@ -50,6 +53,10 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = actor.EntityId;
             cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = actor.PpNo;
             cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = actor.RoleId;
+            cmd.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = actor.GroupId;
+            cmd.Parameters.Add("P_SESSION_ID", OracleDbType.Varchar2).Value = actor.SessionId;
+            cmd.Parameters.Add("P_CONTEXT_ID", OracleDbType.Int32).Value =
+                actor.ContextId.HasValue ? (object) actor.ContextId.Value : DBNull.Value;
             cmd.Parameters.Add("P_RESULT", OracleDbType.Varchar2, 64).Direction = ParameterDirection.Output;
             cmd.ExecuteNonQuery();
             return cmd.Parameters["P_RESULT"].Value?.ToString() ?? "";
@@ -67,6 +74,10 @@ namespace AIS.Controllers
             cmd.Parameters.Add("P_ENT_ID", OracleDbType.Int32).Value = actor.EntityId;
             cmd.Parameters.Add("P_PPNO", OracleDbType.Int32).Value = actor.PpNo;
             cmd.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = actor.RoleId;
+            cmd.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = actor.GroupId;
+            cmd.Parameters.Add("P_SESSION_ID", OracleDbType.Varchar2).Value = actor.SessionId;
+            cmd.Parameters.Add("P_CONTEXT_ID", OracleDbType.Int32).Value =
+                actor.ContextId.HasValue ? (object) actor.ContextId.Value : DBNull.Value;
             cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
