@@ -4633,7 +4633,7 @@ create or replace package body PKG_HD is
             WHERE (M.USERID=U.USERID OR M.PPNO=U.PPNO)
               AND M.ROLE_ID=P_ROLE_ID
               AND M.GROUP_ID=P_GROUP_ID
-              AND U.ENTITY_ID=P_ENT_ID))
+              AND (U.ENTITY_ID=P_ENT_ID OR P_ROLE_ID=1)))
        )
        AND EXISTS (
          SELECT 1 FROM T_MENU_PAGES MP
