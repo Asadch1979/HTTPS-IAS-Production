@@ -4579,7 +4579,7 @@ create or replace package body PKG_HD is
   -- Revalidate user, active assignment, group and page entitlement in Oracle.
   -- UI page checks alone must never authorize a destructive procedure.
   PROCEDURE REQUIRE_PLAN_DELETION_ACCESS(
-    P_ENT_ID NUMBER, P_PPNO NUMBER, P_ROLE_ID NUMBER, P_AUTHORIZER BOOLEAN)
+    P_ENT_ID NUMBER, P_PPNO NUMBER, P_ROLE_ID NUMBER, P_AUTHORIZER VARCHAR2)
   AS
     L_COUNT NUMBER;
   BEGIN
@@ -4596,10 +4596,10 @@ create or replace package body PKG_HD is
           WHERE G.ROLE_ID = P_ROLE_ID AND G.STATUS = 'Y'
             AND MP.STATUS = 'A'
             AND (
-               (P_AUTHORIZER AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) =
+               (P_AUTHORIZER = 'Y' AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) =
                    'planning/audit_plan_deletion_authorization')
                OR
-               (NOT P_AUTHORIZER AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) IN
+               (P_AUTHORIZER = 'N' AND LOWER(TRIM(BOTH '/' FROM MP.PAGE_PATH)) IN
                    ('planning/tentative_audit_plan','planning/planning'))
             )
             AND (
@@ -4652,7 +4652,7 @@ create or replace package body PKG_HD is
   AS
     L_PLAN T_AU_PLAN%ROWTYPE;
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,FALSE);
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'N');
     IF P_PLAN_ID IS NULL OR LENGTH(TRIM(P_REASON)) < 10
        OR LENGTH(P_REASON) > 2000 THEN
        RAISE_APPLICATION_ERROR(-20213,
@@ -4698,7 +4698,7 @@ create or replace package body PKG_HD is
     IO_CURSOR OUT T_CURSOR)
   AS
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,TRUE);
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'Y');
     OPEN IO_CURSOR FOR
       SELECT D.ID REQUEST_ID, D.PLAN_ID, D.AUDITPERIODID,
              D.ENTITY_ID, D.AUDITEDBY, D.REASON, D.REQUESTED_BY,
@@ -4725,7 +4725,7 @@ create or replace package body PKG_HD is
     L_REQUEST T_AU_PLAN_DISABLED%ROWTYPE;
     L_PLAN T_AU_PLAN%ROWTYPE;
   BEGIN
-    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,TRUE);
+    REQUIRE_PLAN_DELETION_ACCESS(P_ENT_ID,P_PPNO,P_ROLE_ID,'Y');
     SELECT * INTO L_REQUEST FROM T_AU_PLAN_DISABLED
      WHERE ID = P_REQUEST_ID FOR UPDATE;
     IF L_REQUEST.STATUS <> 'PENDING'
