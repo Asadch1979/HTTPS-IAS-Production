@@ -4,6 +4,7 @@ namespace AIS.Models
     public class TentativePlanModel
         {
         public int PLAN_ID { get; set; }
+        public bool DELETION_PENDING { get; set; }
         public int CRITERIA_ID { get; set; }
         public int AUDIT_PERIOD_ID { get; set; }
         public int AUDITEDBY { get; set; }
