@@ -275,7 +275,7 @@ create or replace package PKG_PG is
                                  io_cursor OUT t_cursor);
 
 end PKG_PG;
-
+/
 create or replace package body PKG_PG is
 
   Procedure P_get_Criteria_ent_count(CID IN NUMBER, io_cursor OUT t_cursor) is

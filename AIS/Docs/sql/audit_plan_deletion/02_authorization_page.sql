@@ -2,7 +2,7 @@
 -- No approval roles are granted automatically. Assign selected group in IAS admin.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 DECLARE
-  V_PAGE_ID NUMBER := 1000416;
+  V_PAGE_ID NUMBER := 460;
   V_MENU_ID NUMBER;
   V_COUNT NUMBER;
 BEGIN
