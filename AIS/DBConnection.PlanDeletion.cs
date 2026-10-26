@@ -82,7 +82,7 @@ namespace AIS.Controllers
                     PeriodName = rdr["PERIOD_NAME"]?.ToString(),
                     Reason = rdr["REASON"]?.ToString(),
                     RequestedBy = Convert.ToInt32(rdr["REQUESTED_BY"]),
-                    RequestedOn = Convert.ToDateTime(rdr["REQUESTED_ON"])
+                    RequestedOn = rdr.GetDateTime(rdr.GetOrdinal("REQUESTED_ON"))
                 });
             }
             return result;
