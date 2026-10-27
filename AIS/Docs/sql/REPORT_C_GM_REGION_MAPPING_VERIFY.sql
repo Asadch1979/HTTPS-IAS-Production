@@ -32,7 +32,11 @@ direct_map AS (
          COUNT(DISTINCT m.gm_office) AS direct_candidates,
          CASE WHEN COUNT(DISTINCT m.gm_office) = 1
               THEN MAX(CASE WHEN gm.type_id=21 THEN m.gm_office END)
-         END AS valid_mapped_gm
+         END AS valid_mapped_gm,
+         CASE WHEN COUNT(DISTINCT m.audit_by)=1
+              THEN MAX(m.audit_by) END AS mapped_audit_by,
+         CASE WHEN COUNT(DISTINCT m.audit_by)>1
+              THEN 1 ELSE 0 END AS ambiguous_audit_by
     FROM t_auditee_entities_maping m
     LEFT JOIN t_auditee_entities gm ON gm.entity_id=m.gm_office
    WHERE NVL(m.status,'Y')='Y'
@@ -61,25 +65,31 @@ gm_auditor AS (
 ),
 resolution AS (
   SELECT s.*, e.name AS entity_name, t.entitytypedesc AS type_name,
-         d.direct_candidates, d.valid_mapped_gm, g.gm_candidates,
+         d.direct_candidates, d.valid_mapped_gm,
+         d.mapped_audit_by, d.ambiguous_audit_by, g.gm_candidates,
          g.unique_gm,
          CASE WHEN s.entity_type_id=21 THEN s.entity_id
               WHEN s.audit_type='B'
                    AND s.entity_type_id NOT IN (6,21,22,28)
-                THEN COALESCE(CASE WHEN ga.audited_by=s.audited_by
-                                   THEN d.valid_mapped_gm END, g.unique_gm)
+                THEN CASE WHEN NVL(d.ambiguous_audit_by,0)=0 THEN
+                    COALESCE(CASE WHEN ga.audited_by =
+                                       COALESCE(d.mapped_audit_by,s.audited_by)
+                                  THEN d.valid_mapped_gm END, g.unique_gm)
+                  END
               ELSE COALESCE(d.valid_mapped_gm, s.gm_office_id)
          END AS selected_gm_id
     FROM source_entities s
     LEFT JOIN t_auditee_entities e ON e.entity_id=s.entity_id
     LEFT JOIN t_auditee_ent_types t ON t.autid=s.entity_type_id
     LEFT JOIN direct_map d ON d.entity_id=s.entity_id
-    LEFT JOIN gm_by_auditor g ON g.audit_by=s.audited_by
+    LEFT JOIN gm_by_auditor g
+      ON g.audit_by=COALESCE(d.mapped_audit_by,s.audited_by)
     LEFT JOIN gm_auditor ga ON ga.entity_id=d.valid_mapped_gm
 )
 SELECT r.entity_id,r.entity_name,r.entity_type_id,r.type_name,
        r.audit_type,r.audited_by,r.reporting_1,r.region_id,
        r.gm_office_id AS source_gm_id, r.valid_mapped_gm,
+       r.mapped_audit_by, r.ambiguous_audit_by,
        r.direct_candidates, r.gm_candidates, r.unique_gm,
        r.selected_gm_id, gm.name AS selected_gm_name,
        CASE WHEN r.audit_type='B'
