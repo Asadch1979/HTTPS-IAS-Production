@@ -319,6 +319,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         FROM aggregates a
         WHERE P_REPORT_ID <> 'D'
           AND (P_REPORT_ID <> 'E' OR a.row_kind <> 'SUBTOTAL')
+          -- Report E: exclude only rows with no opening stock, movement,
+          -- or closing stock. Preserve legitimate individual zero metrics.
+          AND (P_REPORT_ID <> 'E'
+               OR a.opening_balance <> 0
+               OR a.paras_added <> 0
+               OR a.total_paras <> 0
+               OR a.settled_paras <> 0
+               OR a.outstanding_paras <> 0)
         UNION ALL
         SELECT row_kind, group_id, group_name, item_id, item_code, item_name,
            period_start, period_end, opening_balance, paras_added,
