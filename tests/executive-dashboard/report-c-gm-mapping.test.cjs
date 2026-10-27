@@ -23,7 +23,9 @@ test('Report C resolves direct GM, audited-by HO mapping and self GM without alt
     assert.match(sql, /report_c_auditor_gm AS/);
     assert.match(sql, /COUNT\(DISTINCT m\.entity_id\) = 1/);
     assert.match(sql, /report_c_gm_auditor AS/);
-    assert.match(sql, /gm_audited\.audited_by = f\.audited_by/);
+    assert.match(sql, /gm_audited\.audited_by =/);
+    assert.match(sql, /COALESCE\(md\.mapped_audit_by, f\.audited_by\)/);
+    assert.match(sql, /NVL\(md\.ambiguous_audit_by, 0\) = 0/);
     assert.match(sql, /f\.entity_type_id NOT IN \(6, 21, 22, 28\)/);
     assert.match(sql, /COALESCE\(md\.mapped_gm_id, f\.gm_office_id\)/);
     assert.match(sql, /WHEN f\.entity_type_id = 21 THEN f\.entity_id/);
