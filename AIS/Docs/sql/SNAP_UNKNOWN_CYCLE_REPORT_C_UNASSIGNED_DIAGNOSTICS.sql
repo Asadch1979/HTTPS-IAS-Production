@@ -52,11 +52,13 @@ SELECT s.com_id, s.entity_id, e.name AS entity_name, s.audited_by_id,
    AND (s.current_cycle IS NULL OR s.current_cycle < 0)
  ORDER BY s.audited_by_id, s.entity_id, s.com_id;
 
--- 2. REPORT C UNASSIGNED GM / REGION: list the underlying auditee entities,
---    not merely the grouping labels. Uses the same report source, B/D families,
---    dates and movements as PKG_EXEC_REPORTS OPEN_REPORT for Report C.
---    Restrict further to the exact authorized hierarchy if the dashboard uses
---    an entity/office/root scope; these queries do not bypass app authorization.
+-- 2. RAW VIEW GM / REGION gaps: list source auditee entities before
+--    Report C's new GM mapping and H.O. unit classification are applied.
+--    Missing source GM/Region fields do NOT necessarily mean an Unassigned
+--    GM/Region will appear in the amended Report C.
+--    For final effective Report C mapping, use the dedicated read-only
+--    REPORT_C_GM_REGION_MAPPING_VERIFY.sql script instead.
+--    Apply the same authorized entity hierarchy, dates and audit scope.
 WITH dates AS (
     SELECT TO_DATE(:P_START_DATE, 'YYYY-MM-DD') d_from,
            TO_DATE(:P_END_DATE, 'YYYY-MM-DD') + 1 d_to
@@ -122,7 +124,6 @@ SELECT c.entity_id, c.entity_name, c.audit_type, c.audited_by,
 --  WHERE NVL(m.status,'Y') = 'Y' AND m.entity_id = :P_ENTITY_ID
 --  GROUP BY m.entity_id;
 --
--- 4. Reconcile output to Report C and Snap using identical dates/scope. When
---    history is incomplete, retain UNKNOWN instead of manufacturing a cycle.
---    When GM/Region is legitimately out-of-hierarchy, choose an explicit
---    business classification with management approval before altering mappings.
+-- 4. Reconcile the CURRENT master cycle and newly mapped GM/Region
+--    results using identical dates/scope. Missing or ambiguous mappings
+--    remain exceptions, never an excuse to relax reporting authorization.
