@@ -18,7 +18,6 @@ var tests = new (string Name, Func<Task> Run)[]
     ("Manual run now jobs are dispatched", ManualRunNowDispatchedAsync),
     ("Registered database job completes", RegisteredDatabaseJobCompletesAsync),
     ("Unknown database job fails safely", UnknownDatabaseJobFailsSafelyAsync),
-    ("Day-end DB procedure is allowlisted and logged", DayEndDatabaseTargetIsExplicitlyRegisteredAsync),
     ("Stale running executions are flagged", StaleRunningExecutionsFlaggedAsync),
     ("Explicit period passed to handler", ExplicitPeriodPassedToHandlerAsync),
     ("Unknown handler fails safely", UnknownHandlerFailsSafelyAsync),
@@ -137,29 +136,6 @@ static async Task UnknownDatabaseJobFailsSafelyAsync()
     AssertEqual(0, store.Completed.Count, "complete calls");
     AssertEqual(1, store.Failed.Count, "fail calls");
     AssertContains("not registered", store.Failed[0].ErrorMessage, "database target message");
-}
-
-static Task DayEndDatabaseTargetIsExplicitlyRegisteredAsync()
-{
-    var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
-    var startup = File.ReadAllText(Path.Combine(root, "AIS", "Startup.cs"));
-    var executor = File.ReadAllText(Path.Combine(root, "AIS", "Services", "Scheduler", "PkgDailyDayEndExecutor.cs"));
-    var dbLayer = File.ReadAllText(Path.Combine(root, "AIS", "DBConnection.IasScheduler.cs"));
-    var package = File.ReadAllText(Path.Combine(root, "AIS", "Docs", "sql", "PKG_DAILY.sql"));
-
-    AssertContains("AddScoped<IIasSchedulerDatabaseJobExecutor, PkgDailyDayEndExecutor>", startup,
-        "only the approved day-end executor is registered");
-    AssertContains("PackageName => \"PKG_DAILY\"", executor, "package allowlist target");
-    AssertContains("ProcedureName => \"SESSION_KILL_DAY_END\"", executor, "procedure allowlist target");
-    AssertContains("cmd.CommandText = \"PKG_DAILY.SESSION_KILL_DAY_END\"", dbLayer,
-        "stored procedure target must be constant");
-    AssertContains("P_EXECUTION_ID", dbLayer, "scheduler execution correlation");
-    AssertEqual(7, System.Text.RegularExpressions.Regex.Matches(package, "V_ROWS := SQL%ROWCOUNT;").Count,
-        "each of seven DML operations records the actual affected count");
-    AssertContains("P_FINISH_RUN(V_RUN_ID, 'FAILED'", package, "failure audit trail");
-    AssertContains("P_FINISH_RUN(V_RUN_ID, 'RECONCILIATION_REQUIRED'", package,
-        "committed data must not be misreported as rolled back");
-    return Task.CompletedTask;
 }
 
 static async Task StaleRunningExecutionsFlaggedAsync()

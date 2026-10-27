@@ -117,7 +117,6 @@ namespace AIS
             services.AddScoped<ManagementAuditWeeklyService>();
             services.AddScoped<IIasSchedulerJobHandler>(provider => provider.GetRequiredService<ManagementAuditWeeklyService>());
             services.AddScoped<IIasSchedulerJobHandlerRegistry, IasSchedulerJobHandlerRegistry>();
-            services.AddScoped<IIasSchedulerDatabaseJobExecutor, PkgDailyDayEndExecutor>();
             services.AddScoped<IIasSchedulerDatabaseJobExecutorRegistry, IasSchedulerDatabaseJobExecutorRegistry>();
             services.AddScoped<IIasSchedulerStore, DbConnectionIasSchedulerStore>();
             services.AddScoped<IasSchedulerDispatcher>();
