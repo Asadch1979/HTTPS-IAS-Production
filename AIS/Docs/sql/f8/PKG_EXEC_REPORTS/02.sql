@@ -261,11 +261,67 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
              AS reconciliation_difference
     FROM seed f
   ),
+  -- Report C's GM/Region dimensions must be derived from the auditee's
+  -- approved GM mapping. Never join the raw mapping to para rows: multiple
+  -- mapping records would multiply balances and settlements.
+  report_c_direct_gm AS (
+    SELECT m.entity_id,
+           CASE WHEN COUNT(DISTINCT m.gm_office) = 1
+                THEN MAX(CASE WHEN gm.type_id = 21 THEN m.gm_office END)
+           END AS mapped_gm_id
+      FROM t_auditee_entities_maping m
+      LEFT JOIN t_auditee_entities gm
+        ON gm.entity_id = m.gm_office
+     WHERE NVL(m.status, 'Y') = 'Y'
+     GROUP BY m.entity_id
+  ),
+  report_c_auditor_gm AS (
+    -- HO units (audit family B, not Branch/Region/GM/CAU): only
+    -- infer a GM Office by matching AUDIT_BY when it is UNIQUE.
+    -- Ambiguous auditors remain Unassigned GM for correction.
+    SELECT m.audit_by,
+           CASE WHEN COUNT(DISTINCT m.entity_id) = 1
+                THEN MAX(m.entity_id) END AS unique_gm_id
+      FROM t_auditee_entities_maping m
+      JOIN t_auditee_entities gm
+        ON gm.entity_id = m.entity_id AND gm.type_id = 21
+     WHERE NVL(m.status, 'Y') = 'Y'
+       AND m.audit_by IS NOT NULL
+     GROUP BY m.audit_by
+  ),
+  report_c_offices AS (
+    SELECT f.*,
+           CASE
+             WHEN f.entity_type_id = 21 THEN f.entity_id
+             WHEN f.audit_type = 'B'
+                  AND f.entity_type_id NOT IN (6, 21, 22, 28)
+               THEN COALESCE(md.mapped_gm_id, ag.unique_gm_id)
+             ELSE COALESCE(md.mapped_gm_id, f.gm_office_id)
+           END AS report_c_gm_id,
+           CASE
+             WHEN f.entity_type_id IN (21, 22, 28)
+               THEN f.entity_id
+             WHEN f.audit_type = 'B'
+                  AND f.entity_type_id NOT IN (6, 21, 22, 28)
+               THEN f.entity_id
+             WHEN f.entity_type_id = 6
+               THEN COALESCE(f.region_id, parent_region.entity_id)
+             ELSE f.region_id
+           END AS report_c_item_id
+      FROM facts f
+      LEFT JOIN report_c_direct_gm md
+        ON md.entity_id = f.entity_id AND P_REPORT_ID = 'C'
+      LEFT JOIN report_c_auditor_gm ag
+        ON ag.audit_by = f.audited_by AND P_REPORT_ID = 'C'
+      LEFT JOIN t_auditee_entities parent_region
+        ON parent_region.entity_id = f.reporting_1
+       AND parent_region.type_id = 22 AND P_REPORT_ID = 'C'
+  ),
       dimensions AS (
         SELECT f.*,
                CASE P_REPORT_ID
                  WHEN 'B' THEN CASE WHEN f.audit_type = 'B' THEN 1 ELSE 2 END
-                 WHEN 'C' THEN f.gm_office_id
+                 WHEN 'C' THEN f.report_c_gm_id
                  WHEN 'D' THEN CAST(NULL AS NUMBER)
                  WHEN 'E' THEN 1
                END AS group_id,
@@ -273,32 +329,38 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                  WHEN 'B' THEN CASE WHEN f.audit_type = 'B'
                                     THEN 'GM Field Offices'
                                     ELSE 'Other Field Offices' END
-                 WHEN 'C' THEN NVL(f.gm_name, 'Unassigned GM')
+                 WHEN 'C' THEN NVL(report_c_gm.name, 'Unassigned GM')
                  WHEN 'D' THEN CAST(NULL AS VARCHAR2(500))
                  WHEN 'E' THEN 'Management Audit'
                END AS report_group_name,
                CASE P_REPORT_ID
                  WHEN 'B' THEN f.audited_by
-                 WHEN 'C' THEN f.region_id
+                 WHEN 'C' THEN f.report_c_item_id
                  WHEN 'D' THEN f.region_id
                  WHEN 'E' THEN COALESCE(f.division_id, f.business_group_id,
                                         f.reporting_office_id, f.entity_id)
                END AS item_id,
                CASE P_REPORT_ID
-                 WHEN 'C' THEN TO_CHAR(reg.code)
+                 WHEN 'C' THEN TO_CHAR(report_c_item.code)
                  WHEN 'D' THEN TO_CHAR(reg.code)
                  ELSE CAST(NULL AS VARCHAR2(80))
                END AS item_code,
                CASE P_REPORT_ID
                  WHEN 'B' THEN NVL(f.audited_by_name, 'Unassigned Audit Office')
-                 WHEN 'C' THEN NVL(reg.name, 'Unassigned Region')
+                 WHEN 'C' THEN NVL(report_c_item.name, 'Unassigned Region / H.O. Unit')
                  WHEN 'D' THEN NVL(reg.name, 'Unassigned Region')
                  WHEN 'E' THEN COALESCE(f.division_name, f.group_name,
                                         f.reporting_office_name,
                                         'Unassigned Management Function')
                END AS item_name
-        FROM facts f
+        FROM report_c_offices f
         LEFT JOIN t_auditee_entities reg ON reg.entity_id = f.region_id
+        LEFT JOIN t_auditee_entities report_c_gm
+          ON report_c_gm.entity_id = f.report_c_gm_id
+         AND report_c_gm.type_id = 21 AND P_REPORT_ID = 'C'
+        LEFT JOIN t_auditee_entities report_c_item
+          ON report_c_item.entity_id = f.report_c_item_id
+         AND P_REPORT_ID = 'C'
       ),
       aggregates AS (
         SELECT CASE
