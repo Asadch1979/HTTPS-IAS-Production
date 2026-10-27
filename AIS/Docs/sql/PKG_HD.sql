@@ -621,11 +621,13 @@ create or replace package body PKG_HD is
            memo_number,
            para_no);
         commit;
+        -- Share the pre-concluding parent lock and identifier sequence.
+        SELECT o.id INTO P_O FROM t_au_observation o
+         WHERE o.id = OBS_ID AND o.engplanid = engplan_id FOR UPDATE;
         insert into t_au_observation_final_reccomendation
           (id, obs_id, recommendation, entered_by, entered_on)
         values
-          ((select COALESCE(max(acc.ID) + 1, 1)
-             from t_au_observation_final_reccomendation acc),
+          (SEQ_AU_OBS_FINAL_RECOMM.NEXTVAL,
            OBS_ID,
            Remarks,
            PP_NO,
@@ -1638,6 +1640,10 @@ create or replace package body PKG_HD is
     P_N number;
     V_AUTH_COUNT number := 0;
   begin
+    SAVEPOINT PRE_CONCLUDING_SAVE;
+    -- Lock the stable parent before either MERGE, including first insertion.
+    SELECT NVL(o.final_para_no, 0) INTO P_N
+      FROM t_au_observation o WHERE o.id = obsid FOR UPDATE;
 
     -- Verify authenticated office ownership before changing audit observations.
     SELECT COUNT(*) INTO V_AUTH_COUNT FROM t_au_observation o
@@ -1655,15 +1661,12 @@ create or replace package body PKG_HD is
         'Observation does not belong to the authorized audit office.');
     END IF;
 
-   Select nvl(max(o.final_para_no),0) into P_N from t_au_observation o
-   where o.id = obsid;
   if(P_N > 0) then
     select '-' into B_N from dual;
 
     update t_au_observation_text ot
        set ot.headings = gist
      where ot.observatsion_id = obsid;
-    commit;
     if (P_NO is not null) then
 
       MERGE INTO t_au_observation_gist g
@@ -1679,13 +1682,11 @@ create or replace package body PKG_HD is
         INSERT
           (id, obs_id, gist, entered_by, entered_on)
         VALUES
-          ((SELECT COALESCE(MAX(p.id) + 1, 1) FROM t_au_observation_gist p),
+          (SEQ_AU_OBSERVATION_GIST.NEXTVAL,
            src.obs_id,
            src.gist,
            src.entered_by,
            sysdate);
-
-      commit;
 
       MERGE INTO t_au_observation_final_reccomendation t
       USING (SELECT obsid AS obs_id FROM dual) s
@@ -1699,24 +1700,23 @@ create or replace package body PKG_HD is
         INSERT
           (id, obs_id, recommendation, entered_by, entered_on)
         VALUES
-          ((SELECT COALESCE(max(p.id) + 1, 1)
-             FROM t_au_observation_final_reccomendation p),
+          (SEQ_AU_OBS_FINAL_RECOMM.NEXTVAL,
            obsid,
            recom,
            P_NO,
            sysdate);
-      commit;
 
+      -- Heading, gist and recommendation become visible together.
       open io_cursor for
         select 'Gist & Recommendation added sucessfuly' as remarks
           from dual;
+      COMMIT;
 
     else
       P_add_error_log('HD',
                       'P_audit_pre_Concluding',
                       'PP No was null',
                       obsid);
-      commit;
       open io_cursor for
         select 'system error, Logout and Login again.' as remarks
           from dual;
@@ -1724,12 +1724,17 @@ create or replace package body PKG_HD is
     end if;
 
     else
+      ROLLBACK TO PRE_CONCLUDING_SAVE;
       open io_cursor for
         select 'First Update Final Para Number' as remarks
           from dual;
 
     end if;
 
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
   end P_audit_pre_Concluding;
 
   procedure P_get_audit_pre_Concluding_entities(userentityid in t_Au_Plan_Eng.Eng_Id%type,

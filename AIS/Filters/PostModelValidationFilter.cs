@@ -1,9 +1,7 @@
-using AIS.Middleware;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 using AIS.Utilities;
 using System;
@@ -39,38 +37,19 @@ namespace AIS.Filters
                 return;
             }
 
-            var model = context.ActionArguments.Values.FirstOrDefault(v => v != null && v.GetType() != typeof(string));
-
-            if (LoginRedirectHelper.IsApiRequest(context.HttpContext.Request) ||
-                LoginRedirectHelper.IsAjaxRequest(context.HttpContext.Request))
-            {
-                var endpointName = (context.ActionDescriptor as ControllerActionDescriptor)?.ActionName
-                    ?? context.ActionDescriptor?.DisplayName
-                    ?? "Unknown";
-                LogStructuredValidationFailure(context, endpointName);
-                var payload = ValidationErrorHelper.BuildInvalidRequestResponse(context.ModelState);
-                context.Result = new BadRequestObjectResult(payload);
+            var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
+            // Only explicitly opted-in form actions may rebuild their GET model.
+            // They must check ModelState before any mutation.
+            if (descriptor?.MethodInfo.IsDefined(typeof(HandlesInvalidPostModelAttribute), true) == true)
                 return;
-            }
 
-            if (context.Controller is Controller controller)
-            {
-                var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
-                var viewResult = new ViewResult
-                {
-                    ViewName = descriptor?.ActionName,
-                    ViewData = new ViewDataDictionary(controller.ViewData)
-                    {
-                        Model = model
-                    }
-                };
-
-                viewResult.ViewData.ModelState.Merge(context.ModelState);
-                context.Result = viewResult;
-                return;
-            }
-
-            context.Result = new BadRequestObjectResult(context.ModelState);
+            var endpointName = descriptor?.ActionName ?? context.ActionDescriptor?.DisplayName ?? "Unknown";
+            LogStructuredValidationFailure(context, endpointName);
+            // fetch() need not send X-Requested-With. Processing endpoints have no
+            // implied Razor view; use the established structured failure contract.
+            context.Result = new BadRequestObjectResult(
+                ValidationErrorHelper.BuildInvalidRequestResponse(context.ModelState,
+                    "Please correct the submitted values and try again."));
         }
 
         public void OnActionExecuted(ActionExecutedContext context)

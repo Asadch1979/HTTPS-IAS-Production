@@ -38,6 +38,7 @@
     @if (hasEngagement)
     {
         <form method="post" asp-action="SaveFieldAuditInputs">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
             <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
             <input type="hidden" name="EntityId" value="@Model.EntityId" />
             <input type="hidden" name="SectionCode" value="@Model.SectionCode" />

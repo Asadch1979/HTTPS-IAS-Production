@@ -1987,7 +1987,7 @@ namespace AIS.Controllers
             return succeeded ? resp : string.Empty;
             }
 
-        public ObservationStatusWorkflowResult AddObservationToDraft(int observationId, string draftParaNumber, string remarks)
+        public ObservationStatusWorkflowResult AddObservationToDraft(int observationId, string draftParaNumber, string remarks, int engagementId = 0)
             {
             if (observationId <= 0 || string.IsNullOrWhiteSpace(draftParaNumber))
                 return new ObservationStatusWorkflowResult { Remarks = "Draft Para Number is required." };
@@ -2001,6 +2001,7 @@ namespace AIS.Controllers
                 "pkg_ar.P_Add_Observation_To_Draft",
                 cmd =>
                     {
+                    cmd.Parameters.Add("P_ENG_ID", OracleDbType.Int32).Value = engagementId > 0 ? (object)engagementId : DBNull.Value;
                     cmd.Parameters.Add("P_OBS_ID", OracleDbType.Int32).Value = observationId;
                     cmd.Parameters.Add("P_DRAFT_PARA_NO", OracleDbType.Varchar2).Value = draftParaNumber.Trim();
                     cmd.Parameters.Add("P_REMARKS", OracleDbType.Varchar2).Value = remarks ?? string.Empty;

@@ -632,6 +632,7 @@ namespace AIS.Controllers
 
         [HttpPost]
         [AIS.Filters.ApplicationAudit("FIELD_AUDIT_INPUTS_SAVED", "AUDIT_REPORT", "FIELD AUDIT REPORT", "PKG_FRPT", "P_SAVE_TEXT_BLOCK", EngagementIdItem = "ApplicationAudit.EngagementId", ObjectType = "ENGAGEMENT", ObjectIdItem = "ApplicationAudit.EngagementId", RequireItem = "ApplicationAudit.EngagementId")]
+        [AIS.Filters.HandlesInvalidPostModel]
         public IActionResult SaveFieldAuditInputs(FieldAuditInputSaveRequest model, string submitAction, string returnAction)
             {
             var redirect = EnsureAuthorized();
@@ -650,6 +651,29 @@ namespace AIS.Controllers
                 {
                 TempData["FieldAuditReportMessage"] = "Report is finalized and cannot be edited.";
                 return RedirectToAction(nameof(ReportOverview));
+                }
+
+            if (!ModelState.IsValid)
+                {
+                var action = NormalizeReturnAction(returnAction);
+                IActionResult result = action switch
+                    {
+                    nameof(NarrativeSections) => NarrativeSections(),
+                    nameof(KpiSnapshot) => KpiSnapshot(),
+                    nameof(NplSnapshot) => NplSnapshot(),
+                    nameof(StaffSnapshot) => StaffSnapshot(),
+                    _ => BadRequest(ValidationErrorHelper.BuildInvalidRequestResponse(ModelState))
+                    };
+                if (result is ViewResult view && view.Model is FieldAuditInputSectionViewModel section)
+                    {
+                    foreach (var entry in model?.Fields ?? new Dictionary<string, string>())
+                        if (section.Fields.ContainsKey(entry.Key))
+                            section.Fields[entry.Key] = entry.Value;
+                    view.ViewName = action;
+                    view.StatusCode = 400;
+                    view.ViewData.ModelState.Merge(ModelState);
+                    }
+                return result;
                 }
 
             var fieldValues = model?.Fields ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

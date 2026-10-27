@@ -207,6 +207,11 @@ namespace AIS.Controllers
                         Role = GetString(reader, "ROLE_NAME"),
                         Entity = GetString(reader, "ENTITY_NAME"),
                         ApiPath = GetString(reader, "API_PATH"),
+                        PageId = reader["PAGE_ID"] == DBNull.Value ? null : (int?)GetInt(reader, "PAGE_ID"),
+                        EngagementId = reader["ENG_ID"] == DBNull.Value ? null : (int?)GetInt(reader, "ENG_ID"),
+                        ParaId = reader["PARA_ID"] == DBNull.Value ? null : (int?)GetInt(reader, "PARA_ID"),
+                        ComId = reader["COM_ID"] == DBNull.Value ? null : (int?)GetInt(reader, "COM_ID"),
+                        TechnicalDetails = GetString(reader, "TECHNICAL_DETAILS"),
                         ErrorMessage = GetString(reader, "ERROR_MESSAGE")
                         });
                     }
