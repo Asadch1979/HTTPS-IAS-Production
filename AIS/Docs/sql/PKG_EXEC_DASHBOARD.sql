@@ -1922,27 +1922,14 @@ END P_GET_CIA_EXEC_KPIS;
       RAISE_APPLICATION_ERROR(-20047,'Invalid Snap audited-by selection.');
     END IF;
     OPEN IO_CURSOR FOR
-      -- Read the latest compliance-cycle entry no later than the selected
-      -- end date. Current master COM_CYCLE must not be mistaken for
-      -- a historical snapshot.
-      WITH history_asof AS
-      (
-        SELECT h.com_id,
-               MAX(h.com_cycle) KEEP (
-                 DENSE_RANK LAST ORDER BY h.comment_on, h.hist_id
-               ) AS recorded_cycle
-          FROM ais_t_au_post_compliance_history h
-         WHERE h.comment_on < V_TO
-           AND h.com_cycle IS NOT NULL
-         GROUP BY h.com_id
-      ),
-      scoped AS
+      -- Cycle counts are CURRENT master values from
+      -- AIS_T_AU_POST_COMPLIANCE via V_EXEC_KPI_LIFECYCLE.
+      -- End Date still determines the estimated open portfolio, not the
+      -- historical COM_CYCLE value. Do not substitute history cycles.
+      WITH scoped AS
       (
         SELECT k.*,
-               CASE WHEN V_TODAY = 1 THEN k.com_cycle
-                    WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
-                    WHEN k.com_cycle = 0 THEN 0
-               END AS snap_cycle,
+               k.com_cycle AS snap_cycle,
                CASE WHEN V_TODAY = 1 THEN k.current_open
                     WHEN k.para_added_on < V_TO
                      AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
@@ -1952,7 +1939,6 @@ END P_GET_CIA_EXEC_KPIS;
                     THEN 1 ELSE 0 END AS snap_open,
                TRUNC(P_END_DATE) - TRUNC(k.para_added_on) AS snap_age
           FROM V_EXEC_KPI_LIFECYCLE k
-          LEFT JOIN history_asof h ON h.com_id = k.com_id
          WHERE k.record_type = 'PARA'
            AND (P_ENTITY_TYPE_ID IS NULL OR k.entity_type_id = P_ENTITY_TYPE_ID)
            AND (P_AUDITED_BY_ID IS NULL OR k.audited_by_id = P_AUDITED_BY_ID)
@@ -2125,15 +2111,11 @@ END P_GET_CIA_EXEC_KPIS;
       RAISE_APPLICATION_ERROR(-20047,'Invalid para identifier.');
     END IF;
     OPEN IO_CURSOR FOR
-      -- Last recorded cycle and movement as of the selected End Date.
+      -- COM_CYCLE comes from the current master record (k.com_cycle).
+      -- History remains ONLY to establish last movement as of End Date.
       WITH history_asof AS
       (
         SELECT h.com_id,
-               MAX(h.com_cycle) KEEP (
-                 DENSE_RANK LAST ORDER BY
-                   CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
-                   CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST
-               ) AS recorded_cycle,
                MAX(h.comment_on) AS last_movement_on
           FROM ais_t_au_post_compliance_history h
          WHERE h.comment_on < V_TO
@@ -2142,10 +2124,7 @@ END P_GET_CIA_EXEC_KPIS;
       scoped AS
       (
         SELECT k.*,
-               CASE WHEN V_TODAY = 1 THEN k.com_cycle
-                    WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
-                    WHEN k.com_cycle = 0 THEN 0
-               END AS snap_cycle,
+               k.com_cycle AS snap_cycle,
                h.last_movement_on AS last_movement_on,
                CASE WHEN V_TODAY = 1 THEN k.current_open
                     WHEN k.para_added_on < V_TO
