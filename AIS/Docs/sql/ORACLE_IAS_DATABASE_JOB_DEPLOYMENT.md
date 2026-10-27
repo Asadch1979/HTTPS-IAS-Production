@@ -31,9 +31,10 @@ created an Oracle DBMS_SCHEDULER job.
 1. Back up current Oracle package source and capture metadata for job 2/schedule 2.
 2. Run `ias_day_end_job_logging.sql` **once**. It contains DDL and SELECTs.
 3. Compile `PKG_DAILY.sql` (package declaration, then body).
-4. Compile `PKG_IAS_SCHEDULER.sql` **package declaration and body only**,
-   not the historical table-creation statements at its start. Its spec now
-   accepts optional `P_EXECUTION_TYPE`; existing app callers are unchanged.
+4. Compile `deploy_ias_scheduler_package_only.sql` (spec and body only).
+   Do **not** execute the historical schema-creation DDL at the beginning of
+   `PKG_IAS_SCHEDULER.sql`. The updated spec accepts optional
+   `P_EXECUTION_TYPE`; existing app callers are unchanged.
 5. Compile `PKG_IAS_DB_JOB_WORKER.sql`.
 6. Check `USER_ERRORS` for all three package objects, and ensure Oracle
    `CREATE JOB` privilege is available to the schema owner.
