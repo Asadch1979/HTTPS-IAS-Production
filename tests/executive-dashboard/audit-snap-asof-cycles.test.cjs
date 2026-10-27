@@ -15,24 +15,24 @@ function procedure(name) {
 const distribution = procedure('P_GET_SNAP_DISTRIBUTION');
 const critical = procedure('P_GET_SNAP_CRITICAL');
 
-test('cycle buckets always use master COM_CYCLE while portfolio remains date-scoped',()=>{
-  assert.match(distribution,/k\.com_cycle AS snap_cycle/);
-  assert.doesNotMatch(distribution,/history_asof|recorded_cycle|LEFT JOIN ais_t_au_post_compliance_history/i);
-  assert.match(distribution,/Unknown cycle/); // Genuine invalid master values only.
-  assert.match(distribution,/snap_cycle IS NULL OR snap_cycle < 0/);
+test('historical cycle bucket counts use as-of source events rather than blanking every past date',()=>{
+  assert.match(distribution,/FROM ais_t_au_post_compliance_history h/);
+  assert.match(distribution,/h\.comment_on < V_TO/);
+  assert.match(distribution,/h\.com_cycle IS NOT NULL/);
+  assert.match(distribution,/WHEN h\.recorded_cycle IS NOT NULL THEN h\.recorded_cycle/);
+  assert.match(distribution,/WHEN k\.com_cycle = 0 THEN 0/);
+  assert.match(distribution,/Unknown cycle/);
   assert.match(distribution,/FROM scoped WHERE snap_open = 1/);
-  assert.match(distribution,/k\.para_added_on < V_TO/);
-  assert.match(distribution,/k\.para_settled_on >= V_TO/);
   assert.doesNotMatch(distribution,/FROM scoped WHERE snap_open = 1 AND V_TODAY = 1/);
+  assert.doesNotMatch(distribution,/dataset = 'cycle' AND V_TODAY = 0 THEN/);
   assert.match(distribution,/WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code/);
 });
 
-test('critical cursor uses master COM_CYCLE and history only for movement date',()=>{
-  assert.match(critical,/k\.com_cycle AS snap_cycle/);
+test('critical cursor retains existing fields and exposes last known cycle and movement days',()=>{
   assert.match(critical,/FROM ais_t_au_post_compliance_history h/);
   assert.match(critical,/h\.comment_on < V_TO/);
   assert.match(critical,/MAX\(h\.comment_on\) AS last_movement_on/);
-  assert.doesNotMatch(critical,/recorded_cycle|MAX\(h\.com_cycle\)/);
+  assert.match(critical,/DENSE_RANK LAST ORDER BY[\s\S]*?h\.com_cycle IS NOT NULL/);
   assert.match(critical,/k\.snap_cycle AS com_cycle/);
   assert.match(critical,/TRUNC\(P_END_DATE\) - TRUNC\(k\.last_movement_on\)/);
   assert.match(critical,/END AS days_since_movement/);

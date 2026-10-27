@@ -217,16 +217,9 @@ namespace AIS.Services
             else
             {
                 html.Append("<h2>Division-wise Management Audit Settlement</h2>");
-                // Match browser and CSV: hide only records whose five position
-                // counts are all zero. Keep zeros on otherwise active rows.
-                var visibleRows = rows.Where(r => r.OpeningBalance != 0 || r.ParasAdded != 0 ||
-                    r.TotalParas != 0 || r.SettledParas != 0 || r.OutstandingParas != 0).ToList();
-                if (visibleRows.Count == 0)
-                    html.Append("<p>No management audit position or movement for the selected period.</p>");
-                else
-                    AddTable(html, "Function / Division", visibleRows, r => r.ItemName,
-                        new[]{("Opening","opening"),("Added","added"),("Total","total"),
-                              ("Settled","settled"),("Outstanding","open"),("Settlement %","rate")});
+                AddTable(html, "Function / Division", rows, r => r.ItemName,
+                    new[]{("Opening","opening"),("Added","added"),("Total","total"),
+                          ("Settled","settled"),("Outstanding","open"),("Settlement %","rate")});
             }
             html.Append("<p class='note'>Data note: historical positions use available IAS dates and current organizational mapping; settlement attribution is indicative.</p>");
             html.Append("</body></html>");

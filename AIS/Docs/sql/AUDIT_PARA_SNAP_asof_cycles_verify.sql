@@ -6,10 +6,12 @@
 -- Audited By IDs 112242/112248 correspond to the previously checked
 -- two departments, NOT an assumption that these are all FAD departments.
 --
--- Cycle buckets use CURRENT COM_CYCLE from AIS_T_AU_POST_COMPLIANCE.
--- Only the open portfolio is estimated at the selected End Date.
--- This is not a reconstruction of historical COM_CYCLE. History is
--- consulted solely for movement dates on the critical register.
+-- Historic cycle evidence is sourced from
+-- AIS_T_AU_POST_COMPLIANCE_HISTORY.COM_CYCLE/COMMENT_ON/HIST_ID.
+-- Historic fallback to 0 occurs ONLY if the CURRENT COM_CYCLE = 0,
+-- not if an unknown past value was positive.
+-- The result is an estimated historical snapshot: re-openings and
+-- incomplete history prevent absolute as-of reconstruction.
 
 WITH date_params AS
 (
@@ -20,6 +22,11 @@ WITH date_params AS
 history_asof AS
 (
     SELECT h.com_id,
+           MAX(h.com_cycle) KEEP
+             (DENSE_RANK LAST ORDER BY
+               CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+               CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST)
+             AS recorded_cycle,
            MAX(h.comment_on) AS last_movement_on
       FROM ais_t_au_post_compliance_history h
      WHERE h.comment_on < DATE '2026-10-21'
@@ -30,7 +37,9 @@ snapshot AS
     SELECT c.com_id,
            c.audited_by,
            c.risk,
-           c.com_cycle AS snap_cycle,
+           CASE WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
+                WHEN c.com_cycle = 0 THEN 0
+           END AS snap_cycle,
            CASE WHEN h.last_movement_on IS NOT NULL THEN
                 TRUNC(DATE '2026-10-20') - TRUNC(h.last_movement_on)
            END AS days_since_movement
