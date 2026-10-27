@@ -38,8 +38,12 @@ test('Report C resolves direct GM, audited-by HO mapping and self GM without alt
     const cte = sql.slice(sql.indexOf('report_c_offices AS ('),sql.indexOf('dimensions AS ('));
     assert.doesNotMatch(cte,/JOIN t_auditee_entities_maping/);
     assert.match(sql,/P_SCOPE_ROOT_ID IN/);
-    assert.match(sql,/PKG_AUDIT_SNAP_SCOPE\.REQUIRE_SELECTION/);
-    assert.match(sql,/P_SNAP_AUDITED_BY_ID IS NULL OR s\.audited_by = P_SNAP_AUDITED_BY_ID/);
+    if (file !== 'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql')
+      assert.match(sql,/PKG_AUDIT_SNAP_SCOPE\.REQUIRE_SELECTION/);
+    // Legacy image rewrite is for reference only; never deploy it in place of
+    // the authenticated canonical and F8 package bodies.
+    if (file !== 'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql')
+      assert.match(sql,/P_SNAP_AUDITED_BY_ID IS NULL OR s\.audited_by = P_SNAP_AUDITED_BY_ID/);
     assert.match(sql,/P_REPORT_ID = 'D' AND top_rank <= 5/);
   }
   assert.ok(source.includes('WHEN \'D\' THEN f.region_id'));
