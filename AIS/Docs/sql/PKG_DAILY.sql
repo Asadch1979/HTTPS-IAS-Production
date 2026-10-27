@@ -29,7 +29,9 @@ create or replace package body PKG_DAILY is
        set s.session_active = 'N'
      where s.session_active = 'Y';
     commit;
+    pkg_daily.HR_DATA;
   
+
   End Session_Kill_day_end;
 
   procedure HR_DATA is
@@ -53,7 +55,7 @@ create or replace package body PKG_DAILY is
        EMPLOYEETYPE)
       select * from V_GET_ACTIVE_EMPLOYEES_VIEW;
     commit;
-  
+    pkg_daily.HR_AUDIT_DATA;
   end HR_DATA;
 
   procedure HR_AUDIT_DATA is
