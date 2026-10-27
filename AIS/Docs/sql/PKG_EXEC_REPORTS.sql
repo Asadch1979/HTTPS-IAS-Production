@@ -347,13 +347,25 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
        AND m.audit_by IS NOT NULL
      GROUP BY m.audit_by
   ),
+  report_c_gm_auditor AS (
+    SELECT m.entity_id,
+           CASE WHEN COUNT(DISTINCT m.audit_by) = 1
+                THEN MAX(m.audit_by) END AS audited_by
+      FROM t_auditee_entities_maping m
+      JOIN t_auditee_entities gm
+        ON gm.entity_id = m.entity_id AND gm.type_id = 21
+     WHERE NVL(m.status, 'Y') = 'Y'
+     GROUP BY m.entity_id
+  ),
   report_c_offices AS (
     SELECT f.*,
            CASE
              WHEN f.entity_type_id = 21 THEN f.entity_id
              WHEN f.audit_type = 'B'
                   AND f.entity_type_id NOT IN (6, 21, 22, 28)
-               THEN COALESCE(md.mapped_gm_id, ag.unique_gm_id)
+               THEN COALESCE(CASE WHEN gm_audited.audited_by = f.audited_by
+                                  THEN md.mapped_gm_id END,
+                             ag.unique_gm_id)
              ELSE COALESCE(md.mapped_gm_id, f.gm_office_id)
            END AS report_c_gm_id,
            CASE
@@ -371,6 +383,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         ON md.entity_id = f.entity_id AND P_REPORT_ID = 'C'
       LEFT JOIN report_c_auditor_gm ag
         ON ag.audit_by = f.audited_by AND P_REPORT_ID = 'C'
+      LEFT JOIN report_c_gm_auditor gm_audited
+        ON gm_audited.entity_id = md.mapped_gm_id
+       AND P_REPORT_ID = 'C'
       LEFT JOIN t_auditee_entities parent_region
         ON parent_region.entity_id = f.reporting_1
        AND parent_region.type_id = 22 AND P_REPORT_ID = 'C'
