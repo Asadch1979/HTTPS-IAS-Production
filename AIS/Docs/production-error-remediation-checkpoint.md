@@ -1,12 +1,10 @@
-# Remediation checkpoint
+# Final remediation checkpoint
 
-Branch: codex/ias-production-error-remediation
-Worktree: C:/Users/Asad/.codex/worktrees/ias-production-remediation/HTTPS-IAS-Production
-Base main: 6fea195841c205b4742bf76a785fab16d91ce487 (GitHub verified).
-Unrelated user edits remain untouched in the original checkout.
+PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/348 (draft pending database QA).
+Branch: codex/ias-production-error-remediation. Worktree: C:/Users/Asad/.codex/worktrees/ias-production-remediation/HTTPS-IAS-Production.
 
-All five implementation groups are present. Completed files are recorded by the commit diff; details and deployment order are in production-error-remediation.md. C# validation/binding tests, application build, and JavaScript workflow tests passed. SQL has not been compiled/run in Oracle.
+All five code/SQL corrections are committed. Application build and C#/JavaScript regression checks passed. Implementation commit published through GitHub API: 30007072742fabe9e4c7e9852fa4bf5ae59ed48b; local implementation commit ea7d8913535de12cbc946f0b24edf2b0192c834d plus merge of main 75493b21. Remote and local implementation trees match 44b433fccdc864cc50225ae0746bc3c3b90a4df8. API publication was necessary because direct Git HTTPS was unavailable.
 
-Next step: final diff/security review and rerun relevant checks after final SQL/controller adjustments, then publish this branch and open one consolidated PR. Git HTTPS fetch failed twice; the GitHub connector can read the current main and can publish blobs/tree/commit/ref if direct push remains unavailable. Never merge or deploy.
+No pending source changes. Remaining external gates: Oracle 19c compilation/concurrency QA, UQ_OBS_GIST metadata/triggers/external-writer preflight, and DBA reconciliation of the new production snapshots against canonical packages. See production-error-remediation.md for exact deployment order and checks. Do not merge or deploy without authorization. Original checkout user changes were preserved.
 
-Continuation: native hourly heartbeat ias-remediation-continuation targets this chat. Read five-hour usage at each start and before substantial work. At <=2% remaining, commit task changes and update this checkpoint with exact next step, then stop. After reset resume this same branch, not the user's main checkout. Stop/delete the heartbeat once the PR and final deliverables are complete. Last observed allowance: 54% remaining on 2026-10-27; do not treat this as current on resume.
+Task-specific hourly continuation is being stopped after delivery. No further quota-cycle development is scheduled.

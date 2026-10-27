@@ -40,3 +40,7 @@ No scripts have been run against a database. Sequence creation is additive DDL; 
 ## Limits and production facts still needed
 
 No Oracle connection is available in this task. Exact UQ_OBS_GIST columns, deployed package drift, table triggers, external writers, and real Oracle compile/concurrency results are not established by repository inspection. Preflight plus QA are deployment gates; no constraint is dropped or weakened and no data cleanup is performed.
+
+## Production snapshots added during this task
+
+Main advanced to 75493b215372712adc7bf505374c7b8d06c603e9 with PKG_AR - prod.sql and PKG_HD - prod.sql. The branch incorporates that commit. Their affected procedures confirm the reported faults, but the snapshots differ elsewhere from the canonical packages (including ownership checks present in canonical HD). Before deployment, the DBA must reconcile that pre-existing drift; do not blindly replace unrelated production logic. The snapshots are retained unchanged as evidence.
