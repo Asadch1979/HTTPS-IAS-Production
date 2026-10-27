@@ -49,7 +49,7 @@ test('PDF Report E applies the same five-metric rule only in its E branch', () =
 test('Unknown-cycle diagnostic and Report C listing remain read-only', () => {
     const sql = read('AIS/Docs/sql/SNAP_UNKNOWN_CYCLE_REPORT_C_UNASSIGNED_DIAGNOSTICS.sql');
     assert.match(sql, /k\.record_type = 'PARA'/);
-    assert.match(sql, /s\.snapshot_cycle IS NULL OR s\.snapshot_cycle < 0/);
+    assert.match(sql, /s\.current_cycle IS NULL OR s\.current_cycle < 0/);
     assert.match(sql, /c\.gm_office_id IS NULL OR c\.gm_name IS NULL/);
     assert.match(sql, /c\.region_id IS NULL OR c\.region_name IS NULL/);
     assert.doesNotMatch(sql, /^\s*(UPDATE|DELETE|MERGE|INSERT|ALTER|DROP|CREATE)\s+/im);
