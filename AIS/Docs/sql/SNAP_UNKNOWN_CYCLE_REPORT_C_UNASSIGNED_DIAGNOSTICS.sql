@@ -1,9 +1,11 @@
 -- IAS Audit Para Snap / Executive Reports: read-only diagnostics.
--- Date values and audited-by filter MUST match the dashboard request.
--- Use a staging or DBA-approved read-only session. DO NOT update any mapping,
--- COM_CYCLE, history, permissions or production records from these queries.
+-- Run in an approved Oracle read-only session with the same date and authorized
+-- audited-by/entity scope as the dashboard. NO updates or security changes.
 --
--- Run as a script in Oracle SQL Developer or PL/SQL Developer.
+-- CURRENT master COM_CYCLE is now the source for cycle distributions, even
+-- when the selected End Date is historical. The historical open portfolio
+-- remains an estimate and can contain currently settled PARA_STATUS=9 rows.
+-- History is required only for last-movement fields, not for cycle values.
 VAR P_START_DATE VARCHAR2(10);
 VAR P_END_DATE VARCHAR2(10);
 VAR P_AUDITED_BY_ID NUMBER;
@@ -11,37 +13,22 @@ EXEC :P_START_DATE := '2026-01-01';
 EXEC :P_END_DATE := '2026-10-26';
 EXEC :P_AUDITED_BY_ID := NULL;
 
--- 1. UNKNOWN COMPLIANCE CYCLE. Mirrors the existing dated distribution:
---    current COM_CYCLE for an end-date of today; otherwise the last recorded
---    history cycle before the exclusive end date, with zero-only fallback.
---    Earlier than first history for a CURRENT positive cycle means genuinely
---    UNKNOWN, not zero. Do not infer an unrecorded historic cycle.
+-- 1. Every record that still qualifies for the Unknown cycle bucket.
+--    A current COM_CYCLE of NULL or a negative value is an actual master
+--    data issue. No history matching is used or required for this check.
+--    Unlike a PARA_STATUS=8-only query, this includes status 9 records
+--    that were open on the selected historical End Date.
 WITH dates AS (
     SELECT TO_DATE(:P_START_DATE, 'YYYY-MM-DD') d_from,
            TO_DATE(:P_END_DATE, 'YYYY-MM-DD') + 1 d_to,
            CASE WHEN TO_DATE(:P_END_DATE, 'YYYY-MM-DD') = TRUNC(SYSDATE)
                 THEN 1 ELSE 0 END is_today
-    FROM dual
-),
-history_asof AS (
-    SELECT h.com_id,
-           MAX(h.com_cycle) KEEP (
-               DENSE_RANK LAST ORDER BY h.comment_on, h.hist_id
-           ) AS recorded_cycle
-      FROM ais_t_au_post_compliance_history h
-      CROSS JOIN dates d
-     WHERE h.comment_on < d.d_to
-       AND h.com_cycle IS NOT NULL
-     GROUP BY h.com_id
+      FROM dual
 ),
 scoped AS (
     SELECT k.com_id, k.entity_id, k.audited_by_id, k.source_ind,
-           k.para_status, k.com_cycle AS current_cycle,
-           h.recorded_cycle, k.para_added_on, k.report_concluded_on,
-           k.para_settled_on,
-           CASE WHEN d.is_today = 1 THEN k.com_cycle
-                WHEN h.recorded_cycle IS NOT NULL THEN h.recorded_cycle
-                WHEN k.com_cycle = 0 THEN 0 END AS snapshot_cycle,
+           k.para_status, k.com_cycle AS current_cycle, k.para_added_on,
+           k.report_concluded_on, k.para_settled_on,
            CASE WHEN d.is_today = 1 THEN k.current_open
                 WHEN k.para_added_on < d.d_to
                  AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
@@ -51,25 +38,19 @@ scoped AS (
                 THEN 1 ELSE 0 END AS snapshot_open
       FROM V_EXEC_KPI_LIFECYCLE k
       CROSS JOIN dates d
-      LEFT JOIN history_asof h ON h.com_id = k.com_id
      WHERE k.record_type = 'PARA'
        AND (:P_AUDITED_BY_ID IS NULL OR k.audited_by_id = :P_AUDITED_BY_ID)
 )
-SELECT s.com_id, s.entity_id, e.name entity_name, s.audited_by_id,
-       s.source_ind, s.para_status, s.current_cycle, s.recorded_cycle,
-       s.snapshot_cycle, s.para_added_on, s.report_concluded_on,
-       CASE WHEN s.current_cycle < 0 OR s.recorded_cycle < 0
-            THEN 'NEGATIVE CYCLE VALUE'
-            WHEN s.current_cycle IS NULL AND s.recorded_cycle IS NULL
-            THEN 'NO MASTER/HISTORY CYCLE'
-            WHEN s.recorded_cycle IS NULL AND s.current_cycle > 0
-            THEN 'POSITIVE CURRENT CYCLE, NO AS-OF HISTORY'
-            ELSE 'HISTORY REQUIRES RECONCILIATION' END AS diagnostic_reason
+SELECT s.com_id, s.entity_id, e.name AS entity_name, s.audited_by_id,
+       s.source_ind, s.para_status, s.current_cycle,
+       s.para_added_on, s.report_concluded_on, s.para_settled_on,
+       CASE WHEN s.current_cycle IS NULL THEN 'NULL MASTER COM_CYCLE'
+            ELSE 'NEGATIVE MASTER COM_CYCLE' END AS diagnostic_reason
   FROM scoped s
   LEFT JOIN t_auditee_entities e ON e.entity_id = s.entity_id
  WHERE s.snapshot_open = 1
-   AND (s.snapshot_cycle IS NULL OR s.snapshot_cycle < 0)
- ORDER BY diagnostic_reason, s.audited_by_id, s.entity_id, s.com_id;
+   AND (s.current_cycle IS NULL OR s.current_cycle < 0)
+ ORDER BY s.audited_by_id, s.entity_id, s.com_id;
 
 -- 2. REPORT C UNASSIGNED GM / REGION: list the underlying auditee entities,
 --    not merely the grouping labels. Uses the same report source, B/D families,
