@@ -195,7 +195,7 @@ namespace AIS.Services
                 var total = rows.FirstOrDefault(r => r.RowKind == "TOTAL");
                 if (total != null) gm.Add(total);
                 AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false, true, columns);
-                html.Append("<h2>GM / region paras position</h2>");
+                html.Append("<h2>GM / region and H.O. unit paras position</h2>");
                 AddPosition(html, rows, r => r.ItemName, true);
             }
             else if (id == "D")
