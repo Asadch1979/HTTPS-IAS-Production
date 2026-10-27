@@ -233,7 +233,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
     SELECT m.entity_id,
            CASE WHEN COUNT(DISTINCT m.gm_office) = 1
                 THEN MAX(CASE WHEN gm.type_id = 21 THEN m.gm_office END)
-           END AS mapped_gm_id
+           END AS mapped_gm_id,
+           CASE WHEN COUNT(DISTINCT m.audit_by) = 1
+                THEN MAX(m.audit_by) END AS mapped_audit_by,
+           CASE WHEN COUNT(DISTINCT m.audit_by) > 1
+                THEN 1 ELSE 0 END AS ambiguous_audit_by
       FROM t_auditee_entities_maping m
       LEFT JOIN t_auditee_entities gm
         ON gm.entity_id = m.gm_office
@@ -270,9 +274,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
              WHEN f.entity_type_id = 21 THEN f.entity_id
              WHEN f.audit_type = 'B'
                   AND f.entity_type_id NOT IN (6, 21, 22, 28)
-               THEN COALESCE(CASE WHEN gm_audited.audited_by = f.audited_by
-                                  THEN md.mapped_gm_id END,
-                             ag.unique_gm_id)
+               THEN CASE WHEN NVL(md.ambiguous_audit_by, 0) = 0
+                         THEN COALESCE(
+                           CASE WHEN gm_audited.audited_by =
+                                     COALESCE(md.mapped_audit_by, f.audited_by)
+                                THEN md.mapped_gm_id END,
+                           ag.unique_gm_id)
+                    END
              ELSE COALESCE(md.mapped_gm_id, f.gm_office_id)
            END AS report_c_gm_id,
            CASE
@@ -289,7 +297,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
       LEFT JOIN report_c_direct_gm md
         ON md.entity_id = f.entity_id AND P_REPORT_ID = 'C'
       LEFT JOIN report_c_auditor_gm ag
-        ON ag.audit_by = f.audited_by AND P_REPORT_ID = 'C'
+        ON ag.audit_by = COALESCE(md.mapped_audit_by, f.audited_by)
+       AND P_REPORT_ID = 'C'
       LEFT JOIN report_c_gm_auditor gm_audited
         ON gm_audited.entity_id = md.mapped_gm_id
        AND P_REPORT_ID = 'C'
