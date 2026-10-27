@@ -196,16 +196,7 @@
             const summaries = rows.filter(row => !detail(row));
             if (summaries.length) table(target, 'Oracle summary records (excluded from ranked charts)', rankingColumns, summaries);
         } else {
-            // Report E: do not show functions whose opening, movement and closing
-            // counts are all zero. Keep meaningful zeros in non-empty rows.
-            // CSV exports these same rendered rows; other reports are untouched.
-            const measures = ['openingBalance', 'parasAdded', 'totalParas', 'settledParas', 'outstandingParas'];
-            const visibleRows = rows.filter(row => measures.some(key => row[key] != null && Number(row[key]) !== 0));
-            if (!visibleRows.length) {
-                target.append(node('p', 'No management audit position or movement for the selected period.', 'exec-empty'));
-            } else {
-                table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], visibleRows);
-            }
+            table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], rows);
         }
         if (!snap) {
         const sources = node('details', null, 'exec-data'); sources.open = false;

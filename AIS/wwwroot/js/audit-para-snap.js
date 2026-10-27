@@ -147,14 +147,11 @@
                 value == null ? 'N/A' : number(value) + (periodRate ? '%' : '');
             card.title = periodRate
                 ? 'Selected-period settlements ÷ (estimated opening open paras + paras added in selected period). N/A if unavailable or inconsistent.'
-                : key === 'over3ComplianceCycles'
-                ? 'Current COM_CYCLE values from IAS master records for the selected as-of portfolio; not historical cycle counts.'
                 : position && estimated
                 ? 'As-of value reconstructed from the latest available IAS records; historical status changes may not be complete.'
                 : position && verified ? 'Current IAS position.' : 'IAS event dates within the selected range.';
             card.querySelector('[data-snap-kpi-note]').textContent =
                 value == null ? 'N/A · No reliable history' :
-                key === 'over3ComplianceCycles' ? 'Current cycles · selected portfolio' :
                 position ? 'As of selected date' : 'Within selected dates';
         }
     }
@@ -271,10 +268,7 @@
             // Unrated is retained in Oracle for data-quality diagnostics,
             // but the visible distribution is explicitly for rated risks.
             const subset = rows.filter(row => row.dataset === name &&
-                !(name === 'risk' && (row.bucketCode === '0' || row.bucketName === 'Unrated')) &&
-                // A diagnostic Unknown bucket remains in Oracle for actual null/
-                // negative master values, but hide it when its count is zero.
-                !(name === 'cycle' && row.bucketCode === '9' && row.paraCount === 0));
+                !(name === 'risk' && (row.bucketCode === '0' || row.bucketName === 'Unrated')));
             if (!subset.length) throw new Error('Missing ' + name + ' analysis.');
             if (name === 'trend') {
                 target.replaceChildren(renderMonthlyTrend(subset));
@@ -295,9 +289,7 @@
                 if (!['Y','E','N'].includes(row.qualityCode) || row.paraCount != null &&
                     (!Number.isSafeInteger(row.paraCount) || row.paraCount < 0)) throw new Error('Invalid dated analysis.');
                 const tr = element('tr'), label = element('th',row.bucketName); label.scope = 'row';
-                tr.title = name === 'cycle'
-                    ? 'Current IAS COM_CYCLE; historical dates select an estimated open portfolio, not historical cycles'
-                    : row.qualityCode === 'N' ? 'Historical source evidence unavailable'
+                tr.title = row.qualityCode === 'N' ? 'Historical source evidence unavailable'
                     : row.qualityCode === 'E' ? 'Calculated from available IAS history' : 'Current IAS status';
                 tr.append(label,element('td',row.qualityCode === 'N' ? 'N/A' : number(row.paraCount)));
                 if(aging)tr.append(element('td',comparable?(row.paraCount/closing*100).toFixed(2)+'%':'N/A'));
@@ -319,8 +311,8 @@
             const caption = element('summary','View chart data');
             details.append(caption,table);
             target.replaceChildren(bars,details);
-            if (name === 'cycle')
-                target.append(element('p','Compliance cycles are current IAS master counts for the selected portfolio. They are not historical as-of cycle values.','exec-note'));
+            if (name === 'cycle' && subset.every(row => row.qualityCode === 'N'))
+                target.append(element('p','Historical cycle breakdown unavailable.','exec-empty'));
         }
     }
     let performance = null;
