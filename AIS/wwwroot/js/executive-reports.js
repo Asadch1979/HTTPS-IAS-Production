@@ -177,8 +177,8 @@
                 if (grandTotal) gmRows.push(grandTotal);
                 table(target, 'GM paras position', [column('GM Office','itemName',plain), ...dynamicPosition], gmRows);
             }
-            table(target, id === 'B' ? 'Field office paras position' : 'GM / region paras position',
-                [column(id === 'B' ? 'Field office' : 'Region name','itemName',plain), ...dynamicPosition], sortedWithinGroup(rows), true);
+            table(target, id === 'B' ? 'Field office paras position' : 'GM / region and H.O. unit paras position',
+                [column(id === 'B' ? 'Field office' : 'Region / H.O. unit','itemName',plain), ...dynamicPosition], sortedWithinGroup(rows), true);
         } else if (id === 'D') {
             const charts = node('div', null, 'exec-report-charts');
             for (const [group, title] of [['TOP','Top five regions'],['BOTTOM','Bottom five regions']]) {
