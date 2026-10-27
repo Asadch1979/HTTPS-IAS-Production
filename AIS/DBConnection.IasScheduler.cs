@@ -232,6 +232,31 @@ namespace AIS.Controllers
             return reader.Read() ? MapIasSchedulerClaimedJob(reader) : null;
         }
 
+        // Approved Oracle-only job. The executable name is a literal, never
+        // assembled from user-configurable PACKAGE_NAME / PROCEDURE_NAME.
+        public IasSchedulerJobResult ExecuteIasSchedulerDayEnd(long executionId)
+        {
+            using var con = DatabaseConnection(requireActiveSession: false);
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PKG_DAILY.SESSION_KILL_DAY_END";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+            GuardAgainstDynamicSql(cmd);
+            cmd.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            cmd.Parameters.Add("P_EXECUTION_ID", OracleDbType.Int64).Value = executionId;
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read())
+            {
+                throw new InvalidOperationException("PKG_DAILY returned no completion summary.");
+            }
+
+            var processed = ReadIasSchedulerInt32(reader, "RECORDS_PROCESSED");
+            var runId = ReadIasSchedulerInt64(reader, "RUN_ID");
+            return new IasSchedulerJobResult(processed,
+                $"Oracle day-end run {runId} completed. Committed DML rows affected: {processed}. See T_IAS_DAY_END_STEP for each operation.");
+        }
+
         public void CompleteIasSchedulerJob(long executionId, int recordsProcessed, string responseMessage)
         {
             using var con = DatabaseConnection(requireActiveSession: false);

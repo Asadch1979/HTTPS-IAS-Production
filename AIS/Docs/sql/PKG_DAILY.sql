@@ -1,93 +1,239 @@
-create or replace package PKG_DAILY is
+CREATE OR REPLACE PACKAGE PKG_DAILY IS
+  -- Day-end work executes in Oracle. P_EXECUTION_ID correlates its logs
+  -- with the existing IAS scheduler execution (NULL for direct DB calls).
+  TYPE T_CURSOR IS REF CURSOR;
 
-  -- Author  : ASAD
-  -- Created : 27-10-2026 2:48:25 PM
-  -- Purpose : Day end procedures
-
-  TYPE t_cursor IS REF CURSOR;
-
-  procedure Session_Kill_day_end(io_cursor OUT t_cursor);
-  
-  procedure HR_DATA;
-  
-  procedure HR_AUDIT_DATA;
-
-end PKG_DAILY;
+  PROCEDURE SESSION_KILL_DAY_END(IO_CURSOR OUT T_CURSOR,
+                                  P_EXECUTION_ID IN NUMBER DEFAULT NULL);
+  PROCEDURE HR_DATA;
+  PROCEDURE HR_AUDIT_DATA;
+END PKG_DAILY;
 /
-create or replace package body PKG_DAILY is
+CREATE OR REPLACE PACKAGE BODY PKG_DAILY IS
 
-  procedure Session_Kill_day_end(io_cursor OUT t_cursor) is
-  
-  begin
-    Open io_cursor for
-      select count(*)
-        from t_user_session s
-       where s.session_active = 'Y'
-         and trunc(s.logged_in_date) = trunc(sysdate);
-  
-    update t_user_session s
-       set s.session_active = 'N'
-     where s.session_active = 'Y';
-    commit;
-    pkg_daily.HR_DATA;
-  
-
-  End Session_Kill_day_end;
-
-  procedure HR_DATA is
-  begin
-    delete from v_service_employeeinfo;
-    commit;
-    insert into v_service_employeeinfo
-      select * from V_SERVICE_EMPLOYEEINFO_VIEW;
-    commit;
-  
-    delete from V_GET_ACTIVE_EMPLOYEES;
-    commit;
-  
-    insert into V_GET_ACTIVE_EMPLOYEES
-      (PPNO,
-       CURRENTDIVISIONCODE,
-       CURRENTDEPARTMENTCODE,
-       CURRENTZONECODE,
-       CURRENTBRANCHCODE,
-       CURRENTDESIGNATIONCODE,
-       EMPLOYEETYPE)
-      select * from V_GET_ACTIVE_EMPLOYEES_VIEW;
-    commit;
-    pkg_daily.HR_AUDIT_DATA;
-  end HR_DATA;
-
-  procedure HR_AUDIT_DATA is
-  begin
-    DELETE FROM t_audit_emp;
+  -- The log is independent of the refresh transaction, so failed/rolled-back
+  -- work is still auditable. No employee values or session identifiers logged.
+  PROCEDURE P_START_RUN(P_EXECUTION_ID IN NUMBER, P_RUN_ID OUT NUMBER) IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
+  BEGIN
+    P_RUN_ID := SEQ_IAS_DAY_END_RUN.NEXTVAL;
+    INSERT INTO T_IAS_DAY_END_RUN
+      (RUN_ID, IAS_EXECUTION_ID, STATUS, STARTED_ON)
+    VALUES
+      (P_RUN_ID, P_EXECUTION_ID, 'RUNNING', SYSTIMESTAMP);
     COMMIT;
-    INSERT INTO t_audit_emp
-      (Ppno,
-       Departmentcode,
-       Deptarment,
-       Employeefirstname,
-       Employeelastname,
-       Rankcode,
-       Current_Rank,
-       Designationcode,
-       Fun_Designation,
-       Type,
-       Entity_Id)
-      SELECT E.ppno,
-             E.departmentcode,
-             E.description,
-             E.employeefirstname,
-             E.employeelastname,
-             E.currentrankcode,
-             E.CURRENT_RANK,
-             E.designationcode,
-             E.FUN_DESIGNATION,
-             E.type,
-             E.ENTITY_ID
-        FROM V_AUDIT_EMP E;
-    COMMIT;
-  
-  end HR_AUDIT_DATA;
+  END P_START_RUN;
 
-end PKG_DAILY;
+  PROCEDURE P_LOG_STEP(P_RUN_ID        IN NUMBER,
+                       P_STEP_CODE     IN VARCHAR2,
+                       P_ACTION_TYPE   IN VARCHAR2,
+                       P_STARTED_ON    IN TIMESTAMP WITH TIME ZONE,
+                       P_ROWS_AFFECTED IN NUMBER,
+                       P_STATUS        IN VARCHAR2 DEFAULT 'APPLIED',
+                       P_ERROR_MESSAGE IN VARCHAR2 DEFAULT NULL) IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
+  BEGIN
+    IF P_RUN_ID IS NULL THEN
+      RETURN; -- Standalone HR_DATA/HR_AUDIT_DATA calls are not scheduled runs.
+    END IF;
+
+    INSERT INTO T_IAS_DAY_END_STEP
+      (STEP_ID, RUN_ID, STEP_CODE, ACTION_TYPE, STARTED_ON,
+       COMPLETED_ON, ROWS_AFFECTED, STATUS, ERROR_MESSAGE)
+    VALUES
+      (SEQ_IAS_DAY_END_STEP.NEXTVAL, P_RUN_ID, P_STEP_CODE, P_ACTION_TYPE,
+       P_STARTED_ON, SYSTIMESTAMP, P_ROWS_AFFECTED, P_STATUS,
+       SUBSTR(P_ERROR_MESSAGE, 1, 2000));
+    COMMIT;
+  END P_LOG_STEP;
+
+  PROCEDURE P_FINISH_RUN(P_RUN_ID IN NUMBER,
+                         P_STATUS IN VARCHAR2,
+                         P_ERROR_MESSAGE IN VARCHAR2 DEFAULT NULL) IS
+    PRAGMA AUTONOMOUS_TRANSACTION;
+    V_TOTAL NUMBER;
+  BEGIN
+    IF P_STATUS IN ('SUCCESS', 'FAILED') THEN
+      UPDATE T_IAS_DAY_END_STEP
+         SET STATUS = CASE WHEN P_STATUS = 'SUCCESS'
+                           THEN 'COMMITTED' ELSE 'ROLLED_BACK' END
+       WHERE RUN_ID = P_RUN_ID
+         AND STATUS = 'APPLIED';
+    END IF;
+
+    SELECT NVL(SUM(CASE WHEN STATUS = 'COMMITTED'
+                        THEN ROWS_AFFECTED ELSE 0 END), 0)
+      INTO V_TOTAL
+      FROM T_IAS_DAY_END_STEP
+     WHERE RUN_ID = P_RUN_ID;
+
+    UPDATE T_IAS_DAY_END_RUN
+       SET STATUS = P_STATUS,
+           COMPLETED_ON = SYSTIMESTAMP,
+           TOTAL_ROWS_AFFECTED =
+             CASE WHEN P_STATUS = 'RECONCILIATION_REQUIRED'
+                  THEN NULL ELSE V_TOTAL END,
+           ERROR_MESSAGE = SUBSTR(P_ERROR_MESSAGE, 1, 4000)
+     WHERE RUN_ID = P_RUN_ID;
+
+    IF SQL%ROWCOUNT <> 1 THEN
+      RAISE_APPLICATION_ERROR(-20811, 'Day-end run log missing.');
+    END IF;
+    COMMIT;
+  END P_FINISH_RUN;
+
+  PROCEDURE P_REFRESH_HR(P_RUN_ID     IN NUMBER,
+                         IO_STEP_CODE IN OUT VARCHAR2,
+                         IO_ACTION    IN OUT VARCHAR2,
+                         IO_STARTED   IN OUT TIMESTAMP WITH TIME ZONE) IS
+    V_ROWS NUMBER;
+  BEGIN
+    IO_STEP_CODE := 'EMPLOYEEINFO_DELETE';
+    IO_ACTION := 'DELETE';
+    IO_STARTED := SYSTIMESTAMP;
+    DELETE FROM V_SERVICE_EMPLOYEEINFO;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+
+    IO_STEP_CODE := 'EMPLOYEEINFO_INSERT';
+    IO_ACTION := 'INSERT';
+    IO_STARTED := SYSTIMESTAMP;
+    INSERT INTO V_SERVICE_EMPLOYEEINFO
+    SELECT * FROM V_SERVICE_EMPLOYEEINFO_VIEW;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+
+    IO_STEP_CODE := 'ACTIVE_EMPLOYEES_DELETE';
+    IO_ACTION := 'DELETE';
+    IO_STARTED := SYSTIMESTAMP;
+    DELETE FROM V_GET_ACTIVE_EMPLOYEES;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+
+    IO_STEP_CODE := 'ACTIVE_EMPLOYEES_INSERT';
+    IO_ACTION := 'INSERT';
+    IO_STARTED := SYSTIMESTAMP;
+    INSERT INTO V_GET_ACTIVE_EMPLOYEES
+      (PPNO, CURRENTDIVISIONCODE, CURRENTDEPARTMENTCODE,
+       CURRENTZONECODE, CURRENTBRANCHCODE, CURRENTDESIGNATIONCODE, EMPLOYEETYPE)
+    SELECT * FROM V_GET_ACTIVE_EMPLOYEES_VIEW;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+  END P_REFRESH_HR;
+
+  PROCEDURE P_REFRESH_AUDIT(P_RUN_ID     IN NUMBER,
+                            IO_STEP_CODE IN OUT VARCHAR2,
+                            IO_ACTION    IN OUT VARCHAR2,
+                            IO_STARTED   IN OUT TIMESTAMP WITH TIME ZONE) IS
+    V_ROWS NUMBER;
+  BEGIN
+    IO_STEP_CODE := 'AUDIT_EMP_DELETE';
+    IO_ACTION := 'DELETE';
+    IO_STARTED := SYSTIMESTAMP;
+    DELETE FROM T_AUDIT_EMP;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+
+    IO_STEP_CODE := 'AUDIT_EMP_INSERT';
+    IO_ACTION := 'INSERT';
+    IO_STARTED := SYSTIMESTAMP;
+    INSERT INTO T_AUDIT_EMP
+      (PPNO, DEPARTMENTCODE, DEPTARMENT, EMPLOYEEFIRSTNAME, EMPLOYEELASTNAME,
+       RANKCODE, CURRENT_RANK, DESIGNATIONCODE, FUN_DESIGNATION, TYPE, ENTITY_ID)
+    SELECT E.PPNO, E.DEPARTMENTCODE, E.DESCRIPTION, E.EMPLOYEEFIRSTNAME,
+           E.EMPLOYEELASTNAME, E.CURRENTRANKCODE, E.CURRENT_RANK,
+           E.DESIGNATIONCODE, E.FUN_DESIGNATION, E.TYPE, E.ENTITY_ID
+      FROM V_AUDIT_EMP E;
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(P_RUN_ID, IO_STEP_CODE, IO_ACTION, IO_STARTED, V_ROWS);
+  END P_REFRESH_AUDIT;
+
+  PROCEDURE SESSION_KILL_DAY_END(IO_CURSOR OUT T_CURSOR,
+                                  P_EXECUTION_ID IN NUMBER DEFAULT NULL) IS
+    V_RUN_ID       NUMBER;
+    V_ROWS         NUMBER;
+    V_STEP_CODE    VARCHAR2(50);
+    V_ACTION       VARCHAR2(10);
+    V_STARTED      TIMESTAMP WITH TIME ZONE;
+    V_ERROR        VARCHAR2(4000);
+    V_DATA_COMMITTED BOOLEAN := FALSE;
+  BEGIN
+    P_START_RUN(P_EXECUTION_ID, V_RUN_ID);
+
+    V_STEP_CODE := 'SESSIONS_DEACTIVATE';
+    V_ACTION := 'UPDATE';
+    V_STARTED := SYSTIMESTAMP;
+    UPDATE T_USER_SESSION
+       SET SESSION_ACTIVE = 'N'
+     WHERE SESSION_ACTIVE = 'Y';
+    V_ROWS := SQL%ROWCOUNT;
+    P_LOG_STEP(V_RUN_ID, V_STEP_CODE, V_ACTION, V_STARTED, V_ROWS);
+
+    P_REFRESH_HR(V_RUN_ID, V_STEP_CODE, V_ACTION, V_STARTED);
+    P_REFRESH_AUDIT(V_RUN_ID, V_STEP_CODE, V_ACTION, V_STARTED);
+
+    -- One atomic refresh. A failed downstream INSERT will not leave
+    -- an emptied HR/audit table, unlike the original per-statement commits.
+    COMMIT;
+    V_DATA_COMMITTED := TRUE;
+    P_FINISH_RUN(V_RUN_ID, 'SUCCESS');
+
+    -- First column remains numeric for existing ref-cursor consumers;
+    -- it is now the ACTUAL committed DML count, not a pre-update count.
+    OPEN IO_CURSOR FOR
+      SELECT TOTAL_ROWS_AFFECTED AS RECORDS_PROCESSED,
+             RUN_ID, STARTED_ON, COMPLETED_ON, STATUS
+        FROM T_IAS_DAY_END_RUN
+       WHERE RUN_ID = V_RUN_ID;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      V_ERROR := SUBSTR(SQLERRM || CHR(10) ||
+                        DBMS_UTILITY.FORMAT_ERROR_BACKTRACE, 1, 4000);
+      ROLLBACK;
+      IF V_RUN_ID IS NOT NULL THEN
+        BEGIN
+          IF NOT V_DATA_COMMITTED THEN
+            P_LOG_STEP(V_RUN_ID, V_STEP_CODE, V_ACTION,
+                       NVL(V_STARTED, SYSTIMESTAMP), 0,
+                       'FAILED', V_ERROR);
+            P_FINISH_RUN(V_RUN_ID, 'FAILED', V_ERROR);
+          ELSE
+            -- The business transaction committed; do not claim rollback.
+            P_FINISH_RUN(V_RUN_ID, 'RECONCILIATION_REQUIRED', V_ERROR);
+          END IF;
+        EXCEPTION
+          WHEN OTHERS THEN NULL; -- Preserve the original failure to the runner.
+        END;
+      END IF;
+      RAISE;
+  END SESSION_KILL_DAY_END;
+
+  PROCEDURE HR_DATA IS
+    V_STEP_CODE VARCHAR2(50);
+    V_ACTION VARCHAR2(10);
+    V_STARTED TIMESTAMP WITH TIME ZONE;
+  BEGIN
+    P_REFRESH_HR(NULL, V_STEP_CODE, V_ACTION, V_STARTED);
+    P_REFRESH_AUDIT(NULL, V_STEP_CODE, V_ACTION, V_STARTED);
+    COMMIT;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
+  END HR_DATA;
+
+  PROCEDURE HR_AUDIT_DATA IS
+    V_STEP_CODE VARCHAR2(50);
+    V_ACTION VARCHAR2(10);
+    V_STARTED TIMESTAMP WITH TIME ZONE;
+  BEGIN
+    P_REFRESH_AUDIT(NULL, V_STEP_CODE, V_ACTION, V_STARTED);
+    COMMIT;
+  EXCEPTION
+    WHEN OTHERS THEN
+      ROLLBACK;
+      RAISE;
+  END HR_AUDIT_DATA;
+END PKG_DAILY;
+/
