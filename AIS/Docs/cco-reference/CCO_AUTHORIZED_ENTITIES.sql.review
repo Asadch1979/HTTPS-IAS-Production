@@ -1,0 +1,203 @@
+-- IAS CCO / V_CCO_AUTHORIZED_ENTITIES — SECURITY REVIEW CANDIDATE
+-- Prepared 2026-10-28. NOT EXECUTED / NOT PRODUCTION APPROVED.
+-- Intended for a dedicated SECURITY OWNER, not a shared schema with direct GTT DML.
+-- The application database identity must have EXECUTE on PKG_CCO_SCOPE and
+-- SELECT on V_CCO_AUTHORIZED_ENTITIES only; NO direct INSERT/UPDATE/DELETE on GTT,
+-- CREATE CONTEXT, ALTER ANY CONTEXT or rights to replace the package/view.
+-- Confirm objects, roles, group IDs and page grants in approved STAGING first.
+-- Dependencies verified in repository: T_USER, T_USER_SESSION,
+-- T_USER_CONTEXT_ASSIGNMENT, T_GROUPS, T_MENU_PAGES,
+-- T_MENU_PAGES_GROUPMAP, T_AUDITEE_ENTITIES.
+-- NO browser-provided user, scope token or group root is acceptable authorization.
+-- NO DDL is to be executed from application startup or automatically during deploy.
+
+-- STEP 1. Session-private fact scope. All rows disappear on COMMIT / ROLLBACK.
+CREATE GLOBAL TEMPORARY TABLE T_CCO_SCOPE_ENTITIES_GTT
+(
+    SCOPE_TOKEN  VARCHAR2(32) NOT NULL,
+    ENTITY_ID    NUMBER       NOT NULL,
+    CONSTRAINT PK_T_CCO_SCOPE_ENTITIES_GTT PRIMARY KEY (SCOPE_TOKEN, ENTITY_ID)
+) ON COMMIT DELETE ROWS;
+
+-- STEP 2. Package specification; create trusted application context as DBA
+-- AFTER PACKAGE SPECIFICATION and BEFORE PACKAGE BODY.
+CREATE OR REPLACE PACKAGE PKG_CCO_SCOPE AUTHID DEFINER AS
+    PROCEDURE P_BEGIN_SCOPE(
+        P_USER_ID      IN NUMBER,
+        P_ROLE_ID      IN NUMBER,
+        P_GROUP_ID     IN NUMBER,
+        P_ENTITY_ID    IN NUMBER,
+        P_CONTEXT_ID   IN NUMBER,
+        P_SESSION_ID   IN VARCHAR2,
+        O_SCOPE_TOKEN  OUT VARCHAR2);
+    PROCEDURE P_ASSERT_SCOPE(P_SCOPE_TOKEN IN VARCHAR2);
+    PROCEDURE P_END_SCOPE;
+END PKG_CCO_SCOPE;
+/
+
+-- DBA/SECURITY OWNER REQUIRED (run separately with privilege CREATE ANY CONTEXT):
+-- CREATE CONTEXT IAS_CCO_CTX USING <SECURITY_OWNER>.PKG_CCO_SCOPE;
+-- The namespace MUST name the definer-rights trusted package above.
+
+-- STEP 3. Fail-closed package. Session ID is an IAS authentication handle,
+-- NOT an authorization grant by itself; DB checks active user/role/context/page.
+-- For the CCO bank-wide grant, role 38 and verified Super User role 1 are allowed;
+-- application must ALSO enforce its own IsSuperUser(), page and exact API grants.
+CREATE OR REPLACE PACKAGE BODY PKG_CCO_SCOPE AS
+
+    PROCEDURE P_END_SCOPE IS
+    BEGIN
+        DELETE FROM T_CCO_SCOPE_ENTITIES_GTT;
+        DBMS_SESSION.CLEAR_CONTEXT('IAS_CCO_CTX', NULL);
+    END P_END_SCOPE;
+
+    PROCEDURE P_REQUIRE_ACTIVE(
+        P_USER_ID IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+        P_ENTITY_ID IN NUMBER, P_CONTEXT_ID IN NUMBER, P_SESSION_ID IN VARCHAR2) IS
+        V_COUNT NUMBER;
+    BEGIN
+        IF P_USER_ID IS NULL OR P_ROLE_ID NOT IN (1,38)
+           OR P_GROUP_ID IS NULL OR P_ENTITY_ID IS NULL
+           OR P_CONTEXT_ID IS NULL OR P_SESSION_ID IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20810, 'Missing CCO IAS context');
+        END IF;
+        SELECT COUNT(DISTINCT U.USERID) INTO V_COUNT
+          FROM T_USER U
+          JOIN T_USER_SESSION S ON S.USER_PP_NUMBER = U.PPNO
+          JOIN T_GROUPS G ON G.GROUP_ID = P_GROUP_ID
+          JOIN T_USER_CONTEXT_ASSIGNMENT C ON C.USER_CONTEXT_ID = P_CONTEXT_ID
+          JOIN T_MENU_PAGES MP ON MP.ID = 1000302
+          JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.PAGE_ID = MP.ID
+         WHERE U.USERID = P_USER_ID AND U.ISACTIVE = 'Y'
+           AND S.SESSION_ID = P_SESSION_ID AND S.SESSION_ACTIVE = 'Y'
+           AND S.LOGGED_OUT_DATE IS NULL
+           AND S.ROLE_ID = P_ROLE_ID AND S.ENTITY_ID = P_ENTITY_ID
+           AND S.GROUP_ID = P_GROUP_ID
+           AND G.ROLE_ID = P_ROLE_ID AND G.STATUS = 'Y'
+           AND C.USER_ID = U.USERID AND C.ROLE_ID = P_ROLE_ID
+           AND C.ENTITY_ID = P_ENTITY_ID AND C.IS_ACTIVE = 'Y'
+           AND NVL(C.GROUP_ID,C.ROLE_ID) = P_GROUP_ID
+           AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM <= SYSDATE)
+           AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO >= TRUNC(SYSDATE))
+           AND MP.STATUS = 'A' AND MPG.GROUP_ID = P_GROUP_ID;
+        IF V_COUNT <> 1 THEN
+            RAISE_APPLICATION_ERROR(-20811, 'CCO session/context/page is not currently authorized');
+        END IF;
+    END P_REQUIRE_ACTIVE;
+
+    PROCEDURE P_BEGIN_SCOPE(
+        P_USER_ID IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+        P_ENTITY_ID IN NUMBER, P_CONTEXT_ID IN NUMBER, P_SESSION_ID IN VARCHAR2,
+        O_SCOPE_TOKEN OUT VARCHAR2) IS
+    BEGIN
+        -- Clear residue before validating, including reused pooled connections.
+        P_END_SCOPE;
+        P_REQUIRE_ACTIVE(P_USER_ID,P_ROLE_ID,P_GROUP_ID,P_ENTITY_ID,P_CONTEXT_ID,P_SESSION_ID);
+        O_SCOPE_TOKEN := RAWTOHEX(SYS_GUID());
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN', O_SCOPE_TOKEN);
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','USER_ID', TO_CHAR(P_USER_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','ROLE_ID', TO_CHAR(P_ROLE_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','GROUP_ID', TO_CHAR(P_GROUP_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','ENTITY_ID', TO_CHAR(P_ENTITY_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','CONTEXT_ID', TO_CHAR(P_CONTEXT_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','SESSION_ID', P_SESSION_ID);
+        -- CCO bank-wide source population. Unlike a hierarchy join, this
+        -- retains otherwise unmapped auditee entities for explicit exceptions.
+        INSERT INTO T_CCO_SCOPE_ENTITIES_GTT(SCOPE_TOKEN,ENTITY_ID)
+        SELECT O_SCOPE_TOKEN, E.ENTITY_ID
+          FROM T_AUDITEE_ENTITIES E
+         WHERE E.ENTITY_ID IS NOT NULL
+         GROUP BY E.ENTITY_ID;
+        P_ASSERT_SCOPE(O_SCOPE_TOKEN);
+    EXCEPTION WHEN OTHERS THEN
+        P_END_SCOPE;
+        RAISE;
+    END P_BEGIN_SCOPE;
+
+    PROCEDURE P_ASSERT_SCOPE(P_SCOPE_TOKEN IN VARCHAR2) IS
+        V_USER_ID NUMBER;
+        V_ROLE_ID NUMBER;
+        V_GROUP_ID NUMBER;
+        V_ENTITY_ID NUMBER;
+        V_CONTEXT_ID NUMBER;
+        V_SESSION_ID VARCHAR2(200);
+    BEGIN
+        IF P_SCOPE_TOKEN IS NULL OR LENGTH(P_SCOPE_TOKEN) <> 32
+           OR NOT REGEXP_LIKE(P_SCOPE_TOKEN, '^[0-9A-F]{32}$')
+           OR P_SCOPE_TOKEN <> SYS_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN') THEN
+            RAISE_APPLICATION_ERROR(-20812, 'CCO scope-token mismatch');
+        END IF;
+        V_USER_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','USER_ID'));
+        V_ROLE_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ROLE_ID'));
+        V_GROUP_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','GROUP_ID'));
+        V_ENTITY_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ENTITY_ID'));
+        V_CONTEXT_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','CONTEXT_ID'));
+        V_SESSION_ID := SYS_CONTEXT('IAS_CCO_CTX','SESSION_ID');
+        P_REQUIRE_ACTIVE(V_USER_ID,V_ROLE_ID,V_GROUP_ID,V_ENTITY_ID,V_CONTEXT_ID,V_SESSION_ID);
+        -- Must be inside one active transaction; COMMIT or ROLLBACK empties GTT.
+        -- If the organization is legitimately empty, the application must
+        -- distinguish that from a lost transaction before reading aggregates.
+    END P_ASSERT_SCOPE;
+END PKG_CCO_SCOPE;
+/
+
+-- STEP 4. Actual view requested. The trusted context plus same-transaction
+-- GTT and real-time IAS authorization joins prevent direct unscoped reads.
+-- This view is deliberately sparse: existing PKG_CCO_REPORTING expects only
+-- SCOPE_TOKEN and ENTITY_ID. Names/path mappings are separate responsibilities.
+CREATE OR REPLACE VIEW V_CCO_AUTHORIZED_ENTITIES AS
+SELECT X.SCOPE_TOKEN, X.ENTITY_ID
+  FROM T_CCO_SCOPE_ENTITIES_GTT X
+ WHERE X.SCOPE_TOKEN = SYS_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN')
+   AND EXISTS
+   (
+       SELECT 1 FROM T_USER U
+       JOIN T_USER_SESSION S ON S.USER_PP_NUMBER = U.PPNO
+       JOIN T_GROUPS G ON G.GROUP_ID = S.GROUP_ID
+       JOIN T_USER_CONTEXT_ASSIGNMENT C ON C.USER_CONTEXT_ID =
+            TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','CONTEXT_ID'))
+       JOIN T_MENU_PAGES MP ON MP.ID = 1000302
+       JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.PAGE_ID = MP.ID
+      WHERE U.USERID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','USER_ID'))
+        AND U.ISACTIVE = 'Y'
+        AND S.SESSION_ID = SYS_CONTEXT('IAS_CCO_CTX','SESSION_ID')
+        AND S.SESSION_ACTIVE = 'Y' AND S.LOGGED_OUT_DATE IS NULL
+        AND S.ROLE_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ROLE_ID'))
+        AND S.ENTITY_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ENTITY_ID'))
+        AND S.GROUP_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','GROUP_ID'))
+        AND S.ROLE_ID IN (1,38) AND G.ROLE_ID = S.ROLE_ID AND G.STATUS='Y'
+        AND C.USER_ID = U.USERID AND C.ROLE_ID = S.ROLE_ID
+        AND C.ENTITY_ID = S.ENTITY_ID AND C.IS_ACTIVE = 'Y'
+        AND NVL(C.GROUP_ID,C.ROLE_ID)=S.GROUP_ID
+        AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM<=SYSDATE)
+        AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO>=TRUNC(SYSDATE))
+        AND MP.STATUS='A' AND MPG.GROUP_ID=S.GROUP_ID
+   );
+/
+
+-- STEP 5. Required next adapter, NOT implemented by this script:
+-- On ONE open ODP.NET connection AND ONE explicit OracleTransaction:
+-- (a) MVC verifies live session + CCO role/page + exact API grant.
+-- (b) call PKG_CCO_SCOPE.P_BEGIN_SCOPE with values from trusted IAS session;
+--     never from HTTP query. Obtain returned DB-created O_SCOPE_TOKEN.
+-- (c) call PKG_CCO_SCOPE.P_ASSERT_SCOPE before PKG_CCO_REPORTING call.
+-- (d) pass DB token to PKG_CCO_REPORTING; its REQUIRE_VERIFIED_CONTEXT
+--     must call PKG_CCO_SCOPE.P_ASSERT_SCOPE before returning cursors.
+-- (e) fully read/bound-check all cursor rows; assert session again and call
+--     P_END_SCOPE before committing/rolling back and returning HTTP payload.
+-- (f) always rollback/dispose connection on any error and deny stale data.
+-- No autonomous transactions or implicit commits; GTT clears on transaction end.
+-- IMPORTANT: if app connects as same owner as this table/package, the DB
+-- login itself can write the GTT: use a separate protected owner with EXECUTE
+-- /SELECT-only grants to the runtime, otherwise DBA sign-off MUST block activation.
+-- No direct table, package body, or context namespace privileges for browser/user.
+
+-- STAGING-only QA checklist (not executable assertions):
+-- 1. SELECT * FROM V_CCO_AUTHORIZED_ENTITIES without P_BEGIN => zero rows.
+-- 2. Invalid/revoked user, stale session, wrong role/context/page => ORA-20810/11.
+-- 3. Begin + select in same transaction => authorized distinct auditee IDs.
+-- 4. Different DB session, COMMIT, ROLLBACK, P_END => zero rows.
+-- 5. Context assignment/page/session revoked while transaction open => zero rows.
+-- 6. Concurrent pooled connections never share scope tokens or rows.
+-- 7. Verify exception/unmapped portfolio parity with report source; no silent drop.
+-- 8. Validate private owner grants and inability to insert arbitrary GTT rows.
