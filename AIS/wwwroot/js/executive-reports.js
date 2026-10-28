@@ -335,7 +335,7 @@
             // accurate data note. Estimates must still not appear certified.
             cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
             let benchmark = null;
-            if (selection.value === 'D' && root.dataset.perspective !== 'CCO') {
+            if (selection.value === 'D') {
                 // Read overall benchmark from the same authorized Field Audit source.
                 // Never hardcode the 54.25% observed in one reference screenshot.
                 try {

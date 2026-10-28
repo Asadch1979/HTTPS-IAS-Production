@@ -8,6 +8,7 @@ else
 {
     @if (Model.SelectedView.Id == "overview")
     {
+        <p class="exec-note">Opening balance and additions are available only as the combined total from the authorized CCO summary. Separate lifecycle values require a dedicated authorized CCO API and are pending a later controlled phase.</p>
         <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
     }
     <partial name="_Sections" model="Model" />

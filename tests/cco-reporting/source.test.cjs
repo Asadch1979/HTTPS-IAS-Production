@@ -1,6 +1,8 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),{execFileSync}=require('node:child_process');
 const read=p=>fs.readFileSync(p,'utf8').replace(/\r\n/g,'\n');
-const before=p=>execFileSync('git',['show','930394fe:'+p],{encoding:'utf8'}).replace(/\r\n/g,'\n');
+// Public PR base: https://github.com/Asadch1979/HTTPS-IAS-Production/commit/1239d510f913cef79c98ef91d2e7eaad090c480c
+// Shallow checkouts: git fetch --depth=1 origin 1239d510f913cef79c98ef91d2e7eaad090c480c
+const before=p=>execFileSync('git',['show','1239d510f913cef79c98ef91d2e7eaad090c480c:'+p],{encoding:'utf8'}).replace(/\r\n/g,'\n');
 test('protected executive readers, APIs, permissions, other parents and Oracle sources unchanged',()=>{
  for(const p of ['AIS/Controllers/ExecutiveReportsController.cs','AIS/Controllers/ExecutiveDashboardController.cs','AIS/Controllers/AuditParaSnapController.cs','AIS/DBConnection.ExecutiveDashboard.cs','AIS/DBConnection.ComplianceDashboard.cs','AIS/Models/ExecutiveDashboardFilters.cs','AIS/Models/ComplianceDashboardPolicy.cs','AIS/wwwroot/js/executive-dashboard.js',...['TOP','CIA','AuditParaSnap','GROUP','RLM'].map(r=>'AIS/Views/ExecutiveOverview/'+r+'.cshtml'),...['PKG_EXEC_DASHBOARD.sql','PKG_EXEC_REPORTS.sql','V_EXEC_KPI_LIFECYCLE.sql','executive_dashboard_permissions.sql'].map(f=>'AIS/Docs/sql/'+f)]) assert.equal(read(p),before(p),p);
  const p='AIS/Models/ExecutiveDashboardViews.cs';
