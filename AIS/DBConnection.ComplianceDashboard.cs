@@ -47,6 +47,8 @@ namespace AIS.Controllers
             var rate = total > 0 ? Math.Round(100m * settled / total, 2) : (decimal?)null;
             ValidateDatedDashboardScope(scope, filters);
             return new ExecutiveKpiSummary {
+                OpeningCases = scope.DashboardType == "CCO" ? opening : (long?)null,
+                ParaAdded = scope.DashboardType == "CCO" ? added : (long?)null,
                 TotalCases = total, OpenParas = Required(k.ClosingOpenParas),
                 HighRiskParas = Required(k.HighRiskOpenParas), CriticalItems = Required(k.HighRiskOpenParas),
                 Over1YearParas = Required(k.Over1YearParas),

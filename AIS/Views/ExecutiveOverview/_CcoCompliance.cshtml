@@ -8,7 +8,7 @@ else
 {
     @if (Model.SelectedView.Id == "overview")
     {
-        <p class="exec-note">Opening balance and additions are available only as the combined total from the authorized CCO summary. Separate lifecycle values require a dedicated authorized CCO API and are pending a later controlled phase.</p>
+        <p class="exec-note">Opening Cases is the position at the beginning of the selected period; Para Added counts eligible additions during it. Total Cases is their sum. Historical balances remain estimates.</p>
         <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
     }
     <partial name="_Sections" model="Model" />
