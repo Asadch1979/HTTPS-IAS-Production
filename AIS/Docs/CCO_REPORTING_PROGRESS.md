@@ -37,3 +37,12 @@ Latest official allowance: 11% used / 89% remaining, 300-minute window, ordinary
 The existing sole schedule resume-ias-cco-reporting-task is unchanged and must remain idle: this is not a credit pause. Native scheduling is conditional, not proof of restored allowance.
 Unrelated AIS/Docs/sql/PKG_HD - prod.sql changed externally during this turn; leave it untouched alongside original appsettings/obj/.vs changes.
 Next exact step: review the Phase 1 draft PR, obtain an explicitly approved staging identity, have DBA review/run AIS/Docs/sql/cco_reporting_preflight.sql with bound dates, and capture taxonomy/mapping/source and permission evidence plus authenticated B/C/D/Overview/browser acceptance. Do not implement database-dependent grouping, new grants or CCO exports until those gates pass. No merge/deploy.
+
+## Published review checkpoint
+- Draft PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/349 (not merged).
+- Local Phase 1 commit: 135580b2c6a746359c08dda360969a305bca9223.
+- Local Phase 0 commit: 5663042b (setup 930394fe).
+- GitHub Phase 0 commit: a776c9a3c152034d67c49957f719148db3b50885.
+- GitHub Phase 1 commit: 4cf00585167599cccab21477cb79fb27446699ef.
+- Git transport could not reach GitHub; connected GitHub published two review commits. Remote/local Phase 0 tree bc23b6a5dae75f23c260e08498e7513e9ac411e0 and Phase 1 tree a8191f83086ae1da6accf97084c21fded1e5b4e7 were verified identical. Commit identities differ because the connector creates commits with its own metadata. Do not blindly push/force-push the local branch over the remote branch; reconcile histories before future publishing.
+- This following documentation-only commit records the review checkpoint; use git log -1 for its local identity. No task is credit-paused. Existing continuation remains conditional and idle.
