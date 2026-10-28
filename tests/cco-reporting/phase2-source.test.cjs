@@ -6,6 +6,8 @@ test('Phase 2 preserves existing APIs, permissions, report client, other parents
  for(const p of ['AIS/Controllers/ExecutiveDashboardController.cs','AIS/Controllers/ExecutiveReportsController.cs','AIS/Controllers/AuditParaSnapController.cs','AIS/Models/ExecutiveDashboardFilters.cs','AIS/Models/ComplianceDashboardPolicy.cs','AIS/wwwroot/js/executive-reports.js',...['TOP','CIA','GROUP','RLM','AuditParaSnap'].map(v=>'AIS/Views/ExecutiveOverview/'+v+'.cshtml'),...['PKG_EXEC_DASHBOARD.sql','PKG_EXEC_REPORTS.sql','V_EXEC_KPI_LIFECYCLE.sql','executive_dashboard_permissions.sql'].map(v=>'AIS/Docs/sql/'+v)])assert.equal(read(p),baseline(p),p);
 });
 test('new organizational adapters cannot be activated by a configuration toggle and permission requests remain inactive',()=>{
+ const partial=read('AIS/Views/ExecutiveOverview/_CcoCompliance.cshtml');
+ assert.ok(partial.indexOf('name="_Sections"')<partial.indexOf('id="cco-summary"'),'Main KPI cards precede supplementary cycle cards');
  const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
  assert.equal((adapter.match(/throw new CcoOrganizationUnavailableException/g)||[]).length,2);
  assert.doesNotMatch(adapter,/DatabaseConnection\(|CreateCommand\(|GetValue<bool>|ConnectionString/);

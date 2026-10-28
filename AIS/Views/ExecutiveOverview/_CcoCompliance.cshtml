@@ -9,9 +9,12 @@ else
     @if (Model.SelectedView.Id == "overview")
     {
         <p class="exec-note">Opening Cases is the position at the beginning of the selected period; Para Added counts eligible additions during it. Total Cases is their sum. Historical balances remain estimates.</p>
-        <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
     }
     <partial name="_Sections" model="Model" />
+    @if (Model.SelectedView.Id == "overview")
+    {
+        <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
+    }
     @if (Model.SelectedView.Id == "effectiveness")
     {
         <p class="exec-note">Existing authorized settlement trend, cycle and aging measures are shown. Organizational comparisons and movement-recency analysis remain pending verified reporting.</p>
