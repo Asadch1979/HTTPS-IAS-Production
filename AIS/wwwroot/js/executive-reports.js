@@ -315,6 +315,7 @@
         buttons.forEach(button => button.setAttribute('aria-pressed', String(button === selected)));
         invalidate(); const current = version; request = new AbortController();
         const query = new URLSearchParams(new FormData(form)); query.delete('report');
+        if (root.dataset.apiView === 'reports' && root.dataset.perspective === 'CCO') query.set('view', 'reports');
         query.set('dashboardType', root.dataset.perspective);
         if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
         $('report-title').textContent = `Report ${selection.value} · ${selected.dataset.title}`;

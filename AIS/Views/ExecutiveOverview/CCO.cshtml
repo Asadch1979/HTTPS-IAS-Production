@@ -4,6 +4,8 @@
     Layout = "_Layout";
     ViewData["HideTopHeader"] = true;
     var needsRoot = false;
+    var isReport = AIS.Models.CcoDashboardPresentation.ReportForView(Model.SelectedView.Id) != null;
+    var pending = Model.SelectedView.Id == "org-position" || Model.SelectedView.Id == "performance";
 }
 <link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard.css" asp-append-version="true" />
@@ -35,9 +37,9 @@
     <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
         <input type="hidden" name="view" value="@Model.SelectedView.Id" />
         @if (Model.IsSuperUser && Model.GroupRootId.HasValue) { <input type="hidden" name="groupRootId" value="@Model.GroupRootId" /> }
-        @if (Model.SelectedView.Id == "reports")
+        @if (isReport)
         {
-            var report = Context.Request.Query["report"].ToString();
+            var report = AIS.Models.CcoDashboardPresentation.ReportForView(Model.SelectedView.Id);
             <input type="hidden" id="exec-report-selection" name="report" value="@(Model.SelectedView.Reports.Contains(report) ? report : Model.SelectedView.Reports.FirstOrDefault())" />
         }
         @* All Compliance datasets share the selected period. *@
@@ -51,8 +53,8 @@
     </form>
 
     <p class="exec-note">Activity uses the selected period; balances, risk, aging and critical items are as of End Date. Historical balances are estimates. Compliance cycles use current IAS master counts for the selected portfolio, not reconstructed historical cycle counts.</p>
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
-    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
+    <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(!isReport && !pending)">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
     <noscript><p>Enable JavaScript to load dashboard data.</p></noscript>
@@ -63,12 +65,13 @@
     {
         // No data queries before the authorized reporting root is selected.
     }
-    else if (Model.SelectedView.Id == "reports")
+    else if (isReport)
     {
         <script src="~/js/executive-reports.js" asp-append-version="true"></script>
     }
-    else
+    else if (!pending)
     {
+        @if (Model.SelectedView.Id == "overview") { <script src="~/js/cco-compliance.js" asp-append-version="true"></script> }
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
         @if (Model.SelectedView.Id == "management") { <script src="~/js/executive-role-visuals.js" asp-append-version="true"></script> }
         @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }

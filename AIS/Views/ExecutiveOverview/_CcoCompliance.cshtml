@@ -1,0 +1,19 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<h2>@Model.SelectedView.Title</h2>
+@if (Model.SelectedView.Id == "org-position" || Model.SelectedView.Id == "performance")
+{
+    <p class="exec-empty" role="status">Pending data: Group / Division / GM reporting requires verified auditee mappings, authorized Oracle scope and staging source reconciliation. No organizational results are available yet.</p>
+}
+else
+{
+    @if (Model.SelectedView.Id == "overview")
+    {
+        <p class="exec-note">Opening balance and additions are available only as the combined total from the authorized CCO summary. Separate lifecycle values require a dedicated authorized CCO API and are pending a later controlled phase.</p>
+        <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
+    }
+    <partial name="_Sections" model="Model" />
+    @if (Model.SelectedView.Id == "effectiveness")
+    {
+        <p class="exec-note">Existing authorized settlement trend, cycle and aging measures are shown. Group / Division / GM comparisons, additions versus settlements and movement-recency analysis are pending verified organizational reporting.</p>
+    }
+}
