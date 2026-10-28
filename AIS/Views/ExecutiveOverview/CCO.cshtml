@@ -61,6 +61,7 @@
 </section>
 <partial name="_DashboardExportAssets" />
 @section Scripts {
+    @if (pending || Model.SelectedView.Id == "effectiveness") { <script src="~/js/cco-organizations.js" asp-append-version="true"></script> }
     @if (needsRoot)
     {
         // No data queries before the authorized reporting root is selected.

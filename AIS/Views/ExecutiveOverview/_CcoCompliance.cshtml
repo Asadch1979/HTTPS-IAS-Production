@@ -2,7 +2,7 @@
 <h2>@Model.SelectedView.Title</h2>
 @if (Model.SelectedView.Id == "org-position" || Model.SelectedView.Id == "performance")
 {
-    <p class="exec-empty" role="status">Pending data: Group / Division / GM reporting requires verified auditee mappings, authorized Oracle scope and staging source reconciliation. No organizational results are available yet.</p>
+    <partial name="_CcoOrganizations" model="Model" />
 }
 else
 {
@@ -14,6 +14,7 @@ else
     <partial name="_Sections" model="Model" />
     @if (Model.SelectedView.Id == "effectiveness")
     {
-        <p class="exec-note">Existing authorized settlement trend, cycle and aging measures are shown. Group / Division / GM comparisons, additions versus settlements and movement-recency analysis are pending verified organizational reporting.</p>
+        <p class="exec-note">Existing authorized settlement trend, cycle and aging measures are shown. Organizational comparisons and movement-recency analysis remain pending verified reporting.</p>
+        <partial name="_CcoOrganizations" model="Model" />
     }
 }
