@@ -26,3 +26,14 @@ Status: Credit-management setup complete. No implementation started. Not paused 
 - Next exact implementation step when authorized: read the saved design completely and inspect AIS/Views/ExecutiveOverview/CCO.cshtml, AIS/Models/ExecutiveDashboardViews.cs and AIS/Controllers/ExecutiveOverviewController.cs against phase 1; establish a task branch and assess CCO-only route/tab changes.
 - Phase 0 live taxonomy/source reconciliation requires an explicitly approved non-production environment. Never infer approval or connect using production settings. Preserve design security gates and approval-dependent export permissions.
 - At a credit pause, replace status with CREDIT_PAUSED, record official used/remaining percentage, completed work, checkpoint SHA and exact resumable step. Scheduler must otherwise remain idle.
+
+## Implementation update — 2026-10-28
+Status: Phase 1 source implementation complete; not credit-paused. Staging evidence pending.
+Branch: codex/cco-organizational-reporting, based on current GitHub main 1239d510 plus setup checkpoint 930394fe (verified tracked).
+Phase 0 source/preflight checkpoint: 5663042b. Phase 1 checkpoint: locate with git log -1 --format=%H -- AIS/Models/CcoDashboardPresentation.cs.
+Completed: seven CCO visible tabs, hidden canonical reports allowlist, B/C/D presentation mapping, authorized/date-validated legacy redirects, Overview lifecycle/risk/aging/cycle/critical presentation, existing effectiveness measures and explicit pending organizational/performance states. No API/permission/source-calculation changes.
+Validation: build 0 errors/57 warnings; 52 compiled checks and 2 source checks pass; headless Chrome fixtures pass; full executive Node suite has the same 14 failures as baseline (77 pass, 3 skips out of 94). Details and commands: CCO_REPORTING_BASELINE.md.
+Latest official allowance: 11% used / 89% remaining, 300-minute window, ordinaryUsageAllowed=true. No reset/bypass attempted.
+The existing sole schedule resume-ias-cco-reporting-task is unchanged and must remain idle: this is not a credit pause. Native scheduling is conditional, not proof of restored allowance.
+Unrelated AIS/Docs/sql/PKG_HD - prod.sql changed externally during this turn; leave it untouched alongside original appsettings/obj/.vs changes.
+Next exact step: review the Phase 1 draft PR, obtain an explicitly approved staging identity, have DBA review/run AIS/Docs/sql/cco_reporting_preflight.sql with bound dates, and capture taxonomy/mapping/source and permission evidence plus authenticated B/C/D/Overview/browser acceptance. Do not implement database-dependent grouping, new grants or CCO exports until those gates pass. No merge/deploy.

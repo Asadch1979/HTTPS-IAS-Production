@@ -187,6 +187,14 @@ namespace AIS.Controllers
                     views.RemoveAll(v => v.Id == "glance");
                     if (view == "glance") view = "management";
                 }
+                if (requestedType == "CCO")
+                {
+                    var canonical = CcoDashboardPresentation.ResolveLegacy(view, Request.Query["report"].ToString().ToUpperInvariant());
+                    if (canonical != view)
+                        return RedirectToAction(nameof(CCO), new { view = canonical, startDate = filters.StartDate, endDate = filters.EndDate });
+                    // Keep the reports definition in ForPerspective for API authorization only.
+                    views.RemoveAll(v => v.Id == "reports");
+                }
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
                 // Divisional/Group RLM management eligibility requires an explicitly

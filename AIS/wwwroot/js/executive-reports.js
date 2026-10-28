@@ -315,6 +315,7 @@
         buttons.forEach(button => button.setAttribute('aria-pressed', String(button === selected)));
         invalidate(); const current = version; request = new AbortController();
         const query = new URLSearchParams(new FormData(form)); query.delete('report');
+        if (root.dataset.apiView === 'reports' && root.dataset.perspective === 'CCO') query.set('view', 'reports');
         query.set('dashboardType', root.dataset.perspective);
         if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
         $('report-title').textContent = `Report ${selection.value} · ${selected.dataset.title}`;
@@ -334,7 +335,7 @@
             // accurate data note. Estimates must still not appear certified.
             cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
             let benchmark = null;
-            if (selection.value === 'D') {
+            if (selection.value === 'D' && root.dataset.perspective !== 'CCO') {
                 // Read overall benchmark from the same authorized Field Audit source.
                 // Never hardcode the 54.25% observed in one reference screenshot.
                 try {
