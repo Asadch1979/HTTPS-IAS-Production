@@ -30,7 +30,7 @@ namespace AIS.Controllers
         [HttpGet] public IActionResult GetOrgExceptions([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgExceptions));
         IActionResult Read(CcoOrganizationFilter filters,string action)
         {
-            var user=session.GetUser();var outcome="denied";
+            var user=session.GetUser();var outcome="denied";var rowCount=0;
             try
             {
                 if (User.Identity?.IsAuthenticated!=true || user==null || session.IsSessionRevoked(user)) return Error(401,"unauthenticated","An active IAS session is required.");
@@ -54,6 +54,7 @@ namespace AIS.Controllers
                 filters.ValidatePath(paths);
                 object data=action==nameof(GetOrgFilters) ? paths : database.GetCcoOrganizationRows(scope,filters,action);
                 database.ValidateCcoOrganizationContext(scope);
+                rowCount=data is System.Collections.ICollection collection ? collection.Count : 0;
                 outcome="success";
                 return Ok(new {success=true,data,correlationId=HttpContext.TraceIdentifier});
             }
@@ -64,8 +65,8 @@ namespace AIS.Controllers
             catch (Exception ex) { logger.LogError(ex,"CCO organization read failed {Correlation}",HttpContext.TraceIdentifier);return Error(503,"unavailable","CCO organizational reporting is temporarily unavailable."); }
             finally
             {
-                logger.LogInformation("CCO action {Action}; user {User}; session {Session}; context {Context}; group {Group}; division {Division}; gm {Gm}; start {Start}; end {End}; rows {Rows}; outcome {Outcome}; correlation {Correlation}",
-                    action,user?.ID,user?.SessionId,user?.UserContextAssignmentId,filters?.GroupId,filters?.DivisionId,filters?.GmOfficeId,filters?.StartDate,filters?.EndDate,0,outcome,HttpContext.TraceIdentifier);
+                logger.LogInformation("CCO action {Action}; user {User}; role {Role}; posting {Posting}; session {Session}; context {Context}; group {Group}; division {Division}; gm {Gm}; start {Start}; end {End}; rows {Rows}; outcome {Outcome}; correlation {Correlation}",
+                    action,user?.ID,user?.UserRoleID,user?.UserEntityID,user?.SessionId,user?.UserContextAssignmentId,filters?.GroupId,filters?.DivisionId,filters?.GmOfficeId,filters?.StartDate,filters?.EndDate,rowCount,outcome,HttpContext.TraceIdentifier);
             }
         }
         IActionResult Error(int status,string error,string message)=>StatusCode(status,new {success=false,error,message,correlationId=HttpContext.TraceIdentifier});
