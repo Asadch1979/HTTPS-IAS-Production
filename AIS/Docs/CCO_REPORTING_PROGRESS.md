@@ -83,3 +83,17 @@ Original checkout remains untouched. Official usage last observed 29% used/71% r
 Next exact step: review the new Phase 2 draft PR; approve secure database scope-token/path contracts and provide explicitly authorized staging. Run read-only preflight, capture taxonomy and COM_ID reconciliation, finalize mapping rules and implement/test bound adapters before any organizational activation. No automatic merge, production deployment or export grants.
 
 Final presentation correction: main KPI cards precede supplementary cycle/critical summary cards in Razor, ensuring Opening Cases, Para Added, Total Cases are the first three KPI cards in the whole Overview. Source and Chrome order tests cover that layout. KPI tests and build rerun after this change pass. Test/review checkpoint: fa1bc88b. Git push transport remains unavailable; publish through connected GitHub with exact per-commit tree verification, retaining separate implementation checkpoints.
+
+
+## Phase 2 draft publication
+Draft PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/350. New branch codex/cco-phase2-organizational-reporting, based on merged main d3f2d144. All six checkpoint trees verified identical when published through connected GitHub (Git transport unavailable).
+- Local 4ea3e20738ef46c44ee407602ac6aef056b898d0 -> GitHub 652f3632728b7fdc8a4ded0a7d57df5eb935d7ed (identical tree).
+- Local e3108c0c805764ac9f8b016ee9fee12248220a07 -> GitHub 6482eac39fe78fce9219416f49d0f592cabbe229 (identical tree).
+- Local ec8181874c08c29dbe131fbc7ad43d7722680574 -> GitHub 9e4bf5d079ff13563178c5668253eaee6cf12f22 (identical tree).
+- Local e5f0c7ed8936841f8dcb076520482c728f7daf7e -> GitHub d5bda4d7d0fdb8c38b424bf08bcb4594423e4deb (identical tree).
+- Local fa1bc88b159b3cdac9f738d2a1cbb13d2afa0610 -> GitHub 078169c4006734a663e82791129261586e0dea5c (identical tree).
+- Local 8482f29c202aa82b503ed302a92b6131d6724977 -> GitHub b76e8bc7e44a4ec3d0ecde3ffc71afc8d82ccdbd (identical tree).
+Do not force-push divergent local metadata over the published branch; reconcile histories before further publishing. This final documentation-only commit records the map; inspect git log -1 for its SHA.
+Final build after card-order correction: 0 errors/57 existing warnings. Latest official five-hour usage: 35% used / 65% remaining, ordinaryUsageAllowed=true; no credit pause.
+The existing single native heartbeat resume-ias-cco-reporting-task was UPDATED (not duplicated) to this managed Phase 2 worktree. It remains idle unless this file explicitly records a credit pause and official restoration is verified; staging and permission gates still apply. Original checkout has unrelated appsettings/SQL/obj/.vs changes, all untouched. Only generated obj artifacts changed locally in the Phase 2 worktree and are excluded from commits.
+Next step remains review of the draft and approval of secure scope/path contracts plus an explicitly approved staging target. Organizational totals, selectors and reader activation are not complete or verified; see CCO_PHASE2_REVIEW.md. No merge/deploy.
