@@ -1,0 +1,177 @@
+IAS — Chief Compliance Officer Organizational Reporting Design
+Document type: Implementation-ready functional, database, API, security and QA specification  
+Target: `ZTBLAIS/ExecutiveOverview/CCO`  
+Reference repository: `Asadch1979/HTTPS-IAS-Production` (`main`, inspected 28 October 2026)  
+Status: Proposed design for technical review; not implemented or deployed  
+Audience: CCO, ISAD/IAS engineering, database administrators, Information Security, QA
+1. Purpose and decision
+Replace the CCO's general audit-dashboard navigation with a Compliance Oversight & Remediation dashboard. Organize reporting by the auditee's Business Group → Division → GM Office hierarchy (with Region and Head Office unit drilldowns as appropriate), while retaining the authorized CCO's bank-wide oversight and narrowing all user-selected filters. The audit-performing `AUDITED_BY` hierarchy is a separate dimension and must not be confused with the auditee reporting hierarchy.
+Non-negotiable: No weakening of login, session/context validation, role verification, page or endpoint grants, entity/row scope, data validation, audit logging or export authorization. Any missing or conflicting mapping is explicitly reported, never silently assigned to another office. Changes to other dashboards (CIA Command Center, Audit Para Snap, TOP, GROUP, RLM) are out of scope.
+2. Existing implementation — verified from repository
+Component	Current behavior / reuse consideration
+`AIS/Views/ExecutiveOverview/CCO.cshtml`	General-purpose tabs selected from `Model.Views`; date form; existing report renderer selected only for `view=reports`.
+`AIS/Models/ExecutiveDashboardViews.cs`	CCO KPI defaults and formal reports B/C/D, currently nested in one Reports tab. CCO has no dedicated Group/Division/GM analysis view.
+`AIS/Controllers/ExecutiveOverviewController.cs`	`Dashboard("CCO", ...)` resolves an authenticated `CCO` scope and checks page permission before rendering.
+`AIS/DBConnection.ExecutiveDashboard.cs`	Role 38 is the fixed CCO IAS role; verified Super User is role 1; the CCO does not accept browser-supplied `groupRootId`. `ValidateExecutiveDashboardSession` binds user ID, role, posting, session ID and context-assignment ID.
+`AIS/Models/ExecutiveDashboardFilters.cs`	`ValidateParentPerspective` currently permits dates only for non-CIA/non-SNAP parent views. Extend carefully for CCO hierarchy filters, not by globally removing validation.
+`AIS/Models/ComplianceDashboardPolicy.cs`	Dates must be ordered ISO dates, nonfuture, shorter than 1,200 calendar months; Snap audit-division selectors are not accepted. Retain.
+`AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql`	`V_EXEC_ENTITY_SCOPE` derives Business Group from entity type 18, Division from 3, GM Office from 21 using reporting ancestors. These IDs need live taxonomy confirmation.
+`AIS/Docs/sql/PKG_EXEC_REPORTS.sql`	Reports B/C/D use `V_EXEC_REPORT_SOURCE`; Report C has additional `T_AUDITEE_ENTITIES_MAPING.GM_OFFICE`/`AUDIT_BY` handling for H.O. units. Preserve its existing authorized source population.
+`AIS/Controllers/ExecutiveReportsController.cs`	Reports B/C/D have authenticated page/API grants, an allowlist, entity-scope validation and `filters.View == "reports"` contract; PDF currently requires Super User.
+`AIS/Views/ExecutiveOverview/_Reports.cshtml`, `AIS/wwwroot/js/executive-reports.js`	Existing report tables and CSV/PDF export controls; controls are exposed only to Super User.
+`AIS/DBConnection.AuditParaSnapPerformance.cs`	CIA-only department comparison implemented by repeated per-office KPI reads. Do not copy this N+1 query strategy for the new CCO hierarchy.
+`AIS/Docs/sql/executive_dashboard_permissions.sql`	Dedicated CCO page ID `1000302`; role 38, CIA role 3, Super User role 1 separately verified. Report API grants are managed through the report-specific permissions script.
+This design is based on repository source only. No authenticated production browser session, live Oracle data inspection, real entity-type catalog check, or performance benchmark has been completed.
+3. Proposed navigation and ownership
+Replace the CCO's general tabs with the following seven top-level tabs; display concise compliance-oriented labels, not report letters.
+Order	Tab ID (proposed)	Display title	Content	Source/approach
+1	`overview`	Compliance Overview	Overall opening/added/settled/outstanding, settlement effectiveness, current zero/>3 compliance cycles, aged/high-risk open, notable mapping/reconciliation exceptions	Existing authenticated CCO lifecycle and distribution calculations, summarized through a CCO view adapter
+2	`org-position`	Group / Division / GM Position	Group → Division → GM Office breakdown, stock/movement table, rollups, unassigned and mixed-hierarchy exceptions	New set-based CCO Oracle organizational cursor
+3	`field-office`	Field Office Position	Former Report B, with current period, scope and export controls	Existing approved B report endpoint; CCO-specific view route wrapper
+4	`gm-region`	GM / Region Position	Former Report C: GM groups with Region/H.O. unit details, explicit unmapped labels	Existing approved C report endpoint; CCO-specific view route wrapper
+5	`regional-rankings`	Regional Rankings	Former Report D; Top/Bottom 5 by settlement %, denominator and eligible-reporting caveats	Existing approved D report endpoint; CCO-specific view route wrapper
+6	`performance`	Audit Performance Analysis	Group/Division/GM comparison, net backlog change, settlement %, deltas and sortable performance tables	New set-based CCO cursor using existing lifecycle/report calculation semantics
+7	`effectiveness`	Settlement Effectiveness	Monthly movements, settlement vs. additions, cycle mix, age bands and follow-up exception register	New set-based CCO cursor with date-accurate measures; reuse existing safe visual components
+Preserve critical observation detail, risk and aging through the Overview and Effectiveness tabs rather than dropping those capabilities. Keep an optional detail panel for observations; do not expose a generic unscoped para-text API.
+Backward-compatible URLs
+Existing `/ExecutiveOverview/CCO?view=glance|position|settlement|risk|aging|reports` bookmarks should have explicit CCO-only redirects to the closest new tab while preserving validated dates. Legacy `view=reports&report=B|C|D` must route to the correct new tab.
+Canonical report API requests may continue to use `filters.View=reports` after the CCO page maps a chosen visible tab to the approved B/C/D report ID; do not change the report API's allowlist or weaken view checks.
+Do not change URL semantics on TOP/CIA/GROUP/RLM or Audit Para Snap.
+4. Global CCO controls and interaction
+Global date controls: Start Date and End Date, inclusive Pakistan calendar dates. Default should remain January 1 of the relevant completed-day year through yesterday, consistently across every tab. The same selected range must survive tab changes, drilldowns and exports.
+Business hierarchy controls:
+Display level `Group | Division | GM Office` (a presentation/aggregation choice, not an authorization root).
+Group filter optional, default All authorized Groups.
+Division filter optional; available only after selecting a Group, populated from that Group's unique verified children.
+GM Office filter optional; available only for a validated parent path, populated only from eligible descendants/mapped offices in that path.
+Entity/Region filter optional when the selected report supports the final drilldown.
+When a parent changes, clear incompatible children both in the UI and on the server. `All` means all within the authenticated CCO scope, never an implicit upgrade of privilege. Do not reuse `groupRootId` or Snap's `snapDivision/snapDepartmentId`; CCO's filters use a new dedicated DTO (`OrgGroupId`, `OrgDivisionId`, `OrgGmOfficeId`, `GroupBy`, optional `RegionId`).
+UX: Responsive seven-tab navigation; one filter bar shared by all tabs; breadcrumb (`All Groups › Group › Division › GM Office`); sortable tables; summary rows; drillthrough to authorized child levels; clear “No verified mapping,” “No data in selected period,” and “Historical estimate” statuses. Do not hide unmapped contributions from grand totals.
+5. Organizational hierarchy and effective mapping
+5.1 Source of organizational authority
+Primary hierarchy: `V_IAS_ENTITY_REPORTING_IDS` (raw parent chain) and `V_EXEC_ENTITY_SCOPE` (normalized one-row-per-entity Group, Division, GM). The visible code currently uses `T_AUDITEE_ENTITIES_MAPING.C_TYPE_ID=18` Group, `=3` Division and `=21` GM Office.
+Cross-check: `T_AUDITEE_ENTITIES_MAPING.GM_OFFICE`; the special treatment in current Report C requires additional `AUDIT_BY` matching for eligible H.O. units.
+Names and categories: `T_AUDITEE_ENTITIES`, `T_AUDITEE_ENT_TYPES`.
+Do not infer a Group or Division from `AUDITED_BY`: that is the audit-performing reporting tree, not ownership of compliance remediation.
+5.2 Resolve one auditee path per entity
+For each distinct auditee `ENTITY_ID`:
+Get verified `BUSINESS_GROUP_ID`, `DIVISION_ID`, and hierarchy `GM_OFFICE_ID` from `V_EXEC_ENTITY_SCOPE`.
+Resolve any explicit active `T_AUDITEE_ENTITIES_MAPING.GM_OFFICE` mapping only after reducing to a single distinct valid target. Ensure the target exists and is a real GM Office (type 21).
+For Branch/Region, use the verified GM mapping or the nearest valid GM ancestor, then confirm it belongs to the selected Group/Division path. Preserve Region/Branch detail separately.
+For GM Office records, use its own ID where the type is verified.
+For other eligible H.O. units with `AUDIT_TYPE='B'` (excluding Branch, Region, GM Office, CAU), use the explicitly validated GM mapping only when compatible with the unit's unique `AUDIT_BY`, or a unique GM Office with the same mapped `AUDIT_BY`. Do not select `MIN`/`MAX` of ambiguous candidates as a business answer.
+For special cases (e.g., CAU) preserve the approved mapping/eligibility rule; never force a CAU record under a H.O. unit rule.
+If the Group/Division/GM relationship is missing, contradictory, cyclic or multiple, mark that dimension UNASSIGNED / CONFLICT while retaining only permitted records in group and grand totals. Never move para records to a different auditee to improve reporting appearance.
+Taxonomy preflight: verify live IDs for Branch, Region, GM Office, CAU, Group and Division before coding the final mapping conditions. Current package conventions show special IDs `6`, `21`, `22`, `28`; descriptions and all relationships must be checked in authorized Oracle staging.
+5.3 Not every organization follows a perfect three-level tree
+A Group can contain a Division without an intervening GM, or an H.O. unit may be directly attached higher in the hierarchy. Do not invent a GM as a filler. Provide explicit `Direct to Division`, `Direct to Group`, or `Unmapped` sections while preserving verified parentage. A user selecting a Group must not receive records whose only mapping leads to a GM under a different Group. Such conflicts go to an auditable mapping-exceptions register within the original authorized population.
+5.4 One row per para, one path per entity
+Never join raw `T_AUDITEE_ENTITIES_MAPING` directly to the fact table. Aggregate and validate mapping to one row per `ENTITY_ID` and to one unique GM per `AUDIT_BY` before joining. Prevent multi-counting when the same entity has multiple historical mapping rows. Group, Division, GM and grand totals must be independent projections of the same distinct source paras, not sums of already-aggregated child tables.
+6. Reporting source and KPI definitions
+Source contract: Use existing `V_EXEC_REPORT_SOURCE` for period stock/movement reports (B/C/D-compatible); use `V_EXEC_KPI_LIFECYCLE` for the CCO's current cycle/aging/high-risk and eligible PARA register. Before release, reconcile both to the same unique `COM_ID` universe, exclusions and date clocks; if not equivalent, show separate qualified measures rather than pretend totals match. The fact source, qualifying record statuses, issue-rectified exclusions and effective addition-date definitions must remain identical to the existing verified IAS lifecycle rules.
+For From = start date and To = end date + 1 day (exclusive), per eligible para:
+Metric	Definition
+Opening balance	`EFFECTIVE_ADDED_ON < From` and `(CLOSE_ON IS NULL OR CLOSE_ON >= From)`
+Added in period	`From <= EFFECTIVE_ADDED_ON < To`
+Total available	Opening + Added
+Settled in period	`From <= CLOSE_ON < To` and `EFFECTIVE_ADDED_ON < To`
+Closing outstanding	`EFFECTIVE_ADDED_ON < To` and `(CLOSE_ON IS NULL OR CLOSE_ON >= To)`
+Net backlog change	Closing outstanding − Opening balance
+Settlement effectiveness	100 × Settled / (Opening + Added), only where valid and denominator > 0
+Clearance ratio	100 × Settled / Added, only where valid and Added > 0; may exceed 100% if clearing opening backlog
+High-risk outstanding	Approved `RISK_ID=1` definition for closing eligible portfolio
+Aging at selected End Date	End Date − eligible para-added date, with negative/missing dates flagged
+Zero and >3 cycles	CURRENT `AIS_T_AU_POST_COMPLIANCE.COM_CYCLE` of paras in the selected eligible portfolio; not historical cycle values
+Movement recency	Last qualifying movement from compliance history as of selected End Date, where proven; absence of history means Unknown, not “no activity”
+Reconciliation: `Opening + Added − Settled` may differ from Closing for reopened, transferred or otherwise historically uncertain paras. Expose `RECONCILIATION_DIFFERENCE`, quality status and source notes. Do not force an equality with a synthetic balancing adjustment. Suppress a rate when the numerator/denominator is invalid or historical evidence is incomparable.
+Zero rows: Hide organizational detail rows only when Opening, Added, Total, Settled and Outstanding are all zero. Keep meaningful mixed-zero rows. Preserve grand totals and reported exception counts.
+7. Oracle implementation contract
+7.1 New package — no changes to protected semantics
+Create a dedicated `PKG_CCO_REPORTING` (spec/body), rather than modifying the CIA-only Audit Para Snap package or Report B/C/D procedures for unrelated requirements. Suggested read-only procedures:
+```sql
+P_GET_ORG_FILTERS     (P_DASHBOARD_TYPE, P_START_DATE, P_END_DATE,
+                       P_GROUP_ID, P_DIVISION_ID, P_GM_OFFICE_ID, IO_CURSOR);
+P_GET_ORG_POSITION    (P_DASHBOARD_TYPE, P_START_DATE, P_END_DATE,
+                       P_GROUP_BY, P_GROUP_ID, P_DIVISION_ID,
+                       P_GM_OFFICE_ID, IO_CURSOR);
+P_GET_ORG_PERFORMANCE (P_DASHBOARD_TYPE, P_START_DATE, P_END_DATE,
+                       P_GROUP_BY, P_GROUP_ID, P_DIVISION_ID,
+                       P_GM_OFFICE_ID, IO_CURSOR);
+P_GET_ORG_SETTLEMENT  (P_DASHBOARD_TYPE, P_START_DATE, P_END_DATE,
+                       P_GROUP_BY, P_GROUP_ID, P_DIVISION_ID,
+                       P_GM_OFFICE_ID, IO_CURSOR);
+P_GET_ORG_EXCEPTIONS  (P_DASHBOARD_TYPE, P_START_DATE, P_END_DATE,
+                       P_GROUP_ID, P_DIVISION_ID, P_GM_OFFICE_ID,
+                       P_MAX_ROWS, IO_CURSOR);
+```
+These are proposed signatures, not existing schema objects. Add a validated database authorization mechanism appropriate to the current IAS Oracle session context (or a DBA-approved securely scoped fact reader). `P_DASHBOARD_TYPE='CCO'` by itself must never be treated as proof of CCO authorization. The controller must derive scope from the session and page grants; Oracle must additionally restrict facts by the authorized organization scope before grouping, ideally through the existing authenticated-session/context-bound authorization pattern. No unrestricted generic `P_ENTITY_ID` shortcuts.
+7.2 Data processing pattern
+```text
+resolve authenticated CCO scope and context
+  -> verify requested dates, group-by and parent-child choices
+  -> build one authorized eligible PARA set
+  -> resolve unique audited-entity Group/Division/GM path
+  -> compute opening, additions, settlements, closing, risk/age/cycles
+  -> aggregate using GROUPING SETS by requested level
+  -> return DETAIL / SUBTOTAL / TOTAL + quality and mapping flags
+```
+For multi-level rollup, use a single set-based `GROUPING SETS` computation over the same qualified para rows, e.g. `(group_id)`, `(group_id,division_id)`, `(group_id,division_id,gm_office_id)` and `()`; distinguish subtotal NULLs using `GROUPING()`/`GROUPING_ID()`. Never reuse NULL as an actual organization ID or silently equate a missing mapping with all organizations. Set a reasonable maximum return-row bound and index/filter by dates/eligible IDs. Select only required fields; no raw long para text in bulk summary cursors.
+7.3 Entity hierarchy validation
+Use independently authorized selector queries to return only eligible Groups; for a selected Group return only eligible Divisions; for a selected Group/Division return only GM Offices belonging to that verified path. Validate hierarchy selections again inside each read and export request, including direct URL and manually crafted requests. If the parent path or mapping conflicts, fail closed for the requested drilldown and expose the ambiguity in the authorized exception report rather than ignoring the filter.
+Do not change global `V_EXEC_ENTITY_SCOPE` without a separate impact assessment and full regression against Reports B/C/D, CIA, TOP, GROUP and RLM. If a materialized reporting hierarchy is later needed for performance, it must be governed by a mapping-change refresh policy and explicit effective dates.
+8. CCO-only HTTP/API contract
+Use a new `[Authorize]`, rate-limited, no-store `CcoComplianceController`, or an equivalently secure CCO-only controller. Suggested GET routes:
+Endpoint	Inputs	Data
+`GetOrgFilters`	dates; optional parent IDs	Verified Group/Division/GM filter options
+`GetOrgPosition`	dates, groupBy, selected IDs	Stock/movement positions + rollups
+`GetOrgPerformance`	same	Performance table and rate quality
+`GetOrgSettlement`	same	Monthly trends, effectiveness, recency/cycle analysis
+`GetOrgExceptions`	same + bounded page/limit	Missing mappings, reconciliation and aging exceptions
+`ExportOrgReport`	same + report ID, `csv	pdf`
+Existing Report B/C/D must retain their current `ExecutiveReportsController` APIs and allowlisted report IDs. For CCO tabs, implement a controlled client view-to-report mapping and send the approved canonical API view `reports` to these endpoints; do not relax the controller's existing view validation or allow Report A/E for CCO.
+Request DTO: Prefer dedicated `CcoOrganizationFilter` fields: `StartDate`, `EndDate`, `GroupBy=GROUP|DIVISION|GM`, nullable `GroupId`, `DivisionId`, `GmOfficeId`, optional `RegionId` and bounded row-limit/pagination. Disallow unknown enum values, negatives, conflicting IDs, Snap-specific selectors, a CCO `groupRootId` and requests for future dates.
+Response DTO: `rowKind`, `groupId/name`, `divisionId/name`, `gmOfficeId/name`, `organizationLevel`, `openingBalance`, `parasAdded`, `totalParas`, `parasSettled`, `outstanding`, `netBacklogChange`, `settlementRate`, `clearanceRatio`, `zeroCycleOpen`, `over3CycleOpen`, `agedOver365Open`, `highRiskOpen`, `reconciliationDifference`, `mappingQuality`, `historicalQuality`, `periodStart`, `periodEnd`, and a correlation/request ID. For grouped/unmapped data, distinguish a valid zero from missing/unknown.
+9. Security and privacy requirements — mandatory
+Authentication and context: Require a live, non-revoked IAS session. Resolve the CCO perspective through existing `ResolveExecutiveDashboardScope("CCO", null)` and verify role 38 or a genuinely active Super User role 1 with `session.IsSuperUser()`. Bind user ID, session ID, role, posting entity and context assignment ID before and after database execution and before returning files.
+Page authorization: Require `/ExecutiveOverview/CCO` page permission 1000302; never rely on merely rendering the navigation tab.
+Endpoint authorization: Every new `GET`/export route must have an explicit registered active API permission and permission dependency for CCO; keep CIA role 3 and Audit Para Snap page 1000304 separate. Deny unknown or inactive endpoints.
+Database row scope: Apply the verified authenticated organizational scope before grouping. An optional selected Group/Division/GM narrows that set; no client-chosen root may broaden it. Recheck the entity belongs to the selected parent path on every API call, including exports. A CCO role legitimately has a bank-wide perspective; that is a verified role grant, not the result of treating a NULL scope as permission.
+Export authorization: Current CCO cannot use Super User-only PDF/CSV gates. If business-approved, register separate narrowly scoped CCO export permission (page + route + role + audit log) and change the server guard only for that verified grant. Never remove the Super User check globally; never authorize PDF because a button is visible. Use the exact same filter/row-scope query as the screen.
+Audit trail: Log per-action access/export with authenticated user/session/context, selected hierarchy IDs, time window, row count, outcome and correlation ID; avoid recording full para text/secrets in logs. Log denied/ambiguous paths.
+Safe output: Parameterized ODP.NET calls; no dynamic SQL string concatenation for filters, no client-built permission IDs, HTML escaping and CSP preserved. For CSV, neutralize spreadsheet formula injection, quote field separators/newlines, use UTF-8; for PDF, escape text and use already authorized source data.
+Data minimization: Summary endpoints emit aggregates only. Para-text drillthrough requires a separate scope check on the exact `COM_ID`, then an independent second authorization check after text retrieval to handle revocation or context changes.
+Availability: Bound maximum rows/complex queries, use indexes on eligible fact/date/entity relationships and source-level pre-aggregation; rate limit APIs, abort stale client requests, and never display cached stale data after filter/access changes.
+Fail-closed behavior: Expired login 401; insufficient role/page/API/authorization 403; invalid filter/path 400; unverified history 503 with safe explanation. Do not turn invalid IDs into “All,” skip GM validation, silently strip filters, or substitute guessed rollups.
+10. Export behavior
+Every applicable CCO tab should offer CSV (Excel-compatible) and searchable PDF only to users with the explicit approved export grant. One `Export` action should re-run or reuse securely bound server data, not trust table contents posted from the browser. Include document title, generation timestamp in Pakistan time, selected date range, level, selected Group/Division/GM, source/quality disclaimers, data tables, subtotals/grand total, and permitted exceptions. Make report B/C/D PDF formatting consistent with approved source labels. Do not export unfiltered hidden records or records outside the selected authorized scope. Require download authorization on every file request.
+11. Acceptance tests and reconciliation
+Authorization / negative tests
+CCO role 38: valid page+API permits; revoked session, missing active context, role spoofing, missing page or API grants all deny.
+CIA role 3 cannot access CCO-only APIs or exports; ordinary user cannot request `dashboardType=CCO`; Super User without current active context/permission is denied.
+Group/Division/GM IDs in another branch, invalid parent-child combinations, duplicate GM mappings, a crafted `groupRootId`, unapproved report A/E and negative/overflow IDs all deny correctly.
+Export request after session revocation/role change is denied. No para text leaks through summary or error responses.
+Data correctness tests
+Every qualifying para maps to at most one effective organization path. No raw mapping join multiplies facts.
+`TOTAL` for Group/Division/GM results for an identical selected population equals the underlying CCO eligible para total. Sum of mutually exclusive detail buckets (including Unmapped) equals TOTAL.
+Group subtotals equal their authorized child categories; unassigned/exception records are represented once and remain in appropriate parent totals.
+Report B/C/D unchanged when invoked with their original approved filters. For new grouped reports, reconcile stock/movement against `V_EXEC_REPORT_SOURCE` and KPIs against `V_EXEC_KPI_LIFECYCLE`; investigate source-definition differences rather than “fix” them through forced amounts.
+Same-day added+settled, reopened, issue-rectified-before-finalization, unknown settlement stage, future/missing dates, multi-audit-office mapping, and status-9 cases receive correct treatment.
+Current `COM_CYCLE` definition and age/date labels are explicit; no fake history or guessed “no movement.”
+CSV/PDF/API totals, level, dates and rows are identical. Zero-only detail rows are hidden consistently without changing totals.
+Non-regression / performance tests
+Test `ExecutiveDashboardViews.ForPerspective("CCO")` independently; TOP/GROUP/RLM/CIA and Audit Para Snap tab arrays, APIs and page grants must remain unchanged.
+Browser smoke-test all seven tabs with legacy bookmarks, filter changes, rejected scope, empty data, disabled export and mobile layouts.
+Bench with real staging-sized data; avoid N+1 KPI executions; cap response/row counts; inspect execution plans and verify that Oracle plan cardinality does not explode with multiple mapping records.
+Compile Oracle package body/spec only on approved staging, check `USER_ERRORS`, validate grants, perform authenticated role tests, then controlled release with a rollback plan. No production changes before approval.
+12. Implementation work breakdown
+Phase	Deliverables	Release gate
+0. Baseline and taxonomy	Capture current CCO Report B/C/D and lifecycle totals; verify exact entity type IDs and mapping cardinalities; snapshot active permission grants	Signed source definitions and mapping conflict list
+1. UI / route shell	CCO-only seven-tab definitions, old-URL redirects, common date controls, report B/C/D direct tabs; no permission or SQL changes	Page/layout and B/C/D regression verified
+2. CCO hierarchy service	Dedicated filter DTO, verified organization-path helper, `PKG_CCO_REPORTING` and set-based Group/Division/GM position cursor, scoped API	Oracle staging compile, total reconciliation, negative-scope tests
+3. Performance / effectiveness	Grouped performance, movement trend, cycle/age/risk quality and exceptions, sort/drilldown/limited register	Reconciliation, no N+1, history caveat tests
+4. Authorized exports	Dedicated CCO export grant, server-gated CSV/PDF, audit logging, identical scope and row reconciliation	Export security sign-off and CSV/PDF parity tests
+5. QA / controlled rollout	Role/context matrix, deployment SQL, evidence log, regression report, rollback scripts	ISAD/CCO/DBA/Security sign-off; controlled release
+13. Release exclusions and open decisions
+Do not alter CIA Command Center KPIs, Audit Para Snap eligibility, Report B/C/D financial semantics, the existing organization-shifting facility, or the existing authorization framework for convenience.
+Open decisions requiring verified data or business sign-off: (a) live Group/Division/GM/Region/CAU type IDs; (b) reporting-line placement for H.O. units that legitimately have no GM parent; (c) whether mapping exceptions display as a separate permitted line or a row-level warning in every tab; (d) CCO-specific export grant approval and audit-log retention; (e) permitted historical-period limit for expensive multi-year aggregation; and (f) whether to classify special CAU portfolios separately in organization analysis. These are explicit validation gates, not a reason to guess.
+Final decision rule: The CCO redesign is acceptable only when its Group/Division/GM figures reconcile to the authorized source population, do not misattribute an auditee to a different organizational owner, and pass all existing and new role/page/API/session/context gates.
