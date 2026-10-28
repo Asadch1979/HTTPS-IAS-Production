@@ -1,0 +1,13 @@
+{
+  "status": "REVIEW_ONLY_NOT_APPLIED",
+  "pageId": 1000302,
+  "method": "GET",
+  "controller": "CcoCompliance",
+  "actions": ["GetOrgFilters", "GetOrgPosition", "GetOrgPerformance", "GetOrgSettlement", "GetOrgExceptions"],
+  "roles": [38, 1],
+  "apiIsActive": "N",
+  "roleGrantIsActive": "N",
+  "dependency": "/ExecutiveOverview/CCO",
+  "requirements": ["exact route registration", "no wildcard grant", "reject conflicting existing metadata", "preserve inactive registrations on rerun", "independently verified active Super User", "explicit security review before activation"],
+  "exports": []
+}
