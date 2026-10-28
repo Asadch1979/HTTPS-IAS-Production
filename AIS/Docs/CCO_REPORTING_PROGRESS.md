@@ -46,3 +46,14 @@ Next exact step: review the Phase 1 draft PR, obtain an explicitly approved stag
 - GitHub Phase 1 commit: 4cf00585167599cccab21477cb79fb27446699ef.
 - Git transport could not reach GitHub; connected GitHub published two review commits. Remote/local Phase 0 tree bc23b6a5dae75f23c260e08498e7513e9ac411e0 and Phase 1 tree a8191f83086ae1da6accf97084c21fded1e5b4e7 were verified identical. Commit identities differ because the connector creates commits with its own metadata. Do not blindly push/force-push the local branch over the remote branch; reconcile histories before future publishing.
 - This following documentation-only commit records the review checkpoint; use git log -1 for its local identity. No task is credit-paused. Existing continuation remains conditional and idle.
+
+## PR 349 correction checkpoint — current status
+Status: Corrections committed and published for review; no staging approval; not CREDIT_PAUSED.
+- Local correction commit: 2d9ec2163c0a3403514b70595b1ecdd5448d871e.
+- PR correction commit: e4ece671585504f9a14591b208fb9a38f3c4b52d.
+- Verified identical correction tree: ba48abd97584f6b7048d89f88d01684634070964. The following documentation commit records these identities; inspect git log -1 for its SHA.
+- Fixed: Overview requests only authorized CCO summary/distribution endpoints, with no separate lifecycle fields. TOP-only GetKpiLifecycle remains unchanged. Restored authorized Report D -> C benchmark. Removed local-only source-test baseline.
+- Executed: incremental build 0 errors/0 warnings; 69 compiled checks pass; 2 source tests pass locally and in clean shallow clone with public baseline 1239d510 and no 930394fe object; Chrome payload fixtures constrained by actual compiled endpoint eligibility pass. See CCO_REPORTING_BASELINE.md and tests/cco-reporting/README.md for methods and limits. Previous lifecycle fixture success did not establish authorization and is superseded.
+- Latest official five-hour reading: 18% used / 82% remaining; ordinaryUsageAllowed=true. No quota manipulation. Existing single continuation schedule unchanged; no credit pause recorded.
+- Unrelated PKG_HD - prod.sql, appsettings, generated obj and .vs changes remain excluded.
+- Next exact step: review corrections in existing draft PR 349. After review, obtain explicitly approved staging and execute authenticated successful CCO summary/B/C/D reads, real role/page/API/session/context/export negative matrix and browser/mobile smoke tests; run the reviewed read-only source diagnostics only under staging approval. Do not merge/deploy or begin Phase 2 Oracle development before correction review and required evidence.
