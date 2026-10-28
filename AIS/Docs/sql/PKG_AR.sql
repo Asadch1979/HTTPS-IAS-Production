@@ -7389,6 +7389,7 @@ create or replace package body PKG_AR is
                                         P_REMARKS OUT VARCHAR2) IS
     V_ACCESS_COUNT    NUMBER := 0;
     V_DUPLICATE_COUNT NUMBER := 0;
+    V_LOCKED_ENG_ID NUMBER;
   
     V_STATUS_ID NUMBER;
     V_FINAL_PARA_NO NUMBER;
@@ -7501,12 +7502,19 @@ create or replace package body PKG_AR is
     another observation within the same engagement.
     -------------------------------------------------------- */
   
+    -- Use the same lock as Add-to-Draft, so renumbering another observation
+    -- cannot race its engagement-wide uniqueness check.
+    SELECT ENG_ID INTO V_LOCKED_ENG_ID FROM T_AU_PLAN_ENG
+     WHERE ENG_ID = P_ENG_ID FOR UPDATE;
+
     SELECT COUNT(*)
       INTO V_DUPLICATE_COUNT
       FROM t_Au_OBSERVATION O
      WHERE O.Engplanid = P_ENG_ID
        AND O.ID <> P_OBS_ID
-       AND TRIM(TO_CHAR(O.DRAFT_PARA_NO)) = TRIM(P_DRAFT_PARA_NO);
+       AND NVL(LTRIM(TRIM(O.DRAFT_PARA_NO), '0'), '0') =
+           NVL(LTRIM(TRIM(P_DRAFT_PARA_NO), '0'), '0')
+       AND O.DRAFT_PARA_NO IS NOT NULL;
   
     IF V_DUPLICATE_COUNT > 0 THEN
       P_REMARKS := 'Draft Para Number already exists in this engagement.';
@@ -7597,9 +7605,7 @@ create or replace package body PKG_AR is
     WHEN OTHERS THEN
       ROLLBACK;
     
-      P_STATUS  := 0;
-      P_REMARKS := 'Unable to update Memo Number and Draft Para Number: ' ||
-                   SQLERRM;
+      RAISE; -- Unexpected database failures belong in centralized monitoring.
     
   END P_Update_Memo_Draft_Para_No;
 

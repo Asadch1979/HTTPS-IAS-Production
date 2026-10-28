@@ -40,7 +40,7 @@ namespace AIS.Filters
             var descriptor = context.ActionDescriptor as ControllerActionDescriptor;
             // Only explicitly opted-in form actions may rebuild their GET model.
             // They must check ModelState before any mutation.
-            if (descriptor?.MethodInfo.IsDefined(typeof(HandlesInvalidPostModelAttribute), true) == true)
+            if (descriptor?.MethodInfo?.IsDefined(typeof(HandlesInvalidPostModelAttribute), true) == true)
                 return;
 
             var endpointName = descriptor?.ActionName ?? context.ActionDescriptor?.DisplayName ?? "Unknown";

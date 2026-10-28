@@ -685,7 +685,8 @@ create or replace package PKG_AR is
                                        P_ENT_ID        IN NUMBER,
                                        P_NO            IN NUMBER,
                                        P_R_ID          IN NUMBER,
-                                       IO_CURSOR       OUT T_CURSOR);
+                                       IO_CURSOR       OUT T_CURSOR,
+                                       P_ENG_ID IN NUMBER DEFAULT NULL);
 
   PROCEDURE P_Finalize_Or_Settle_Observation(P_OBS_ID        IN NUMBER,
                                              P_NEW_STATUS_ID IN NUMBER,
@@ -7043,10 +7044,12 @@ WHERE ep.eng_id = ENGID;
                                        P_ENT_ID        IN NUMBER,
                                        P_NO            IN NUMBER,
                                        P_R_ID          IN NUMBER,
-                                       IO_CURSOR       OUT T_CURSOR) IS
+                                       IO_CURSOR       OUT T_CURSOR,
+                                       P_ENG_ID IN NUMBER DEFAULT NULL) IS
     V_ASSIGNED_MEMBERS NUMBER;
     V_STATUS NUMBER;
     V_ENGPLAN_ID   NUMBER;
+    V_LOCKED_ENG_ID NUMBER;
     V_DUP_COUNT    NUMBER := 0;
   BEGIN
     IF P_OBS_ID IS NULL OR P_OBS_ID <= 0 THEN
@@ -7061,13 +7064,17 @@ WHERE ep.eng_id = ENGID;
       RAISE_APPLICATION_ERROR(-20005,
                               'Draft Para Number must contain digits only.');
     END IF;
-  
+
     SELECT O.ENGPLANID, O.STATUS
       INTO V_ENGPLAN_ID, V_STATUS
       FROM T_AU_OBSERVATION O
      WHERE O.ID = P_OBS_ID
        FOR UPDATE;
-  
+
+    IF P_ENG_ID IS NOT NULL AND P_ENG_ID <> V_ENGPLAN_ID THEN
+      RAISE_APPLICATION_ERROR(-20007, 'Observation engagement does not match the request.');
+    END IF;
+
     SELECT COUNT(*)
       INTO V_ASSIGNED_MEMBERS
       FROM T_AU_TEAM_MEMBERS M
@@ -7079,7 +7086,7 @@ WHERE ep.eng_id = ENGID;
        AND P.STATUS BETWEEN 4 AND 12
        AND T.ENG_PLAN_ID = V_ENGPLAN_ID
         AND T.ISACTIVE = 'Y';
-  
+
     IF V_ASSIGNED_MEMBERS = 0 THEN
       RAISE_APPLICATION_ERROR(-20003,
                               'Only an assigned Team Lead or Team Member can add a para to the Draft Report.');
@@ -7089,13 +7096,19 @@ WHERE ep.eng_id = ENGID;
       RAISE_APPLICATION_ERROR(-20006,
                               'Only observations awaiting auditor review can be added to the Draft Report.');
     END IF;
-  
+
+    -- Serialize numbering within the engagement as well as status per observation.
+    SELECT ENG_ID INTO V_LOCKED_ENG_ID FROM T_AU_PLAN_ENG
+     WHERE ENG_ID = V_ENGPLAN_ID FOR UPDATE;
+
     SELECT COUNT(*)
       INTO V_DUP_COUNT
       FROM T_AU_OBSERVATION O
      WHERE O.ENGPLANID = V_ENGPLAN_ID
        AND O.ID <> P_OBS_ID
-       AND TRIM(UPPER(O.DRAFT_PARA_NO)) = TRIM(UPPER(P_DRAFT_PARA_NO));
+       AND NVL(LTRIM(TRIM(O.DRAFT_PARA_NO), '0'), '0') =
+           NVL(LTRIM(TRIM(P_DRAFT_PARA_NO), '0'), '0')
+       AND O.DRAFT_PARA_NO IS NOT NULL;
 
     IF V_DUP_COUNT > 0 THEN
       OPEN IO_CURSOR FOR
@@ -7380,6 +7393,7 @@ WHERE ep.eng_id = ENGID;
                                         P_REMARKS OUT VARCHAR2) IS
     V_ACCESS_COUNT    NUMBER := 0;
     V_DUPLICATE_COUNT NUMBER := 0;
+    V_LOCKED_ENG_ID NUMBER;
 
     V_STATUS_ID NUMBER;
     V_FINAL_PARA_NO NUMBER;
@@ -7440,7 +7454,7 @@ WHERE ep.eng_id = ENGID;
         AND M.ISTEAMLEAD = 'Y'
         AND EXISTS (SELECT 1 FROM t_au_plan_eng e
                      WHERE e.eng_id = P_ENG_ID AND e.status BETWEEN 4 AND 13);
-  
+
     IF V_ACCESS_COUNT = 0 THEN
       P_REMARKS := 'You are not authorized to update this engagement.';
       RETURN;
@@ -7492,12 +7506,19 @@ WHERE ep.eng_id = ENGID;
     another observation within the same engagement.
     -------------------------------------------------------- */
 
+    -- Use the same lock as Add-to-Draft, so renumbering another observation
+    -- cannot race its engagement-wide uniqueness check.
+    SELECT ENG_ID INTO V_LOCKED_ENG_ID FROM T_AU_PLAN_ENG
+     WHERE ENG_ID = P_ENG_ID FOR UPDATE;
+
     SELECT COUNT(*)
       INTO V_DUPLICATE_COUNT
       FROM t_Au_OBSERVATION O
      WHERE O.Engplanid = P_ENG_ID
        AND O.ID <> P_OBS_ID
-       AND TRIM(TO_CHAR(O.DRAFT_PARA_NO)) = TRIM(P_DRAFT_PARA_NO);
+       AND NVL(LTRIM(TRIM(O.DRAFT_PARA_NO), '0'), '0') =
+           NVL(LTRIM(TRIM(P_DRAFT_PARA_NO), '0'), '0')
+       AND O.DRAFT_PARA_NO IS NOT NULL;
 
     IF V_DUPLICATE_COUNT > 0 THEN
       P_REMARKS := 'Draft Para Number already exists in this engagement.';
@@ -7548,7 +7569,7 @@ WHERE ep.eng_id = ENGID;
        SET o.memo_number = TO_NUMBER(TRIM(P_MEMO_NO)),
            DRAFT_PARA_NO = TO_NUMBER(TRIM(P_DRAFT_PARA_NO))
      WHERE o.engplanid = P_ENG_ID
-       AND o.ID = P_OBS_ID;  
+       AND o.ID = P_OBS_ID;
 
     INSERT INTO T_AU_MEMO_DRAFT_PARA_LOG
       (ID,
@@ -7588,10 +7609,9 @@ WHERE ep.eng_id = ENGID;
     WHEN OTHERS THEN
       ROLLBACK;
 
-      P_STATUS  := 0;
-      P_REMARKS := 'Unable to update Memo Number and Draft Para Number: ' ||
-                   SQLERRM;
+      RAISE; -- Unexpected database failures belong in centralized monitoring.
 
   END P_Update_Memo_Draft_Para_No;
 
 end PKG_AR;
+/

@@ -1,10 +1,13 @@
-# Final remediation checkpoint
+# Completed remediation checkpoint
 
-PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/348 (draft pending database QA).
-Branch: codex/ias-production-error-remediation. Worktree: C:/Users/Asad/.codex/worktrees/ias-production-remediation/HTTPS-IAS-Production.
+PR: https://github.com/Asadch1979/HTTPS-IAS-Production/pull/348
+Branch: codex/ias-production-error-remediation.
+Worktree: C:/Users/Asad/.codex/worktrees/ias-production-remediation/HTTPS-IAS-Production.
 
-All five code/SQL corrections are committed. Application build and C#/JavaScript regression checks passed. Implementation commit published through GitHub API: 30007072742fabe9e4c7e9852fa4bf5ae59ed48b; local implementation commit ea7d8913535de12cbc946f0b24edf2b0192c834d plus merge of main 75493b21. Remote and local implementation trees match 44b433fccdc864cc50225ae0746bc3c3b90a4df8. API publication was necessary because direct Git HTTPS was unavailable.
+All five source corrections are complete, including targeted updates to the production AR/HD snapshots supplied in main 75493b21, shared draft-number locking, guarded package-only deployment and exact gist-key validation. Original checkout user changes remain untouched.
 
-No pending source changes. Remaining external gates: Oracle 19c compilation/concurrency QA, UQ_OBS_GIST metadata/triggers/external-writer preflight, and DBA reconciliation of the new production snapshots against canonical packages. See production-error-remediation.md for exact deployment order and checks. Do not merge or deploy without authorization. Original checkout user changes were preserved.
+Application build, real MVC binding/filter tests, JavaScript workflow checks and production SQL contract checks pass. Read-only Oracle metadata confirms the configured ZTBLAIS_PROD gist/recommendation unique keys are OBS_ID. Karachi date-boundary SELECTs pass. No database DDL, package execution or data writes were performed.
 
-Task-specific hourly continuation is being stopped after delivery. No further quota-cycle development is scheduled.
+Next step is reviewer/DBA QA and authorized deployment following production-error-remediation.md. Oracle package compilation, concurrent-write/rollback scenarios, authenticated browser QA, external writers and the historical ZTBLAIS schema remain deployment verification gates. Do not merge or deploy without authorization.
+
+Publication uses the GitHub API because direct Git HTTPS is unavailable. Local and published commit IDs can differ, but publication verifies identical Git tree hashes. PR history contains the authoritative published commits. The task-specific continuation is stopped on delivery.
