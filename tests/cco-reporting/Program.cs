@@ -115,6 +115,37 @@ foreach(var report in new[]{"C","D"}) {
  Check((string)result?.RouteValues["view"]==(report=="C"?"gm-region":"regional-rankings"),"Legacy report redirect "+report);
  Check((string)result?.RouteValues["endDate"]=="2024-02-29","Legacy report retains dates");
 }
+// Phase 2 is deliberately unavailable even after all IAS gates pass.
+foreach(var action in new[]{"GetOrgFilters","GetOrgPosition","GetOrgPerformance","GetOrgSettlement","GetOrgExceptions"}) {
+ foreach(var role in new[]{38,1,3,5}) {
+  var (context,session,db)=Context(role);context.Request.Path="/api/CcoCompliance/"+action;Grant(context);
+  var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
+  var result=(IActionResult)typeof(CcoComplianceController).GetMethod(action).Invoke(c,new object[]{new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"}});
+  Check(Status(result)==(role==38||role==1?503:403),"New CCO action role/gate "+action+"/"+role);
+ }
+}
+foreach(var denied in new[]{"page","api","revoked","root","snap","duplicate","invalidPath","invalidDate","unauthenticated"}) {
+ var (context,session,db)=Context(38);context.Request.Path="/api/CcoCompliance/GetOrgPosition";Grant(context);
+ if(denied=="page")context.Session.SetString(SessionKeys.AllowedViewIds,"[]");
+ if(denied=="api")context.Session.SetString(SessionKeys.AllowedApiPaths,"[]");
+ if(denied=="revoked")context.Session.Remove(SessionKeys.SessionStamp);
+ if(denied=="unauthenticated")context.User=new ClaimsPrincipal(new ClaimsIdentity());
+ if(denied=="root")context.Request.QueryString=new QueryString("?groupRootId=9");
+ if(denied=="snap")context.Request.QueryString=new QueryString("?snapDivision=FAD");
+ if(denied=="duplicate")context.Request.QueryString=new QueryString("?groupId=1&groupId=2");
+ var f=new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"};
+ if(denied=="invalidPath")f.DivisionId=2;if(denied=="invalidDate")f.EndDate="2099-01-01";
+ var c=new CcoComplianceController(db,session,new Permissions(),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
+ Check(Status(c.GetOrgPosition(f))==(denied=="page"||denied=="api"?403:denied=="revoked"||denied=="unauthenticated"?401:400),"New API rejection "+denied);
+}
+var pathSet=new[]{new CcoOrganizationPath{GroupId=1,DivisionId=2,GmOfficeId=3,EntityId=4,IsVerified=true},new CcoOrganizationPath{GroupId=5,DivisionId=6,GmOfficeId=7,EntityId=8,IsVerified=true}};
+var selection=new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29",GroupId=1,DivisionId=2,GmOfficeId=3,EntityId=4};
+selection.ValidatePath(pathSet);checks++;
+selection.GmOfficeId=7;try{selection.ValidatePath(pathSet);throw new Exception("Cross-parent path accepted");}catch(ArgumentException){checks++;}
+selection.GmOfficeId=3;pathSet[0].IsVerified=false;try{selection.ValidatePath(pathSet);throw new Exception("Unverified path accepted");}catch(ArgumentException){checks++;}
+foreach(var level in new[]{"ALL","gm","",null}) {var f=new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29",GroupBy=level};try{f.Validate();throw new Exception("Invalid aggregation accepted");}catch(ArgumentException){checks++;}}
+Check(new ExecutiveKpiSummary().OpeningCases==null && new ExecutiveKpiSummary().ParaAdded==null,"New optional fields default unknown");
+Check(string.Join(",",visible[0].Kpis.Take(3))=="openingCases,paraAdded,totalCases","KPI definition order");
 if(args.Length==2 && args[0]=="--eligibility-output") File.WriteAllText(args[1],JsonSerializer.Serialize(new { datasets=visible[0].Datasets,kpis=visible[0].Kpis,eligible=eligibility,reports=reportEligibility }));
 int Status(IActionResult r)=>(r as ObjectResult)?.StatusCode ?? (r as StatusCodeResult)?.StatusCode ?? -1;
 void Grant(DefaultHttpContext c)=>c.Session.SetString(SessionKeys.AllowedApiPaths,JsonSerializer.Serialize(new[]{"GET:"+c.Request.Path.Value.ToLowerInvariant()}));
@@ -141,8 +172,9 @@ sealed class MemorySession:ISession {
  public Task LoadAsync(CancellationToken t=default)=>Task.CompletedTask;public Task CommitAsync(CancellationToken t=default)=>Task.CompletedTask;
 }
 sealed class Permissions:IPermissionService {
+ readonly bool allowApi;public Permissions(bool allowApi=false){this.allowApi=allowApi;}
  public void EnsurePermissionsCached(SessionUser u){}public void PreloadPermissions(SessionUser u){}public bool HasViewPermission(SessionUser u,int id)=>id==1000302;
- public bool HasApiPermissionForPath(SessionUser u,string m,string b,string p)=>false;public bool HasPermissionToExecuteAction(SessionUser u,string id)=>false;public bool HasRole(SessionUser u,string c)=>false;
+ public bool HasApiPermissionForPath(SessionUser u,string m,string b,string p)=>allowApi;public bool HasPermissionToExecuteAction(SessionUser u,string id)=>false;public bool HasRole(SessionUser u,string c)=>false;
 }
 sealed class Pages:IPageIdResolver {
  public int ResolvePageId(HttpContext c)=>1000302;public int ResolvePageId(string p)=>1000302;

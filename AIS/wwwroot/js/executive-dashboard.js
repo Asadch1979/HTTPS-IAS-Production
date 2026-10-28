@@ -122,7 +122,7 @@
     }
     function kpis(data) {
         const target = $('kpis'); if (!target) return; target.replaceChildren();
-        [['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
+        [...(app.dataset.perspective === 'CCO' ? [['Opening Cases', 'openingCases'], ['Para Added', 'paraAdded']] : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
@@ -130,6 +130,7 @@
             if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
                 settlementMtdRate: 'Selected-Period Settlement Rate', openParas: 'Closing Open Paras' })[key] || label;
+            if (app.dataset.perspective === 'CCO' && key === 'totalCases') label = 'Total Cases';
             const card = el('div', null, 'exec-kpi');
             const value = data[key];
             card.append(el('span', label), el('strong',
@@ -139,6 +140,14 @@
                 const dates = new FormData($('filters'));
                 card.append(el('small', dates.get('startDate') && dates.get('endDate')
                     ? 'Selected Date Range' : 'All eligible IAS issue history'));
+                target.append(card);
+                return;
+            }
+            if (app.dataset.perspective === 'CCO' && ['openingCases','paraAdded','totalCases'].includes(key)) {
+                const dates = new FormData($('filters'));
+                card.append(el('small', key === 'openingCases'
+                    ? `Position at start of ${dates.get('startDate')} · Historical estimate`
+                    : `Selected period: ${dates.get('startDate')} to ${dates.get('endDate')}`));
                 target.append(card);
                 return;
             }

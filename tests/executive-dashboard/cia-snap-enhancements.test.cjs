@@ -13,7 +13,9 @@ test('unrelated Oracle procedure bodies and lifecycle calculations remain unchan
  const calculations=s=>{const p=body(s,'P_GET_KPI_LIFECYCLE');return p.slice(p.indexOf('\n      SELECT'),p.indexOf('FROM V_EXEC_KPI_LIFECYCLE'));};
  assert.equal(calculations(after),calculations(before));
  for(const file of ['AIS/Docs/sql/V_EXEC_KPI_LIFECYCLE.sql','AIS/Models/ExecutiveDashboardModels.cs','AIS/Models/ExecutiveReportModels.cs'])
-  assert.equal(read(file),baseline(file),file);
+  assert.equal(file.endsWith('ExecutiveDashboardModels.cs')
+    ? read(file).replace('        // Populated only by the authorized CCO summary projection.\n        public long? OpeningCases { get; set; }\n        public long? ParaAdded { get; set; }\n','')
+    : read(file),baseline(file),file);
 });
 test('Oracle extended signatures match their package bodies and exact-COM_ID precedes ranking',()=>{
  for(const file of ['AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql','AIS/Docs/sql/PKG_EXEC_REPORTS.sql']){

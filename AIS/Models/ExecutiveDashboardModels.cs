@@ -19,6 +19,9 @@ namespace AIS.Models
 
     public sealed class ExecutiveKpiSummary
     {
+        // Populated only by the authorized CCO summary projection.
+        public long? OpeningCases { get; set; }
+        public long? ParaAdded { get; set; }
         public long TotalCases { get; set; }
         public long OpenParas { get; set; }
         public long HighRiskParas { get; set; }
