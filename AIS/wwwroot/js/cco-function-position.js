@@ -90,7 +90,16 @@
                 headers: { 'Accept': 'application/json' },
                 signal: controller.signal
             });
-            if (!response.ok) throw Error(failureMessage(response.status));
+            if (!response.ok) {
+                // Show only the server-generated request correlation identifier,
+                // never raw SQL/Oracle errors or authenticated scope details.
+                const rejected = await response.json().catch(() => null);
+                const reference = typeof rejected?.correlationId === 'string' &&
+                    /^[a-zA-Z0-9:._-]{1,100}$/.test(rejected.correlationId)
+                    ? rejected.correlationId : null;
+                throw Error(failureMessage(response.status) +
+                    (reference ? ' Request reference: ' + reference : ''));
+            }
             const payload = await response.json();
             if (activeRequest !== controller) return;
             if (payload?.success !== true || !Array.isArray(payload.data)) {
