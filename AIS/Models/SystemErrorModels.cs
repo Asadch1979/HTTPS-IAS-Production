@@ -100,6 +100,11 @@ namespace AIS.Models
         public string Role { get; set; } = string.Empty;
         public string Entity { get; set; } = string.Empty;
         public string ApiPath { get; set; } = string.Empty;
+        public int? PageId { get; set; }
+        public int? EngagementId { get; set; }
+        public int? ParaId { get; set; }
+        public int? ComId { get; set; }
+        public string TechnicalDetails { get; set; } = string.Empty;
         public string ErrorMessage { get; set; } = string.Empty;
         }
 

@@ -181,6 +181,7 @@
         </div>
 
         <form method="post" asp-action="SaveFieldAuditInputs">
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
             <input type="hidden" name="EngagementId" value="@Model.EngagementId" />
             <input type="hidden" name="EntityId" value="@Model.EntityId" />
             <input type="hidden" name="SectionCode" value="@Model.SectionCode" />
@@ -787,14 +788,15 @@
             try {
                 const response = await fetch('@Url.Action("SaveNarrativePara")', {
                     method: 'POST',
+                    headers: { 'Accept': 'application/json' },
                     body: payload
                 });
                 const result = await response.json();
-                if (!response.ok || !result.Status) {
-                    alert(result.Message || 'Unable to save para.');
+                if (!response.ok || !(result.Status === true || result.status === true)) {
+                    alert(result.Message || result.message || 'Unable to save para.');
                     return;
                 }
-                alert(result.Message || 'Para updated successfully.');
+                alert(result.Message || result.message || 'Para updated successfully.');
                 window.location.reload();
             } catch (error) {
                 alert('Unable to save para. Please try again.');

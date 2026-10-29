@@ -343,7 +343,7 @@
               return;
          }
 
-         $('#viewMemoModel_ObSent').modal('hide');
+
 
          $.ajax({
              url: g_asiBaseURL + "/ApiCalls/add_observation_gist_and_recommendation",
@@ -357,7 +357,14 @@
              cache: false,
              success: function (data) {
                 showApiAlert(data);
-                   onAlertCallback(reloadModel);
+                   if (data && (data.Status === true || data.status === true)) {
+                       $('#viewMemoModel_ObSent').modal('hide');
+                       onAlertCallback(reloadModel);
+                   }
+             },
+             error: function (xhr) {
+                 xhr.__iasSafetyHandled = true;
+                 showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to save gist and recommendation.");
              },
              dataType: "json",
          });

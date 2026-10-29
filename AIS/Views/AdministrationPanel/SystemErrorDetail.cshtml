@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "System Error Detail";
     Layout = "_Layout";
+    var latest = Model.History.OrderByDescending(item => item.OccurredOnUtc).ThenByDescending(item => item.HistoryId).FirstOrDefault();
     var isSuperUser = Context.RequestServices.GetService(typeof(AIS.SessionHandler)) is AIS.SessionHandler sh && sh.IsSuperUser();
 }
 
@@ -19,19 +20,41 @@
             <dl class="row">
                 <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.ResolutionStatus</dd>
                 <dt class="col-sm-3">Module</dt><dd class="col-sm-9">@Model.Module</dd>
-                <dt class="col-sm-3">Controller / Action / API</dt><dd class="col-sm-9">@Model.Controller / @Model.Action / @Model.ApiPath</dd>
+                <dt class="col-sm-3">First occurrence: Controller / Action / API</dt><dd class="col-sm-9">@Model.Controller / @Model.Action / @Model.ApiPath</dd>
                 <dt class="col-sm-3">Error Type / Code</dt><dd class="col-sm-9">@Model.ErrorType / @Model.ErrorCode</dd>
                 <dt class="col-sm-3">Stored Procedure</dt><dd class="col-sm-9">@Model.StoredProcedure</dd>
-                <dt class="col-sm-3">User / PPNO</dt><dd class="col-sm-9">@Model.Ppno</dd>
-                <dt class="col-sm-3">Role</dt><dd class="col-sm-9">@Model.Role</dd>
-                <dt class="col-sm-3">Entity</dt><dd class="col-sm-9">@Model.Entity</dd>
-                <dt class="col-sm-3">Client IP</dt><dd class="col-sm-9">@Model.ClientIp</dd>
+                <dt class="col-sm-3">First occurrence: User / PPNO</dt><dd class="col-sm-9">@Model.Ppno</dd>
+                <dt class="col-sm-3">First occurrence: Role</dt><dd class="col-sm-9">@Model.Role</dd>
+                <dt class="col-sm-3">First occurrence: Entity</dt><dd class="col-sm-9">@Model.Entity</dd>
                 <dt class="col-sm-3">First / Last</dt><dd class="col-sm-9">@Model.FirstOccurrenceUtc.ToString("u") / @Model.LastOccurrenceUtc.ToString("u")</dd>
                 <dt class="col-sm-3">Occurrence Count</dt><dd class="col-sm-9">@Model.OccurrenceCount</dd>
                 <dt class="col-sm-3">Email Sent</dt><dd class="col-sm-9">@(Model.EmailSent ? "Yes" : "No") @Model.EmailSentUtc?.ToString("u")</dd>
-                <dt class="col-sm-3">Message</dt><dd class="col-sm-9"><pre class="mb-0">@Model.ErrorMessage</pre></dd>
-                <dt class="col-sm-3">Technical Details</dt><dd class="col-sm-9"><pre class="mb-0">@Model.TechnicalDetails</pre></dd>
             </dl>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Latest recorded occurrence</h5>
+            <p>First-occurrence identity above is retained for the error group. Each request below has its own identity, trace and technical details.</p>
+            @if (latest != null)
+            {
+                <dl class="row">
+                    <dt class="col-sm-3">Occurred / Trace</dt><dd class="col-sm-9">@latest.OccurredOnUtc.ToString("u") / @latest.TraceId</dd>
+                    <dt class="col-sm-3">User / Role / Entity</dt><dd class="col-sm-9">@latest.Ppno / @latest.Role / @latest.Entity</dd>
+                    <dt class="col-sm-3">Client IP / API</dt><dd class="col-sm-9">@latest.IpAddress / @latest.ApiPath</dd>
+                    <dt class="col-sm-3">Page / Engagement / Para / COM</dt><dd class="col-sm-9">@latest.PageId / @latest.EngagementId / @latest.ParaId / @latest.ComId</dd>
+                    <dt class="col-sm-3">Message</dt><dd class="col-sm-9"><pre>@latest.ErrorMessage</pre></dd>
+                    <dt class="col-sm-3">Technical details</dt><dd class="col-sm-9"><pre>@latest.TechnicalDetails</pre></dd>
+                </dl>
+            }
+            else
+            {
+                <p>No occurrence-level context is available. Do not attribute the latest group message to the first user.</p>
+                <p>Latest group IP: @Model.ClientIp</p>
+                <pre>@Model.ErrorMessage</pre>
+                <pre>@Model.TechnicalDetails</pre>
+            }
         </div>
     </div>
 
@@ -51,11 +74,11 @@
         <div class="card-body table-responsive">
             <h5>Occurrence History</h5>
             <table class="table table-bordered table-striped">
-                <thead><tr><th>Occurred</th><th>Trace ID</th><th>Client IP</th><th>User</th><th>Role</th><th>Entity</th><th>API</th><th>Message</th></tr></thead>
+                <thead><tr><th>Occurred</th><th>Trace ID</th><th>Client IP</th><th>User</th><th>Role</th><th>Entity</th><th>API</th><th>Message</th><th>Request context / Technical details</th></tr></thead>
                 <tbody>
                     @foreach (var item in Model.History)
                     {
-                        <tr><td>@item.OccurredOnUtc.ToString("u")</td><td>@item.TraceId</td><td>@item.IpAddress</td><td>@item.Ppno</td><td>@item.Role</td><td>@item.Entity</td><td>@item.ApiPath</td><td>@item.ErrorMessage</td></tr>
+                        <tr><td>@item.OccurredOnUtc.ToString("u")</td><td>@item.TraceId</td><td>@item.IpAddress</td><td>@item.Ppno</td><td>@item.Role</td><td>@item.Entity</td><td>@item.ApiPath</td><td>@item.ErrorMessage</td><td><details><summary>Occurrence details</summary><p>Page: @item.PageId; Engagement: @item.EngagementId; Para: @item.ParaId; COM: @item.ComId</p><p>User agent: @item.UserAgent</p><pre>@item.TechnicalDetails</pre></details></td></tr>
                     }
                 </tbody>
             </table>

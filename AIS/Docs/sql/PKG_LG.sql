@@ -1100,10 +1100,11 @@ create or replace package body PKG_LG is
              PARA_ID,
              COM_ID,
              API_PATH,
-             ERROR_MESSAGE
+             ERROR_MESSAGE,
+             TECHNICAL_DETAILS
         FROM T_AU_SYSTEM_ERROR_HISTORY
        WHERE ERROR_ID = P_ERROR_ID
-       ORDER BY OCCURRED_ON_UTC DESC;
+       ORDER BY OCCURRED_ON_UTC DESC, HISTORY_ID DESC;
   
     OPEN O_STATUS_HISTORY FOR
       SELECT CHANGED_ON_UTC,

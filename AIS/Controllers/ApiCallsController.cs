@@ -1627,6 +1627,8 @@ namespace AIS.Controllers
         [ApplicationAudit("OBSERVATION_ADDED_TO_DRAFT_REPORT", "AUDIT_REPORT", "Reporting", "pkg_ar", "P_Add_Observation_To_Draft", ObjectType = "OBSERVATION", ObjectId = "request.ObservationId")]
         public IActionResult AddObservationToDraft(AddObservationToDraftRequest request)
             {
+            if (request == null || request.EngagementId < 0)
+                return BadRequest(new { Status = false, Message = "Invalid observation or engagement." });
             var observationId = request.ObservationId > 0 ? request.ObservationId : request.OBS_ID;
             var draftParaNumber = !string.IsNullOrWhiteSpace(request.DraftParaNumber)
                 ? request.DraftParaNumber
@@ -1642,16 +1644,23 @@ namespace AIS.Controllers
                 return BadRequest(new { Status = false, Message = "Observation is required." });
             if (string.IsNullOrWhiteSpace(draftParaNumber))
                 return BadRequest(new { Status = false, Message = "Draft Para Number is required." });
-            if (!Regex.IsMatch(draftParaNumber.Trim(), @"^\d+$"))
+            if (!Regex.IsMatch(draftParaNumber.Trim(), @"^[0-9]+$"))
                 return BadRequest(new { Status = false, Message = "Draft Para Number must contain digits only." });
 
-            var result = dBConnection.AddObservationToDraft(
-                observationId,
-                draftParaNumber.Trim(),
-                remarks);
-            return result.Success
-                ? Ok(new { Status = true, Message = result.Remarks })
-                : Ok(new { Status = false, Message = result.Remarks });
+            try
+                {
+                var result = dBConnection.AddObservationToDraft(
+                    observationId, draftParaNumber.Trim(), remarks, request.EngagementId);
+                return Ok(new { Status = result.Success, Message = result.Remarks });
+                }
+            catch (OracleException ex) when (ex.Number == 20006)
+                {
+                return Ok(new { Status = false, Message = "Only observations Awaiting Auditor Review can be added to the Draft Report. Refresh the observation and try again." });
+                }
+            catch (OracleException ex) when (ex.Number == 20007)
+                {
+                return BadRequest(new { Status = false, Message = "The observation does not belong to the selected engagement. Refresh the page and try again." });
+                }
             }
 
         [HttpPost]
@@ -1889,18 +1898,19 @@ namespace AIS.Controllers
             return dBConnection.GetObservationPdfData(OBS_ID);
             }
         [HttpPost]
-        [ApplicationAudit("OBSERVATION_GIST_RECOMMENDATION_UPDATED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_HD", "P_ADD_OBSERVATION_GIST_RECOMMENDATION", ObjectType = "OBSERVATION", ObjectId = "model.OBS_ID", RequireResultMessage = true)]
-        public string add_observation_gist_and_recommendation(ObservationGistRecommendationModel model)
+        [ApplicationAudit("OBSERVATION_GIST_RECOMMENDATION_UPDATED", "AUDIT_EXECUTION", "OBSERVATION", "PKG_HD", "P_audit_pre_Concluding", ObjectType = "OBSERVATION", ObjectId = "model.OBS_ID", RequireResultMessage = true)]
+        public IActionResult add_observation_gist_and_recommendation(ObservationGistRecommendationModel model)
             {
             if (!ModelState.IsValid)
-                {
-                return "{\"Status\":false,\"Message\":\"Please correct highlighted fields and try again.\"}";
-                }
+                return BadRequest(ValidationErrorHelper.BuildInvalidRequestResponse(ModelState));
 
-            string response = "";
-            response = dBConnection.AddObservationGistAndRecommendation(model.OBS_ID, model.GIST_OF_PARA, model.AUDITOR_RECOMMENDATION);
-            return "{\"Status\":true,\"Message\":\"" + response + "\"}";
+            var response = dBConnection.AddObservationGistAndRecommendation(model.OBS_ID, model.GIST_OF_PARA, model.AUDITOR_RECOMMENDATION);
+            // The existing package returns a business rejection when no final para
+            // number exists. An arbitrary/nonempty message is not proof of success.
+            var succeeded = string.Equals(response, "Gist & Recommendation added sucessfuly", StringComparison.Ordinal);
+            return Json(new { Status = succeeded, Message = string.IsNullOrWhiteSpace(response) ? "Unable to save gist and recommendation." : response });
             }
+
         [HttpGet]
         [HttpPost]
         public List<ManageObservations> get_observation_text_branches(int OBS_ID = 0)

@@ -1,3 +1,4 @@
+var draftSubmissionPending = false;
 window.addEventListener("error", function (e) {
     console.error("JS error:", e.message, e.filename, e.lineno, e.colno);
 });
@@ -457,6 +458,11 @@ function getPageData() {
         }
     }
     function finalCommentsButtonSave() {
+        if (draftSubmissionPending) return;
+        if (g_newStatusId == 5 && !(Number(g_currentStatus) === 3)) {
+            alert("Only observations Awaiting Auditor Review can be added to Draft Report. Refresh the observation.");
+            return;
+        }
         preserveTablePosition();
         if (g_newStatusId == 5 && $('#draftNoInCommentsBox').val() == "") {
             alert("Please enter Draft Para No to proceed");
@@ -466,10 +472,12 @@ function getPageData() {
             alert("Auditor Comments are Mandatory");
             return;
         }
+        draftSubmissionPending = true;
         $.ajax({
             url: g_asiBaseURL + (g_newStatusId == 5 ? "/ApiCalls/AddObservationToDraft" : "/ApiCalls/update_observation_status"),
             type: "POST",
             data: g_newStatusId == 5 ? {
+                'EngagementId': $('#entitySelectField').val(),
                 'ObservationId': g_obsId,
                 'DraftParaNumber': $('#draftNoInCommentsBox').val(),
                 'Remarks': $('#commentAreaInCommentsBox').val()
@@ -493,10 +501,15 @@ function getPageData() {
                 xhr.__iasSafetyHandled = true;
                 showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update observation status.");
             },
+            complete: function () { draftSubmissionPending = false; },
             dataType: "json",
         });
     }
     function updateObservationStatus(obs_id, new_status_id, risk_id) {
+        if (new_status_id == 5 && !(Number(g_currentStatus) === 3 && Number(g_obsId) === Number(obs_id))) {
+            alert("Only observations Awaiting Auditor Review can be added to Draft Report.");
+            return;
+        }
         preserveTablePosition();
         g_obsId = obs_id;
         g_newStatusId = new_status_id;

@@ -1,3 +1,4 @@
+var draftSubmissionPending = false;
     var g_obsId = 0;
     var g_newStatusId = 0;
     var g_riskId = 0;
@@ -243,6 +244,11 @@
         return blob;
     }
     function finalCommentsButtonSave() {
+        if (draftSubmissionPending) return;
+        if (g_newStatusId == 5 && !(Number(g_currentStatus) === 3)) {
+            alert("Only observations Awaiting Auditor Review can be added to Draft Report. Refresh the observation.");
+            return;
+        }
         if (g_newStatusId == 5 && !$.trim($('#draftNoInCommentsBox').val())) {
             alert("Please enter Draft Para No to proceed");
             return;
@@ -251,6 +257,7 @@
             alert("Auditor Comments are Mandatory");
             return;
         }
+        draftSubmissionPending = true;
         $.ajax({
             url: g_asiBaseURL + (g_newStatusId == 5 ? "/ApiCalls/AddObservationToDraft" : "/ApiCalls/update_observation_status"),
             type: "POST",
@@ -280,10 +287,15 @@
                 xhr.__iasSafetyHandled = true;
                 showApiAlertFromXhr(xhr, xhr.status, getErrorReferenceIdFromXhr(xhr), "Unable to update observation status.");
             },
+            complete: function () { draftSubmissionPending = false; },
             dataType: "json",
         });
     }
     function updateObservationStatus(obs_id, new_status_id, risk_id) {
+        if (new_status_id == 5 && !(Number(g_currentStatus) === 3 && Number(g_obsId) === Number(obs_id))) {
+            alert("Only observations Awaiting Auditor Review can be added to Draft Report.");
+            return;
+        }
         if (!isCurrentEngagementTeamLead()) {
             return;
         }
