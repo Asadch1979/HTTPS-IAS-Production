@@ -60,7 +60,7 @@
             note.title = data.workflowVerificationNote || 'Workflow definitions require verification.';
         }
         main.querySelector('[data-cia-as-of]').textContent =
-            `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Activity cutoff: ${String(data.positionAsOn || '').slice(0,10)} · Coverage and workflow KPIs are current-state measures as of ${String(data.currentStateAsOf || '').slice(0,10)}.`;
+            `Audit period: ${String(data.auditPeriodFrom || '').slice(0,10)} – ${String(data.auditPeriodTo || '').slice(0,10)} · Position as on: ${String(data.positionAsOn || '').slice(0,10)} · Engagement completion and workflow use available history through this date. Planned cohort and observation statuses may reflect current records.`;
     }
     function renderNature(rows) {
         // Oracle still returns ten source categories; the business presentation
@@ -226,6 +226,17 @@
         url.searchParams.set('auditPeriodId',period.value);
         url.searchParams.set('positionAsOn',position.value);
         history.replaceState(null,'',url);
+        load();
+    });
+    // Selecting a new cutoff must invalidate the previous response, even
+    // before the user presses Apply. load() uses the current form values.
+    document.getElementById('cia-position')?.addEventListener('change', () => {
+        const position = document.getElementById('cia-position');
+        if (!position?.value || !form.checkValidity()) return;
+        const url = new URL(location.href);
+        url.searchParams.set('auditPeriodId', period.value);
+        url.searchParams.set('positionAsOn', position.value);
+        history.replaceState(null, '', url);
         load();
     });
     form.addEventListener('submit', () => {

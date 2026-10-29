@@ -1096,7 +1096,6 @@ BEGIN
         INNER JOIN v_exec_entity_scope s
             ON s.entity_id = p.auditedby
         WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
-          AND p.status IN (1, 2)
           AND EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
               (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
               WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
@@ -1114,7 +1113,21 @@ BEGIN
                e.period_id,
                e.entity_id,
                e.auditby_id,
-               e.status,
+               -- Cutoff position comes from an event already recorded by
+               -- the selected date; mutable current status is not historical.
+               -- Missing evidence stays UNKNOWN (NULL), never current.
+               (SELECT CASE
+                         WHEN l.status_id BETWEEN 1 AND 14
+                              AND UPPER(NVL(l.remarks, ' ')) NOT LIKE '%REVERS%'
+                         THEN l.status_id
+                         ELSE NULL
+                       END
+                  FROM t_au_plan_eng_log l
+                 WHERE l.e_id = e.eng_id
+                   AND NVL(l.last_updated_on,l.created_on) < V_TO_EXCLUSIVE
+                 ORDER BY NVL(l.last_updated_on,l.created_on) DESC,
+                          l.id DESC
+                 FETCH FIRST 1 ROW ONLY) AS position_status,
                e.team_id,
                e.audit_startdate,
                e.audit_enddate,
@@ -1140,16 +1153,7 @@ BEGIN
         FROM engagement_scope e
         WHERE e.entity_id IS NOT NULL
           AND e.period_id = P_AUDIT_PERIOD_ID
-          AND (
-              e.status = 14
-              OR EXISTS
-              (
-                  SELECT 1
-                  FROM t_au_plan_eng_log l
-                  WHERE l.e_id = e.eng_id
-                    AND l.status_id = 14
-              )
-          )
+          AND e.position_status IN (13,14)
     ),
     coverage AS
     (
@@ -1170,15 +1174,9 @@ BEGIN
         SELECT COUNT(DISTINCT e.eng_id)
                    AS delayed_audit_reports
         FROM engagement_scope e
-        WHERE e.status BETWEEN 4 AND 13
-          AND e.audit_enddate + 15 < TRUNC(SYSDATE)
-          AND NOT EXISTS
-          (
-              SELECT 1
-              FROM t_au_plan_eng_log l
-              WHERE l.e_id = e.eng_id
-                AND l.status_id = 14
-          )
+        WHERE e.position_status BETWEEN 4 AND 12
+          AND e.audit_enddate IS NOT NULL
+          AND TRUNC(e.audit_enddate) + 15 < V_TO_EXCLUSIVE
     ),
     fraud AS
     (
@@ -1189,7 +1187,7 @@ BEGIN
             ON e.eng_id = o.engplanid
         WHERE o.annex = 1
           AND o.status IN (8, 9)
-          AND e.status = 14
+          AND e.position_status IN (13,14)
           AND e.period_id = P_AUDIT_PERIOD_ID
           AND o.entereddate >= V_FROM
           AND o.entereddate < V_TO_EXCLUSIVE
@@ -1202,6 +1200,9 @@ BEGIN
         INNER JOIN engagement_scope e
             ON e.eng_id = o.engplanid
         WHERE o.status = 2
+          AND o.entereddate < V_TO_EXCLUSIVE
+          -- Observation status still represents the current master; no
+          -- verified complete historical status stream is available.
     ),
     active_teams AS
     (
@@ -1209,17 +1210,10 @@ BEGIN
                    AS teams_conducting_audit
         FROM engagement_scope e
         WHERE e.team_id IS NOT NULL
-          AND e.status BETWEEN 4 AND 11
+          AND e.position_status BETWEEN 4 AND 11
           AND TRUNC(
               NVL(e.operation_startdate, e.audit_startdate)
-          ) <= TRUNC(SYSDATE)
-          AND NOT EXISTS
-          (
-              SELECT 1
-              FROM t_au_plan_eng_log l
-              WHERE l.e_id = e.eng_id
-                AND l.status_id = 14
-          )
+          ) < V_TO_EXCLUSIVE
     )
     SELECT c.planned_entities,
            c.audited_entities,
