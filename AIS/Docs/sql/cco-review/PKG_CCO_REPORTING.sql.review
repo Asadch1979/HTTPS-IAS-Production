@@ -97,18 +97,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
     ), active_map AS (
       SELECT m.entity_id, COUNT(DISTINCT m.c_type_id) type_count,
         COUNT(DISTINCT m.parent_id) parent_count, COUNT(DISTINCT m.gm_office) gm_count,
-        COUNT(DISTINCT m.audit_by) auditor_count,
-        CASE WHEN COUNT(DISTINCT m.audit_by)=1 THEN MAX(m.audit_by) END audit_by,
+        COUNT(DISTINCT m.auditedby) auditor_count,
+        CASE WHEN COUNT(DISTINCT m.auditedby)=1 THEN MAX(m.auditedby) END audit_by,
         CASE WHEN COUNT(DISTINCT m.gm_office)=1 AND MIN(CASE WHEN m.gm_office IS NULL OR g.type_id=21 THEN 1 ELSE 0 END)=1
           THEN MAX(m.gm_office) END direct_gm,
         MIN(CASE WHEN m.gm_office IS NULL OR g.type_id=21 THEN 1 ELSE 0 END) valid_gm
       FROM T_AUDITEE_ENTITIES_MAPING m LEFT JOIN T_AUDITEE_ENTITIES g ON g.entity_id=m.gm_office
       WHERE NVL(m.status,'Y')='Y' GROUP BY m.entity_id
     ), auditor_gm AS (
-      SELECT m.audit_by, COUNT(DISTINCT m.entity_id) gm_candidates,
+      SELECT m.auditedby AS audit_by, COUNT(DISTINCT m.entity_id) gm_candidates,
         CASE WHEN COUNT(DISTINCT m.entity_id)=1 THEN MAX(m.entity_id) END gm_id
       FROM T_AUDITEE_ENTITIES_MAPING m JOIN T_AUDITEE_ENTITIES g ON g.entity_id=m.entity_id AND g.type_id=21
-      WHERE NVL(m.status,'Y')='Y' AND m.audit_by IS NOT NULL GROUP BY m.audit_by
+      WHERE NVL(m.status,'Y')='Y' AND m.auditedby IS NOT NULL GROUP BY m.auditedby
     ), entity_family AS (
       SELECT r.entity_id,COUNT(DISTINCT r.audit_type) family_count,
         CASE WHEN COUNT(DISTINCT r.audit_type)=1 THEN MAX(r.audit_type) END audit_family
@@ -146,8 +146,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
     ), qualified AS (
       -- Auditee ENTITY_ID controls ownership. AUDITED_BY stays a separate dimension.
       -- Candidate B/C/D population requires reconciliation before acceptance.
-      SELECT r.*,p.group_id org_group,p.division_id org_division,p.gm_id org_gm,p.mapping_quality,
-        k.com_id lifecycle_id,k.com_cycle,k.para_added_on lifecycle_added_on
+      -- Project only required fact fields; r.* may duplicate lifecycle columns
+      -- (for example COM_CYCLE) and cause ORA-00918 in the parent SQL.
+      SELECT r.com_id, r.entity_id, r.region_id, r.risk,
+        r.effective_added_on, r.close_on,
+        p.group_id AS org_group, p.division_id AS org_division,
+        p.gm_id AS org_gm, p.mapping_quality,
+        k.com_id AS lifecycle_id, k.com_cycle AS com_cycle,
+        k.para_added_on AS lifecycle_added_on
       FROM V_EXEC_REPORT_SOURCE r LEFT JOIN paths p ON p.entity_id=r.entity_id
       LEFT JOIN V_EXEC_KPI_LIFECYCLE k ON k.com_id=r.com_id AND k.record_type='PARA' AND k.excluded_pre_finalization=0
       WHERE EXISTS (SELECT 1 FROM V_CCO_AUTHORIZED_ENTITIES a WHERE a.scope_token=P_SCOPE_TOKEN AND a.entity_id=r.entity_id)
@@ -162,11 +168,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
         CASE WHEN P_MODE='SETTLEMENT' THEN LEAST(P_END_DATE+1,ADD_MONTHS(TRUNC(P_START_DATE,'MM'),LEVEL)) ELSE P_END_DATE+1 END date_to
       FROM dual CONNECT BY LEVEL<=CASE WHEN P_MODE='SETTLEMENT' THEN MONTHS_BETWEEN(TRUNC(P_END_DATE,'MM'),TRUNC(P_START_DATE,'MM'))+1 ELSE 1 END
     ), flags AS (
-      SELECT q.*,d.date_from,d.date_to,
-        CASE WHEN effective_added_on<d.date_from AND (close_on IS NULL OR close_on>=d.date_from) THEN 1 ELSE 0 END opening_cases,
-        CASE WHEN effective_added_on>=d.date_from AND effective_added_on<d.date_to THEN 1 ELSE 0 END para_added,
-        CASE WHEN close_on>=d.date_from AND close_on<d.date_to AND effective_added_on<d.date_to THEN 1 ELSE 0 END settled,
-        CASE WHEN effective_added_on<d.date_to AND (close_on IS NULL OR close_on>=d.date_to) THEN 1 ELSE 0 END outstanding
+      SELECT q.com_id, q.entity_id, q.region_id, q.risk,
+        q.effective_added_on, q.close_on, q.org_group, q.org_division,
+        q.org_gm, q.mapping_quality, q.lifecycle_id, q.com_cycle,
+        q.lifecycle_added_on, d.date_from, d.date_to,
+        CASE WHEN q.effective_added_on<d.date_from AND (q.close_on IS NULL OR q.close_on>=d.date_from) THEN 1 ELSE 0 END opening_cases,
+        CASE WHEN q.effective_added_on>=d.date_from AND q.effective_added_on<d.date_to THEN 1 ELSE 0 END para_added,
+        CASE WHEN q.close_on>=d.date_from AND q.close_on<d.date_to AND q.effective_added_on<d.date_to THEN 1 ELSE 0 END settled,
+        CASE WHEN q.effective_added_on<d.date_to AND (q.close_on IS NULL OR q.close_on>=d.date_to) THEN 1 ELSE 0 END outstanding
       FROM qualified q CROSS JOIN periods d
       WHERE q.effective_added_on<d.date_to OR q.effective_added_on IS NULL
     ), grouped AS (
@@ -186,21 +195,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
       FROM flags GROUP BY date_from,date_to,GROUPING SETS ((org_group),(org_group,org_division),(org_group,org_division,org_gm),())
     )
     SELECT * FROM (
-      SELECT g.*,outstanding-opening_cases net_backlog_change,
-        outstanding-opening_cases-para_added+paras_settled reconciliation_difference,
-        CASE WHEN total_cases>0 AND outstanding-opening_cases-para_added+paras_settled=0 AND quality_exceptions=0
-          THEN ROUND(100*paras_settled/total_cases,2) END settlement_rate,
-        CASE WHEN grouping_id=7 THEN 'TOTAL'
-          WHEN (P_GROUP_BY='GROUP' AND grouping_id=3) OR (P_GROUP_BY='DIVISION' AND grouping_id=1)
-            OR (P_GROUP_BY='GM' AND grouping_id=0) THEN 'DETAIL' ELSE 'SUBTOTAL' END row_kind,
+      SELECT g.date_from, g.date_to, g.org_group, g.org_division,
+        g.org_gm, g.grouping_id, g.opening_cases, g.para_added,
+        g.total_cases, g.paras_settled, g.outstanding,
+        g.high_risk_open, g.zero_cycle_open, g.over3_cycle_open,
+        g.aged_over365_open, g.mapping_exceptions, g.quality_exceptions,
+        g.outstanding-g.opening_cases AS net_backlog_change,
+        g.outstanding-g.opening_cases-g.para_added+g.paras_settled AS reconciliation_difference,
+        CASE WHEN g.total_cases>0 AND g.outstanding-g.opening_cases-g.para_added+g.paras_settled=0 AND g.quality_exceptions=0
+          THEN ROUND(100*g.paras_settled/g.total_cases,2) END AS settlement_rate,
+        CASE WHEN g.grouping_id=7 THEN 'TOTAL'
+          WHEN (P_GROUP_BY='GROUP' AND g.grouping_id=3) OR (P_GROUP_BY='DIVISION' AND g.grouping_id=1)
+            OR (P_GROUP_BY='GM' AND g.grouping_id=0) THEN 'DETAIL' ELSE 'SUBTOTAL' END AS row_kind,
         'HISTORICAL_ESTIMATE; CURRENT_CYCLES; MOVEMENT_RECENCY_UNKNOWN' historical_quality,
-        ROW_NUMBER() OVER (ORDER BY date_from,org_group NULLS LAST,org_division NULLS LAST,org_gm NULLS LAST,grouping_id) row_no,
+        ROW_NUMBER() OVER (ORDER BY g.date_from,g.org_group NULLS LAST,g.org_division NULLS LAST,g.org_gm NULLS LAST,g.grouping_id) AS row_no,
         COUNT(*) OVER () source_row_count
       FROM grouped g
-      WHERE (grouping_id=7 OR (P_GROUP_BY='GROUP' AND grouping_id=3)
-        OR (P_GROUP_BY='DIVISION' AND grouping_id IN (1,3)) OR P_GROUP_BY='GM')
-        AND (grouping_id=7 OR opening_cases<>0 OR para_added<>0 OR paras_settled<>0 OR outstanding<>0 OR mapping_exceptions<>0 OR quality_exceptions<>0)
-        AND (P_MODE<>'EXCEPTIONS' OR mapping_exceptions>0 OR quality_exceptions>0 OR outstanding-opening_cases-para_added+paras_settled<>0)
+      WHERE (g.grouping_id=7 OR (P_GROUP_BY='GROUP' AND g.grouping_id=3)
+        OR (P_GROUP_BY='DIVISION' AND g.grouping_id IN (1,3)) OR P_GROUP_BY='GM')
+        AND (g.grouping_id=7 OR g.opening_cases<>0 OR g.para_added<>0 OR g.paras_settled<>0 OR g.outstanding<>0 OR g.mapping_exceptions<>0 OR g.quality_exceptions<>0)
+        AND (P_MODE<>'EXCEPTIONS' OR g.mapping_exceptions>0 OR g.quality_exceptions>0 OR g.outstanding-g.opening_cases-g.para_added+g.paras_settled<>0)
     ) WHERE row_no<=P_MAX_ROWS;
     -- Cursor protocol returns SOURCE_ROW_COUNT so truncation cannot masquerade
     -- as a complete rollup. Final reader must reject overflow, not sum partial rows.
