@@ -105,3 +105,5 @@ See CCO_PHASE2_REVIEW.md follow-up for evidence. Latest main verified at 45d0cdc
 Application build succeeded: 0 errors, 57 warnings (no-restore).
 
 Revised checkpoint: commits be0b1f09 (critical tab and gated tree), 856578c9 (compiled/source/browser expectations), b1011060 (review-only transaction marker correction). Build and local checks pass as detailed in CCO_PHASE2_REVIEW.md. Backend adapters, verified subtotal/drilldown data, dedicated ordered risk reader and live Oracle verification remain incomplete. No activation.
+
+Repository-only review added CCO_DATABASE_SOURCE_MATRIX.md (commit 13d8c7f3). Added validated CCO observation request contract and offline negative tests. 110 compiled checks and six source tests passed; no database/server access or SQL execution. Full readers/integration remain unfinished and gated.

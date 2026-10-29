@@ -15,6 +15,14 @@ using System.Text.Json;
 
 var checks=0;
 void Check(bool condition, string message) { checks++; if(!condition) throw new Exception(message); }
+var observationFilter = new CcoObservationFilter { StartDate="2024-01-01", EndDate="2024-02-29" };
+observationFilter.Validate();
+Check(observationFilter.RatedRiskId==1,"CCO observations default High");
+foreach(var risk in new[]{"ALL","HIGH","MEDIUM","LOW","UNRATED"}) { observationFilter.Risk=risk;observationFilter.Validate(); }
+observationFilter.Risk="HIGH OR 1=1";
+try { observationFilter.Validate();throw new Exception("Risk injection accepted"); } catch(ArgumentException) { checks++; }
+observationFilter.Risk="HIGH";observationFilter.Offset=int.MaxValue;
+try { observationFilter.Validate();throw new Exception("Paging overflow accepted"); } catch(ArgumentException) { checks++; }
 var definitions=ExecutiveDashboardViews.ForPerspective("CCO");
 var visible=definitions.Where(v=>v.Id!="reports").ToArray();
 Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,performance,effectiveness","Eight ordered CCO tabs");

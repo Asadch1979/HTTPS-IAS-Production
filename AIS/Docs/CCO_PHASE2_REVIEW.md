@@ -47,3 +47,11 @@ Checks: application build 0 errors / 57 warnings; 107 compiled checks passed; 6 
 Added REVIEW ONLY CCO_SCOPE_TRANSACTION_CORRECTION.sql.review: protected ON COMMIT DELETE ROWS initialization marker, matching-token assertion, empty-portfolio distinction, marker-qualified view, explicit NULL role/token rejection, context-first cleanup. Not compiled or deployed to Oracle. Existing live owner/grants/package validity, pooling, revocation and transaction-boundary behavior remain unverified. Requires dedicated owner and zero runtime marker/entity-GTT DML privileges.
 
 Backend integration and dedicated ordered/risk-filtered observation reader remain unimplemented. UI is a partial checkpoint, not final acceptance. No permissions activated; no deployment or merge.
+
+## Repository-only dependency review — 29 October 2026
+
+See CCO_DATABASE_SOURCE_MATRIX.md for definitions versus consumer-only evidence, parameter/cursor contracts and missing DDL. No database or IAS server was accessed. Installed-object verification remains unknown and is outside this task's permitted environment. No SQL was executed.
+
+Added CcoObservationFilter as an offline request contract: approved risk codes, default High, bounded 1..250 limit, overflow-safe offset, positive optional COM_ID, existing date validation. UNRATED is explicitly the shared reader CASE ELSE semantics, not an invented zero risk code. No API/reader is activated by this DTO.
+
+Offline validation: application compiled through the check project; 110 compiled checks passed, including risk-injection and pagination-overflow rejection; six source tests passed. Backend transaction adapter, cursor readers and database-side observation ordering still remain unfinished. This checkpoint is not full CCO completion.
