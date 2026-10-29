@@ -1,6 +1,10 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 <h2>@Model.SelectedView.Title</h2>
-@if (Model.SelectedView.Id == "org-position" || Model.SelectedView.Id == "performance")
+@if (Model.SelectedView.Id == "org-position")
+{
+    <partial name="_CcoFunctionPosition" model="Model" />
+}
+else if (Model.SelectedView.Id == "performance")
 {
     <partial name="_CcoOrganizations" model="Model" />
 }

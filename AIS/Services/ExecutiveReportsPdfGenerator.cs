@@ -224,9 +224,7 @@ namespace AIS.Services
                 if (visibleRows.Count == 0)
                     html.Append("<p>No management audit position or movement for the selected period.</p>");
                 else
-                    AddTable(html, "Function / Division", visibleRows, r => r.ItemName,
-                        new[]{("Opening","opening"),("Added","added"),("Total","total"),
-                              ("Settled","settled"),("Outstanding","open"),("Settlement %","rate")});
+                    AddFunctionPosition(html, visibleRows);
             }
             html.Append("<p class='note'>Data note: historical positions use available IAS dates and current organizational mapping; settlement attribution is indicative.</p>");
             html.Append("</body></html>");
@@ -262,6 +260,30 @@ namespace AIS.Services
             }
             html.Append("</tbody></table>");
         }
+        private static void AddFunctionPosition(StringBuilder html, IList<ExecutiveReportRow> rows)
+        {
+            // Report E: eight approved columns. Never derive Group from audit performer.
+            html.Append("<table><thead><tr><th class='left'>Group</th><th class='left'>Division</th>")
+                .Append("<th>Opening balance</th><th>Para added</th><th>Total</th>")
+                .Append("<th>Settled</th><th>Para outstanding</th><th>Settlement %</th>")
+                .Append("</tr></thead><tbody>");
+            foreach (var r in rows)
+            {
+                var kind = r.RowKind?.ToUpperInvariant();
+                var grandTotal = kind == "TOTAL" || kind == "GRAND_TOTAL";
+                html.Append("<tr class='").Append(grandTotal ? "total" : kind == "SUBTOTAL" ? "subtotal" : "")
+                    .Append("'><td>").Append(H(grandTotal ? "Grand total" : r.GroupName))
+                    .Append("</td><td>").Append(H(grandTotal ? "" : r.ItemName)).Append("</td>")
+                    .Append("<td class='num'>").Append(N(r.OpeningBalance)).Append("</td>")
+                    .Append("<td class='num'>").Append(N(r.ParasAdded)).Append("</td>")
+                    .Append("<td class='num'>").Append(N(r.TotalParas)).Append("</td>")
+                    .Append("<td class='num'>").Append(N(r.SettledParas)).Append("</td>")
+                    .Append("<td class='num'>").Append(N(r.OutstandingParas)).Append("</td>")
+                    .Append("<td class='num'>").Append(P(r.SettlementPercentage)).Append("</td></tr>");
+            }
+            html.Append("</tbody></table>");
+        }
+
         private static void AddTable(StringBuilder html, string identity, IList<ExecutiveReportRow> rows,
             Func<ExecutiveReportRow,string> label, (string Label,string Key)[] columns)
         {

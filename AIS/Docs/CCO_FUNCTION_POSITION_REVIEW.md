@@ -1,0 +1,22 @@
+# Function Wise Position: implementation and outstanding deployment checks
+
+Updated 29 October 2026. Draft PR #352, branch fix/cco-function-position-group-report-view-20261029. This replaces the previous description of a deliberately hard-disabled Function Wise Position feature. It does **not** activate other CCO organizational/performance modules.
+
+## Implemented in source
+- Function Wise Position now calls the separately scoped GET /api/CcoCompliance/GetFunctionPosition endpoint, accepts only the selected dates and bounded maxRows, sends same-origin credentials and no reusable browser-provided root/token, clears stale data on dates or failed requests and safely renders exactly eight columns.
+- The existing controller preserves live IAS authentication, CCO role 38 or confirmed Super User role 1, CCO page 1000302, exact API permission, anti-cache, rate limiting, date validation and request logging. No permission/grant was added or weakened.
+- DBConnection calls a transaction-bound, bound-parameter Oracle reader; it uses PKG_CCO_SCOPE.P_BEGIN_SCOPE / P_ASSERT_SCOPE / P_END_SCOPE and PKG_CCO_FUNCTION_POSITION.P_GET_POSITION, rechecks context, validates source row bounds, closes/rolls back on failures and clears unsafe pooled connections. It has no unscoped fallback to Report E.
+- New PKG_CCO_FUNCTION_POSITION.sql is a manual **staging deployment candidate**. Source-only .sql.review remains. Both require the trusted, corrected scope package and authorized-entity view. Missing dependencies produce a 503, not a broad query.
+- Both PKG_EXEC_REPORTS.sql and its synchronized f8/PKG_EXEC_REPORTS/02.sql resolve **Report E only** using the already-installed V_IAS_ENTITY_REPORTING_IDS_Group_reports (parent_id/p_name = Group; entity_id/c_name = Division). The view lacks active status, so matching active mapping is required. Mappings are DISTINCT and reduced by division before fact joins, and path conflicts remain explicitly unmapped. Report E retains audit_type D, its established movement/settlement source, date filters, cursor contract and existing exclusion of zero-only rows. Reports A-D are not redesigned.
+- Report E web/CSV and server PDF now show eight columns: Group, Division, Opening balance, Para added, Total, Settled, Para outstanding, Settlement %. Other reports and exports are untouched.
+- Read-only staging queries: Docs/sql/cco-review/verify_group_function_position.sql. Tests updated for view mapping and the new client/export behavior. JavaScript syntax checks and the three focused source assertions passed in the review session. No full dotnet build or browser execution is claimed.
+
+## Mandatory DBA and deployment checks before merging or production use
+1. Verify V_IAS_ENTITY_REPORTING_IDS_Group_reports truly exists and is granted to the report's definer owner. The requested view itself is not recreated, altered or deployed by this change.
+2. Independently validate the **corrected transaction-marker** PKG_CCO_SCOPE, its protected owner, marker GTT and V_CCO_AUTHORIZED_ENTITIES in approved staging. The earlier uncorrected package is not sufficient: an empty portfolio after COMMIT must still fail the transaction assertion. Runtime DB identity must have no direct GTT/context-defining privileges.
+3. Compile PKG_EXEC_REPORTS and then PKG_CCO_FUNCTION_POSITION in staging, check USER_ERRORS and grants. The source cannot certify that these Oracle objects are installed/valid.
+4. Review and register only the exact GET /api/CcoCompliance/GetFunctionPosition permission for approved CCO and Super User role/context, through existing access controls. Do not add global API exemptions or relax page, role, session or entity checks. Existing inactive permissions manifests are not an authorization grant.
+5. Reconcile every Group/Division and grand total to Report E over the same period and source/authorized scope, including duplicate COM_ID, multi-path mappings, null status dates and historical estimated stock. Review SQL is read-only.
+6. Test authorized and denied roles, revoked sessions/contexts during long reads, different Oracle pooled sessions, COMMIT/ROLLBACK, invalid date ranges, empty scope, 403/503 UI, browser table and PDF. Run dotnet build and complete affected tests. No database/server access was available to this review.
+
+**Release decision:** Source implementation is prepared in a draft PR. It must remain unmerged/unreleased until independent Oracle/security integration and regressions are verified; source-only checks are not production sign-off.

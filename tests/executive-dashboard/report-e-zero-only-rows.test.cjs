@@ -43,7 +43,9 @@ test('PDF Report E applies the same five-metric rule only in its E branch', () =
     const branch = pdf.slice(pdf.indexOf('html.Append("<h2>Division-wise Management Audit Settlement</h2>")'));
     for (const field of ['OpeningBalance','ParasAdded','TotalParas','SettledParas','OutstandingParas'])
         assert.match(branch, new RegExp('r\\.' + field + ' != 0'));
-    assert.match(branch, /AddTable\(html, "Function \/ Division", visibleRows/);
+    assert.ok(branch.includes('AddFunctionPosition(html, visibleRows)'));
+    assert.ok(pdf.includes("<th class='left'>Group</th><th class='left'>Division</th>"));
+    assert.ok(pdf.includes('<th>Para outstanding</th><th>Settlement %</th>'));
 });
 
 test('Unknown-cycle diagnostic and Report C listing remain read-only', () => {

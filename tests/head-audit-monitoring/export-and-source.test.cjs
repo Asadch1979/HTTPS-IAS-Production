@@ -50,7 +50,7 @@ test('query selection avoids unrelated datasets and preserves scope/current busi
     assert.match(sql, /USING P_DEPT_ID,P_PERIOD_ID,P_PERIOD_ID,P_DEPT_ID,P_PERIOD_ID,P_PERIOD_ID/);
 });
 test('unrelated dashboards, exact para eligibility, and shared Super User export gate are unchanged from main', () => {
-    for (const file of ['AIS/DBConnection.AuditParaSnap.cs', 'AIS/Views/Shared/_DashboardExportAssets.cshtml', 'AIS/wwwroot/js/dashboard-export.js', 'AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql', 'AIS/Docs/sql/PKG_EXEC_REPORTS.sql', 'AIS/Controllers/ExecutiveOverviewController.cs', 'AIS/Controllers/ExecutiveDashboardController.cs', 'AIS/wwwroot/js/cia-command-center.js', 'AIS/Views/ExecutiveOverview/CCO.cshtml', 'AIS/Views/ExecutiveOverview/GROUP.cshtml', 'AIS/Views/ExecutiveOverview/RLM.cshtml']) {
+    for (const file of ['AIS/DBConnection.AuditParaSnap.cs', 'AIS/Views/Shared/_DashboardExportAssets.cshtml', 'AIS/wwwroot/js/dashboard-export.js', 'AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql', 'AIS/Controllers/ExecutiveOverviewController.cs', 'AIS/Controllers/ExecutiveDashboardController.cs', 'AIS/wwwroot/js/cia-command-center.js', 'AIS/Views/ExecutiveOverview/GROUP.cshtml', 'AIS/Views/ExecutiveOverview/RLM.cshtml']) {
         assert.equal(read(file), execFileSync('git', ['show', 'fa64939f:' + file], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n'), file);
     }
 });
@@ -64,4 +64,14 @@ test('security paths require current Oracle session, assignment, page and cutoff
     assert.ok(sql.includes("AND TRUNC(P_AS_OF)<TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))"));
     assert.ok(mvc.includes('ex.Number == 20154) { return Unauthorized(); }'));
     assert.ok(sql.includes('IF P_AS_OF IS NULL THEN RETURN; END IF;'),'Legacy optional-cutoff contract');
+});
+
+// Report E / CCO Function Wise Position are explicitly changed in a separate
+// guarded feature. Head Audit and all other protected readers remain pinned.
+test('CCO Function Wise Position changes do not alter Head Audit or shared authorization',()=>{
+ const pkg=read('AIS/Docs/sql/PKG_EXEC_REPORTS.sql');
+ assert.match(pkg,/FROM V_IAS_ENTITY_REPORTING_IDS_Group_reports r/);
+ const page=read('AIS/Views/ExecutiveOverview/CCO.cshtml');
+ assert.match(page,/cco-function-position.js/);
+ assert.match(page,/Model.SelectedView.Id == "performance" \|\| Model.SelectedView.Id == "effectiveness"/);
 });

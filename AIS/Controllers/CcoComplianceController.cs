@@ -23,6 +23,7 @@ namespace AIS.Controllers
         readonly ILogger<CcoComplianceController> logger;
         public CcoComplianceController(DBConnection database,SessionHandler session,IPermissionService permissions,IPageIdResolver pages,ILogger<CcoComplianceController> logger)
         { this.database=database;this.session=session;this.permissions=permissions;this.pages=pages;this.logger=logger; }
+        [HttpGet] public IActionResult GetFunctionPosition([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetFunctionPosition));
         [HttpGet] public IActionResult GetOrgFilters([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgFilters));
         [HttpGet] public IActionResult GetOrgPosition([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgPosition));
         [HttpGet] public IActionResult GetOrgPerformance([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgPerformance));
@@ -35,7 +36,7 @@ namespace AIS.Controllers
             {
                 if (User.Identity?.IsAuthenticated!=true || user==null || session.IsSessionRevoked(user)) return Error(401,"unauthenticated","An active IAS session is required.");
                 // Reject unknown, duplicate and foreign selectors; never silently drop a root or export request.
-                var allowed=new[]{"startDate","endDate","groupBy","groupId","divisionId","gmOfficeId","regionId","entityId","maxRows"};
+                var allowed=action==nameof(GetFunctionPosition) ? new[]{"startDate","endDate","maxRows"} : new[]{"startDate","endDate","groupBy","groupId","divisionId","gmOfficeId","regionId","entityId","maxRows"};
                 if (!ModelState.IsValid || filters==null || Request.Query.Any(q=>q.Value.Count!=1 || !allowed.Contains(q.Key,StringComparer.OrdinalIgnoreCase)))
                     return Error(400,"invalid_request","Provide only supported CCO organization filters.");
                 var scope=database.ResolveExecutiveDashboardScope("CCO",null);
@@ -49,10 +50,15 @@ namespace AIS.Controllers
                     !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value))
                     return Error(403,"forbidden","This exact CCO API permission is required.");
                 filters.Validate();
+                object data;
+                if(action==nameof(GetFunctionPosition)) data=database.GetCcoFunctionPosition(scope,filters);
+                else {
                 var paths=database.GetCcoOrganizationPaths(scope,filters);
                 database.ValidateCcoOrganizationContext(scope);
                 filters.ValidatePath(paths);
-                object data=action==nameof(GetOrgFilters) ? paths : database.GetCcoOrganizationRows(scope,filters,action);
+                data=action==nameof(GetOrgFilters) ? paths : database.GetCcoOrganizationRows(scope,filters,action);
+                database.ValidateCcoOrganizationContext(scope);
+                }
                 database.ValidateCcoOrganizationContext(scope);
                 rowCount=data is System.Collections.ICollection collection ? collection.Count : 0;
                 outcome="success";
