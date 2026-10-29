@@ -48,6 +48,19 @@
             <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" name="startDate" value="@Model.Filters.StartDate" required /></div>
             <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" name="endDate" value="@Model.Filters.EndDate" required /></div>
         }
+        @if (Model.SelectedView.Id == "performance" || Model.SelectedView.Id == "effectiveness")
+        {
+            <div>
+                <label for="exec-entity">Group Head</label>
+                <select id="exec-entity" name="entityId" aria-label="Select Group Head">
+                    <option value="">All Group Heads</option>
+                    @foreach (var group in Model.CcoGroupHeads)
+                    {
+                        <option value="@group.EntityId" selected="@(Model.SelectedEntityId == group.EntityId)">@group.EntityName</option>
+                    }
+                </select>
+            </div>
+        }
         <button class="org-button" id="exec-refresh" type="submit">Apply</button>
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
