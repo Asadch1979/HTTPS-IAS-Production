@@ -245,3 +245,50 @@ button.exec-kpi:hover { border-color:#4c9278; }
     @page { size:A4 landscape; margin:12mm; }
     #exec-reports { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
 }
+
+/* CCO's reports each have one top-level tab. Keep the hidden internal selector
+   available to the report loader, but not visible as a second set of tabs. */
+#executive-dashboard[data-perspective="CCO"] .exec-report-selector[hidden] {
+    display: none !important;
+}
+
+/* B/C contain many numerical columns. The report must scroll horizontally
+   instead of squeezing adjacent headings into overlapping text. */
+#executive-dashboard[data-perspective="CCO"] .exec-report-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+#executive-dashboard[data-perspective="CCO"] .exec-report-table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+}
+#executive-dashboard[data-perspective="CCO"] .exec-report-table th,
+#executive-dashboard[data-perspective="CCO"] .exec-report-table td {
+    width: auto;
+    min-width: 100px;
+    max-width: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    padding: 10px 13px;
+}
+#executive-dashboard[data-perspective="CCO"] .exec-report-table thead th {
+    min-width: 116px;
+    line-height: 1.35;
+    vertical-align: bottom;
+    white-space: normal;
+}
+#executive-dashboard[data-perspective="CCO"] .exec-report-table thead th:first-child,
+#executive-dashboard[data-perspective="CCO"] .exec-report-table tbody th:first-child {
+    min-width: 235px;
+}
+#executive-dashboard[data-perspective="CCO"] .exec-report-table caption {
+    text-align: left;
+}
+
+/* CCO report panels already provide their authorized CSV/PDF export controls.
+   Prevent the generic floating Export toggle from covering those buttons. */
+#executive-dashboard[data-perspective="CCO"] .exec-report-panel .dashboard-export-control {
+    display: none !important;
+}

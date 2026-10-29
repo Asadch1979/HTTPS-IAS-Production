@@ -320,7 +320,9 @@
         if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
         const displayTitle = root.dataset.perspective === 'CCO' ? selected.dataset.title : `Report ${selection.value} · ${selected.dataset.title}`;
         $('report-title').textContent = displayTitle;
-        $('report-period').textContent = `${date(query.get('startDate'))} – ${date(query.get('endDate'))} · ${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}`;
+        $('report-period').textContent = root.dataset.perspective === 'CCO'
+            ? `${date(query.get('startDate'))} – ${date(query.get('endDate'))}`
+            : `${date(query.get('startDate'))} – ${date(query.get('endDate'))} · ${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}`;
         $('report-content').replaceChildren(); $('report-cautions').replaceChildren(); $('report-panel').hidden = false;
         $('status').textContent = `Loading ${root.dataset.perspective === 'CCO' ? displayTitle : 'Report ' + selection.value}…`; app.setAttribute('aria-busy','true');
         try {
@@ -334,7 +336,8 @@
             const cautions = $('report-cautions');
             // Replace the old six-paragraph cream disclaimer with one quiet,
             // accurate data note. Estimates must still not appear certified.
-            cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
+            if (root.dataset.perspective !== 'CCO')
+                cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
             let benchmark = null;
             if (selection.value === 'D') {
                 // Read overall benchmark from the same authorized Field Audit source.
@@ -359,7 +362,9 @@
                 pdfUrl: `${root.dataset.apiUrl}GetReport${selection.value}?${query}&format=pdf`
             };
             setExportReady(true);
-            $('status').textContent = `${root.dataset.perspective === 'CCO' ? displayTitle : 'Report ' + selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
+            $('status').textContent = root.dataset.perspective === 'CCO'
+                ? `${displayTitle} loaded · ${number(result.data.rows.length)} records`
+                : `Report ${selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             $('status').textContent = `${error.message} Choose Apply to retry.`;

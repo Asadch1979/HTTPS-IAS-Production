@@ -31,7 +31,7 @@
     <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
         @foreach (var view in Model.Views)
         {
-            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, startDate = Model.Filters.StartDate, endDate = Model.Filters.EndDate, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">@view.Title</a>
+            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, startDate = Model.Filters.StartDate, endDate = Model.Filters.EndDate, entityId = (view.Id == "performance" || view.Id == "effectiveness") ? Model.SelectedEntityId : null, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">@view.Title</a>
         }
     </nav>
     <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
@@ -48,11 +48,27 @@
             <div><label for="exec-start-date">Start Date</label><input type="date" id="exec-start-date" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" name="startDate" value="@Model.Filters.StartDate" required /></div>
             <div><label for="exec-end-date">End Date</label><input type="date" id="exec-end-date" max="@AIS.Models.AuditParaSnapPolicy.Today.ToString("yyyy-MM-dd")" name="endDate" value="@Model.Filters.EndDate" required /></div>
         }
+        @if (Model.SelectedView.Id == "performance" || Model.SelectedView.Id == "effectiveness")
+        {
+            <div>
+                <label for="exec-entity">Group Head</label>
+                <select id="exec-entity" name="entityId" aria-label="Select Group Head">
+                    <option value="">All Group Heads</option>
+                    @foreach (var group in Model.CcoGroupHeads)
+                    {
+                        <option value="@group.EntityId" selected="@(Model.SelectedEntityId == group.EntityId)">@group.EntityName</option>
+                    }
+                </select>
+            </div>
+        }
         <button class="org-button" id="exec-refresh" type="submit">Apply</button>
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
 
-    <p class="exec-note">Activity uses the selected period; balances, risk, aging and critical items are as of End Date. Historical balances are estimates. Compliance cycles use current IAS master counts for the selected portfolio, not reconstructed historical cycle counts.</p>
+    @if (Model.SelectedView.Id == "overview" || Model.SelectedView.Id == "critical-observations")
+    {
+        <p class="exec-note">Activity is measured over the selected period; balances are as of the End Date. Historical balances are estimates.</p>
+    }
     <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : Model.SelectedView.Id == "org-position" ? "Function Wise Position" : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(!isReport && !pending)">
         <partial name="@Model.SelectedView.Partial" model="Model" />

@@ -84,6 +84,11 @@ namespace AIS.Controllers
                 if (!string.IsNullOrEmpty(format) && !string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
                     return Error(400, "invalid_format", "Only PDF export is supported.");
                 var data = query(scope, filters);
+                // CCO exception records require verified Super User entitlement.
+                // Filter the response itself; hiding table rows in JS is not security.
+                // The Oracle grand total is left intact and is not recalculated.
+                if (scope.DashboardType == "CCO" && !superUser && (reportId == "B" || reportId == "C" || reportId == "D"))
+                    data.Rows = CcoReportVisibility.ExecutiveRows(data.Rows, false);
                 if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
                 {
                     var bytes = ExecutiveReportsPdfGenerator.Create(reportId, data, environment.WebRootPath);

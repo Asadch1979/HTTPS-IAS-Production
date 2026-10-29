@@ -51,7 +51,8 @@ namespace AIS.Controllers
                     return Error(403,"forbidden","This exact CCO API permission is required.");
                 filters.Validate();
                 object data;
-                if(action==nameof(GetFunctionPosition)) data=database.GetCcoFunctionPosition(scope,filters);
+                if(action==nameof(GetFunctionPosition))
+                    data=CcoReportVisibility.FunctionRows(database.GetCcoFunctionPosition(scope,filters),super);
                 else {
                 var paths=database.GetCcoOrganizationPaths(scope,filters);
                 database.ValidateCcoOrganizationContext(scope);

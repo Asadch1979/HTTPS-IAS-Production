@@ -9,7 +9,7 @@
     }
     else
     {
-        <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report">
+        <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report" hidden="@(Model.DashboardType == "CCO")">
             @foreach (var report in Model.SelectedView.Reports)
             {
                 var title = Model.DashboardType == "CCO" ? AIS.Models.CcoDashboardPresentation.ReportTitle(report) : AIS.Models.ExecutiveDashboardViews.ReportTitle(report);

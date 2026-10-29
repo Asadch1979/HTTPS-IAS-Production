@@ -12,6 +12,7 @@ namespace AIS.Models
         public bool IsSuperUser { get; set; }
         public int? GroupRootId { get; set; }
         public List<OrganizationNode> Groups { get; set; }
+        public List<OrganizationNode> CcoGroupHeads { get; set; } = new();
         public bool CanViewOrganization { get; set; }
         public bool RoleOracleEnabled { get; set; }
         public bool IsManagementPerspective { get; set; }
