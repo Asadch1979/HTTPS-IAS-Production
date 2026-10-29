@@ -13,7 +13,7 @@
         ['Organization Level','Reporting Office','Entity','Opening Cases','Para Added','Total Cases','Settled','Outstanding','Settlement %','Mapping Status'].forEach(label => { const th=node('th',label); th.scope='col'; header.append(th); });
         head.append(header);
         const byId = new Map(rows.map(r => [r.entityId,r]));
-        const term=search.value.trim().toLocaleLowerCase();
+        const term=(search?.value || '').trim().toLocaleLowerCase();
         for (const row of rows) {
             const chain=[], seen=new Set([row.entityId]); let parent=byId.get(row.parentEntityId), cycle=false;
             while(parent) { if(seen.has(parent.entityId)) {cycle=true;break;} seen.add(parent.entityId);chain.push(parent);parent=byId.get(parent.parentEntityId); }
@@ -29,9 +29,9 @@
         if(!body.children.length){const tr=node('tr'),cell=node('td',rows.length?'No matching organizations.':'No verified organizational figures available.');cell.colSpan=10;tr.append(cell);body.append(tr);}
         table.append(head,body);target.replaceChildren(table);
     }
-    search.addEventListener('input',render);
-    document.getElementById('cco-expand-all').addEventListener('click',()=>{rows.forEach(r=>expanded.add(r.entityId));render();});
-    document.getElementById('cco-collapse-all').addEventListener('click',()=>{expanded.clear();render();});
+    search?.addEventListener('input',render);
+    document.getElementById('cco-expand-all')?.addEventListener('click',()=>{rows.forEach(r=>expanded.add(r.entityId));render();});
+    document.getElementById('cco-collapse-all')?.addEventListener('click',()=>{expanded.clear();render();});
     // Only a separately verified adapter may supply data. No directory requests.
     root.addEventListener('cco:authorized-rows',event=>{
         if(root.dataset.enabled!=='true')return;
@@ -40,5 +40,6 @@
         rows=data;expanded.clear();render();
     });
     ['exec-start-date','exec-end-date'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{rows=[];expanded.clear();render();}));
-    render();
+    // No organizational requests while the trusted reporting adapter is disabled.
+    if (root.dataset.enabled === 'true') render();
 })();
