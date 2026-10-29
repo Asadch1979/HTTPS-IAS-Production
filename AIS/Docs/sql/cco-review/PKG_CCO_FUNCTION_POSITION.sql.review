@@ -1,7 +1,9 @@
 -- REVIEW ONLY. Never executed. Separate trusted owner; no Report E changes/grants.
 -- Population intentionally matches Report E: audit_type='D'. Not bank-wide B/D.
 -- Requires corrected transaction-marker PKG_CCO_SCOPE and protected scope view.
--- P_NAME/C_NAME supplied by the user-approved mapping contract; base DDL absent.
+-- Group/Division names supplied by installed V_IAS_ENTITY_REPORTING_IDS_Group_reports.
+-- This view lacks an active filter: retain only matching active mapping records.
+-- No DDL is executed automatically; verify compiled owner/view privileges in staging.
 CREATE OR REPLACE PACKAGE PKG_CCO_FUNCTION_POSITION AUTHID DEFINER AS
  PROCEDURE P_GET_POSITION(P_SCOPE_TOKEN VARCHAR2,P_START_DATE DATE,P_END_DATE DATE,P_MAX_ROWS NUMBER,IO_CURSOR OUT SYS_REFCURSOR);
 END;
@@ -25,11 +27,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_FUNCTION_POSITION AS
  IF n>0 THEN RAISE_APPLICATION_ERROR(-20803,'Duplicate authorized facts'); END IF;
  OPEN IO_CURSOR FOR
  WITH mapping_candidates AS (
- SELECT DISTINCT m.parent_id group_id,m.p_name group_name,m.entity_id division_id,m.c_name division_name
- FROM T_AUDITEE_ENTITIES_MAPING m
- WHERE m.c_type_id=3 AND m.parent_id NOT IN(112215) AND m.entity_id NOT IN(112221)
- AND NVL(m.status,'Y')='Y'
- AND EXISTS(SELECT 1 FROM V_IAS_ENTITY_REPORTING_IDS t WHERE t.entity_id=m.entity_id)
+ SELECT DISTINCT r.parent_id group_id,r.p_name group_name,
+                 r.entity_id division_id,r.c_name division_name
+ FROM V_IAS_ENTITY_REPORTING_IDS_Group_reports r
+ WHERE EXISTS (SELECT 1 FROM T_AUDITEE_ENTITIES_MAPING m
+               WHERE m.entity_id=r.entity_id AND m.parent_id=r.parent_id
+                 AND m.c_type_id=3 AND NVL(m.status,'Y')='Y'
+                 AND m.p_name=r.p_name AND m.c_name=r.c_name)
  ), mappings AS (
  SELECT division_id,COUNT(*) candidates,MAX(group_id) group_id,MAX(group_name) group_name,MAX(division_name) division_name
  FROM mapping_candidates GROUP BY division_id
@@ -38,10 +42,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_FUNCTION_POSITION AS
  FROM V_EXEC_ENTITY_SCOPE GROUP BY entity_id
  ), facts AS (
  SELECT s.com_id,
- CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id THEN m.group_id END group_id,
- CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id THEN m.group_name ELSE 'Unmapped / conflicting Group' END group_name,
- CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id THEN m.division_id END division_id,
- CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id THEN m.division_name ELSE 'Unmapped / conflicting Division' END division_name,
+ CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id AND h.division_id=m.division_id THEN m.group_id END group_id,
+ CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id AND h.division_id=m.division_id THEN m.group_name ELSE 'Unmapped / conflicting Group' END group_name,
+ CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id AND h.division_id=m.division_id THEN m.division_id END division_id,
+ CASE WHEN h.paths=1 AND m.candidates=1 AND h.group_id=m.group_id AND h.division_id=m.division_id THEN m.division_name ELSE 'Unmapped / conflicting Division' END division_name,
  CASE WHEN s.effective_added_on<P_START_DATE AND (s.close_on IS NULL OR s.close_on>=P_START_DATE) THEN 1 ELSE 0 END opening_balance,
  CASE WHEN s.effective_added_on>=P_START_DATE AND s.effective_added_on<P_END_DATE+1 THEN 1 ELSE 0 END paras_added,
  CASE WHEN s.close_on>=P_START_DATE AND s.close_on<P_END_DATE+1 AND s.effective_added_on<P_END_DATE+1 THEN 1 ELSE 0 END settled_paras,
