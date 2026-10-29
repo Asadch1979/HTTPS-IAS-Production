@@ -68,7 +68,22 @@ namespace AIS.Controllers
             catch (UnauthorizedAccessException) { return Error(403,"forbidden","The CCO perspective or scope is not authorized."); }
             catch (ArgumentException) { return Error(400,"invalid_request","Select a valid date range and verified organizational parent path."); }
             catch (CcoOrganizationUnavailableException) { outcome="pending_staging";return Error(503,"cco_not_verified","Organizational reporting awaits approved staging mappings and database authorization."); }
-            catch (Exception ex) { logger.LogError(ex,"CCO organization read failed {Correlation}",HttpContext.TraceIdentifier);return Error(503,"unavailable","CCO organizational reporting is temporarily unavailable."); }
+            catch (CcoFunctionPositionReadException ex)
+            {
+                // Only server logs receive the failing Oracle step and error number.
+                // Never return raw Oracle text, the scope token or session details.
+                outcome="database_failure";
+                logger.LogError(ex,
+                    "CCO Function Wise Position database failure at {Stage}; Oracle number {OracleNumber}; correlation {Correlation}",
+                    ex.Stage, ex.OracleNumber, HttpContext.TraceIdentifier);
+                return Error(503,"cco_database_unavailable","Function Wise Position database read failed. Contact the administrator with the request correlation ID.");
+            }
+            catch (Exception ex)
+            {
+                outcome="backend_failure";
+                logger.LogError(ex,"CCO organization read failed at an unclassified step {Correlation}",HttpContext.TraceIdentifier);
+                return Error(503,"unavailable","CCO organizational reporting is temporarily unavailable.");
+            }
             finally
             {
                 logger.LogInformation("CCO action {Action}; user {User}; role {Role}; posting {Posting}; session {Session}; context {Context}; group {Group}; division {Division}; gm {Gm}; start {Start}; end {End}; rows {Rows}; outcome {Outcome}; correlation {Correlation}",
