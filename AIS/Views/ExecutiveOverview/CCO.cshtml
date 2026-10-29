@@ -53,7 +53,7 @@
     </form>
 
     <p class="exec-note">Activity uses the selected period; balances, risk, aging and critical items are as of End Date. Historical balances are estimates. Compliance cycles use current IAS master counts for the selected portfolio, not reconstructed historical cycle counts.</p>
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : Model.SelectedView.Id == "org-position" ? "Function Wise Position" : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(!isReport && !pending)">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
@@ -61,7 +61,7 @@
 </section>
 <partial name="_DashboardExportAssets" />
 @section Scripts {
-    @if (pending || Model.SelectedView.Id == "effectiveness") { <script src="~/js/cco-organizations.js" asp-append-version="true"></script> }
+    @if (Model.SelectedView.Id == "performance" || Model.SelectedView.Id == "effectiveness") { <script src="~/js/cco-organizations.js" asp-append-version="true"></script> }
     @if (needsRoot)
     {
         // No data queries before the authorized reporting root is selected.
