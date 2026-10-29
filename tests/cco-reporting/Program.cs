@@ -19,7 +19,8 @@ var definitions=ExecutiveDashboardViews.ForPerspective("CCO");
 var visible=definitions.Where(v=>v.Id!="reports").ToArray();
 Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,performance,effectiveness","Eight ordered CCO tabs");
 Check(string.Join(",",definitions.Single(v=>v.Id=="reports").Reports)=="B,C,D","CCO report allowlist");
-Check(!visible[0].UseLifecycleKpis && !visible[0].Datasets.Contains("GetKpiLifecycle") && new[]{"GetKpiSummary","GetRiskSummary","GetAgingSummary","GetCycleSummary","GetSettlementTrend","GetCriticalItems"}.All(visible[0].Datasets.Contains),"Overview requests only authorized CCO summary/distribution datasets");
+Check(!visible[0].UseLifecycleKpis && !visible[0].Datasets.Contains("GetKpiLifecycle") && new[]{"GetKpiSummary","GetRiskSummary","GetAgingSummary","GetCycleSummary","GetSettlementTrend"}.All(visible[0].Datasets.Contains),"Overview requests only authorized CCO summary/distribution datasets");
+Check(!visible[0].Datasets.Contains("GetCriticalItems") && definitions.Single(v=>v.Id=="critical-observations").Datasets.Contains("GetCriticalItems"),"Critical reader belongs to dedicated tab");
 foreach(var tab in new[]{"org-position","performance"}) Check(definitions.Single(v=>v.Id==tab).Datasets.Length==0,"Pending tabs must not fetch invented data");
 foreach(var role in new[]{"TOP","GROUP","RLM","CIA"}) Check(!ExecutiveDashboardViews.ForPerspective(role).Any(v=>v.Id=="overview"||v.Id=="field-office"),"CCO navigation isolation");
 foreach(var report in new[]{"A","E"}) { try { CcoDashboardPresentation.ResolveLegacy("reports",report); throw new Exception("Unapproved report accepted"); } catch(ArgumentException) { checks++; } }

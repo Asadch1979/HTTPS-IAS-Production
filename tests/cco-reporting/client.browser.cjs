@@ -24,6 +24,7 @@ assert.ok(!eligibility.datasets.includes('GetKpiLifecycle'));
    await page.goto('http://cco.test/');
    await page.addScriptTag({content:fs.readFileSync(path.resolve(__dirname,'../../AIS/wwwroot/js/executive-reports.js'),'utf8')});
    await page.waitForFunction(()=>document.getElementById('exec-status').textContent.includes('loaded'));
+   assert.equal(await page.locator('#exec-report-title').innerText(),'Fixture');
    assert.equal(requests.length,report==='D'?2:1,'D retains its authorized C benchmark');
    if(report==='D') {
     assert.equal(requests[1].pathname,'/api/GetReportC');
@@ -56,7 +57,7 @@ assert.ok(!eligibility.datasets.includes('GetKpiLifecycle'));
   const overviewMarkup=await overview.content();
   for(const file of ['cco-compliance.js','executive-dashboard.js']) await overview.addScriptTag({content:fs.readFileSync(path.resolve(__dirname,'../../AIS/wwwroot/js',file),'utf8')});
   await overview.waitForFunction(()=>document.getElementById('executive-dashboard').getAttribute('aria-busy')==='false');
-  assert.equal(seen.length,6);assert.ok(!seen.includes('GetKpiLifecycle'));assert.equal(await overview.locator('#exec-results').evaluate(e=>e.hidden),false);
+  assert.equal(seen.length,5);assert.ok(!seen.includes('GetCriticalItems'));assert.ok(!seen.includes('GetKpiLifecycle'));assert.equal(await overview.locator('#exec-results').evaluate(e=>e.hidden),false);
   assert.match(await overview.locator('#exec-kpis').innerText(),/Opening Cases/);
   assert.match(await overview.locator('#exec-status').innerText(),/historical values may be estimated/);
   assert.deepEqual((await overview.locator('#exec-results .exec-kpi > span').allTextContents()).slice(0,3),['Opening Cases','Para Added','Total Cases']);
@@ -77,6 +78,6 @@ assert.ok(!eligibility.datasets.includes('GetKpiLifecycle'));
   await page.evaluate(()=>document.getElementById('executive-dashboard').dispatchEvent(new CustomEvent('ias:executive-data',{detail:{datasets:{GetKpiSummary:{zeroCycleParas:0,over3CycleParas:3,settlementMtdRate:null,criticalItems:2}}}})));
   assert.equal(await page.locator('#cco-summary strong').allTextContents().then(x=>x.join(',')),'0,3,N/A,2');
   await page.locator('#exec-filters').dispatchEvent('change');assert.equal(await page.locator('#cco-summary strong').count(),0);
-  console.log('PASS: Chrome payload fixtures constrained by actual compiled endpoint eligibility; six CCO Overview endpoints, canonical B/C/D and D-to-C benchmark, dates/navigation, export absence, invalidation and zero/N/A. No live IAS/Oracle reads.');
+  console.log('PASS: Chrome payload fixtures constrained by actual compiled endpoint eligibility; five CCO Overview endpoints, canonical B/C/D and D-to-C benchmark, dates/navigation, export absence, invalidation and zero/N/A. No live IAS/Oracle reads.');
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

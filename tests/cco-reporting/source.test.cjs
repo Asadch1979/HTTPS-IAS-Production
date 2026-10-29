@@ -15,7 +15,7 @@ test('CCO projection reuses existing lifecycle values with no extra Oracle reads
  assert.equal((source.match(/ReadExecutiveKpiLifecycle\(scope, filters\)/g)||[]).length,1);
 });
 
-test('CCO seven visible definitions hide canonical reports; pending tabs issue no queries',()=>{
+test('CCO eight visible definitions hide canonical reports; pending tabs issue no queries',()=>{
  const page=read('AIS/Views/ExecutiveOverview/CCO.cshtml'),controller=read('AIS/Controllers/ExecutiveOverviewController.cs');
  assert.match(page,/else if \(!pending\)/);assert.match(page,/ReportForView\(Model.SelectedView.Id\)/);
  assert.match(controller,/views.RemoveAll\(v => v.Id == "reports"\)/);
