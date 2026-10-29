@@ -1,0 +1,6 @@
+@model AIS.Models.ExecutiveDashboardPageModel
+<section id="cco-function-position" data-enabled="false" data-api-url="@Url.Content("~/api/CcoCompliance/GetFunctionPosition")">
+    <p class="exec-note">Management Audit population (audit type D), following Report E calculations. Historical balances are estimates. Wider CCO coverage requires separate approval.</p>
+    <p id="cco-function-status" role="status">Authorized data unavailable pending independent review of scope, mappings and API permissions.</p>
+    <div id="cco-function-results" class="exec-table-wrap" role="region" aria-label="Function Wise Position" tabindex="0" hidden></div>
+</section>

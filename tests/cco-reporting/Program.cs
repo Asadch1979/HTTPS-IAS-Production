@@ -125,7 +125,7 @@ foreach(var report in new[]{"C","D"}) {
  Check((string)result?.RouteValues["endDate"]=="2024-02-29","Legacy report retains dates");
 }
 // Phase 2 is deliberately unavailable even after all IAS gates pass.
-foreach(var action in new[]{"GetOrgFilters","GetOrgPosition","GetOrgPerformance","GetOrgSettlement","GetOrgExceptions"}) {
+foreach(var action in new[]{"GetFunctionPosition","GetOrgFilters","GetOrgPosition","GetOrgPerformance","GetOrgSettlement","GetOrgExceptions"}) {
  foreach(var role in new[]{38,1,3,5}) {
   var (context,session,db)=Context(role);context.Request.Path="/api/CcoCompliance/"+action;Grant(context);
   var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};

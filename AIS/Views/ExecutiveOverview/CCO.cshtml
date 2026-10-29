@@ -79,3 +79,4 @@
         @if (Model.RoleOracleEnabled && (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional")) { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
     }
 }
+@if (Model.SelectedView.Id == "org-position") { <script src="~/js/cco-function-position.js" asp-append-version="true"></script> }
