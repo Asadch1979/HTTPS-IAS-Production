@@ -33,3 +33,5 @@ Installed Oracle objects have NOT been independently verified. The user reports 
 Remaining: transaction adapter and five readers/procedures, authorized hierarchy intersection/table, dedicated critical tab/reader/risk filtering, exact API verification, mapping and aggregate reconciliation, live revocation/pooling tests, browser validation and draft PR delivery. Existing organizational fail-closed gates remain intact. No permissions were activated.
 
 Local evidence for this checkpoint: node --check executive-reports.js passed; git diff --check passed. Existing CCO source tests: 4 passed, 1 failed because phase2-source.test.cjs pins the entire report client to the pre-change baseline. This failure is unresolved; no live Oracle correctness or browser coverage is claimed.
+
+Build evidence: dotnet build AIS/AIS.csproj --no-restore succeeded with 0 errors and 57 warnings.
