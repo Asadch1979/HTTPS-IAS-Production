@@ -1,0 +1,151 @@
+-- REVIEW ONLY. Never executed by this task. DBA must validate in staging.
+-- Run only as the dedicated trusted security owner after explicit approval.
+-- Existing entity GTT, context and package specification are NOT recreated.
+-- New protected marker has one row per initialized scope even for empty portfolios.
+-- Runtime must not own either GTT, have direct/role/PUBLIC DML, or ANY privileges
+-- allowing replacement of package/view/context. Grant no access to this marker.
+-- Runtime retains only approved EXECUTE on scope package and SELECT on scope view.
+-- Cleanup clears context BEFORE DML; rollback cannot restore a usable context.
+-- Application must call P_END_SCOPE before transaction end and on errors; if
+-- cleanup fails, discard the physical pooled connection, never return it to pool.
+CREATE GLOBAL TEMPORARY TABLE T_CCO_SCOPE_INIT_GTT
+(SCOPE_TOKEN VARCHAR2(32) NOT NULL PRIMARY KEY) ON COMMIT DELETE ROWS;
+CREATE OR REPLACE PACKAGE BODY PKG_CCO_SCOPE AS
+
+    PROCEDURE P_END_SCOPE IS
+    BEGIN
+        DBMS_SESSION.CLEAR_CONTEXT('IAS_CCO_CTX', NULL);
+        DELETE FROM T_CCO_SCOPE_INIT_GTT;
+        DELETE FROM T_CCO_SCOPE_ENTITIES_GTT;
+        DBMS_SESSION.CLEAR_CONTEXT('IAS_CCO_CTX', NULL);
+    END P_END_SCOPE;
+
+    PROCEDURE P_REQUIRE_ACTIVE(
+        P_USER_ID IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+        P_ENTITY_ID IN NUMBER, P_CONTEXT_ID IN NUMBER, P_SESSION_ID IN VARCHAR2) IS
+        V_COUNT NUMBER;
+    BEGIN
+        IF P_USER_ID IS NULL OR P_ROLE_ID IS NULL OR P_ROLE_ID NOT IN (1,38)
+           OR P_GROUP_ID IS NULL OR P_ENTITY_ID IS NULL
+           OR P_CONTEXT_ID IS NULL OR P_SESSION_ID IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20810, 'Missing CCO IAS context');
+        END IF;
+        SELECT COUNT(DISTINCT U.USERID) INTO V_COUNT
+          FROM T_USER U
+          JOIN T_USER_SESSION S ON S.USER_PP_NUMBER = U.PPNO
+          JOIN T_GROUPS G ON G.GROUP_ID = P_GROUP_ID
+          JOIN T_USER_CONTEXT_ASSIGNMENT C ON C.USER_CONTEXT_ID = P_CONTEXT_ID
+          JOIN T_MENU_PAGES MP ON MP.ID = 1000302
+          JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.PAGE_ID = MP.ID
+         WHERE U.USERID = P_USER_ID AND U.ISACTIVE = 'Y'
+           AND S.SESSION_ID = P_SESSION_ID AND S.SESSION_ACTIVE = 'Y'
+           AND S.LOGGED_OUT_DATE IS NULL
+           AND S.ROLE_ID = P_ROLE_ID AND S.ENTITY_ID = P_ENTITY_ID
+           AND S.GROUP_ID = P_GROUP_ID
+           AND G.ROLE_ID = P_ROLE_ID AND G.STATUS = 'Y'
+           AND C.USER_ID = U.USERID AND C.ROLE_ID = P_ROLE_ID
+           AND C.ENTITY_ID = P_ENTITY_ID AND C.IS_ACTIVE = 'Y'
+           AND NVL(C.GROUP_ID,C.ROLE_ID) = P_GROUP_ID
+           AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM <= SYSDATE)
+           AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO >= TRUNC(SYSDATE))
+           AND MP.STATUS = 'A' AND MPG.GROUP_ID = P_GROUP_ID;
+        IF V_COUNT <> 1 THEN
+            RAISE_APPLICATION_ERROR(-20811, 'CCO session/context/page is not currently authorized');
+        END IF;
+    END P_REQUIRE_ACTIVE;
+
+    PROCEDURE P_BEGIN_SCOPE(
+        P_USER_ID IN NUMBER, P_ROLE_ID IN NUMBER, P_GROUP_ID IN NUMBER,
+        P_ENTITY_ID IN NUMBER, P_CONTEXT_ID IN NUMBER, P_SESSION_ID IN VARCHAR2,
+        O_SCOPE_TOKEN OUT VARCHAR2) IS
+    BEGIN
+        -- Clear residue before validating, including reused pooled connections.
+        P_END_SCOPE;
+        P_REQUIRE_ACTIVE(P_USER_ID,P_ROLE_ID,P_GROUP_ID,P_ENTITY_ID,P_CONTEXT_ID,P_SESSION_ID);
+        O_SCOPE_TOKEN := RAWTOHEX(SYS_GUID());
+        INSERT INTO T_CCO_SCOPE_INIT_GTT(SCOPE_TOKEN) VALUES (O_SCOPE_TOKEN);
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN', O_SCOPE_TOKEN);
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','USER_ID', TO_CHAR(P_USER_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','ROLE_ID', TO_CHAR(P_ROLE_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','GROUP_ID', TO_CHAR(P_GROUP_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','ENTITY_ID', TO_CHAR(P_ENTITY_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','CONTEXT_ID', TO_CHAR(P_CONTEXT_ID));
+        DBMS_SESSION.SET_CONTEXT('IAS_CCO_CTX','SESSION_ID', P_SESSION_ID);
+        -- CCO bank-wide source population. Unlike a hierarchy join, this
+        -- retains otherwise unmapped auditee entities for explicit exceptions.
+        INSERT INTO T_CCO_SCOPE_ENTITIES_GTT(SCOPE_TOKEN,ENTITY_ID)
+        SELECT O_SCOPE_TOKEN, E.ENTITY_ID
+          FROM T_AUDITEE_ENTITIES E
+         WHERE E.ENTITY_ID IS NOT NULL
+         GROUP BY E.ENTITY_ID;
+        P_ASSERT_SCOPE(O_SCOPE_TOKEN);
+    EXCEPTION WHEN OTHERS THEN
+        P_END_SCOPE;
+        RAISE;
+    END P_BEGIN_SCOPE;
+
+    PROCEDURE P_ASSERT_SCOPE(P_SCOPE_TOKEN IN VARCHAR2) IS
+        V_MARKERS NUMBER;
+        V_USER_ID NUMBER;
+        V_ROLE_ID NUMBER;
+        V_GROUP_ID NUMBER;
+        V_ENTITY_ID NUMBER;
+        V_CONTEXT_ID NUMBER;
+        V_SESSION_ID VARCHAR2(200);
+    BEGIN
+        IF SYS_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN') IS NULL OR P_SCOPE_TOKEN IS NULL OR LENGTH(P_SCOPE_TOKEN) <> 32
+           OR NOT REGEXP_LIKE(P_SCOPE_TOKEN, '^[0-9A-F]{32}$')
+           OR P_SCOPE_TOKEN <> SYS_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN') THEN
+            RAISE_APPLICATION_ERROR(-20812, 'CCO scope-token mismatch');
+        END IF;
+        SELECT COUNT(*) INTO V_MARKERS FROM T_CCO_SCOPE_INIT_GTT WHERE SCOPE_TOKEN = P_SCOPE_TOKEN;
+        IF V_MARKERS <> 1 THEN RAISE_APPLICATION_ERROR(-20813, 'CCO transaction scope expired'); END IF;
+        V_USER_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','USER_ID'));
+        V_ROLE_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ROLE_ID'));
+        V_GROUP_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','GROUP_ID'));
+        V_ENTITY_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ENTITY_ID'));
+        V_CONTEXT_ID := TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','CONTEXT_ID'));
+        V_SESSION_ID := SYS_CONTEXT('IAS_CCO_CTX','SESSION_ID');
+        P_REQUIRE_ACTIVE(V_USER_ID,V_ROLE_ID,V_GROUP_ID,V_ENTITY_ID,V_CONTEXT_ID,V_SESSION_ID);
+        -- Must be inside one active transaction; COMMIT or ROLLBACK empties GTT.
+        -- If the organization is legitimately empty, the application must
+        -- distinguish that from a lost transaction before reading aggregates.
+    END P_ASSERT_SCOPE;
+END PKG_CCO_SCOPE;
+/
+
+-- STEP 4. Actual view requested. The trusted context plus same-transaction
+-- GTT and real-time IAS authorization joins prevent direct unscoped reads.
+-- This view is deliberately sparse: existing PKG_CCO_REPORTING expects only
+-- SCOPE_TOKEN and ENTITY_ID. Names/path mappings are separate responsibilities.
+CREATE OR REPLACE VIEW V_CCO_AUTHORIZED_ENTITIES AS
+SELECT X.SCOPE_TOKEN, X.ENTITY_ID
+  FROM T_CCO_SCOPE_ENTITIES_GTT X
+ WHERE X.SCOPE_TOKEN = SYS_CONTEXT('IAS_CCO_CTX','SCOPE_TOKEN')
+   AND EXISTS (SELECT 1 FROM T_CCO_SCOPE_INIT_GTT I WHERE I.SCOPE_TOKEN = X.SCOPE_TOKEN)
+   AND EXISTS
+   (
+       SELECT 1 FROM T_USER U
+       JOIN T_USER_SESSION S ON S.USER_PP_NUMBER = U.PPNO
+       JOIN T_GROUPS G ON G.GROUP_ID = S.GROUP_ID
+       JOIN T_USER_CONTEXT_ASSIGNMENT C ON C.USER_CONTEXT_ID =
+            TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','CONTEXT_ID'))
+       JOIN T_MENU_PAGES MP ON MP.ID = 1000302
+       JOIN T_MENU_PAGES_GROUPMAP MPG ON MPG.PAGE_ID = MP.ID
+      WHERE U.USERID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','USER_ID'))
+        AND U.ISACTIVE = 'Y'
+        AND S.SESSION_ID = SYS_CONTEXT('IAS_CCO_CTX','SESSION_ID')
+        AND S.SESSION_ACTIVE = 'Y' AND S.LOGGED_OUT_DATE IS NULL
+        AND S.ROLE_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ROLE_ID'))
+        AND S.ENTITY_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','ENTITY_ID'))
+        AND S.GROUP_ID = TO_NUMBER(SYS_CONTEXT('IAS_CCO_CTX','GROUP_ID'))
+        AND S.ROLE_ID IN (1,38) AND G.ROLE_ID = S.ROLE_ID AND G.STATUS='Y'
+        AND C.USER_ID = U.USERID AND C.ROLE_ID = S.ROLE_ID
+        AND C.ENTITY_ID = S.ENTITY_ID AND C.IS_ACTIVE = 'Y'
+        AND NVL(C.GROUP_ID,C.ROLE_ID)=S.GROUP_ID
+        AND (C.EFFECTIVE_FROM IS NULL OR C.EFFECTIVE_FROM<=SYSDATE)
+        AND (C.EFFECTIVE_TO IS NULL OR C.EFFECTIVE_TO>=TRUNC(SYSDATE))
+        AND MP.STATUS='A' AND MPG.GROUP_ID=S.GROUP_ID
+   );
+/
+
