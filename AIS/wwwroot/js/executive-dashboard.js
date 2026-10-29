@@ -210,10 +210,11 @@
         rows = rows.filter(row => !selection || row.riskName === selection);
         $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
         if (!rows.length) {
-            const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = 7; tr.append(cell); target.append(tr);
+            const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = app.dataset.perspective === 'CCO' ? 8 : 7; tr.append(cell); target.append(tr);
         }
         rows.forEach(row => {
             const tr = el('tr');
+            if (app.dataset.perspective === 'CCO') tr.append(el('td', row.reportingOfficeName || 'Unmapped reporting office'));
             [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
                 row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
             const age = el('td', row.agingDays == null ? 'N/A' : `${number(row.agingDays)} days`);
@@ -294,7 +295,7 @@
             if (datasets.GetCriticalItems) {
                 criticalRows = datasets.GetCriticalItems; criticalCount = datasets.GetKpiSummary.criticalItems;
                 const filter = $('critical-risk'), selected = filter.value;
-                filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
+                if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
                 if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
                 critical(criticalRows, criticalCount);
             }

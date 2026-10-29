@@ -17,7 +17,7 @@ var checks=0;
 void Check(bool condition, string message) { checks++; if(!condition) throw new Exception(message); }
 var definitions=ExecutiveDashboardViews.ForPerspective("CCO");
 var visible=definitions.Where(v=>v.Id!="reports").ToArray();
-Check(string.Join(",",visible.Select(v=>v.Id))=="overview,org-position,field-office,gm-region,regional-rankings,performance,effectiveness","Seven ordered CCO tabs");
+Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,performance,effectiveness","Eight ordered CCO tabs");
 Check(string.Join(",",definitions.Single(v=>v.Id=="reports").Reports)=="B,C,D","CCO report allowlist");
 Check(!visible[0].UseLifecycleKpis && !visible[0].Datasets.Contains("GetKpiLifecycle") && new[]{"GetKpiSummary","GetRiskSummary","GetAgingSummary","GetCycleSummary","GetSettlementTrend","GetCriticalItems"}.All(visible[0].Datasets.Contains),"Overview requests only authorized CCO summary/distribution datasets");
 foreach(var tab in new[]{"org-position","performance"}) Check(definitions.Single(v=>v.Id==tab).Datasets.Length==0,"Pending tabs must not fetch invented data");

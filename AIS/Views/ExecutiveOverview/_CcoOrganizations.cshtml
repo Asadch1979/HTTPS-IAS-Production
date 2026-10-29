@@ -1,21 +1,9 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-@{
-    var action = Model.SelectedView.Id == "performance" ? "GetOrgPerformance" : Model.SelectedView.Id == "effectiveness" ? "GetOrgSettlement" : "GetOrgPosition";
-}
-<section id="cco-organizations" data-enabled="false" data-action="@action" data-api-url="@Url.Content("~/api/CcoCompliance/")" aria-label="Auditee organizational reporting">
-    <p class="exec-note">Review-only organizational reporting: approved staging taxonomy, mapping reconciliation, database authorization and exact API grants are pending. No organizational totals are available. Existing Overview and B/C/D reports retain their authorized sources.</p>
-    <form id="cco-org-filters" class="exec-filters">
-        <fieldset disabled>
-            <legend>Auditee organization — pending verified data</legend>
-            <label for="cco-group-by">Display level</label><select id="cco-group-by"><option value="GROUP">Group</option><option value="DIVISION">Division</option><option value="GM">GM Office</option></select>
-            <label for="cco-group">Group</label><select id="cco-group"><option value="">All authorized Groups</option></select>
-            <label for="cco-division">Division</label><select id="cco-division"><option value="">All authorized Divisions</option></select>
-            <label for="cco-gm">GM Office</label><select id="cco-gm"><option value="">All authorized GM Offices</option></select>
-            <label for="cco-entity">Auditee entity</label><select id="cco-entity"><option value="">All authorized entities</option></select>
-            <button type="submit" class="org-button">Apply organization</button>
-        </fieldset>
-    </form>
-    <p id="cco-org-breadcrumb" class="exec-note">All authorized Groups</p>
-    <p id="cco-org-status" role="status" aria-live="polite">Organizational data unavailable pending staging approval.</p>
-    <div id="cco-org-results" class="exec-table-wrap" hidden></div>
+<section id="cco-organizations" data-enabled="false" aria-label="Auditee organizational reporting">
+    <p class="exec-note">Organizational figures remain unavailable pending verified authorization, mapping and API grants.</p>
+    <label for="cco-org-search">Search organization</label><input id="cco-org-search" type="search" />
+    <button type="button" id="cco-expand-all" class="org-button">Expand All</button>
+    <button type="button" id="cco-collapse-all" class="org-button">Collapse All</button>
+    <p id="cco-org-status" role="status">Organizational data unavailable pending verification.</p>
+    <div id="cco-org-results" class="exec-table-wrap" tabindex="0" role="region" aria-label="Organization Structure"></div>
 </section>
