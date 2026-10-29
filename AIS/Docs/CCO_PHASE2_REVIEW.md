@@ -35,3 +35,15 @@ Remaining: transaction adapter and five readers/procedures, authorized hierarchy
 Local evidence for this checkpoint: node --check executive-reports.js passed; git diff --check passed. Existing CCO source tests: 4 passed, 1 failed because phase2-source.test.cjs pins the entire report client to the pre-change baseline. This failure is unresolved; no live Oracle correctness or browser coverage is claimed.
 
 Build evidence: dotnet build AIS/AIS.csproj --no-restore succeeded with 0 errors and 57 warnings.
+
+## Revised completion checkpoint, 29 October 2026
+
+Preserved existing worktree and verified merge-base 45d0cdcc. Added eighth visible tab (Critical Audit Observations) and removed its dataset from Overview; legacy high-risk reader remains under existing endpoint gates. CCO adds Reporting Office before Entity, explicitly showing unmapped where legacy data lacks verified attribution. Other risks remain disabled. No new database ordering is claimed.
+
+Replaced dropdowns with read-only hierarchy presentation: parent/entity contract, indentation, expansion, search, conflict/orphan indicators, safe text rendering and date invalidation. Production data gate remains false and client issues no directory requests. Server-provided subtotals/grand totals and authorized drilldown remain unfinished.
+
+Checks: application build 0 errors / 57 warnings; 107 compiled checks passed; 6 source checks passed; Chrome organization and existing client fixtures passed. These are mocked data/authorization-contract tests, not Oracle tests. Hard-coded baseline d3f2d144 is present locally. Previous exact-client-source assertion was an actual intentional presentation difference, not missing history; retained protected server/SQL comparisons and added focused CCO client assertions.
+
+Added REVIEW ONLY CCO_SCOPE_TRANSACTION_CORRECTION.sql.review: protected ON COMMIT DELETE ROWS initialization marker, matching-token assertion, empty-portfolio distinction, marker-qualified view, explicit NULL role/token rejection, context-first cleanup. Not compiled or deployed to Oracle. Existing live owner/grants/package validity, pooling, revocation and transaction-boundary behavior remain unverified. Requires dedicated owner and zero runtime marker/entity-GTT DML privileges.
+
+Backend integration and dedicated ordered/risk-filtered observation reader remain unimplemented. UI is a partial checkpoint, not final acceptance. No permissions activated; no deployment or merge.
