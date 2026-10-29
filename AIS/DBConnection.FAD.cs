@@ -519,7 +519,7 @@ namespace AIS.Controllers
                 GuardAgainstDynamicSql(cmd);
                 cmd.Parameters.Clear();
 
-                cmd.Parameters.Add("C_ID", OracleDbType.Int32).Value = COM_ID;
+                cmd.Parameters.Add("P_C_ID", OracleDbType.Int32).Value = COM_ID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
                 using OracleDataReader rdr = cmd.ExecuteReader();
                 while (rdr.Read())
