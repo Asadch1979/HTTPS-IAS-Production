@@ -140,7 +140,20 @@ namespace AIS.Controllers
                 else
                 {
                     filters.EntityId = entityId;
-                    filters.ValidateParentPerspective(requestedType);
+                    // Only these two CCO views may accept a Group Head entity.
+                    // Full authorization and entity-type verification follow the
+                    // page check below; never accept generic CCO entity drilldowns.
+                    if (requestedType == "CCO" &&
+                        (view == "performance" || view == "effectiveness") &&
+                        entityId.HasValue)
+                    {
+                        if (filters.SelectBy != "entityType" || filters.DimensionId.HasValue ||
+                            filters.ReportingOfficeId.HasValue || filters.SnapDivision != null ||
+                            filters.SnapDepartmentId.HasValue)
+                            throw new ArgumentException("Only a Group Head selection is supported.");
+                    }
+                    else
+                        filters.ValidateParentPerspective(requestedType);
                 }
                 if (!auditParaSnap && requestedType != "CIA" &&
                     string.IsNullOrEmpty(filters.StartDate) && string.IsNullOrEmpty(filters.EndDate))
@@ -220,6 +233,14 @@ namespace AIS.Controllers
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
+                var ccoGroupHeads = scope.DashboardType == "CCO" &&
+                    (view == "performance" || view == "effectiveness")
+                    ? database.GetCcoGroupHeads(scope)
+                    : new System.Collections.Generic.List<OrganizationNode>();
+                if (scope.DashboardType == "CCO" && entityId.HasValue &&
+                    (view == "performance" || view == "effectiveness") &&
+                    !ccoGroupHeads.Any(group => group.EntityId == entityId.Value))
+                    throw new ExecutiveDashboardAccessException("EntityScope", "Choose an authorized Group Head.");
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;
                 var needsRlmRoot = scope.DashboardType == "RLM" && superUser && !scope.GroupRootId.HasValue;
                 // The selector page may open without a root; reporting queries may not.
@@ -273,6 +294,7 @@ namespace AIS.Controllers
                     IsSuperUser = superUser,
                     GroupRootId = scope.GroupRootId,
                     Groups = groups,
+                    CcoGroupHeads = ccoGroupHeads,
                     RlmRoots = rlmRoots,
                     NeedsRlmRoot = needsRlmRoot,
                     Filters = filters,
