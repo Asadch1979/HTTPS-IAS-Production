@@ -12,11 +12,11 @@
 
 SELECT d.position_date,
        COUNT(DISTINCT e.eng_id) AS engagement_count,
-       COUNT(DISTINCT CASE WHEN e.position_status IN (13,14)
+       COUNT(DISTINCT CASE WHEN history.position_status IN (13,14)
                            THEN e.entity_id END) AS completed_entities,
-       COUNT(DISTINCT CASE WHEN e.position_status BETWEEN 4 AND 11
+       COUNT(DISTINCT CASE WHEN history.position_status BETWEEN 4 AND 11
                            THEN e.team_id END) AS teams_in_progress,
-       COUNT(DISTINCT CASE WHEN e.position_status IS NULL
+       COUNT(DISTINCT CASE WHEN history.position_status IS NULL
                            THEN e.eng_id END) AS engagements_without_history
   FROM
       (SELECT TRUNC(:P_ASOF_EARLIER) AS position_date FROM dual
