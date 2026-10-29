@@ -31,7 +31,7 @@
     <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
         @foreach (var view in Model.Views)
         {
-            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, startDate = Model.Filters.StartDate, endDate = Model.Filters.EndDate, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">@view.Title</a>
+            <a class="org-button" aria-current="@(view.Id == Model.SelectedView.Id ? "page" : null)" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = view.Id, startDate = Model.Filters.StartDate, endDate = Model.Filters.EndDate, entityId = (view.Id == "performance" || view.Id == "effectiveness") ? Model.SelectedEntityId : null, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">@view.Title</a>
         }
     </nav>
     <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action(Model.DashboardType, "ExecutiveOverview")">
