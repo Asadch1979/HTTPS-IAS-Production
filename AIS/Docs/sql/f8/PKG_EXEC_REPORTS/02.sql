@@ -341,13 +341,36 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         ON parent_region.entity_id = f.reporting_1
        AND parent_region.type_id = 22 AND P_REPORT_ID = 'C'
   ),
+      -- Report E maps the audited entity's unique division to the existing
+      -- Group/Division view. Reduce mapping BEFORE joining individual paras.
+      -- The view itself does not apply STATUS, so require an active matching row.
+      group_report_candidates AS (
+        SELECT DISTINCT r.entity_id division_id, r.parent_id group_id,
+               r.p_name group_name, r.c_name division_name
+          FROM V_IAS_ENTITY_REPORTING_IDS_Group_reports r
+         WHERE EXISTS (
+               SELECT 1 FROM t_auditee_entities_maping m
+                WHERE m.entity_id = r.entity_id AND m.parent_id = r.parent_id
+                  AND m.c_type_id = 3
+                  AND m.p_name = r.p_name AND m.c_name = r.c_name
+                  AND NVL(m.status,'Y') = 'Y')
+      ),
+      group_report_map AS (
+        SELECT division_id, COUNT(*) mapping_paths,
+               MAX(group_id) group_id, MAX(group_name) group_name,
+               MAX(division_name) division_name
+          FROM group_report_candidates
+         GROUP BY division_id
+      ),
       dimensions AS (
         SELECT f.*,
                CASE P_REPORT_ID
                  WHEN 'B' THEN CASE WHEN f.audit_type = 'B' THEN 1 ELSE 2 END
                  WHEN 'C' THEN f.report_c_gm_id
                  WHEN 'D' THEN CAST(NULL AS NUMBER)
-                 WHEN 'E' THEN 1
+                 WHEN 'E' THEN CASE WHEN gr.mapping_paths = 1
+                              AND (f.business_group_id IS NULL OR f.business_group_id = gr.group_id)
+                              THEN gr.group_id END
                END AS group_id,
                CASE P_REPORT_ID
                  WHEN 'B' THEN CASE WHEN f.audit_type = 'B'
@@ -355,14 +378,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                                     ELSE 'Other Field Offices' END
                  WHEN 'C' THEN NVL(report_c_gm.name, 'Unassigned GM')
                  WHEN 'D' THEN CAST(NULL AS VARCHAR2(500))
-                 WHEN 'E' THEN 'Management Audit'
+                 WHEN 'E' THEN CASE WHEN gr.mapping_paths = 1
+                              AND (f.business_group_id IS NULL OR f.business_group_id = gr.group_id)
+                              THEN gr.group_name ELSE 'Unmapped / conflicting Group' END
                END AS report_group_name,
                CASE P_REPORT_ID
                  WHEN 'B' THEN f.audited_by
                  WHEN 'C' THEN f.report_c_item_id
                  WHEN 'D' THEN f.region_id
-                 WHEN 'E' THEN COALESCE(f.division_id, f.business_group_id,
-                                        f.reporting_office_id, f.entity_id)
+                 WHEN 'E' THEN CASE WHEN gr.mapping_paths = 1
+                              AND (f.business_group_id IS NULL OR f.business_group_id = gr.group_id)
+                              THEN gr.division_id END
                END AS item_id,
                CASE P_REPORT_ID
                  WHEN 'C' THEN TO_CHAR(report_c_item.code)
@@ -373,11 +399,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                  WHEN 'B' THEN NVL(f.audited_by_name, 'Unassigned Audit Office')
                  WHEN 'C' THEN NVL(report_c_item.name, 'Unassigned Region / H.O. Unit')
                  WHEN 'D' THEN NVL(reg.name, 'Unassigned Region')
-                 WHEN 'E' THEN COALESCE(f.division_name, f.group_name,
-                                        f.reporting_office_name,
-                                        'Unassigned Management Function')
+                 WHEN 'E' THEN CASE WHEN gr.mapping_paths = 1
+                              AND (f.business_group_id IS NULL OR f.business_group_id = gr.group_id)
+                              THEN gr.division_name ELSE 'Unmapped / conflicting Division' END
                END AS item_name
         FROM report_c_offices f
+        LEFT JOIN group_report_map gr
+          ON P_REPORT_ID = 'E'
+         AND gr.division_id = COALESCE(f.division_id,
+                                 CASE WHEN f.entity_type_id = 3 THEN f.entity_id END)
         LEFT JOIN t_auditee_entities reg ON reg.entity_id = f.region_id
         LEFT JOIN t_auditee_entities report_c_gm
           ON report_c_gm.entity_id = f.report_c_gm_id
