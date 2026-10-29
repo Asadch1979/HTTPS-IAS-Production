@@ -14,12 +14,14 @@ namespace AIS.Controllers
         {
             ValidateCcoOrganizationContext(scope);
             filters.Validate();
-            // Activation requires independent security/mapping/API review. No config bypass.
-            throw new CcoOrganizationUnavailableException();
+            // Never fall back to unscoped Report E when the trusted Oracle scope
+            // objects are absent or invalid. The controller checks exact API grants.
+            return ReadCcoFunctionPosition(scope, filters);
         }
 
-        // Offline implementation candidate. Intentionally unreachable from production gate.
-        private List<CcoFunctionPositionRow> ReadCcoFunctionPositionCandidate(ExecutiveDashboardScope scope, CcoOrganizationFilter filters)
+        // Secured Oracle reader: scope token, source rows and aggregates all stay
+        // within one transaction. No browser-selectable root or unscoped fallback.
+        private List<CcoFunctionPositionRow> ReadCcoFunctionPosition(ExecutiveDashboardScope scope, CcoOrganizationFilter filters)
         {
             ValidateCcoOrganizationContext(scope); filters.Validate();
             var user=ValidateExecutiveDashboardSession(scope);
