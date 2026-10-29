@@ -53,7 +53,7 @@
         table.append(head, body);
         target.append(table);
         target.hidden = false;
-        status.textContent = 'Authorized Management Audit (D) observations. Historical estimates; unresolved mappings are included.';
+        status.textContent = 'Function Wise Position loaded · ' + rows.length + ' rows.';
     }
     function queryUrl() {
         const start = document.getElementById('exec-start-date')?.value;
