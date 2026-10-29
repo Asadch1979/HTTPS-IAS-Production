@@ -1096,7 +1096,6 @@ BEGIN
         INNER JOIN v_exec_entity_scope s
             ON s.entity_id = p.auditedby
         WHERE p.auditperiodid = P_AUDIT_PERIOD_ID
-          AND p.status IN (1, 2)
           AND EXISTS (SELECT 1 FROM V_IAS_ENTITY_REPORTING_NAMES h CROSS JOIN
               (SELECT 'FAD' division_code,112243 parent_id FROM dual UNION ALL SELECT 'MAD',113254 FROM dual) d
               WHERE (V_DIVISION = '1' OR d.division_code = V_DIVISION)
