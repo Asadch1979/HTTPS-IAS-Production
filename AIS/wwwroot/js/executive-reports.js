@@ -204,7 +204,7 @@
             if (!visibleRows.length) {
                 target.append(node('p', 'No management audit position or movement for the selected period.', 'exec-empty'));
             } else {
-                table(target, 'Division-wise management audit settlement', [column('Relevant function / division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Para settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], visibleRows);
+                table(target, 'Division-wise management audit settlement', [column('Group','groupName',plain), column('Division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], visibleRows);
             }
         }
         if (!snap) {
