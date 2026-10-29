@@ -67,14 +67,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
       SELECT m.entity_id, COUNT(DISTINCT m.c_type_id) type_count,
         COUNT(DISTINCT m.parent_id) parent_count, COUNT(DISTINCT m.gm_office) gm_count,
         COUNT(DISTINCT m.auditedby) auditor_count,
-        CASE WHEN COUNT(DISTINCT m.auditedby)=1 THEN MAX(m.auditedby) END audit_by,
+        CASE WHEN COUNT(DISTINCT m.auditedby)=1 THEN MAX(m.auditedby) END auditedby,
         CASE WHEN COUNT(DISTINCT m.gm_office)=1 AND MIN(CASE WHEN m.gm_office IS NULL OR g.type_id=21 THEN 1 ELSE 0 END)=1
           THEN MAX(m.gm_office) END direct_gm,
         MIN(CASE WHEN m.gm_office IS NULL OR g.type_id=21 THEN 1 ELSE 0 END) valid_gm
       FROM T_AUDITEE_ENTITIES_MAPING m LEFT JOIN T_AUDITEE_ENTITIES g ON g.entity_id=m.gm_office
       WHERE NVL(m.status,'Y')='Y' GROUP BY m.entity_id
     ), auditor_gm AS (
-      SELECT m.auditedby AS audit_by, COUNT(DISTINCT m.entity_id) gm_candidates,
+      SELECT m.auditedby AS auditedby, COUNT(DISTINCT m.entity_id) gm_candidates,
         CASE WHEN COUNT(DISTINCT m.entity_id)=1 THEN MAX(m.entity_id) END gm_id
       FROM T_AUDITEE_ENTITIES_MAPING m JOIN T_AUDITEE_ENTITIES g ON g.entity_id=m.entity_id AND g.type_id=21
       WHERE NVL(m.status,'Y')='Y' AND m.auditedby IS NOT NULL GROUP BY m.auditedby
@@ -90,7 +90,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
         CASE WHEN m.gm_count>1 OR m.auditor_count>1 OR m.valid_gm=0 THEN NULL
           WHEN e.type_id=21 THEN e.entity_id
           WHEN ef.audit_family='B' AND e.type_id NOT IN (6,21,22,28) THEN
-            CASE WHEN m.audit_by IS NOT NULL AND gm_map.auditor_count=1 AND gm_map.audit_by=m.audit_by
+            CASE WHEN m.auditedby IS NOT NULL AND gm_map.auditor_count=1 AND gm_map.auditedby=m.auditedby
                  THEN m.direct_gm
                  WHEN m.gm_count=0 AND ag.gm_candidates=1 THEN ag.gm_id END
           ELSE COALESCE(m.direct_gm,h.gm_id) END gm_id
@@ -98,7 +98,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_CCO_REPORTING AS
       LEFT JOIN entity_family ef ON ef.entity_id=e.entity_id
       LEFT JOIN active_map m ON m.entity_id=e.entity_id
       LEFT JOIN active_map gm_map ON gm_map.entity_id=m.direct_gm
-      LEFT JOIN auditor_gm ag ON ag.audit_by=m.audit_by
+      LEFT JOIN auditor_gm ag ON ag.auditedby=m.auditedby
     ), paths AS (
       SELECT c.entity_id,c.group_id,c.division_id,
         CASE WHEN c.path_rows=1 AND gh.path_rows=1
