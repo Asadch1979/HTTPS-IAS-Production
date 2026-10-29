@@ -286,3 +286,9 @@ button.exec-kpi:hover { border-color:#4c9278; }
 #executive-dashboard[data-perspective="CCO"] .exec-report-table caption {
     text-align: left;
 }
+
+/* CCO report panels already provide their authorized CSV/PDF export controls.
+   Prevent the generic floating Export toggle from covering those buttons. */
+#executive-dashboard[data-perspective="CCO"] .exec-report-panel .dashboard-export-control {
+    display: none !important;
+}
