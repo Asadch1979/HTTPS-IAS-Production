@@ -43,6 +43,7 @@ test('Group Head selector is authoritative, CCO-only and binds to scoped entity 
     const page = read('AIS/Views/ExecutiveOverview/CCO.cshtml');
     const controller = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const db = read('AIS/DBConnection.CcoOrganizationReporting.cs');
+    const api = read('AIS/Controllers/ExecutiveDashboardController.cs');
     const model = read('AIS/Models/ExecutiveDashboardPageModel.cs');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
     const partial = read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml');
@@ -53,6 +54,8 @@ test('Group Head selector is authoritative, CCO-only and binds to scoped entity 
     assert.match(db, /ValidateCcoOrganizationContext\(scope\)/);
     assert.match(db, /EntityTypeId == 18 && !n\.HasTypeConflict/);
     assert.match(model, /CcoGroupHeads/);
+    assert.match(api, /database\.GetCcoGroupHeads\(scope\)\.Any/);
+
     assert.match(js, /!\['performance', 'effectiveness'\]\.includes/);
     assert.doesNotMatch(partial, /Search organization/);
     assert.match(partial, /data-enabled="false"/);
