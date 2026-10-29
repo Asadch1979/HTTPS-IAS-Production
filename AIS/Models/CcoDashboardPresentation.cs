@@ -7,6 +7,7 @@ namespace AIS.Models
     // Presentation only. The canonical report definition remains the API allowlist.
     public static class CcoDashboardPresentation
     {
+        public static string ReportTitle(string report) => report switch { "B" => "Audit Position", "C" => "GM / Region Position", "D" => "Regional Rankings", _ => throw new ArgumentException("This report is not available for CCO.") };
         public static string ReportForView(string view) => view switch
         {
             "field-office" => "B", "gm-region" => "C", "regional-rankings" => "D", _ => null
@@ -33,7 +34,7 @@ namespace AIS.Models
             return new List<ExecutiveDashboardViewDefinition> {
                 View("overview", "Compliance Overview", new[]{"openingCases","paraAdded","totalCases","settledTotal","openParas","highRiskParas","over1YearParas"}, new[]{"trend","risk","aging","cycle","critical"}),
                 View("org-position", "Group / Division / GM Position", Array.Empty<string>(), Array.Empty<string>()),
-                Report("field-office", "Field Office Position"),
+                Report("field-office", "Audit Position"),
                 Report("gm-region", "GM / Region Position"),
                 Report("regional-rankings", "Regional Rankings"),
                 View("performance", "Audit Performance Analysis", Array.Empty<string>(), Array.Empty<string>()),

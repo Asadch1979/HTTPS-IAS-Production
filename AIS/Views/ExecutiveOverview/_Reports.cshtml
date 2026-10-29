@@ -12,7 +12,8 @@
         <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report">
             @foreach (var report in Model.SelectedView.Reports)
             {
-                <button type="button" class="org-button" data-report="@report" data-title="@AIS.Models.ExecutiveDashboardViews.ReportTitle(report)" aria-pressed="false" disabled="@needsGroup">@report · @AIS.Models.ExecutiveDashboardViews.ReportTitle(report)</button>
+                var title = Model.DashboardType == "CCO" ? AIS.Models.CcoDashboardPresentation.ReportTitle(report) : AIS.Models.ExecutiveDashboardViews.ReportTitle(report);
+                <button type="button" class="org-button" data-report="@report" data-title="@title" aria-pressed="false" disabled="@needsGroup">@(Model.DashboardType == "CCO" ? title : report + " · " + title)</button>
             }
         </nav>
         @if (needsGroup)
