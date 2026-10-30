@@ -304,6 +304,9 @@ namespace AIS.Services
                 ["/AdministrationPanel/Entity_Dashboard"] = 970202,
                 ["/Setup/Checklist_Dashboard"] = 970203,
                 ["/Planning/Planning"] = 970204,
+                // Separately authorized approval page. Its DB group allocation is
+                // still mandatory; this route mapping never grants permission.
+                ["/Planning/audit_plan_deletion_authorization"] = 1000416,
                 ["/FAD/Draft_report_Checking"] = 417,
                 ["/FAD/Quality_Assurance_checking"] = 418
                 };

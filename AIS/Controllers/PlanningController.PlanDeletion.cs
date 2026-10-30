@@ -126,8 +126,10 @@ namespace AIS.Controllers
                     return "The request or plan has changed. Refresh and review again.";
                 case 20213:
                     return "The deletion reason must contain 10 to 2000 characters.";
+                case 20219:
+                    return "You cannot authorize a deletion request that you submitted yourself. A different authorized officer must approve it.";
                 case 20210: case 20211:
-                    return "You are not authorized for this operation.";
+                    return "Your active IAS session, group assignment or approval permission does not authorize this operation.";
                 default:
                     return "Unable to complete the requested operation.";
             }
