@@ -23,10 +23,14 @@ The adapter rejects a result with an unexpected report perspective, missing rows
 5. Reconcile Group, Division, movement and grand totals with the existing Report E for the same date period. Test a verified Super User, a revoked session, an unrelated role, forged query fields and an expired IAS context.
 6. If it still returns HTTP 503, search the corresponding correlation ID in IIS logs. New stages are `execute_authorized_management_report_e`, `validate_management_report_e_rows`, and `revalidate_ias_context`. Debug that stage instead of reinstalling the unused scope package.
 
-## Oracle objects and limitations
+## Retirement of unused Oracle objects
 
-The previously created `PKG_CCO_SCOPE`, entity GTTs, trusted `IAS_CCO_CTX`, and `PKG_CCO_FUNCTION_POSITION` may remain installed for historical use or separately approved future features. **Do not drop them** as part of this CCO page fix. Unrelated dependencies are unchanged.
+The active Function Wise Position implementation now contains no dependency on the dedicated CCO trusted-scope packages, view, context, or temporary tables. The old `PKG_CCO_FUNCTION_POSITION` and dormant `PKG_CCO_REPORTING` SQL source files have been retired from the current Git tree and are retained in Git history.
 
-The SQL in `PKG_CCO_FUNCTION_POSITION.sql` is no longer the active Function Wise Position reader; it remains repository reference only. No SQL DDL or DML is required by this application change.
+After PR #358's updated application assembly has been deployed and the new authorized Report E path has passed UAT, a DBA can run `AIS/Docs/sql/CCO_SCOPE_RETIREMENT.sql` to check for any remaining live dependencies.
 
-Source review and static tests do not prove that the existing Report E package is installed or that production IAS sessions are valid. Complete CI and authorized UAT before merging.
+**Run it with `APPLY_CCO_CLEANUP = NO` first.** Actual dropping requires separately approved `YES`, exact verified schema owners, DDL backups, no active old application instances and no unexpected dependent packages, synonyms, or trusted contexts. Oracle DROP operations commit automatically and cannot be rolled back.
+
+The script then retires `PKG_CCO_REPORTING`, `PKG_CCO_FUNCTION_POSITION`, `V_CCO_AUTHORIZED_ENTITIES`, `IAS_CCO_CTX`, `PKG_CCO_SCOPE`, `T_CCO_SCOPE_INIT_GTT` and `T_CCO_SCOPE_ENTITIES_GTT`. It does **not** change `PKG_EXEC_REPORTS`, CCO page permissions, the exact API grant, IAS role mapping, other dashboard routines or any audit data.
+
+Unimplemented CCO organization-path APIs remain unavailable rather than reverting to an unscoped query. Production execution has not been verified in this repository-only review.
