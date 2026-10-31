@@ -1,3 +1,5 @@
+**F8 note:** Generate temporary PL/SQL Developer SQL Window units with `node scripts/generate-f8-sql.cjs`. The ignored output is in `generated/f8/`; canonical sources remain in `AIS/Docs/sql/`.
+
 # CIA Command Center and Audit Para Snap
 
 Source implementation only. **Oracle compilation, staging reconciliation and authenticated browser acceptance remain required. No production deployment was performed.**
@@ -7,8 +9,8 @@ Source implementation only. **Oracle compilation, staging reconciliation and aut
 1. Use an explicitly approved staging IAS schema. Back up existing package specifications/bodies and permission rows. Do not point automated validation at production.
 2. Verify existing dependencies are valid: `V_IAS_ENTITY_REPORTING_NAMES`, `V_EXEC_ENTITY_SCOPE`, `V_EXEC_PARA_BASE`, `V_EXEC_KPI_LIFECYCLE`, `V_EXEC_REPORT_SOURCE`, `V_IAS_CIA_ISSUE_CHECKLIST_ROOT`, `T_IAS_CIA_ISSUE_NATURE_MAP`, `V_EXEC_ISSUE_RECTIFIED_RECON`, and the existing `PKG_HD.P_GET_ALL_PARA_TEXT`. Their definitions are unchanged by this feature. Some dependency DDL is absent from this repository; obtain the approved installed versions, not invented substitutes.
 3. If not already installed/valid, compile `sql/snap_audit_division_scope.sql`: specification, then body. Existing verified audit parents are FAD 112243 and MAD 113254; department IDs are read from IAS mapping, never new guessed IDs.
-4. Compile the updated `PKG_EXEC_DASHBOARD` specification, then body. The full `sql/PKG_EXEC_DASHBOARD.sql` contains existing dependency views before the package. Review these before execution. To replace only this package, use **F8** `sql/f8/PKG_EXEC_DASHBOARD/03.sql` (specification) then `04.sql` (body), one unit at a time. Do not reapply unrelated view or Head Audit DDL.
-5. Compile `PKG_EXEC_REPORTS`: F8 `sql/f8/PKG_EXEC_REPORTS/01.sql` (specification) then `02.sql` (body), or the reviewed full F5 script.
+4. Compile the updated `PKG_EXEC_DASHBOARD` specification, then body. The full `sql/PKG_EXEC_DASHBOARD.sql` contains existing dependency views before the package. Review these before execution. To replace only this package, use **F8** `generated/f8/PKG_EXEC_DASHBOARD/03.sql` (specification) then `04.sql` (body), one unit at a time. Do not reapply unrelated view or Head Audit DDL.
+5. Compile `PKG_EXEC_REPORTS`: F8 `generated/f8/PKG_EXEC_REPORTS/01.sql` (specification) then `02.sql` (body), or the reviewed full F5 script.
 6. Check `USER_ERRORS` for both packages and validate their dependencies. Compile dependent stored callers if invalidated. Check old callers still execute with optional arguments omitted. Reporting procedures remain read-only and application commands remain bound by name.
 7. Register the two exact new GETs through the reviewed `sql/executive_dashboard_permissions.sql`: `/api/AuditParaSnap/GetPerformance` and `/api/AuditParaSnap/GetParaText`, page **1000304**, class **SNAP**, roles **3 (CIA)** and **1 (verified Super User)** only. Existing API and role IDs are discovered/reused. New registrations/grants default to **inactive**; deliberately activate only these approved API/role rows using the established IAS permission administration process. Do not enable unrelated rows or replace disabled grants. No wildcard grant, new database user, broad table privilege or legacy HTTP permission is needed. Existing PKG_HD execute privilege is reused.
 8. Existing page/API-manifest provisioning is a prerequisite if that installation uses it. The legacy script references `executive_dashboard_page_api_manifest.sql`, whose source is absent from this checkout; do not fabricate it or deploy an incomplete permission package. Verify effective exact grants with the deployed permission service and fresh sessions.
@@ -71,10 +73,10 @@ No new reporting procedure, underlying reporting calculation or lifecycle view w
 - `AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql`
 - `AIS/Docs/sql/PKG_EXEC_REPORTS.sql`
 - `AIS/Docs/sql/executive_dashboard_permissions.sql`
-- `AIS/Docs/sql/f8/PKG_EXEC_DASHBOARD/03.sql`
-- `AIS/Docs/sql/f8/PKG_EXEC_DASHBOARD/04.sql`
-- `AIS/Docs/sql/f8/PKG_EXEC_REPORTS/01.sql`
-- `AIS/Docs/sql/f8/PKG_EXEC_REPORTS/02.sql`
+- `generated/f8/PKG_EXEC_DASHBOARD/03.sql`
+- `generated/f8/PKG_EXEC_DASHBOARD/04.sql`
+- `generated/f8/PKG_EXEC_REPORTS/01.sql`
+- `generated/f8/PKG_EXEC_REPORTS/02.sql`
 - `AIS/Models/AuditParaSnapData.cs`
 - `AIS/Models/AuditParaSnapPerformance.cs`
 - `AIS/Models/CiaCommandCenterData.cs`

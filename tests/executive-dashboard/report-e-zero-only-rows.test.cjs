@@ -7,11 +7,9 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
-test('Report E Oracle variants discard only five-metric zero rows', () => {
+test('Canonical Report E Oracle source discards only five-metric zero rows', () => {
     for (const file of [
         'AIS/Docs/sql/PKG_EXEC_REPORTS.sql',
-        'AIS/Docs/sql/f8/PKG_EXEC_REPORTS/02.sql',
-        'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql'
     ]) {
         const sql = read(file);
         assert.match(sql, /P_REPORT_ID <> 'E' OR a.row_kind <> 'SUBTOTAL'/);

@@ -6,11 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const read = p => fs.readFileSync(path.join(root,p),'utf8');
 
-const bodies = [
-  'AIS/Docs/sql/PKG_EXEC_REPORTS.sql',
-  'AIS/Docs/sql/f8/PKG_EXEC_REPORTS/02.sql',
-  'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql'
-];
+const bodies = ['AIS/Docs/sql/PKG_EXEC_REPORTS.sql'];
 
 test('Report C resolves direct GM, audited-by HO mapping and self GM without altering eligibility', () => {
   const source = read(bodies[0]);
@@ -38,24 +34,11 @@ test('Report C resolves direct GM, audited-by HO mapping and self GM without alt
     const cte = sql.slice(sql.indexOf('report_c_offices AS ('),sql.indexOf('dimensions AS ('));
     assert.doesNotMatch(cte,/JOIN t_auditee_entities_maping/);
     assert.match(sql,/P_SCOPE_ROOT_ID IN/);
-    if (file !== 'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql')
-      assert.match(sql,/PKG_AUDIT_SNAP_SCOPE\.REQUIRE_SELECTION/);
-    // Legacy image rewrite is for reference only; never deploy it in place of
-    // the authenticated canonical and F8 package bodies.
-    if (file !== 'AIS/Docs/sql/PKG_EXEC_REPORTS_image_rewrite_body.sql')
-      assert.match(sql,/P_SNAP_AUDITED_BY_ID IS NULL OR s\.audited_by = P_SNAP_AUDITED_BY_ID/);
+    assert.match(sql,/PKG_AUDIT_SNAP_SCOPE\.REQUIRE_SELECTION/);
+    assert.match(sql,/P_SNAP_AUDITED_BY_ID IS NULL OR s\.audited_by = P_SNAP_AUDITED_BY_ID/);
     assert.match(sql,/P_REPORT_ID = 'D' AND top_rank <= 5/);
   }
   assert.ok(source.includes('WHEN \'D\' THEN f.region_id'));
-});
-
-test('Report C dimensions and related safeguards are identical across deployable variants',()=>{
-  const get = file => {
-    const sql = read(file);
-    return sql.slice(sql.indexOf('report_c_direct_gm AS'),sql.indexOf('aggregates AS ('));
-  };
-  assert.equal(get(bodies[0]),get(bodies[1]));
-  assert.equal(get(bodies[1]),get(bodies[2]));
 });
 
 test('Report C browser and PDF name HO units instead of unnamed regions',()=>{

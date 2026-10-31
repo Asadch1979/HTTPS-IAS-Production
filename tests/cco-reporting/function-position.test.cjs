@@ -1,7 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
-const sql=fs.readFileSync('AIS/Docs/sql/cco-review/PKG_CCO_FUNCTION_POSITION.sql.review','utf8');
+const sql=fs.readFileSync('AIS/Docs/sql/PKG_CCO_FUNCTION_POSITION.sql','utf8');
 const report=fs.readFileSync('AIS/Docs/sql/PKG_EXEC_REPORTS.sql','utf8');
-const f8=fs.readFileSync('AIS/Docs/sql/f8/PKG_EXEC_REPORTS/02.sql','utf8');
 test('function SQL scopes facts and uses installed unique active Group/Division mappings',()=>{
  assert.match(sql,/s.audit_type='D'/);
  assert.match(sql,/FROM V_IAS_ENTITY_REPORTING_IDS_Group_reports r/);
@@ -17,8 +16,8 @@ test('function SQL scopes facts and uses installed unique active Group/Division 
  assert.match(sql,/V_CCO_AUTHORIZED_ENTITIES/);
  assert.equal((sql.match(/PKG_CCO_SCOPE.P_ASSERT_SCOPE/g)||[]).length,2);
 });
-test('Report E has no raw fact-multiplying mapping join, uses same view in F8',()=>{
- for(const s of [report,f8]){
+test('Report E has no raw fact-multiplying mapping join, uses canonical SQL',()=>{
+ for(const s of [report]){
   assert.match(s,/group_report_candidates AS/);
   assert.match(s,/FROM V_IAS_ENTITY_REPORTING_IDS_Group_reports r/);
   assert.match(s,/group_report_map AS \(/);

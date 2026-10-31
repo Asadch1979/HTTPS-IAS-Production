@@ -1,3 +1,5 @@
+**F8 note:** Generate temporary PL/SQL Developer SQL Window units with `node scripts/generate-f8-sql.cjs`. The ignored output is in `generated/f8/`; canonical sources remain in `AIS/Docs/sql/`.
+
 # Function Wise Position: implementation and outstanding deployment checks
 
 Updated 29 October 2026. Draft PR #352, branch fix/cco-function-position-group-report-view-20261029. This replaces the previous description of a deliberately hard-disabled Function Wise Position feature. It does **not** activate other CCO organizational/performance modules.

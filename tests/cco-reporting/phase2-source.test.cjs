@@ -13,7 +13,7 @@ test('new organizational adapters cannot be activated by a configuration toggle 
  assert.doesNotMatch(adapter,/DatabaseConnection\(|CreateCommand\(|GetValue<bool>|ConnectionString/);
  const permissions=JSON.parse(read('AIS/Docs/sql/cco-review/permissions.review.json'));
  assert.equal(permissions.apiIsActive,'N');assert.equal(permissions.roleGrantIsActive,'N');assert.deepEqual(permissions.roles,[38,1]);assert.deepEqual(permissions.exports,[]);
- const sql=read('AIS/Docs/sql/cco-review/PKG_CCO_REPORTING.sql.review');
+ const sql=read('AIS/Docs/sql/PKG_CCO_REPORTING.sql');
  assert.match(sql,/RAISE_APPLICATION_ERROR\(-20803,'CCO organizational reporting is not verified'\)/);
  assert.match(sql,/GROUPING SETS/);assert.match(sql,/V_CCO_AUTHORIZED_ENTITIES/);
  assert.match(read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'),/data-enabled="false"/);
