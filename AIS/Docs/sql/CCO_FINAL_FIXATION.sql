@@ -25,6 +25,10 @@
 -- 7) After deployment, log in as approved CCO, retry original URL and inspect
 --    IIS logs for the new correlation + Oracle stage if error remains.
 --
+-- CRITICAL MULTI-OWNER CHECK: When the runtime/reporting schema owns
+-- PKG_CCO_FUNCTION_POSITION, DO NOT execute a replacement in the security
+-- owner. The C# unqualified call would still resolve its own original package.
+-- A separate approved owner-specific deployment is then mandatory.
 -- The script cannot prove that your live production Oracle objects match GitHub.
 -- It cannot guarantee removal of a 503 without the actual logged Oracle error.
 -- It installs the verified repository CCO scope transaction correction and
@@ -60,6 +64,20 @@ BEGIN
   IF v_owner=v_runtime THEN
      RAISE_APPLICATION_ERROR(-20903,'CCO security owner must not be the IAS application runtime owner.');
   END IF;
+  -- Never create a shadow function package when the runtime already resolves
+  -- its own copy. This requires an owner-specific DB deployment plan.
+  DECLARE v_local_runtime_package NUMBER;
+  BEGIN
+    SELECT COUNT(*) INTO v_local_runtime_package
+      FROM ALL_OBJECTS
+     WHERE OWNER=v_runtime
+       AND OBJECT_NAME='PKG_CCO_FUNCTION_POSITION'
+       AND OBJECT_TYPE='PACKAGE';
+    IF v_local_runtime_package>0 THEN
+      RAISE_APPLICATION_ERROR(-20912,
+        'The runtime account already owns PKG_CCO_FUNCTION_POSITION. This script must not install a shadow package in the security schema. Coordinate source comparison and deployment with its actual owner.');
+    END IF;
+  END;
   DBMS_OUTPUT.PUT_LINE('Protected schema: '||USER||' | Runtime schema: '||v_runtime);
 END;
 /
