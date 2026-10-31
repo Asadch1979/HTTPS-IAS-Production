@@ -72,7 +72,7 @@
         if (code === 401) return 'Your session has expired. Sign in again to view this report.';
         if (code === 403) return 'Access denied. CCO page and exact API permissions are required.';
         if (code === 400) return 'Invalid report date range. Please correct the dates and Apply.';
-        if (code === 503) return 'Function Wise Position is unavailable. Database scope, report package or permissions require administrator verification.';
+        if (code === 503) return 'Function Wise Position is unavailable. Verify the authorized management report or contact the IAS administrator.';
         return 'Unable to load Function Wise Position.';
     }
     async function load() {

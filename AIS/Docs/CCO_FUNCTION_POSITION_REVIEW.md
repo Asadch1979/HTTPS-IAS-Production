@@ -1,24 +1,32 @@
-**F8 note:** Generate temporary PL/SQL Developer SQL Window units with `node scripts/generate-f8-sql.cjs`. The ignored output is in `generated/f8/`; canonical sources remain in `AIS/Docs/sql/`.
+# CCO Function Wise Position: established IAS Report E reader
 
-# Function Wise Position: implementation and outstanding deployment checks
+Updated: 31 October 2026.
 
-Updated 29 October 2026. Draft PR #352, branch fix/cco-function-position-group-report-view-20261029. This replaces the previous description of a deliberately hard-disabled Function Wise Position feature. It does **not** activate other CCO organizational/performance modules.
+## Decision
 
-## Implemented in source
-- Function Wise Position now calls the separately scoped GET /api/CcoCompliance/GetFunctionPosition endpoint, accepts only the selected dates and bounded maxRows, sends same-origin credentials and no reusable browser-provided root/token, clears stale data on dates or failed requests and safely renders exactly eight columns.
-- The existing controller preserves live IAS authentication, CCO role 38 or confirmed Super User role 1, CCO page 1000302, exact API permission, anti-cache, rate limiting, date validation and request logging. No permission/grant was added or weakened.
-- DBConnection calls a transaction-bound, bound-parameter Oracle reader; it uses PKG_CCO_SCOPE.P_BEGIN_SCOPE / P_ASSERT_SCOPE / P_END_SCOPE and PKG_CCO_FUNCTION_POSITION.P_GET_POSITION, rechecks context, validates source row bounds, closes/rolls back on failures and clears unsafe pooled connections. It has no unscoped fallback to Report E.
-- New PKG_CCO_FUNCTION_POSITION.sql is a manual **staging deployment candidate**. Source-only .sql.review remains. Both require the trusted, corrected scope package and authorized-entity view. Missing dependencies produce a 503, not a broad query.
-- Both PKG_EXEC_REPORTS.sql and its synchronized f8/PKG_EXEC_REPORTS/02.sql resolve **Report E only** using the already-installed V_IAS_ENTITY_REPORTING_IDS_Group_reports (parent_id/p_name = Group; entity_id/c_name = Division). The view lacks active status, so matching active mapping is required. Mappings are DISTINCT and reduced by division before fact joins, and path conflicts remain explicitly unmapped. Report E retains audit_type D, its established movement/settlement source, date filters, cursor contract and existing exclusion of zero-only rows. Reports A-D are not redesigned.
-- Report E web/CSV and server PDF now show eight columns: Group, Division, Opening balance, Para added, Total, Settled, Para outstanding, Settlement %. Other reports and exports are untouched.
-- Read-only staging queries: Docs/sql/cco-review/verify_group_function_position.sql. Tests updated for view mapping and the new client/export behavior. JavaScript syntax checks and the three focused source assertions passed in the review session. No full dotnet build or browser execution is claimed.
+The CCO Function Wise Position API now reuses the existing authorized IAS Management Audit Settlement Report E reader through `DBConnection.GetExecutiveReportE`, which calls `PKG_EXEC_REPORTS.P_MANAGEMENT_SETTLEMENT`. It **does not** call `PKG_CCO_SCOPE`, `PKG_CCO_FUNCTION_POSITION`, use a scope token, or read `V_CCO_AUTHORIZED_ENTITIES` on this endpoint.
 
-## Mandatory DBA and deployment checks before merging or production use
-1. Verify V_IAS_ENTITY_REPORTING_IDS_Group_reports truly exists and is granted to the report's definer owner. The requested view itself is not recreated, altered or deployed by this change.
-2. Independently validate the **corrected transaction-marker** PKG_CCO_SCOPE, its protected owner, marker GTT and V_CCO_AUTHORIZED_ENTITIES in approved staging. The earlier uncorrected package is not sufficient: an empty portfolio after COMMIT must still fail the transaction assertion. Runtime DB identity must have no direct GTT/context-defining privileges.
-3. Compile PKG_EXEC_REPORTS and then PKG_CCO_FUNCTION_POSITION in staging, check USER_ERRORS and grants. The source cannot certify that these Oracle objects are installed/valid.
-4. Review and register only the exact GET /api/CcoCompliance/GetFunctionPosition permission for approved CCO and Super User role/context, through existing access controls. Do not add global API exemptions or relax page, role, session or entity checks. Existing inactive permissions manifests are not an authorization grant.
-5. Reconcile every Group/Division and grand total to Report E over the same period and source/authorized scope, including duplicate COM_ID, multi-path mappings, null status dates and historical estimated stock. Review SQL is read-only.
-6. Test authorized and denied roles, revoked sessions/contexts during long reads, different Oracle pooled sessions, COMMIT/ROLLBACK, invalid date ranges, empty scope, 403/503 UI, browser table and PDF. Run dotnet build and complete affected tests. No database/server access was available to this review.
+This is **not** an unscoped reporting fallback. The IAS application retains its existing live-session, fixed CCO role 38 or verified Super User 1, CCO page 1000302, and exact `GET /api/CcoCompliance/GetFunctionPosition` API permissions. The database report reader uses the established CCO report perspective and existing Oracle parameter binding. Other CCO organizational APIs that are not implemented remain fail-closed.
 
-**Release decision:** Source implementation is prepared in a draft PR. It must remain unmerged/unreleased until independent Oracle/security integration and regressions are verified; source-only checks are not production sign-off.
+## Response contract
+
+The controller continues returning the same eight columns: Group, Division, Opening balance, Para added, Total, Settled, Para outstanding, and Settlement %. The adapter translates Report E's `ITEM_ID` and `ITEM_NAME` into Division ID and name. `ROW_KIND`, balances, movement and percentage are retained from the already maintained Report E source.
+
+The adapter rejects a result with an unexpected report perspective, missing rows, more than the requested maximum, invalid row type or inconsistent total. The existing `CcoReportVisibility.FunctionRows` hides unmapped/conflicting details for CCO users who are not verified Super Users, while preserving the grand total. It also omits Group subtotal rows.
+
+## Deployment
+
+1. Deploy the new **application C# assembly** containing `AIS/DBConnection.CcoFunctionPosition.cs` and the revised client script. A database package-only redeployment will **not** activate this change.
+2. Verify that the existing `PKG_EXEC_REPORTS.P_MANAGEMENT_SETTLEMENT` in production is valid and matches the approved, deployed source.
+3. Retain the existing CCO page and exact API permission. **Do not** grant Report E's separate API, and do not weaken IAS session or role validation.
+4. Sign in with CCO role 38; open Function Wise Position for 2026-01-01 through 2026-10-30, maxRows=1000.
+5. Reconcile Group, Division, movement and grand totals with the existing Report E for the same date period. Test a verified Super User, a revoked session, an unrelated role, forged query fields and an expired IAS context.
+6. If it still returns HTTP 503, search the corresponding correlation ID in IIS logs. New stages are `execute_authorized_management_report_e`, `validate_management_report_e_rows`, and `revalidate_ias_context`. Debug that stage instead of reinstalling the unused scope package.
+
+## Oracle objects and limitations
+
+The previously created `PKG_CCO_SCOPE`, entity GTTs, trusted `IAS_CCO_CTX`, and `PKG_CCO_FUNCTION_POSITION` may remain installed for historical use or separately approved future features. **Do not drop them** as part of this CCO page fix. Unrelated dependencies are unchanged.
+
+The SQL in `PKG_CCO_FUNCTION_POSITION.sql` is no longer the active Function Wise Position reader; it remains repository reference only. No SQL DDL or DML is required by this application change.
+
+Source review and static tests do not prove that the existing Report E package is installed or that production IAS sessions are valid. Complete CI and authorized UAT before merging.
