@@ -1,3 +1,5 @@
+**Current status (31 October 2026):** The separate CCO trusted-scope design and packages documented below are historical review artifacts, not the supported Function Wise Position runtime. The current reader is authorized IAS Report E; see `CCO_FUNCTION_POSITION_REVIEW.md`. The guarded removal script is `sql/CCO_SCOPE_RETIREMENT.sql`.
+
 # CCO Database Source Dependency Matrix
 
 Repository-only review, 29 October 2026. Baseline 45d0cdcc; continued branch codex/cco-security-integration. No database or IAS server access. “Defined” means source DDL found, never installed validity. “Referenced” means consumer evidence only; column types, keys and uniqueness remain unverified without DDL.

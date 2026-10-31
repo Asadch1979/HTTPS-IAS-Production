@@ -13,9 +13,10 @@ test('new organizational adapters cannot be activated by a configuration toggle 
  assert.doesNotMatch(adapter,/DatabaseConnection\(|CreateCommand\(|GetValue<bool>|ConnectionString/);
  const permissions=JSON.parse(read('AIS/Docs/sql/cco-review/permissions.review.json'));
  assert.equal(permissions.apiIsActive,'N');assert.equal(permissions.roleGrantIsActive,'N');assert.deepEqual(permissions.roles,[38,1]);assert.deepEqual(permissions.exports,[]);
- const sql=read('AIS/Docs/sql/PKG_CCO_REPORTING.sql');
- assert.match(sql,/RAISE_APPLICATION_ERROR\(-20803,'CCO organizational reporting is not verified'\)/);
- assert.match(sql,/GROUPING SETS/);assert.match(sql,/V_CCO_AUTHORIZED_ENTITIES/);
+ // The retired Oracle package is not an alternative or fallback path.
+ assert.equal(fs.existsSync('AIS/Docs/sql/PKG_CCO_REPORTING.sql'),false);
+ assert.equal(fs.existsSync('AIS/Docs/sql/PKG_CCO_FUNCTION_POSITION.sql'),false);
+ assert.doesNotMatch(adapter,/PKG_CCO_SCOPE|PKG_CCO_REPORTING|PKG_CCO_FUNCTION_POSITION/);
  assert.match(read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'),/data-enabled="false"/);
 });
 

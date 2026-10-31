@@ -4,8 +4,7 @@
 -- 1. Confirm deployed dependencies and status.
 SELECT object_name,object_type,status
   FROM user_objects
- WHERE object_name IN ('PKG_EXEC_REPORTS','PKG_CCO_FUNCTION_POSITION',
-                       'V_IAS_ENTITY_REPORTING_IDS_GROUP_REPORTS',
+ WHERE object_name IN ('PKG_EXEC_REPORTS','V_IAS_ENTITY_REPORTING_IDS_GROUP_REPORTS',
                        'V_EXEC_REPORT_SOURCE','V_EXEC_ENTITY_SCOPE')
  ORDER BY object_name,object_type;
 -- If the scope security objects reside under a protected owner, have the DBA
@@ -71,13 +70,11 @@ SELECT SUM(CASE WHEN s.effective_added_on<DATE '2026-01-01'
 -- 7. After DBA-APPROVED package compilation: no invalid sources/bodies.
 SELECT name,type,line,position,text
   FROM user_errors
- WHERE name IN ('PKG_EXEC_REPORTS','PKG_CCO_FUNCTION_POSITION')
+ WHERE name IN ('PKG_EXEC_REPORTS')
  ORDER BY name,sequence;
 
--- MANUAL / SECURITY CHECKS: require an independently trusted scope owner.
--- Validate the corrected PKG_CCO_SCOPE marker's post-COMMIT/ROLLBACK failure,
--- empty-portfolio behavior, revoked sessions, CCO role 38 / Super User role 1,
--- page 1000302 + exact GET /api/CcoCompliance/GetFunctionPosition permission,
--- unrelated-user denial, pooling isolation and EXPLICIT database owner grants.
--- Verify both per-division rows and grand totals against Report E and
--- investigate every unmapped/conflicting row. No automatic grants or activation.
+-- MANUAL / SECURITY CHECKS: CCO role 38 / verified Super User role 1,
+-- active IAS session, page 1000302 and exact GET Function Position API rights.
+-- Validate the full Group/Division output with the existing Report E, reject
+-- unauthorized access, and ensure no old CCO scope package is called.
+-- The retirement of old packages is a separate DBA-approved operation.
