@@ -25,6 +25,32 @@ namespace AIS.Controllers
             tm = _tpMenu;
             _permissionService = permissionService;
             }
+        [HttpGet]
+        public IActionResult Add_Legacy_Para()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                return RedirectToAction("Index", "PageNotFound");
+            ViewData["EntitiesTypeList"] = dBConnection.GetAuditeeEntitiesType();
+            ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara();
+            ViewData["AuditNatureList"] = dBConnection.GetAuditNatureForAddLegacyPara();
+            return View();
+            }
+
+        [HttpGet]
+        public IActionResult Authorize_Adding_Legacy_Para()
+            {
+            ViewData["TopMenu"] = tm.GetTopMenus();
+            ViewData["TopMenuPages"] = tm.GetTopMenusPages();
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Index", "Login");
+            if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
+                return RedirectToAction("Index", "PageNotFound");
+            return View();
+            }
         public IActionResult Index()
             {
             ViewData["TopMenu"] = tm.GetTopMenus();

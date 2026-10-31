@@ -233,23 +233,6 @@ namespace AIS.Controllers
             });
             }
 
-        [HttpGet("/Execution/Add_Legacy_Para")]
-        public IActionResult Add_Legacy_Para()
-            {
-            return RenderArchiveView("Add_Legacy_Para", () =>
-            {
-                ViewData["EntitiesTypeList"] = archiveDbConnection.GetAuditeeEntitiesType();
-                ViewData["AuditYearList"] = archiveDbConnection.GetAuditYearForAddLegacyPara();
-                ViewData["AuditNatureList"] = archiveDbConnection.GetAuditNatureForAddLegacyPara();
-            });
-            }
-
-        [HttpGet("/Execution/Authorize_Adding_Legacy_Para")]
-        public IActionResult Authorize_Adding_Legacy_Para()
-            {
-            return RenderArchiveView("Authorize_Adding_Legacy_Para");
-            }
-
         [HttpGet("/Execution/Update_Gist_Para_No")]
         public IActionResult Update_Gist_Para_No()
             {
