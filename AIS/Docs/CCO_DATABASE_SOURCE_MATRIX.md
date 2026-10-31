@@ -6,7 +6,7 @@ Paths below are relative to AIS/. Searches covered Docs/ and the application for
 
 | Required Object | Repository Source File | Verified Columns/Procedures | Existing Consumers | Proposed CCO Use | Unresolved Dependencies |
 |---|---|---|---|---|---|
-| V_EXEC_ENTITY_SCOPE | Docs/sql/PKG_EXEC_DASHBOARD.sql:2; f8/PKG_EXEC_DASHBOARD/01.sql | Defined: ENTITY_ID, PARENT_ID, REPORTING_OFFICE_ID, REPORTING_1..6, BUSINESS_GROUP_ID, DIVISION_ID, GM_OFFICE_ID | lifecycle, executive reports, Head audit | Auditee path and reporting parent | Raw hierarchy DDL absent; source does not guarantee one row/entity; mapping type IDs 18/3/21 are source conventions |
+| V_EXEC_ENTITY_SCOPE | Docs/sql/PKG_EXEC_DASHBOARD.sql:2 | Defined: ENTITY_ID, PARENT_ID, REPORTING_OFFICE_ID, REPORTING_1..6, BUSINESS_GROUP_ID, DIVISION_ID, GM_OFFICE_ID | lifecycle, executive reports, Head audit | Auditee path and reporting parent | Raw hierarchy DDL absent; source does not guarantee one row/entity; mapping type IDs 18/3/21 are source conventions |
 | V_IAS_ENTITY_REPORTING_IDS | Referenced in PKG_EXEC_DASHBOARD.sql, PKG_HD.sql, PKG_AR.sql | Consumer references ENTITY_ID, REPORTING_1..6 | executive scope; HD/AR | Existing hierarchy dependency | CREATE definition not found; no substitute hierarchy invented |
 | V_IAS_ENTITY_REPORTING_NAMES | Referenced in PKG_EXEC_DASHBOARD.sql, PKG_EXEC_REPORTS.sql, snap_audit_division_scope.sql | Consumer references ENTITY_ID and REPORTING_1..6 as ID membership | Snap and executive scope | Do not infer types from NAME suffix | CREATE definition not found |
 | V_EXEC_REPORT_SOURCE | Referenced in Docs/sql/PKG_EXEC_REPORTS.sql and cco_reporting_preflight.sql | Consumer contract COM_ID, ENTITY_ID, EFFECTIVE_ADDED_ON, CLOSE_ON, AUDIT_TYPE | Reports A–E, CCO candidate | Opening/additions/settlement source | CREATE definition not found; source eligibility/date provenance not fully established |
@@ -23,7 +23,7 @@ Paths below are relative to AIS/. Searches covered Docs/ and the application for
 
 ## Source/version and implementation decisions
 
-- PKG_LG.sql and PKG_LG - Prod.sql differ (56 insertions / 57 deletions in local comparison); neither is asserted to match an installed object. f8 scripts are alternate split source, not evidence of deployment. PKG_EXEC_REPORTS_image_rewrite_body.sql is also a separate source variant.
+- PKG_LG.sql and PKG_LG - Prod.sql differ (56 insertions / 57 deletions in local comparison); neither is asserted to match an installed object. F8 units can be generated from canonical SQL sources; they are not deployment evidence. The older image rewrite body is retained in Git history only.
 - Shared P_GET_SNAP_CRITICAL accepts dates, P_MAX_ROWS 1..250, optional P_COM_ID and Snap selectors; returns COM_ID, ENTITY_ID/NAME, PARA_NO, GIST_OF_PARAS (bounded 1000), RISK_NAME, AGING_DAYS, COM_CYCLE, QUALITY_CODE, DAYS_SINCE_MOVEMENT, AUDIT_PERIOD, PARA_ADDED_ON. It intentionally restricts risk_id=1. Do not modify it.
 - Risk 1/2/3 maps to High/Medium/Low; ELSE is Unrated in the existing reader. Dedicated CCO reader must apply its risk predicate before ROW_NUMBER, order by reporting-office name/entity name/age descending/COM_ID, retain the same date/eligibility formulas and authorize exact COM_ID text reads independently.
 - Existing history uses COMMENT_ON only for last movement; lifecycle COM_CYCLE remains current. Null last movement is unknown, not proof of no activity.

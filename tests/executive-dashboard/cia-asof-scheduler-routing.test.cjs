@@ -4,7 +4,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const read = name => fs.readFileSync(name,'utf8');
 const full = read('AIS/Docs/sql/PKG_EXEC_DASHBOARD.sql');
-const f8 = read('AIS/Docs/sql/f8/PKG_EXEC_DASHBOARD/04.sql');
 const client = read('AIS/wwwroot/js/cia-command-center.js');
 const scheduler = read('AIS/Docs/sql/verify_oracle_ias_db_scheduler_readonly.sql');
 const worker = read('AIS/Docs/sql/PKG_IAS_DB_JOB_WORKER.sql');
@@ -17,9 +16,6 @@ function kpi(sql) {
     return sql.slice(b,e+'END P_GET_CIA_EXEC_KPIS;'.length).replace(/\s+/g,' ').trim();
 }
 
-test('CIA full and PL/SQL Developer F8 KPI bodies match', () => {
-    assert.equal(kpi(full),kpi(f8));
-});
 test('CIA selected date drives engagement statuses and all workflow cutoffs', () => {
     const sql=kpi(full);
     assert.match(sql,/NVL\(l\.last_updated_on,l\.created_on\) < V_TO_EXCLUSIVE/);

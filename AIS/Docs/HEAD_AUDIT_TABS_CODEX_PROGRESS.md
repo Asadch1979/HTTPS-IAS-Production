@@ -1,3 +1,5 @@
+**F8 note:** Generate temporary PL/SQL Developer SQL Window units with `node scripts/generate-f8-sql.cjs`. The ignored output is in `generated/f8/`; canonical sources remain in `AIS/Docs/sql/`.
+
 # Head Audit tabs and para format progress
 
 Branch: `codex/head-audit-tabs-and-para-format`

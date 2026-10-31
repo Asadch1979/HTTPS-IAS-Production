@@ -21,7 +21,7 @@ The live IAS application calls `PKG_RPT.R_IAS_PARA_POSITION` using the parameter
 
 ## Manual Oracle 18c / PL/SQL Developer F8 integration
 
-1. Use existing **read-only** `AIS/Docs/sql/f8/extract_pkg_rpt_spec.sql`, `extract_pkg_rpt_body.sql` and `extract_pkg_rpt_arguments.sql` in separate SQL Windows. Save complete CLOB output (not grid-truncated snippets), before making changes.
+1. Use existing **read-only** `AIS/Docs/sql/extract_pkg_rpt_spec.sql`, `extract_pkg_rpt_body.sql` and `extract_pkg_rpt_arguments.sql` in separate SQL Windows. Save complete CLOB output (not grid-truncated snippets), before making changes.
 2. Compare **production** `R_IAS_PARA_POSITION`, including full signature, calculation logic, and authorized user/role branches, with this candidate member. Preserve every unrelated package member. Do not silently discard stronger production-specific restrictions or newer KPI changes.
 3. Review the live `R_FAD_MONTHLY_REVIEW` semantics and confirm role codes 1/3/5, 6/7, 43/44 and 15/16. Review effective contexts. Check selected entity types and agreement on bank-wide `R_T=-1` for roles 1/3/5.
 4. Merge only the declaration and body of `R_IAS_PARA_POSITION` into **copies of the exported live package spec and body**. Compile each complete package unit separately in PL/SQL Developer with F8, first in a controlled nonproduction schema. No SQL*Plus `/` delimiter inside an F8 SQL Window unit.
