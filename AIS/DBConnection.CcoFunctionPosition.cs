@@ -57,13 +57,7 @@ namespace AIS.Controllers
                     if (source == null ||
                         (source.RowKind != "DETAIL" && source.RowKind != "SUBTOTAL" &&
                          source.RowKind != "TOTAL") ||
-                        source.OpeningBalance < 0 || source.ParasAdded < 0 ||
-                        source.TotalParas < 0 || source.SettledParas < 0 ||
-                        source.OutstandingParas < 0 ||
-                        source.TotalParas != checked(source.OpeningBalance + source.ParasAdded) ||
-                        (source.SettlementPercentage.HasValue &&
-                          (source.SettlementPercentage.Value < 0 ||
-                           source.SettlementPercentage.Value > 100000)))
+                        source.TotalParas != checked(source.OpeningBalance + source.ParasAdded))
                         throw new InvalidOperationException("Invalid CCO management reporting row.");
 
                     rows.Add(new CcoFunctionPositionRow {
