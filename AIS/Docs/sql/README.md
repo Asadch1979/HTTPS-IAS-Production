@@ -3,7 +3,7 @@
 Use this folder's maintained `PKG_*.sql` files as the **repository source of record**. Verify every production database object against its installed source before deployment. Do not assume that a checked-in file has already been compiled in Oracle.
 
 - **Executive dashboard:** `PKG_EXEC_DASHBOARD.sql`, `PKG_EXEC_REPORTS.sql`, `PKG_HEAD_AUDIT_MONITOR.sql`.
-- **CCO:** `PKG_CCO_FUNCTION_POSITION.sql`, `PKG_CCO_REPORTING.sql`; retain current read-only diagnostics in `cco-review/`.
+- **CCO Function Wise Position:** uses the existing `PKG_EXEC_REPORTS.P_MANAGEMENT_SETTLEMENT`. Retired `PKG_CCO_SCOPE`, `PKG_CCO_FUNCTION_POSITION`, and `PKG_CCO_REPORTING` are no longer maintained here. After authenticated application cutover, use `CCO_SCOPE_RETIREMENT.sql` for guarded DBA removal of unused Oracle objects.
 - **Audit packages:** `PKG_AR.sql`, `PKG_HD.sql`, `PKG_FRPT.sql`, `PKG_LG.sql`, `PKG_RPT.sql`.
 - **Scheduler:** `PKG_IAS_SCHEDULER.sql`, database worker, and the distinct deployment/verification scripts.
 
