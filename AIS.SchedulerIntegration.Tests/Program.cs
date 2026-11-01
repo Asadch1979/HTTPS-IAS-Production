@@ -201,6 +201,34 @@ static Task ManagementAuditEmailWordingAsync()
 
     AssertContains("Management Audit Compliance Review", request.Subject, "subject");
     AssertContains("01-Aug-2026 to 31-Aug-2026", request.Subject, "inclusive displayed period");
+    AssertContains("01-Aug-2026 to 31-Aug-2026", request.Body, "inclusive period in email body");
+
+    // Scheduler/Oracle period end stays 01-Nov (exclusive), but recipients
+    // must see 31-Oct (inclusive) in BOTH the subject and email body.
+    var october = EmailNotification.BuildManagementAuditComplianceReviewEmail(
+        new DateTime(2026, 10, 1),
+        new DateTime(2026, 11, 1),
+        new ManagementAuditWeeklyDivisionSummaryModel { DivisionId = 10, DivisionName = "Operations", ToEmail = "to@example.com" },
+        new[]
+        {
+            new ManagementAuditDecision(10, "Ops", "2026", "1", "Title", new DateTime(2026, 10, 15), new DateTime(2026, 10, 20), "", true)
+        });
+    AssertContains("01-Oct-2026 to 31-Oct-2026", october.Subject, "October subject inclusive period");
+    AssertContains("01-Oct-2026 to 31-Oct-2026", october.Body, "October body inclusive period");
+    AssertFalse(october.Subject.Contains("01-Nov-2026"), "exclusive end must not appear in email subject");
+    AssertFalse(october.Body.Contains("01-Nov-2026"), "exclusive end must not appear in email body");
+
+    // Do not hardcode the month end: February in a leap year has 29 days.
+    var leapFebruary = EmailNotification.BuildManagementAuditComplianceReviewEmail(
+        new DateTime(2024, 2, 1),
+        new DateTime(2024, 3, 1),
+        new ManagementAuditWeeklyDivisionSummaryModel { DivisionId = 10, DivisionName = "Operations", ToEmail = "to@example.com" },
+        new[]
+        {
+            new ManagementAuditDecision(10, "Ops", "2024", "1", "Title", new DateTime(2024, 2, 15), new DateTime(2024, 2, 20), "", true)
+        });
+    AssertContains("01-Feb-2024 to 29-Feb-2024", leapFebruary.Subject, "leap year inclusive period");
+    AssertContains("01-Feb-2024 to 29-Feb-2024", leapFebruary.Body, "leap year body inclusive period");
     AssertContains("Compliance Review Period", request.Body, "period label");
     AssertFalse(request.Subject.Contains("Weekly", StringComparison.OrdinalIgnoreCase), "subject should not say Weekly");
     AssertFalse(request.Body.Contains("Reporting Period", StringComparison.OrdinalIgnoreCase), "body should not say Reporting Period");
