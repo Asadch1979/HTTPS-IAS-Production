@@ -96,7 +96,9 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult Entity_Dashboard(string stepKey = null, bool workspacePreview = false)
+        public IActionResult Entity_Dashboard(string stepKey = null, bool workspacePreview = false,
+            string data = null, int? entityId = null, int? typeId = null,
+            string query = null, string status = "ALL", int offset = 0, int pageSize = 50)
             {
             if (!User.Identity.IsAuthenticated)
                 {
@@ -113,6 +115,16 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "PageNotFound");
                 }
 
+            if (sessionHandler.IsSessionRevoked(user))
+                return string.IsNullOrWhiteSpace(data)
+                    ? (IActionResult)RedirectToAction("Index", "Login")
+                    : Unauthorized(new { error = "session_expired", message = "Please sign in again." });
+
+            // Use the same authorized page route for its read-only JSON operations.
+            // No new unmapped API route or permission bypass is introduced.
+            if (!string.IsNullOrWhiteSpace(data))
+                return ReadEntityDashboardData(user, data, entityId, typeId, query, status, offset, pageSize);
+
             var model = BuildEntityDashboardViewModel(user, stepKey);
             var administrationLinks = BuildEntityAdministrationLinks(user);
             if (!model.VisibleSteps.Any() && !administrationLinks.Any())
@@ -126,6 +138,7 @@ namespace AIS.Controllers
 
             PopulateDashboardChrome();
             ViewData["EntityAdministrationLinks"] = administrationLinks;
+            ViewData["EntityReadEnabled"] = sessionHandler.IsSuperUser();
             // The incomplete workspace is explicitly opt-in; preserve the working dashboard by default.
             return View(workspacePreview
                 ? "~/Views/AdministrationPanel/Entity_Dashboard.cshtml"
