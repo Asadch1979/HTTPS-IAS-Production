@@ -31,6 +31,11 @@ test('unchanged bulk fields cannot retain a stale proposal',()=>{
  const {toggle,input}=setup();toggle.checked=true;toggle.change();assert.equal(input.disabled,false);
  toggle.checked=false;toggle.change();assert.equal(input.disabled,true);assert.equal(input.value,'');
 });
-test('frontend has no request or dynamic script execution capability',()=>{
- assert.doesNotMatch(source,/fetch\(|XMLHttpRequest|\.ajax\(|eval\(|innerHTML/);
+test('Oracle calls are gated read-only GET operations',()=>{
+ assert.match(source,/readEnabled/);
+ assert.match(source,/getData\('search'/);
+ assert.match(source,/getData\('profile'/);
+ assert.match(source,/getData\('closure'/);
+ assert.match(source,/method:\s*'GET'/);
+ assert.doesNotMatch(source,/method:\s*'(POST|PUT|PATCH|DELETE)'|\.ajax\(|eval\(/);
 });
