@@ -104,6 +104,6 @@ test('new master and mapping are displayed as one draft but cannot submit a part
     assert.match(addView, /newEntityParent/);
     assert.match(addView, /disabled title="Requires an approved atomic/);
     assert.match(bridge, /pageSize: 200/);
-    assert.match(bridge, /data !=/ ? /populateChoices/ : /populateChoices/);
+    assert.match(bridge, /populateChoices/);
     assert.doesNotMatch(bridge, /method:\s*'(POST|PUT|PATCH|DELETE)'/);
 });
