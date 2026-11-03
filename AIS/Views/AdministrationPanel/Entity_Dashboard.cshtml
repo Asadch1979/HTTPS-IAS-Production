@@ -148,7 +148,7 @@
                 <p>Add, edit, view and maintain the entity from one place.</p></div>
             <div class="entity-inline-actions">
                 @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedAddButton">Add entity</button> }
-                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedEditButton">Edit selected entity</button> }
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedEditButton" data-legacy-step="ENTITY_ADDITION" data-legacy-target="entityMasterLegacy" data-unified-edit="true" disabled>Edit selected entity</button> }
                 @if (canMap) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_RELATIONSHIP" data-legacy-target="entityMasterLegacy">Manage mapping</button> }
             </div>
         </div>
@@ -217,3 +217,4 @@
     </section>
 </main>
 <script src="@Url.Content("~/js/administration-entity-dashboard.js")" asp-append-version="true"></script>
+<script src="@Url.Content("~/js/entity-workspace-selection.js")" asp-append-version="true"></script>
