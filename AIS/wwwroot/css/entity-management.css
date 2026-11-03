@@ -33,7 +33,7 @@
 .entity-header-link { color: var(--em-green); text-decoration: none; font-size: .84rem; font-weight: 650; }
 .entity-header-link:hover { text-decoration: underline; }
 .entity-safety-note { background: #f4f8f5; border-left: 3px solid #b2cfbd; color: #52695a !important; padding: 10px 13px; border-radius: 6px; margin: 12px 0 !important; font-size: .8rem; }
-.entity-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 12px 0 16px; }
+.entity-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 16px; }
 .entity-metric { padding: 14px 15px; border: 1px solid var(--em-border); border-radius: 12px; background: white; min-height: 104px; display: flex; flex-direction: column; gap: 4px; }
 .entity-metric-label { font-size: .76rem; color: #54625c; }
 .entity-metric strong { font-size: 1.23rem; line-height: 1.4; }
