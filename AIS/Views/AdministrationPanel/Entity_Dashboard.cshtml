@@ -2,127 +2,217 @@
 @{
     ViewData["Title"] = "Entity Management";
     Layout = "_Layout";
-    var readEnabled = ViewData["EntityReadEnabled"] is bool enabled && enabled;
-    var sections = new[] { "Overview", "Entity Master", "Organization & Mapping", "Bulk Management", "Movements & Engagements", "Closure & Para History", "Authorizations & Audit Trail", "Data Quality" };
+    var canRead = ViewData["EntityReadEnabled"] is bool flag && flag;
+    var canAdd = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_ADDITION");
+    var canEdit = Model.VisibleSteps.Any(x => x.StepKey == "UPDATE_AUDITEE_ENTITIES");
+    var canMap = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_RELATIONSHIP");
+    var canShift = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_SHIFTING");
+    var canReverse = Model.VisibleSteps.Any(x => x.StepKey == "SETUP_ENGAGEMENT_REVERSAL");
+    var canShiftEngagement = Model.VisibleSteps.Any(x => x.StepKey == "ENGAGEMENT_SHIFTING");
+    var canAuthorize = Model.VisibleSteps.Any(x => x.StepKey == "AUTHORIZE_AUDITEE_ENTITIES_UPDATE");
+    var areas = new[] {
+        ("Entity record", "Search, add, edit and mapping", "search"),
+        ("Shifting & closure", "With paras, without paras, closure", "git-branch"),
+        ("Engagement details", "Reversal and engagement operations", "clipboard-list"),
+        ("Authorizations", "Requests, decisions and history", "shield-check")
+    };
 }
-<link rel="stylesheet" href="@Url.Content("~/css/entity-management.css")" />
-<main id="entityWorkspace" class="entity-workspace" data-read-url="@Url.Action("Entity_Dashboard", "AdministrationPanel")" data-read-enabled="@(readEnabled ? "true" : "false")">
-<header class="d-flex justify-content-between mb-3 align-items-center flex-wrap gap-2">
-    <div><h1>Entity Management</h1><p class="text-muted mb-0">IAS Administration &amp; Governance</p></div>
-    <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("Index", "Home")">Home</a>
-</header>
-<partial name="DashboardPartials/_EntityAdministrationLinks" />
-@if (readEnabled)
-{
-    <div class="alert alert-info" role="status">Read-only Super User evaluation. Data is loaded directly from the deployed Oracle package. Save, bulk apply, approval, closure and restoration remain disabled. Wider entity-scope authorization requires a separate approved design.</div>
-}
-else
-{
-    <div class="alert alert-warning" role="status">Live entity readers are currently restricted to Super Users. Your existing authorized administration operations remain available above. No entity data has been loaded.</div>
-}
-<div id="entityReadError" class="alert alert-danger d-none" role="alert"></div>
-<div class="row g-3 mb-4">
-@foreach (var metric in new[] { ("Active Entities", "active"), ("Mapping Exceptions", "exceptions"), ("Pending Approvals", "approvals"), ("Unassigned GM", "gm"), ("Inactive Entities", "inactive"), ("Recent Changes", "changes") })
-{
-    <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body"><div class="text-muted small">@metric.Item1</div>
-    <strong class="d-block my-2" id="entityMetric-@metric.Item2">@(readEnabled && (metric.Item2 == "active" || metric.Item2 == "inactive") ? "Loading..." : "Unavailable")</strong>
-    <small class="text-muted">@(metric.Item2 == "active" || metric.Item2 == "inactive" ? (readEnabled ? "Oracle entity master" : "Authorized reader required") : "Approved aggregate reader required")</small>
-    </div></div></div>
-}
-</div>
-<section class="card mb-3"><div class="card-body">
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <h2>Entity register</h2><span class="text-muted small">Server-side Oracle search · up to 50 records per page</span>
-    </div>
-    <div class="row g-3">
-        <div class="col-md-3"><label for="entityQuery">Entity ID, Code or Name</label>
-            <input id="entityQuery" class="form-control" maxlength="120" placeholder="Search entities" disabled="@(!readEnabled)" />
+<link rel="stylesheet" href="@Url.Content("~/css/entity-management.css")" asp-append-version="true" />
+<main id="entityWorkspace" class="entity-workspace"
+      data-read-url="@Url.Action("Entity_Dashboard", "AdministrationPanel")"
+      data-legacy-read-url="@Url.Action("LoadEntityDashboardStep", "AdministrationPanel")"
+      data-read-enabled="@(canRead ? "true" : "false")">
+    <header class="entity-header">
+        <div class="entity-brand">
+            <div class="entity-brand-icon" aria-hidden="true"><span>▦</span></div>
+            <div><h1>Entity Management</h1><p>IAS Administration &amp; Governance</p></div>
         </div>
-        <div class="col-md-2"><label for="entityTypeFilter">Entity Type</label>
-            <select id="entityTypeFilter" class="form-select" disabled="@(!readEnabled)"><option value="">All entity types</option></select>
+        <div class="entity-header-actions">
+            <span class="entity-status-tag">@(canRead ? "Live · read-only" : "Read access restricted")</span>
+            <a class="entity-header-link" href="@Url.Action("Entity_Dashboard", "AdministrationPanel")">Existing administration</a>
         </div>
-        <div class="col-md-2"><label for="entityGroupFilter">Group / Division</label><select id="entityGroupFilter" class="form-select" disabled><option>Awaiting scoped filter reader</option></select></div>
-        <div class="col-md-2"><label for="entityReportingFilter">Reporting Office</label><select id="entityReportingFilter" class="form-select" disabled><option>Awaiting scoped filter reader</option></select></div>
-        <div class="col-md-1"><label for="entityGmFilter">GM Office</label><select id="entityGmFilter" class="form-select" disabled><option>Pending</option></select></div>
-        <div class="col-md-2"><label for="entityStatusFilter">Status</label>
-            <select id="entityStatusFilter" class="form-select" disabled="@(!readEnabled)">
-                <option value="ALL">All</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
-            </select>
-        </div>
-    </div>
-    <div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-success btn-sm" id="entitySearchButton" disabled="@(!readEnabled)">Search / Refresh</button></div>
-    <div class="table-responsive mt-3">
-        <table class="table table-hover table-striped align-middle">
-            <thead><tr><th>ID</th><th>Code</th><th>Name</th><th>Type</th><th>Audit Cluster</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="entityRegisterRows"><tr><td colspan="7" class="text-center text-muted">@(readEnabled ? "Loading authorized entity records..." : "Search not enabled for this session.")</td></tr></tbody>
-        </table>
-    </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-        <button type="button" id="entityPrevious" class="btn btn-sm btn-outline-secondary" disabled>Previous</button>
-        <button type="button" id="entityNext" class="btn btn-sm btn-outline-secondary" disabled>Next</button>
-        <span id="entityRegisterStatus" class="text-muted small">No records loaded</span>
-    </div>
-</div></section>
-<div class="entity-context mb-3" role="status" aria-live="polite">Selected entity: <strong id="selectedEntityLabel">No entity selected</strong> <span class="text-muted">· Shared across all sections</span></div>
-<nav class="entity-tabs" role="tablist" aria-label="Entity management sections">
-@for (var i = 0; i < sections.Length; i++)
-{
-    <button type="button" id="entity-tab-@i" role="tab" aria-controls="entity-panel-@i" aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")" data-entity-tab="@i">@sections[i]</button>
-}
-</nav>
-@for (var i = 0; i < sections.Length; i++)
-{
-<section id="entity-panel-@i" role="tabpanel" aria-labelledby="entity-tab-@i" tabindex="0" hidden="@(i != 0)" class="card mt-3"><div class="card-body">
-<h2>@sections[i]</h2>
-@switch (i)
-{
-case 0:
-    <p class="text-muted">Select an entity in the register to review its live Oracle profile, existing organizational mappings and governance information.</p>
-    <table class="table table-sm"><tbody id="entityOverviewRows"><tr><td>Select an entity above.</td></tr></tbody></table>
-    break;
-case 1:
-    <p class="text-muted">Live source: <code>T_AUDITEE_ENTITIES</code>. Editing is disabled pending approved write procedures.</p>
-    <table class="table table-sm table-striped"><tbody id="entityMasterRows"><tr><td>Select an entity to view master fields.</td></tr></tbody></table>
-    <button type="button" class="btn btn-secondary" disabled>Add Entity</button>
-    <button type="button" class="btn btn-secondary" disabled>Save Changes</button>
-    break;
-case 2:
-    <p class="text-muted">Current mapping records from <code>T_AUDITEE_ENTITIES_MAPING</code>. Multiple mappings are displayed separately; GM Office uses the stored mapping value.</p>
-    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Parent ID</th><th>Parent name</th><th>Child name</th><th>Parent type</th><th>Child type</th><th>Mapping AUDITEDBY</th><th>GM Office</th><th>Reporting</th><th>Division</th><th>Group</th></tr></thead><tbody id="entityMappingRows"><tr><td colspan="10">Select an entity to view its mappings.</td></tr></tbody></table></div>
-    <a class="btn btn-outline-secondary btn-sm" href="@Url.Action("Index", "OrganizationStructure")">Organization Structure (separately authorized)</a>
-    break;
-case 3:
-    <partial name="DashboardPartials/_EntityBulkDraft" />
-    break;
-case 4:
-    <p>Organizational movement, entity succession, engagement shifting and reversal are separate operations. Existing screens retain their own permissions and behavior.</p>
-    <a class="btn btn-outline-secondary btn-sm mb-2" href="@Url.Action("Index", "OrganizationStructure")">Organizational Movement</a>
-    @foreach (var step in Model.VisibleSteps.Where(s => s.StepKey == "ENTITY_SHIFTING" || s.StepKey == "SETUP_ENGAGEMENT_REVERSAL" || s.StepKey == "ENGAGEMENT_SHIFTING"))
+    </header>
+
+    @if (canRead)
     {
-        <a class="btn btn-outline-secondary btn-sm mb-2" href="@Url.Action("Entity_Dashboard", "AdministrationPanel", new { stepKey = step.StepKey })">@step.StepTitle</a>
+        <p class="entity-safety-note">Live Oracle information. Existing approved administration operations remain available; new bulk application, closure and restoration actions are not enabled.</p>
     }
-    break;
-case 5:
-    <p class="text-muted">Preliminary, read-only impact. This is not authorization to close or settle observations.</p>
-    <table class="table table-sm table-striped"><tbody id="entityClosureRows"><tr><td>Select an entity to preview closure impact.</td></tr></tbody></table>
-    <button class="btn btn-secondary btn-sm" type="button" disabled>Submit Closure</button>
-    <button class="btn btn-secondary btn-sm" type="button" disabled>Execute Closure</button>
-    <button class="btn btn-secondary btn-sm" type="button" disabled>Restore</button>
-    <h3 class="mt-4">Historical para archive</h3>
-    <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>COM_ID</th><th>Para number</th><th>Status</th><th>Added</th><th>Settled</th><th>Cycle</th><th>Archived</th><th>Closure event</th></tr></thead><tbody id="entityArchiveRows"><tr><td colspan="8">Select an entity to view archive records.</td></tr></tbody></table></div>
-    break;
-case 6:
-    <p class="text-muted">Read-only change log. New request and approval actions remain unavailable.</p>
-    <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>Recorded</th><th>Action</th><th>Status</th><th>Actor</th><th>Reason</th><th>Request</th><th>Batch</th></tr></thead><tbody id="entityHistoryRows"><tr><td colspan="7">Select an entity to view its recorded changes.</td></tr></tbody></table></div>
-    <button class="btn btn-secondary btn-sm" type="button" disabled>Approve</button>
-    <button class="btn btn-secondary btn-sm" type="button" disabled>Reject</button>
-    break;
-case 7:
-    <p>Data-quality investigation is read-only and requires approved aggregate/scoped readers. The existing profile retains all mapping records to expose possible duplicates.</p>
-    <table class="table table-sm"><tbody>@foreach (var issue in new[] { "Missing mapping", "Conflicting mapping", "Inactive entity with mapping", "Unassigned GM", "Missing reporting assignment", "Orphan references", "Self-parent hierarchy exception", "Unusual para status" }) { <tr><th>@issue</th><td>Approved investigation reader required</td></tr> }</tbody></table>
-    break;
-}
-</div></section>
-}
+    else
+    {
+        <p class="entity-safety-note">Live entity records are currently limited to authorized Super Users. Access to existing administration operations remains subject to individual permissions.</p>
+    }
+    <div id="entityReadError" class="alert alert-danger d-none" role="alert" aria-live="polite"></div>
+
+    <section class="entity-metrics" aria-label="Entity management indicators">
+        @foreach (var item in new[] {
+            ("Active entities", "active"),
+            ("Mapping exceptions", "exceptions"),
+            ("Pending approvals", "approvals"),
+            ("Unassigned GM", "gm"),
+            ("Inactive entities", "inactive"),
+            ("Recent changes", "changes")
+        })
+        {
+            <div class="entity-metric">
+                <span class="entity-metric-label">@item.Item1</span>
+                <strong id="entityMetric-@item.Item2">@(canRead && (item.Item2 == "active" || item.Item2 == "inactive") ? "Loading" : "Pending")</strong>
+                <small>@(item.Item2 == "active" || item.Item2 == "inactive" ? "Live entity master" : "Approved reader required")</small>
+            </div>
+        }
+    </section>
+
+    <section class="entity-directory" aria-label="Find an entity">
+        <div class="entity-search-head">
+            <div>
+                <h2>Find and manage an entity</h2>
+                <p>Search once, then use the same entity in any of the four areas below.</p>
+            </div>
+            <span id="entityRegisterStatus" class="entity-record-count">No records loaded</span>
+        </div>
+        <div class="entity-search-row">
+            <div class="entity-search-input">
+                <span aria-hidden="true">⌕</span>
+                <label class="visually-hidden" for="entityQuery">Entity ID, code or name</label>
+                <input id="entityQuery" type="search" placeholder="Search by entity name, code or ID"
+                       maxlength="120" disabled="@(!canRead)" />
+            </div>
+            <button type="button" class="entity-primary-btn" id="entitySearchButton" disabled="@(!canRead)">Search</button>
+        </div>
+        <div class="entity-filter-row">
+            <div><label for="entityTypeFilter">Entity type</label>
+                <select id="entityTypeFilter" disabled="@(!canRead)"><option value="">All entity types</option></select>
+            </div>
+            <div><label for="entityStatusFilter">Status</label>
+                <select id="entityStatusFilter" disabled="@(!canRead)">
+                    <option value="ALL">All statuses</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                </select>
+            </div>
+            <div><label for="entityGroupFilter">Group / division</label>
+                <select id="entityGroupFilter" disabled title="An approved organization-aware filter reader is required"><option>Coming with mapped search</option></select>
+            </div>
+            <div><label for="entityGmFilter">GM office</label>
+                <select id="entityGmFilter" disabled title="An approved organization-aware filter reader is required"><option>Coming with mapped search</option></select>
+            </div>
+        </div>
+
+        <div class="entity-results-wrap">
+            <table class="entity-results" aria-label="Entity search results">
+                <thead><tr><th>Entity name</th><th>Type</th><th>Status</th><th></th></tr></thead>
+                <tbody id="entityRegisterRows">
+                    <tr><td colspan="4" class="entity-empty">@(canRead ? "Loading entities from Oracle..." : "Search is restricted for this session.")</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="entity-pager">
+            <span>Choose an entity to display its complete context below.</span>
+            <div><button type="button" id="entityPrevious" disabled>Previous</button>
+                <button type="button" id="entityNext" disabled>Next</button></div>
+        </div>
+    </section>
+
+    <section class="entity-selected" aria-label="Selected entity at a glance">
+        <div class="entity-selected-heading">
+            <div><span class="entity-eyebrow">Current selection</span><h2 id="selectedEntityLabel">Select an entity above</h2></div>
+            <div><span id="selectedEntityStatus" class="entity-state-pill">No selection</span>
+                <span id="selectedEntityReference" class="entity-reference"></span></div>
+        </div>
+        <div class="entity-identity-grid">
+            <div><span>Name</span><strong id="identityName">Not selected</strong></div>
+            <div><span>Parent name</span><strong id="identityParent">Not selected</strong></div>
+            <div><span>Entity type</span><strong id="identityType">Not selected</strong></div>
+            <div><span>GM office</span><strong id="identityGm">Not selected</strong></div>
+            <div><span>Group</span><strong id="identityGroup">Not selected</strong></div>
+            <div><span>Audit status</span><strong id="identityActive">Not selected</strong></div>
+        </div>
+        <p id="entityMappingNotice" class="entity-context-note" aria-live="polite">Names are shown instead of internal reference IDs. Multiple mapping records will be identified for review.</p>
+    </section>
+
+    <nav class="entity-workflows" role="tablist" aria-label="Entity management areas">
+        @for (var i = 0; i < areas.Length; i++)
+        {
+            <button type="button" id="entity-tab-@i" role="tab"
+                    aria-controls="entity-panel-@i" aria-selected="@(i == 0 ? "true" : "false")"
+                    tabindex="@(i == 0 ? "0" : "-1")" data-entity-tab="@i">
+                <span class="entity-workflow-number">0@(i + 1)</span>
+                <span><strong>@areas[i].Item1</strong><small>@areas[i].Item2</small></span>
+                <span class="entity-workflow-chevron" aria-hidden="true">›</span>
+            </button>
+        }
+    </nav>
+
+    <section id="entity-panel-0" class="entity-workflow-panel" role="tabpanel" aria-labelledby="entity-tab-0" tabindex="0">
+        <div class="entity-section-head">
+            <div><h2>Entity record &amp; organizational mapping</h2>
+                <p>Add, edit, view and maintain the entity from one place.</p></div>
+            <div class="entity-inline-actions">
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_ADDITION" data-legacy-target="entityMasterLegacy">Add entity</button> }
+                @if (canEdit) { <button type="button" class="entity-secondary-btn" data-legacy-step="UPDATE_AUDITEE_ENTITIES" data-legacy-target="entityMasterLegacy">Edit entity</button> }
+                @if (canMap) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_RELATIONSHIP" data-legacy-target="entityMasterLegacy">Manage mapping</button> }
+            </div>
+        </div>
+        <div class="entity-detail-columns">
+            <div class="entity-detail-pane">
+                <h3>Entity master</h3>
+                <dl id="entityMasterDetails" class="entity-field-list"><div><dt>Name</dt><dd>Select an entity</dd></div></dl>
+            </div>
+            <div class="entity-detail-pane">
+                <h3>Organization &amp; mapping</h3>
+                <div id="entityMappingDetails" class="entity-mapping-list"><p>Select an entity to inspect all mapping records.</p></div>
+            </div>
+        </div>
+        <div id="entityMasterLegacy" class="entity-legacy-host" aria-live="polite"></div>
+    </section>
+
+    <section id="entity-panel-1" class="entity-workflow-panel" role="tabpanel" aria-labelledby="entity-tab-1" tabindex="0" hidden>
+        <div class="entity-section-head"><div><h2>Entity shifting &amp; closure</h2>
+            <p>Different operations, controlled from the same selected-entity context.</p></div></div>
+        <div class="entity-option-strip">
+            @if (canShift) { <button type="button" class="entity-option" data-legacy-step="ENTITY_SHIFTING" data-legacy-target="entityMovementLegacy"><strong>Shifting with paras</strong><span>Existing authorized shifting process</span></button> }
+            <button type="button" class="entity-option" id="entityWithoutParas"><strong>Shifting without paras</strong><span>Mapping-only operation; separate approval needed</span></button>
+            <button type="button" class="entity-option" id="entityShowClosure"><strong>Entity closure</strong><span>Review paras and engagements before approval</span></button>
+        </div>
+        <p id="entityMovementMessage" class="entity-safety-note">Select the required operation above. Closure and new mapping-only transactions cannot be executed until their approved write procedures are available.</p>
+        <div id="entityMovementLegacy" class="entity-legacy-host" aria-live="polite"></div>
+        <div id="entityClosureSection" hidden>
+            <h3>Closure impact: preliminary assessment</h3>
+            <dl id="entityClosureDetails" class="entity-field-list entity-field-list-wide"><div><dt>Closure readiness</dt><dd>Select an entity to view its open paras, engagements and mapped children.</dd></div></dl>
+            <div class="entity-inline-actions">
+                <button type="button" class="entity-secondary-btn" disabled>Submit closure</button>
+                <button type="button" class="entity-secondary-btn" disabled>Execute closure</button>
+                <button type="button" class="entity-secondary-btn" disabled>Restore entity</button>
+            </div>
+            <details class="entity-more"><summary>Historical para archive</summary>
+                <div id="entityArchiveDetails" class="entity-history-list">Select an entity to view archived observations.</div>
+            </details>
+        </div>
+    </section>
+
+    <section id="entity-panel-2" class="entity-workflow-panel" role="tabpanel" aria-labelledby="entity-tab-2" tabindex="0" hidden>
+        <div class="entity-section-head"><div><h2>Engagement details</h2>
+            <p>The established engagement-reversal and shifting operations, presented inside this workspace.</p></div></div>
+        <div class="entity-option-strip">
+            @if (canReverse) { <button type="button" class="entity-option" data-legacy-step="SETUP_ENGAGEMENT_REVERSAL" data-legacy-target="entityEngagementLegacy"><strong>Engagement details &amp; reversal</strong><span>Original business logic and validations</span></button> }
+            @if (canShiftEngagement) { <button type="button" class="entity-option" data-legacy-step="ENGAGEMENT_SHIFTING" data-legacy-target="entityEngagementLegacy"><strong>Shift an engagement</strong><span>Existing authorized engagement shifting</span></button> }
+        </div>
+        <p class="entity-context-note">The existing engagement operations retain their own selection and authorization checks. No reversal procedure or API has been modified.</p>
+        <div id="entityEngagementLegacy" class="entity-legacy-host" aria-live="polite"></div>
+    </section>
+
+    <section id="entity-panel-3" class="entity-workflow-panel" role="tabpanel" aria-labelledby="entity-tab-3" tabindex="0" hidden>
+        <div class="entity-section-head"><div><h2>Request authorizations &amp; history</h2>
+            <p>Existing entity approvals and the recorded change history in one place.</p></div>
+            <div class="entity-inline-actions">
+                @if (canAuthorize) { <button type="button" class="entity-secondary-btn" data-legacy-step="AUTHORIZE_AUDITEE_ENTITIES_UPDATE" data-legacy-target="entityAuthorizationLegacy">Open existing approvals</button> }
+            </div>
+        </div>
+        <div class="entity-approval-context">
+            <p>New shifting, closure and bulk requests will appear here when the separately approved maker-checker procedures are deployed. Initiators cannot authorize their own material requests.</p>
+        </div>
+        <h3>Entity change history</h3>
+        <div id="entityHistoryDetails" class="entity-history-list"><p>Select an entity to view its recorded changes.</p></div>
+        <div id="entityAuthorizationLegacy" class="entity-legacy-host" aria-live="polite"></div>
+    </section>
 </main>
 <script src="@Url.Content("~/js/administration-entity-dashboard.js")" asp-append-version="true"></script>
