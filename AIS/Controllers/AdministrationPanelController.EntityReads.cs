@@ -25,7 +25,7 @@ namespace AIS.Controllers
                 return StatusCode(403, new { error = "forbidden", message = "A separately approved entity-read scope is required for this user." });
 
             data = (data ?? string.Empty).Trim().ToLowerInvariant();
-            if (data != "search" && data != "summary" && data != "types" &&
+            if (data != "search" && data != "summary" && data != "types" && data != "auditby" &&
                 data != "profile" && data != "closure" && data != "history" && data != "archive")
                 return BadRequest(new { error = "invalid_request", message = "Unknown read operation." });
 
@@ -39,7 +39,7 @@ namespace AIS.Controllers
                     (status != "ALL" && status != "ACTIVE" && status != "INACTIVE"))
                     return BadRequest(new { error = "invalid_request", message = "Invalid entity search parameters." });
             }
-            else if (data != "summary" && data != "types" && (!entityId.HasValue || entityId.Value <= 0))
+            else if (data != "summary" && data != "types" && data != "auditby" && (!entityId.HasValue || entityId.Value <= 0))
             {
                 return BadRequest(new { error = "invalid_request", message = "Select a valid entity." });
             }
@@ -63,6 +63,19 @@ namespace AIS.Controllers
                         .OrderBy(t => t.name)
                         .ToList();
                     return Json(new { rows });
+                }
+
+                if (data == "auditby")
+                {
+                    // The existing PKG_AD audit-office reader is used under the
+                    // same Super-User dashboard gate, not Manage Users permissions.
+                    var auditOffices = dBConnection.GetAuditBy()
+                        .Where(e => e.AUTID > 0)
+                        .GroupBy(e => e.AUTID)
+                        .Select(g => new { id = g.Key, name = g.First().ENTITYTYPEDESC })
+                        .OrderBy(e => e.name)
+                        .ToList();
+                    return Json(new { rows = auditOffices });
                 }
 
                 DBConnection.EntityReadResult result;
