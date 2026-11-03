@@ -96,10 +96,8 @@ namespace AIS.Controllers
             }
 
         [HttpGet]
-        public IActionResult Entity_Dashboard(string stepKey = null)
+        public IActionResult Entity_Dashboard(string stepKey = null, bool workspacePreview = false)
             {
-            PopulateDashboardChrome();
-
             if (!User.Identity.IsAuthenticated)
                 {
                 return RedirectToAction("Index", "Login");
@@ -116,12 +114,22 @@ namespace AIS.Controllers
                 }
 
             var model = BuildEntityDashboardViewModel(user, stepKey);
-            if (!model.VisibleSteps.Any())
+            var administrationLinks = BuildEntityAdministrationLinks(user);
+            if (!model.VisibleSteps.Any() && !administrationLinks.Any())
                 {
                 return RedirectToAction("Index", "PageNotFound");
                 }
 
-            return View("~/Views/AdministrationPanel/Entity_Dashboard.cshtml", model);
+            if (!string.IsNullOrWhiteSpace(stepKey) &&
+                !TryGetRequestedStep(model, stepKey, out _, out var requestedStepError))
+                return requestedStepError;
+
+            PopulateDashboardChrome();
+            ViewData["EntityAdministrationLinks"] = administrationLinks;
+            // The incomplete workspace is explicitly opt-in; preserve the working dashboard by default.
+            return View(workspacePreview
+                ? "~/Views/AdministrationPanel/Entity_Dashboard.cshtml"
+                : "~/Views/AdministrationPanel/Entity_DashboardLegacy.cshtml", model);
             }
 
         [HttpGet]
@@ -146,6 +154,13 @@ namespace AIS.Controllers
 
                 return errorResult;
                 }
+
+            // Recheck the exact step before any step-specific reader is called.
+            if (!HasPageAccess(user, "/AdministrationPanel/Entity_Dashboard") ||
+                step.RequiredPermissionPageId <= 0 ||
+                !(step.StepKey == "ENGAGEMENT_SHIFTING" ? CanAccessEngagementShifting(user)
+                    : _permissionService.HasViewPermission(user, step.RequiredPermissionPageId)))
+                return CreateStepAccessDeniedResult();
 
             PopulateAdministrationDashboardStepViewData(step.StepKey, step.RequiredPermissionPageId);
             return PartialView(step.PartialViewName);
@@ -1639,6 +1654,11 @@ namespace AIS.Controllers
             foreach (var step in steps)
                 {
                 step.IsVisible = hasDashboardAccess &&
+                    (!string.Equals(dashboardKey, "ENTITY_GOVERNANCE", StringComparison.Ordinal) ||
+                     EntityDashboardAccess.CanViewStep(hasDashboardAccess, step.RequiredPermissionPageId,
+                         id => string.Equals(step.StepKey, "ENGAGEMENT_SHIFTING", StringComparison.Ordinal)
+                             ? CanAccessEngagementShifting(user)
+                             : _permissionService.HasViewPermission(user, id))) &&
                     (!string.Equals(step.StepKey, "MANAGE_USER", StringComparison.OrdinalIgnoreCase) ||
                      _permissionService.HasViewPermission(user, DBConnection.ManageUsersSelectionPageId));
                 step.IsEnabled = step.IsVisible;
@@ -1723,11 +1743,12 @@ namespace AIS.Controllers
                 CreateDashboardStep(5, "UPDATE_AUDITEE_ENTITIES", "Update Auditee Entities", "/AdministrationPanel/update_auditee_entities", "~/Views/AdministrationPanel/DashboardPartials/_UpdateAuditeeEntities.cshtml"),
                 CreateDashboardStep(6, "AUTHORIZE_AUDITEE_ENTITIES_UPDATE", "Authorize Auditee Entities Update", "/AdministrationPanel/authorize_auditee_entities_update", "~/Views/AdministrationPanel/DashboardPartials/_AuthorizeAuditeeEntitiesUpdate.cshtml"),
                 CreateDashboardStep(7, "SETUP_ENGAGEMENT_REVERSAL", "Setup Engagement Reversal", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/setup_engagement_reversal.cshtml"),
-                CreateDashboardStep(8, "ENGAGEMENT_SHIFTING", "Engagement Shifting", "/AdministrationPanel/setup_engagement_reversal", "~/Views/AdministrationPanel/DashboardPartials/_EngagementShifting.cshtml")
+                // Existing shifting APIs use reversal permission; the destination is the shifting partial, not reversal.
+                CreateDashboardStep(8, "ENGAGEMENT_SHIFTING", "Engagement Shifting", "/AdministrationPanel/Entity_Dashboard?stepKey=ENGAGEMENT_SHIFTING", "~/Views/AdministrationPanel/DashboardPartials/_EngagementShifting.cshtml", "/AdministrationPanel/setup_engagement_reversal")
                 };
             }
 
-        private WorkflowDashboardStepModel CreateDashboardStep(int stepNo, string stepKey, string stepTitle, string legacyPath, string partialViewName)
+        private WorkflowDashboardStepModel CreateDashboardStep(int stepNo, string stepKey, string stepTitle, string legacyPath, string partialViewName, string permissionPath = null)
             {
             return new WorkflowDashboardStepModel
                 {
@@ -1736,7 +1757,7 @@ namespace AIS.Controllers
                 StepTitle = stepTitle,
                 LegacyPath = legacyPath,
                 PartialViewName = partialViewName,
-                RequiredPermissionPageId = ResolveWorkflowPageId(legacyPath)
+                RequiredPermissionPageId = ResolveWorkflowPageId(permissionPath ?? legacyPath)
                 };
             }
 
@@ -1835,7 +1856,7 @@ namespace AIS.Controllers
                 return Unauthorized();
                 }
 
-            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+            if (!CanAccessEngagementShifting(user))
                 {
                 return Forbid();
                 }
@@ -1858,7 +1879,7 @@ namespace AIS.Controllers
                 return Unauthorized(new { Status = false, Message = "Your session has expired. Please sign in again." });
                 }
 
-            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+            if (!CanAccessEngagementShifting(user))
                 {
                 return Forbid();
                 }

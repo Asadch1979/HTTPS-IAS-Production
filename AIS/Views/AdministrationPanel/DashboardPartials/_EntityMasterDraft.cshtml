@@ -1,0 +1,11 @@
+<p class="draft-note">Local form draft only. Current values are unavailable. Create and Save require approved write procedures and server-side operation permissions.</p>
+<div class="row g-3">
+@foreach (var group in new[] { "Basic Information|Entity ID|Code|Name|Description|Entity Type", "Audit & Compliance|Audit Cluster / Audited By|Auditable|Auditor|IAD", "Classification|Risk|Size", "Contact Details|Address|Telephone|Email", "Status|Active" }) {
+var fields = group.Split('|');
+<div class="col-md-6"><fieldset class="border rounded p-3 h-100"><legend class="float-none w-auto fs-6 px-2">@fields[0]</legend>
+@for (var n = 1; n < fields.Length; n++) { var id = "master-" + fields[0].Replace(" ", "") + n;
+<label for="@id">@fields[n]</label><input id="@id" class="form-control mb-2" disabled placeholder="Current value unavailable" />
+}
+</fieldset></div>
+}
+</div><h3 class="mt-3">Before / After review</h3><p>Select an authorized entity and approved edit capability to prepare a validated comparison.</p><button class="btn btn-secondary" disabled>Add Entity</button> <button class="btn btn-secondary" disabled>Save Changes</button>
