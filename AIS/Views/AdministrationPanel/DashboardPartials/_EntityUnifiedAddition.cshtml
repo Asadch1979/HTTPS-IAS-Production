@@ -8,16 +8,7 @@
             <p>Choose the GM Office, Group, Parent Type and Parent when creating the entity. All selections use real authorized entity references.</p></div>
         <button id="entityUnifiedAddClose" class="entity-secondary-btn" type="button">Close</button>
     </div>
-    <div class="entity-add-fields">
-        <div><label for="newEntityName">Entity name</label><input id="newEntityName" class="form-control" type="text" maxlength="150" autocomplete="off" /></div>
-        <div><label for="newEntityCode">Entity code</label><input id="newEntityCode" class="form-control" type="text" maxlength="50" autocomplete="off" /></div>
-        <div><label for="newEntityType">Entity type</label><select id="newEntityType" class="form-select"><option value="">Select entity type</option></select></div>
-        <div><label for="newEntityActive">Status</label><select id="newEntityActive" class="form-select"><option value="Y">Active</option><option value="N">Inactive</option></select></div>
-        <div><label for="newEntityAuditable">Auditable</label><select id="newEntityAuditable" class="form-select"><option value="Y">Yes</option><option value="N">No</option></select></div>
-        <div><label for="newEntityAuditBy">Audit cluster / Audit By</label><select id="newEntityAuditBy" class="form-select"><option value="">Select audit cluster</option></select></div>
-        <div class="entity-add-fields-wide"><label for="newEntityDescription">Description</label><textarea id="newEntityDescription" class="form-control" rows="2" maxlength="1500"></textarea></div>
-    </div>
-    <h3 class="entity-add-section">Organizational mapping</h3>
+    <h3 class="entity-add-section">Organizational assignment</h3>
     <div class="entity-add-fields">
         <div>
             <label for="newEntityGroup">Group</label>
@@ -38,6 +29,16 @@
             <select id="newEntityParent" class="form-select" disabled><option value="">Select parent type first</option></select>
             <input id="newEntityParentSearch" class="form-control entity-lookup-search" type="search" placeholder="Find parent by name" maxlength="120" />
         </div>
+    </div>
+    <h3 class="entity-add-section">Entity information</h3>
+    <div class="entity-add-fields">
+        <div><label for="newEntityName">Entity name</label><input id="newEntityName" class="form-control" type="text" maxlength="150" autocomplete="off" /></div>
+        <div><label for="newEntityCode">Entity code</label><input id="newEntityCode" class="form-control" type="text" maxlength="50" autocomplete="off" /></div>
+        <div><label for="newEntityType">Entity type</label><select id="newEntityType" class="form-select"><option value="">Select entity type</option></select></div>
+        <div><label for="newEntityActive">Status</label><select id="newEntityActive" class="form-select"><option value="Y">Active</option><option value="N">Inactive</option></select></div>
+        <div><label for="newEntityAuditable">Auditable</label><select id="newEntityAuditable" class="form-select"><option value="Y">Yes</option><option value="N">No</option></select></div>
+        <div><label for="newEntityAuditBy">Audit cluster / Audit By</label><select id="newEntityAuditBy" class="form-select"><option value="">Select audit cluster</option></select></div>
+        <div class="entity-add-fields-wide"><label for="newEntityDescription">Description</label><textarea id="newEntityDescription" class="form-control" rows="2" maxlength="1500"></textarea></div>
     </div>
     <p id="entityAdditionLookupNotice" class="entity-context-note" aria-live="polite">Parent dropdowns are filtered by the chosen parent type. No mapping can be saved without an approved transaction.</p>
     <div class="entity-add-footer">
