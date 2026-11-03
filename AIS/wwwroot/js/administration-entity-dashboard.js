@@ -223,6 +223,24 @@
             return 'Reference name unavailable';
         }
     }
+    // Mapping.GM_OFFICE takes precedence. A fallback from mapping AUDITEDBY
+    // is used only if that referenced entity has one unambiguous GM_OFFICE.
+    // AUDITEDBY itself is not assumed to be a GM office.
+    async function resolveGmName(mapping) {
+        const direct = dataValue(mapping, 'GM_OFFICE');
+        if (direct) return resolveEntityName(direct);
+        const auditOfficeId = Number(dataValue(mapping, 'MAPPING_AUDITEDBY'));
+        if (!Number.isInteger(auditOfficeId) || auditOfficeId <= 0) return 'Not assigned';
+        try {
+            const lookup = await getData('profile', { entityId: auditOfficeId });
+            const candidates = Array.from(new Set((lookup.rows || [])
+                .map(function (row) { return dataValue(row, 'GM_OFFICE'); })
+                .filter(Boolean)));
+            if (candidates.length !== 1) return 'Not assigned / ambiguous fallback';
+            const gmName = await resolveEntityName(candidates[0]);
+            return gmName === 'Reference name unavailable' ? gmName : gmName + ' (via audit office)';
+        } catch (_) { return 'GM fallback unavailable'; }
+    }
     function mappingRows(profileRows) {
         return (profileRows || []).filter(function (row) {
             return dataValue(row, 'PARENT_ID') || dataValue(row, 'P_NAME') ||
@@ -237,11 +255,10 @@
         const preferred = mappings[0] || {};
         const parentId = dataValue(preferred, 'PARENT_ID');
         let parent = dataValue(preferred, 'P_NAME');
-        const gmId = dataValue(preferred, 'GM_OFFICE');
         const groupId = dataValue(preferred, 'B_GROUP');
         const [resolvedParent, gmName, groupName, auditedByName] = await Promise.all([
             parent ? Promise.resolve(parent) : resolveEntityName(parentId),
-            resolveEntityName(gmId),
+            resolveGmName(preferred),
             resolveEntityName(groupId),
             resolveEntityName(dataValue(master, 'AUDITBY_ID'))
         ]);
@@ -287,7 +304,7 @@
                 box.appendChild(make('strong', '', 'Mapping ' + (i + 1)));
                 const itemParent = dataValue(item, 'P_NAME') || await resolveEntityName(dataValue(item, 'PARENT_ID'));
                 const [itemGm, itemGroup] = await Promise.all([
-                    resolveEntityName(dataValue(item, 'GM_OFFICE')),
+                    resolveGmName(item),
                     resolveEntityName(dataValue(item, 'B_GROUP'))
                 ]);
                 if (version !== selectionVersion) return;
