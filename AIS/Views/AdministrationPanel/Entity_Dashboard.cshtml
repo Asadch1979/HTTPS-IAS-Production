@@ -1,65 +1,61 @@
 @model AIS.Models.WorkflowDashboard.WorkflowDashboardViewModel
 @{
-    ViewData["Title"] = "Entity Governance Workspace";
+    ViewData["Title"] = "Entity Management";
     Layout = "_Layout";
-    var visibleSteps = Model.VisibleSteps.ToList();
-    var currentStep = Model.CurrentStep;
-    var currentStepIndex = currentStep == null ? 0 : visibleSteps.FindIndex(step => step.StepKey == currentStep.StepKey) + 1;
-    var homeUrl = Url.Content("~/Home/Index");
+    var sections = new[] { "Overview", "Entity Master", "Organization & Mapping", "Bulk Management", "Movements & Engagements", "Closure & Para History", "Authorizations & Audit Trail", "Data Quality" };
 }
-
-<div class="planning-nav-wrap sticky-top bg-white py-2 mb-3">
-    <div class="card shadow-sm planning-nav-card mb-0">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <div>
-                    <a class="navbar-brand fw-bold text-decoration-none mb-1 d-inline-block" href="@homeUrl">IAS</a>
-                    <h4 class="mb-0">Entity Governance Workspace</h4>
-                </div>
-                <a class="btn btn-outline-primary btn-sm" href="@homeUrl">Home</a>
-            </div>
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                <strong id="entityDashboardStepCounter">Step @(currentStepIndex > 0 ? currentStepIndex : 1) of @visibleSteps.Count</strong>
-                <span class="text-muted small">Click any step to load it inside the workspace.</span>
-            </div>
-
-            <div id="entityDashboardStepper" class="mt-2"></div>
-        </div>
-    </div>
+<link rel="stylesheet" href="@Url.Content("~/css/entity-management.css")" />
+<main id="entityWorkspace" class="entity-workspace">
+<header class="d-flex justify-content-between mb-4"><div><h1>Entity Management</h1><p class="text-muted">IAS Administration &amp; Governance</p></div><a href="@Url.Action("Index", "Home")">Home</a></header>
+<div class="alert alert-warning" role="status">Entity readers unavailable pending verified deployment and entity-scope authorization. No entity data has been loaded. Changes cannot be submitted here.</div>
+<div class="row g-3 mb-4">
+@foreach (var metric in new[] { "Active Entities", "Mapping Exceptions", "Pending Approvals", "Unassigned GM", "Inactive Entities", "Recent Changes" }) {
+<div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body"><div class="text-muted small">@metric</div><strong class="d-block my-2">Unavailable</strong><small>Approved aggregate reader required</small></div></div></div>
+}
 </div>
-
-<div class="card">
-    <div class="card-body workflow-dashboard-compact">
-        <div id="entityDashboardStepHost"
-             data-load-url="@Url.Action("LoadEntityDashboardStep", "AdministrationPanel")"
-             data-base-url="@Url.Action("Entity_Dashboard", "AdministrationPanel")"
-             data-step-key="@Model.CurrentStepKey">
-            <div class="alert alert-secondary mb-0">Loading workflow content...</div>
-        </div>
-    </div>
-</div>
-
-<link rel="stylesheet" href="~/css/fieldaudit-stepper-theme.css" />
-<script src="~/js/fieldAudit/stepper-theme.js"></script>
-<script>
-    window.entityDashboardStepData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(visibleSteps.Select(step => new
-    {
-        stepCode = step.StepKey,
-        stepNo = step.StepNo,
-        stepTitle = step.StepTitle,
-        isCompleted = step.IsCompleted,
-        isSaved = step.IsSaved,
-        legacyPath = step.LegacyPath
-    })));
-</script>
-<script src="~/js/administration-entity-dashboard.js?v=4"></script>
-
-<style>
-    .workflow-dashboard-compact {
-        padding: .9rem;
-    }
-
-    .workflow-dashboard-compact #entityDashboardStepHost > *:first-child {
-        margin-top: 0 !important;
-    }
-</style>
+<section class="card mb-3"><div class="card-body"><h2>Entity register</h2><div class="row g-3">
+<div class="col-md-4"><label for="entityQuery">Entity ID, Code or Name</label><input id="entityQuery" class="form-control" disabled placeholder="Search unavailable" /></div>
+@for (var f = 0; f < 5; f++) { var label = new[] { "Entity Type", "Group / Division", "Reporting Office", "GM Office", "Status" }[f];
+<div class="col-md"><label for="entity-filter-@f">@label</label><select id="entity-filter-@f" class="form-select" disabled><option>Unavailable</option></select></div>
+}
+</div><div class="table-responsive mt-3"><table class="table"><caption>Authorized server-paged search, maximum 200 records per page when enabled.</caption><thead><tr><th>ID / Code</th><th>Name</th><th>Type</th><th>Reporting organization</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr><td colspan="6" class="text-center py-4">Search unavailable. This is not an empty result.</td></tr></tbody></table></div><button class="btn btn-sm btn-outline-secondary" disabled>Previous</button> <button class="btn btn-sm btn-outline-secondary" disabled>Next</button> <span class="text-muted">Total unavailable</span></div></section>
+<div class="entity-context" role="status" aria-live="polite">Selected entity: <strong>No entity selected</strong> · Shared across all sections</div>
+<nav class="entity-tabs" role="tablist" aria-label="Entity management sections">
+@for (var i = 0; i < sections.Length; i++) {
+<button type="button" id="entity-tab-@i" role="tab" aria-controls="entity-panel-@i" aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")" data-entity-tab="@i">@sections[i]</button>
+}
+</nav>
+@for (var i = 0; i < sections.Length; i++) {
+<section id="entity-panel-@i" role="tabpanel" aria-labelledby="entity-tab-@i" tabindex="0" hidden="@(i != 0)" class="card mt-3"><div class="card-body"><h2>@sections[i]</h2>
+@switch (i) {
+case 0:
+<p>Select an authorized entity once to inspect its master, all mapping records, closure impact and historical records.</p><div class="row"><div class="col-md-6"><h3>Entity profile</h3><p>No authorized profile loaded.</p></div><div class="col-md-6"><h3>Governance status</h3><p>Requests and approvals require approved readers.</p></div></div>
+break;
+case 1:
+<partial name="DashboardPartials/_EntityMasterDraft" />
+break;
+case 2:
+<p>Mapping source: T_AUDITEE_ENTITIES_MAPING. Multiple mappings must remain visible. Master AUDITBY_ID and mapping AUDITEDBY are distinct.</p><p>Group → Division → Department → GM Office, where supported by actual relationships.</p>
+<table class="table"><thead><tr><th>Field</th><th>Current</th><th>Proposed</th></tr></thead><tbody>@foreach (var field in new[] { "Parent / Reporting Office", "Group", "Division", "Department", "GM Office", "Reporting Line", "Audit Cluster", "Compliance Unit" }) { <tr><td>@field</td><td>Unavailable</td><td>Awaiting mapping API</td></tr> }</tbody></table><a class="btn btn-outline-secondary" href="@Url.Action("Index", "OrganizationStructure")">Open Organization Structure</a>
+break;
+case 3:
+<partial name="DashboardPartials/_EntityBulkDraft" />
+break;
+case 4:
+<p>Organizational movement changes reporting relationships. Entity succession and engagement shifting remain separate operations.</p><a class="btn btn-outline-secondary mb-3" href="@Url.Action("Index", "OrganizationStructure")">Organizational Movement</a><p>Existing screens retain their own authorization and behavior. Reversal retains its selector pending an approved scoped Entity Type compatibility reader.</p>
+@foreach (var step in Model.VisibleSteps.Where(s => s.StepKey == "ENTITY_SHIFTING" || s.StepKey == "SETUP_ENGAGEMENT_REVERSAL" || s.StepKey == "ENGAGEMENT_SHIFTING")) { <a class="btn btn-outline-primary me-2 mb-2" href="@Url.Content("~" + step.LegacyPath)">@step.StepTitle</a> }
+break;
+case 5:
+<partial name="DashboardPartials/_EntityClosureDraft" />
+break;
+case 6:
+<p>Pending Requests · Approved Requests · Rejected Requests · Completed Changes · Entity Change History · Batch Change History</p><div class="alert alert-secondary">History unavailable. Approval contracts await integration. Initiators must not authorize their own material requests.</div><div class="table-responsive"><table class="table"><thead><tr><th>Operator / Action</th><th>Request / Batch</th><th>Reason / Effective date</th><th>Recorded date</th><th>Authorized by / Date</th><th>Outcome</th></tr></thead><tbody><tr><td colspan="6">No authorized history loaded.</td></tr></tbody></table></div><h3>Before / After comparison</h3><p>Unavailable. Undocumented OLD_VALUES / NEW_VALUES formats require raw read-only fallback.</p><button class="btn btn-secondary" disabled>Approve</button> <button class="btn btn-secondary" disabled>Reject</button>
+break;
+case 7:
+<p>Read-only investigation. Exceptions may represent legitimate roots or historical states; classify before correction.</p><table class="table"><thead><tr><th>Investigation category</th><th>Affected entities</th></tr></thead><tbody>@foreach (var issue in new[] { "Missing mapping", "Duplicate or conflicting mapping", "Invalid parent reference", "Inactive entity with active mapping", "Unassigned GM Office", "Missing reporting assignment", "Orphaned references", "Self-parent hierarchy exceptions", "Unusual para status references" }) { <tr><td>@issue</td><td>Unavailable — scoped reader required</td></tr> }</tbody></table>
+break;
+}
+</div></section>
+}
+</main>
+<script src="@Url.Content("~/js/administration-entity-dashboard.js")" asp-append-version="true"></script>

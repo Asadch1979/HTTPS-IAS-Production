@@ -1,0 +1,10 @@
+<p class="draft-note">Local field-entry draft only. Authoritative preview and apply require approved transactional database APIs. No changes are sent.</p>
+<h3>1. Select entities</h3><p>Entity Type → Reporting Office → Entity Selection</p>
+<button class="btn btn-outline-secondary" disabled>Select All Visible</button> <button class="btn btn-outline-secondary" disabled>Select All Matching</button><p class="mt-2">Selection unavailable. Visible means this page; All Matching must be resolved by the server across the complete authorized result set.</p>
+<h3>2. Select fields to update</h3><div class="row g-3">
+@foreach (var field in new[] { "Audit Cluster", "Compliance Unit", "GM Office", "Reporting Line", "Parent / Division", "Group" }) {
+var id = "bulk-" + field.Replace(" ", "").Replace("/", "");
+<div class="col-md-4"><div class="border rounded p-3"><label><input type="checkbox" data-change-field="@id" /> Change @field</label><label class="visually-hidden" for="@id">Proposed @field</label><input id="@id" class="form-control" disabled maxlength="200" placeholder="Local proposal; reference validation pending" /></div></div>
+}
+</div><h3 class="mt-4">3. Authoritative preview</h3><div class="table-responsive"><table class="table"><thead><tr><th>Entity ID</th><th>Entity Name</th><th>Field</th><th>Current Value</th><th>Proposed Value</th><th>Validation Result</th></tr></thead><tbody><tr><td colspan="6">Unavailable. Browser values cannot establish current assignments, conflicts or permissions.</td></tr></tbody></table></div>
+<h3>4. Authorize and apply</h3><p>The approved batch must be transactional, with complete rollback on any failure and entity-level before/after audit events.</p><button class="btn btn-secondary" disabled>Preview</button> <button class="btn btn-secondary" disabled>Submit</button> <button class="btn btn-secondary" disabled>Apply</button>
