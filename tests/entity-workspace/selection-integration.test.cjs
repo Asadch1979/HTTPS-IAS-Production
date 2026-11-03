@@ -45,7 +45,7 @@ function setup() {
         '#engShiftControllingOffice': shiftOffice, 'h3': heading
     };
     reversalHost.querySelector = selector => bySelector[selector] || null;
-    const controls = { entityWorkspace: root, entityEngagementLegacy: reversalHost, entityUnifiedEditButton: { disabled: true } };
+    const controls = { entityWorkspace: root, entityEngagementLegacy: reversalHost, entityUnifiedEditButton: { disabled: true, addEventListener() {} } };
     let reversalCalls = 0, shiftCalls = 0;
     const sandbox = {
         document: { getElementById: id => controls[id] || null, createElement: make },
