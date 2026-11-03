@@ -140,6 +140,9 @@
                 }
             });
             renderRegister();
+            root.dispatchEvent(new CustomEvent('entity-workspace:types', {
+                detail: { types: (data.rows || []).map(function (x) { return { id: x.id, name: x.name }; }) }
+            }));
             if (currentProfile.length) renderSelectedProfile(currentProfile, selectionVersion);
         } catch (e) {
             // A missing supplementary type reader must not disable master-data search.
@@ -364,6 +367,13 @@
         const version = ++selectionVersion;
         currentEntity = { id: id, name: name, active: active };
         currentProfile = [];
+        // Invalidate any partially loaded operation belonging to a different entity.
+        ++legacyVersion;
+        const engagementHost = byId('entityEngagementLegacy');
+        if (engagementHost) engagementHost.replaceChildren();
+        root.dispatchEvent(new CustomEvent('entity-workspace:selected', {
+            detail: { id: id, name: name, active: active }
+        }));
         setText('selectedEntityLabel', name || 'Loading entity...');
         setText('selectedEntityStatus', active ? 'Active' : 'Inactive');
         setText('selectedEntityReference', 'Entity ID ' + id);
@@ -382,6 +392,9 @@
             if (version !== selectionVersion) return;
             currentProfile = r.rows || [];
             if (!currentProfile.length) throw new Error('No master profile was returned.');
+            root.dispatchEvent(new CustomEvent('entity-workspace:profile', {
+                detail: { id: id, profile: currentProfile }
+            }));
             return renderSelectedProfile(currentProfile, version);
         }).catch(function (e) {
             if (version !== selectionVersion) return;
@@ -464,12 +477,21 @@
             host.innerHTML = trustedServerPartial;
             host.classList.add('entity-embedded');
             await executeServerScripts(host, current);
+            if (current === legacyVersion) {
+                root.dispatchEvent(new CustomEvent('entity-workspace:operation-loaded', {
+                    detail: { step: step, target: target }
+                }));
+            }
         } catch (e) {
             if (current === legacyVersion) host.replaceChildren(make('p', 'entity-mapping-warning', e.message));
         }
     }
     root.querySelectorAll('[data-legacy-step]').forEach(function (button) {
         button.addEventListener('click', function () {
+            if (button.hasAttribute('data-unified-edit') && !currentEntity) {
+                showError('Select an entity before editing.');
+                return;
+            }
             loadLegacyOperation(button.getAttribute('data-legacy-step'),
                 button.getAttribute('data-legacy-target'));
         });
