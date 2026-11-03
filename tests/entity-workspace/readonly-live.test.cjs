@@ -38,7 +38,7 @@ test('new mutations are disabled; authorized legacy operations retain their own 
     assert.doesNotMatch(js, /method: '(POST|PUT|PATCH|DELETE)'/);
 });
 test('entity data and referenced labels render as text, not interpreted HTML', () => {
-    assert.match(js, /textContent = String\(value\)/);
+    assert.match(js, /el\.textContent = String\(content\)/);
     assert.match(js, /nameCache/);
     assert.match(js, /resolveEntityName/);
     assert.match(js, /types\.get\(String\(id\)\)/);
