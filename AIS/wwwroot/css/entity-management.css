@@ -168,3 +168,60 @@
     .entity-header-actions { gap: 6px; }
     .entity-search-row { flex-direction: column; }
 }
+
+
+/* Combined master and mapping creation draft. Existing legacy form styling
+   remains restricted to separately authorized embedded operations. */
+.entity-unified-addition {
+    margin-top: 15px;
+    padding: 18px;
+    border: 1px solid var(--em-border);
+    border-radius: 12px;
+    background: #fbfdfb;
+}
+.entity-add-fields {
+    margin-top: 13px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px 16px;
+}
+.entity-add-fields > div { min-width: 0; }
+.entity-add-fields label {
+    display: block;
+    font-size: .77rem;
+    font-weight: 650;
+    color: #53675b;
+    margin-bottom: 5px;
+}
+.entity-add-fields .form-control,
+.entity-add-fields .form-select {
+    border-color: #cfded3;
+    border-radius: 8px;
+}
+.entity-add-fields-wide { grid-column: 1 / -1; }
+.entity-add-section { margin-top: 19px !important; padding-top: 14px; border-top: 1px solid var(--em-border); }
+.entity-lookup-search { margin-top: 6px; font-size: .77rem; }
+.entity-add-footer {
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    margin-top: 17px;
+    padding-top: 12px;
+    border-top: 1px solid var(--em-border);
+}
+.entity-add-footer span { font-size: .77rem; color: #708174; max-width: 670px; }
+.entity-operation-selection {
+    background: #ecf6ef;
+    color: #19563e;
+    padding: 10px 13px;
+    border-radius: 8px;
+    margin: 12px 0 14px;
+    border-left: 3px solid #219363;
+    font-size: .82rem;
+    font-weight: 620;
+}
+@media (max-width: 900px) { .entity-add-fields { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 540px) {
+  .entity-add-fields { grid-template-columns: 1fr; }
+  .entity-add-footer { align-items: stretch; flex-direction: column; }
+}
