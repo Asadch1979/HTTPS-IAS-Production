@@ -53,7 +53,10 @@ namespace AIS.Controllers
                 {
                     // Existing approved read-only entity-type lookup.
                     // We do NOT reuse Manage Users page-43 selection endpoints.
-                    var rows = dBConnection.GetAuditEntityTypes(217)
+                    var typePageId = ResolveWorkflowPageId("/AdministrationPanel/entity_addition");
+                    if (typePageId <= 0)
+                        return StatusCode(503, new { error = "type_reader_unavailable", message = "Entity Type reader has no approved page mapping." });
+                    var rows = dBConnection.GetAuditEntityTypes(typePageId)
                         .Where(t => t.AUTID > 0)
                         .GroupBy(t => t.AUTID)
                         .Select(g => new { id = g.Key, name = g.First().ENTITYTYPEDESC })
