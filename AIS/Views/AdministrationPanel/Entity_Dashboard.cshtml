@@ -4,7 +4,6 @@
     Layout = "_Layout";
     var canRead = ViewData["EntityReadEnabled"] is bool flag && flag;
     var canAdd = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_ADDITION");
-    var canEdit = Model.VisibleSteps.Any(x => x.StepKey == "UPDATE_AUDITEE_ENTITIES");
     var canMap = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_RELATIONSHIP");
     var canShift = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_SHIFTING");
     var canReverse = Model.VisibleSteps.Any(x => x.StepKey == "SETUP_ENGAGEMENT_REVERSAL");
