@@ -7,6 +7,11 @@ namespace AIS.Controllers
 {
     public partial class AdministrationPanelController
     {
+        // Single migration seam for dashboard and both shifting APIs. Dedicated permission
+        // activation requires an approved page-ID/grant migration; retain current access meanwhile.
+        private bool CanAccessEngagementShifting(SessionUser user)
+            => HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal");
+
         private List<WorkflowDashboardStepModel> BuildEntityAdministrationLinks(SessionUser user)
         {
             var links = BuildEntityDashboardSteps();
@@ -27,7 +32,8 @@ namespace AIS.Controllers
                 links.Add(CreateDashboardStep(0, action.ToUpperInvariant(), title,
                     "/AdministrationPanel/" + action, null));
             return links.Where(link => link.RequiredPermissionPageId > 0 &&
-                _permissionService.HasViewPermission(user, link.RequiredPermissionPageId)).ToList();
+                (link.StepKey == "ENGAGEMENT_SHIFTING" ? CanAccessEngagementShifting(user)
+                    : _permissionService.HasViewPermission(user, link.RequiredPermissionPageId))).ToList();
         }
     }
 }

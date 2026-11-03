@@ -57,6 +57,31 @@ revokedContext.Request.Headers["X-Requested-With"]="XMLHttpRequest";
 await new AIS.Middleware.SessionValidationMiddleware(_=>{reached=true;return Task.CompletedTask;}).Invoke(revokedContext,new RevokedDatabase());
 Check(!reached && revokedContext.Response.StatusCode==401,"revoked IAS session is rejected before partial endpoint");
 
+var root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../AIS"));
+var realPages=new PageIdResolver(new TestEnvironment(root),NullLogger<PageIdResolver>.Instance);
+var catalogController=Controller(true,true);
+var resolverField=typeof(AdministrationPanelController).GetField("_pageIdResolver",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+resolverField.SetValue(catalogController,realPages);
+var stepsMethod=typeof(AdministrationPanelController).GetMethod("BuildEntityDashboardSteps",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+var actualSteps=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)stepsMethod.Invoke(catalogController,null);
+var expectedStepIds=new[]{217,216,218,41,323,324,225,225};
+Check(actualSteps.Select(s=>s.RequiredPermissionPageId).SequenceEqual(expectedStepIds),"all eight step IDs match effective active/archive configuration");
+foreach(var step in actualSteps){Console.WriteLine($"MAPPING: {step.StepKey} = {step.RequiredPermissionPageId}");Check(step.RequiredPermissionPageId>0,"configured original step "+step.StepKey);}
+foreach(var action in new[]{"entity_heirarchy","manage_entity_type","manage_entity_relations","manage_entity_mapping","audit_comp_management","gm_repo_line_management","entity_gm_reporting_div_management","EntityShiftingHistory"}){var id=realPages.ResolvePageId("/AdministrationPanel/"+action);Console.WriteLine($"MAPPING: {action} = {id}");var expected=action switch {"audit_comp_management"=>265,"EntityShiftingHistory"=>448,_=>0};Check(id==expected,"additional link mapping snapshot "+action);}
+var configuredController=Controller(true,true,970202,217,216,218,41,323,324,225,265,448);
+resolverField.SetValue(configuredController,realPages);
+var configuredLinks=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(configuredController,new object[]{new SessionUser{ID=5}});
+Check(configuredLinks.Count==10,"all eight mapped steps and two mapped additional functions visible with permission; six unmapped links excluded");
+var deniedController=Controller(true,true,970202);
+resolverField.SetValue(deniedController,realPages);
+Check(((List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(deniedController,new object[]{new SessionUser{ID=5}})).Count==0,"dashboard-only access cannot expose any configured legacy function");
+Check(Controller(true,true,1).GetShiftableEngagements(5) is ForbidResult,"direct shifting reader requires shifting policy");
+Check(Controller(true,true,1).ShiftEngagementEntity(null) is ForbidResult,"direct shifting mutation requires shifting policy before validation or DB");
+Check(Controller(false,true,1,3).GetShiftableEngagements(5) is UnauthorizedResult,"expired identity cannot retrieve shifting records");
+var expiredContext=new DefaultHttpContext();expiredContext.Request.Path="/AdministrationPanel/LoadEntityDashboardStep";expiredContext.Request.Headers["X-Requested-With"]="XMLHttpRequest";
+var expiredReached=false;await new AIS.Middleware.SessionValidationMiddleware(_=>{expiredReached=true;return Task.CompletedTask;}).Invoke(expiredContext,new RevokedDatabase());
+Check(!expiredReached && expiredContext.Response.StatusCode==401,"missing IAS cookie is rejected before operational partial");
+Check(actualSteps.Single(s=>s.StepKey=="SETUP_ENGAGEMENT_REVERSAL").PartialViewName.EndsWith("setup_engagement_reversal.cshtml") && actualSteps.Single(s=>s.StepKey=="ENGAGEMENT_SHIFTING").PartialViewName.EndsWith("_EngagementShifting.cshtml"),"reversal and shifting have distinct correct partial destinations");
 sealed class Permissions(int[] allowed) : IPermissionService {
  public void EnsurePermissionsCached(SessionUser u){} public void PreloadPermissions(SessionUser u){}
  public bool HasViewPermission(SessionUser u,int id)=>allowed.Contains(id);
@@ -80,4 +105,10 @@ sealed class RevokedDatabase : IDBConnection {
  public void CreateSession(string token,int ppno,string ip,string agent)=>throw new Exception();
  public void KillSessions(int ppno)=>throw new Exception();
  public void InvalidateSession(string token)=>throw new Exception();
+}
+sealed class TestEnvironment(string root) : Microsoft.AspNetCore.Hosting.IWebHostEnvironment {
+ public string ApplicationName{get;set;}="AIS"; public string EnvironmentName{get;set;}="Development";
+ public string ContentRootPath{get;set;}=root;public string WebRootPath{get;set;}=Path.Combine(root,"wwwroot");
+ public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider{get;set;}=new Microsoft.Extensions.FileProviders.NullFileProvider();
+ public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider{get;set;}=new Microsoft.Extensions.FileProviders.NullFileProvider();
 }

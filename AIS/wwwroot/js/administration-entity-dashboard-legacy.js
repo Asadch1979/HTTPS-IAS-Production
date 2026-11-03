@@ -6,7 +6,7 @@
     var stepCounter = byId('entityDashboardStepCounter');
     var storageKey = 'ais.entity.dashboard.step';
     var selectionStorageKey = 'ais.entity.dashboard.shifting.selection';
-    var stepCache = {};
+    var navigationVersion = 0;
 
     if (!stepHost || !stepper) {
         return;
@@ -126,102 +126,11 @@
         });
     }
 
-    function prepareStepDataTablesForCaching(container) {
-        if (!container || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
-            return;
-        }
-
-        container.querySelectorAll('table').forEach(function (table) {
-            if (!table || !table.id) {
-                return;
-            }
-
-            var selector = '#' + table.id;
-            if (window.jQuery.fn.DataTable.isDataTable(selector)) {
-                window.jQuery(selector).DataTable().destroy(false);
-            }
-        });
-    }
-
-    function captureControlState(container) {
-        return Array.prototype.map.call(container.querySelectorAll('input, select, textarea'), function (control, index) {
-            return {
-                index: index,
-                value: control.value,
-                checked: !!control.checked,
-                selectedIndex: control.selectedIndex
-            };
-        });
-    }
-
-    function restoreControlState(container, controls) {
-        var currentControls = container.querySelectorAll('input, select, textarea');
-        (controls || []).forEach(function (state) {
-            var control = currentControls[state.index];
-            if (!control || control.type === 'file') {
-                return;
-            }
-
-            if (control.type === 'checkbox' || control.type === 'radio') {
-                control.checked = state.checked;
-            } else {
-                control.value = state.value;
-                if (control.tagName === 'SELECT' && state.selectedIndex >= 0 && control.value !== state.value) {
-                    control.selectedIndex = state.selectedIndex;
-                }
-            }
-        });
-    }
-
-    function captureCurrentStep() {
-        var stepKey = currentStepKey();
-        if (!stepKey || !stepHost.firstElementChild || stepHost.querySelector('.alert-secondary')) {
-            return;
-        }
-
-        prepareStepDataTablesForCaching(stepHost);
-        var adapter = window.entityDashboardStepStateAdapters
-            ? window.entityDashboardStepStateAdapters[stepKey]
-            : null;
-
-        stepCache[stepKey] = {
-            html: stepHost.innerHTML,
-            controls: captureControlState(stepHost),
-            custom: adapter && typeof adapter.capture === 'function' ? adapter.capture() : null
-        };
-    }
-
-    function restoreCachedStep(stepKey, stepNo) {
-        var cached = stepCache[stepKey];
-        if (!cached) {
-            return false;
-        }
-
-        stepHost.innerHTML = cached.html;
-        executeInlineScripts(stepHost).then(function () {
-            restoreControlState(stepHost, cached.controls);
-            var adapter = window.entityDashboardStepStateAdapters
-                ? window.entityDashboardStepStateAdapters[stepKey]
-                : null;
-            if (adapter && typeof adapter.restore === 'function') {
-                adapter.restore(cached.custom);
-            }
-            setCurrentStepKey(stepKey);
-            setActiveStep(stepKey);
-            updateStepCounter(stepNo);
-            updateBrowserState(stepKey);
-        }).catch(function () {
-            delete stepCache[stepKey];
-            loadStep(stepKey, stepNo);
-        });
-
-        return true;
-    }
-
-    function executeInlineScripts(container) {
+    function executeInlineScripts(container, version) {
         var scripts = Array.prototype.slice.call(container.querySelectorAll('script'));
         return scripts.reduce(function (chain, script) {
             return chain.then(function () {
+                if (version !== navigationVersion) return;
                 return new Promise(function (resolve, reject) {
                     var newScript = document.createElement('script');
                     var sourceUrl = script.getAttribute('src');
@@ -262,12 +171,7 @@
             return;
         }
 
-        if (currentStepKey() === stepKey && stepHost.firstElementChild && !stepHost.querySelector('.alert-secondary')) {
-            return;
-        }
-
-        captureCurrentStep();
-
+        var version = ++navigationVersion;
         stepHost.innerHTML = '<div class="alert alert-secondary mb-0">Loading workflow content...</div>';
 
         var loadUrl = resolveAppUrl(stepHost.getAttribute('data-load-url') || '/AdministrationPanel/LoadEntityDashboardStep');
@@ -304,12 +208,10 @@
                 });
             })
             .then(function (payload) {
-                // Cached forms preserve their state only after a fresh server permission check.
-                if (payload.status === 200 && restoreCachedStep(stepKey, stepNo)) {
-                    return;
-                }
+                if (version !== navigationVersion) return;
                 stepHost.innerHTML = payload.html;
-                return executeInlineScripts(stepHost).then(function () {
+                return executeInlineScripts(stepHost, version).then(function () {
+                    if (version !== navigationVersion) return;
                     setCurrentStepKey(stepKey);
                     setActiveStep(stepKey);
                     updateStepCounter(stepNo);
@@ -317,6 +219,7 @@
                 });
             })
             .catch(function () {
+                if (version !== navigationVersion) return;
                 stepHost.innerHTML = '<div class="alert alert-danger mb-0">Unable to load workflow content right now. Please try again.</div>';
             });
     }

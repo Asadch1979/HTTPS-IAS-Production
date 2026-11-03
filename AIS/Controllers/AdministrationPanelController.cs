@@ -158,7 +158,8 @@ namespace AIS.Controllers
             // Recheck the exact step before any step-specific reader is called.
             if (!HasPageAccess(user, "/AdministrationPanel/Entity_Dashboard") ||
                 step.RequiredPermissionPageId <= 0 ||
-                !_permissionService.HasViewPermission(user, step.RequiredPermissionPageId))
+                !(step.StepKey == "ENGAGEMENT_SHIFTING" ? CanAccessEngagementShifting(user)
+                    : _permissionService.HasViewPermission(user, step.RequiredPermissionPageId)))
                 return CreateStepAccessDeniedResult();
 
             PopulateAdministrationDashboardStepViewData(step.StepKey, step.RequiredPermissionPageId);
@@ -1655,7 +1656,9 @@ namespace AIS.Controllers
                 step.IsVisible = hasDashboardAccess &&
                     (!string.Equals(dashboardKey, "ENTITY_GOVERNANCE", StringComparison.Ordinal) ||
                      EntityDashboardAccess.CanViewStep(hasDashboardAccess, step.RequiredPermissionPageId,
-                         id => _permissionService.HasViewPermission(user, id))) &&
+                         id => string.Equals(step.StepKey, "ENGAGEMENT_SHIFTING", StringComparison.Ordinal)
+                             ? CanAccessEngagementShifting(user)
+                             : _permissionService.HasViewPermission(user, id))) &&
                     (!string.Equals(step.StepKey, "MANAGE_USER", StringComparison.OrdinalIgnoreCase) ||
                      _permissionService.HasViewPermission(user, DBConnection.ManageUsersSelectionPageId));
                 step.IsEnabled = step.IsVisible;
@@ -1853,7 +1856,7 @@ namespace AIS.Controllers
                 return Unauthorized();
                 }
 
-            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+            if (!CanAccessEngagementShifting(user))
                 {
                 return Forbid();
                 }
@@ -1876,7 +1879,7 @@ namespace AIS.Controllers
                 return Unauthorized(new { Status = false, Message = "Your session has expired. Please sign in again." });
                 }
 
-            if (!HasPageAccess(user, "/AdministrationPanel/setup_engagement_reversal"))
+            if (!CanAccessEngagementShifting(user))
                 {
                 return Forbid();
                 }
