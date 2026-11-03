@@ -225,3 +225,15 @@
   .entity-add-fields { grid-template-columns: 1fr; }
   .entity-add-footer { align-items: stretch; flex-direction: column; }
 }
+
+/* In the unified Edit route use the working Entity Addition update modal
+   without exposing its separate HR and AIS search grids behind the modal. */
+.entity-workspace .entity-legacy-edit-host > :not(#updateEntityModal):not(script) {
+    display: none !important;
+}
+.entity-workspace .entity-legacy-edit-host #updateEntityModal {
+    display: none;
+}
+.entity-workspace .entity-legacy-edit-host #updateEntityModal.show {
+    display: block;
+}
