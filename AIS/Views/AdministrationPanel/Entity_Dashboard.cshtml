@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="@Url.Content("~/css/entity-management.css")" />
 <main id="entityWorkspace" class="entity-workspace">
 <header class="d-flex justify-content-between mb-4"><div><h1>Entity Management</h1><p class="text-muted">IAS Administration &amp; Governance</p></div><a href="@Url.Action("Index", "Home")">Home</a></header>
+<partial name="DashboardPartials/_EntityAdministrationLinks" />
 <div class="alert alert-warning" role="status">Entity readers unavailable pending verified deployment and entity-scope authorization. No entity data has been loaded. Changes cannot be submitted here.</div>
 <div class="row g-3 mb-4">
 @foreach (var metric in new[] { "Active Entities", "Mapping Exceptions", "Pending Approvals", "Unassigned GM", "Inactive Entities", "Recent Changes" }) {
