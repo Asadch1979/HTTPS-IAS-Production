@@ -147,8 +147,8 @@
             <div><h2>Entity record &amp; organizational mapping</h2>
                 <p>Add, edit, view and maintain the entity from one place.</p></div>
             <div class="entity-inline-actions">
-                @if (canAdd) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_ADDITION" data-legacy-target="entityMasterLegacy">Add entity</button> }
-                @if (canEdit) { <button type="button" class="entity-secondary-btn" data-legacy-step="UPDATE_AUDITEE_ENTITIES" data-legacy-target="entityMasterLegacy">Edit entity</button> }
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedAddButton">Add entity</button> }
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedEditButton">Edit selected entity</button> }
                 @if (canMap) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_RELATIONSHIP" data-legacy-target="entityMasterLegacy">Manage mapping</button> }
             </div>
         </div>
@@ -162,6 +162,7 @@
                 <div id="entityMappingDetails" class="entity-mapping-list"><p>Select an entity to inspect all mapping records.</p></div>
             </div>
         </div>
+        @if (canAdd) { <partial name="DashboardPartials/_EntityUnifiedAddition" /> }
         <div id="entityMasterLegacy" class="entity-legacy-host" aria-live="polite"></div>
     </section>
 
@@ -196,7 +197,7 @@
             @if (canReverse) { <button type="button" class="entity-option" data-legacy-step="SETUP_ENGAGEMENT_REVERSAL" data-legacy-target="entityEngagementLegacy"><strong>Engagement details &amp; reversal</strong><span>Original business logic and validations</span></button> }
             @if (canShiftEngagement) { <button type="button" class="entity-option" data-legacy-step="ENGAGEMENT_SHIFTING" data-legacy-target="entityEngagementLegacy"><strong>Shift an engagement</strong><span>Existing authorized engagement shifting</span></button> }
         </div>
-        <p class="entity-context-note">The existing engagement operations retain their own selection and authorization checks. No reversal procedure or API has been modified.</p>
+        <p id="entityEngagementContextNote" class="entity-context-note">Select an entity in the register above. Engagement details and shifting will use that selection automatically; the original operations, validations and permissions are unchanged.</p>
         <div id="entityEngagementLegacy" class="entity-legacy-host" aria-live="polite"></div>
     </section>
 
