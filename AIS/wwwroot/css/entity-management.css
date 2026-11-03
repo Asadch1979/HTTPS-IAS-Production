@@ -134,6 +134,18 @@
 .entity-approval-context { background: var(--em-soft); border-radius: 9px; padding: 12px 14px; margin-bottom: 16px; }
 .entity-approval-context p { margin: 0; }
 #entityClosureSection h3 { margin: 15px 0 9px; }
+/* The same working Reversal/Authorization partials receive only visual framing. */
+.entity-workspace .entity-embedded .form-control,
+.entity-workspace .entity-embedded .form-select {
+    border-radius: 8px;
+    border-color: #d6e3d9;
+    min-height: 36px;
+}
+.entity-workspace .entity-embedded label { color: #4c5d52; font-size: .79rem; }
+.entity-workspace .entity-embedded table thead th { background: #f3f7f4 !important; color: #33473b; }
+.entity-workspace .entity-embedded .btn { border-radius: 8px; }
+.entity-workspace .entity-embedded .modal { color: #26342f; }
+.entity-workspace .entity-embedded h3 { color: var(--em-green-dark) !important; }
 @media (max-width: 1200px) {
     .entity-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); }
     .entity-workflows { grid-template-columns: repeat(2,minmax(0,1fr)); }
