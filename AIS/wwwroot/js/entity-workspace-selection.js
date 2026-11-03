@@ -111,7 +111,7 @@
             set('entNameField', value(record, 'NAME'));
             set('entDescField', value(record, 'DESCRIPTION'));
             set('entAuditableField', value(record, 'AUDITABLE') === 'Y' ? 'Y' : 'N');
-            set('entAuditbyField', value(record, 'AUDITBY_ID'));
+            set('entAuditbyField', value(record, 'AUDITBY_ID') || '0');
             const status = value(record, 'ACTIVE') === 'Y' ? 'Y' : 'N';
             const active = set('entActiveField', status);
             // Entity inactivation is a material closure event. The legacy
@@ -120,6 +120,9 @@
             active.disabled = true;
             const save = host.querySelector('#updateEntityModal [data-onclick*="saveUpdateChangesInAISEntity"]');
             if (save) save.disabled = status !== 'Y';
+            // Only the legacy Addition update modal is shown. The old
+            // HR/AIS search grids are not another management screen here.
+            host.classList.add('entity-legacy-edit-host');
             window.g_entIdToUpdate = selected.id;
             if (!window.jQuery || !window.jQuery.fn || typeof window.jQuery.fn.modal !== 'function')
                 throw new Error('Existing Entity Addition modal is not initialized.');
