@@ -4,7 +4,6 @@
     Layout = "_Layout";
     var canRead = ViewData["EntityReadEnabled"] is bool flag && flag;
     var canAdd = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_ADDITION");
-    var canEdit = Model.VisibleSteps.Any(x => x.StepKey == "UPDATE_AUDITEE_ENTITIES");
     var canMap = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_RELATIONSHIP");
     var canShift = Model.VisibleSteps.Any(x => x.StepKey == "ENTITY_SHIFTING");
     var canReverse = Model.VisibleSteps.Any(x => x.StepKey == "SETUP_ENGAGEMENT_REVERSAL");
@@ -115,8 +114,9 @@
     <section class="entity-selected" aria-label="Selected entity at a glance">
         <div class="entity-selected-heading">
             <div><span class="entity-eyebrow">Current selection</span><h2 id="selectedEntityLabel">Select an entity above</h2></div>
-            <div><span id="selectedEntityStatus" class="entity-state-pill">No selection</span>
-                <span id="selectedEntityReference" class="entity-reference"></span></div>
+            <div class="entity-selected-controls"><span id="selectedEntityStatus" class="entity-state-pill">No selection</span>
+                <span id="selectedEntityReference" class="entity-reference"></span>
+                <button id="entityRefreshSelected" type="button" class="entity-secondary-btn" disabled title="Reload current master and mapping information from Oracle">Refresh details</button></div>
         </div>
         <div class="entity-identity-grid">
             <div><span>Name</span><strong id="identityName">Not selected</strong></div>
@@ -147,8 +147,8 @@
             <div><h2>Entity record &amp; organizational mapping</h2>
                 <p>Add, edit, view and maintain the entity from one place.</p></div>
             <div class="entity-inline-actions">
-                @if (canAdd) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_ADDITION" data-legacy-target="entityMasterLegacy">Add entity</button> }
-                @if (canEdit) { <button type="button" class="entity-secondary-btn" data-legacy-step="UPDATE_AUDITEE_ENTITIES" data-legacy-target="entityMasterLegacy">Edit entity</button> }
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedAddButton">Add entity</button> }
+                @if (canAdd) { <button type="button" class="entity-secondary-btn" id="entityUnifiedEditButton" data-legacy-step="ENTITY_ADDITION" data-legacy-target="entityMasterLegacy" data-unified-edit="true" disabled>Edit selected entity</button> }
                 @if (canMap) { <button type="button" class="entity-secondary-btn" data-legacy-step="ENTITY_RELATIONSHIP" data-legacy-target="entityMasterLegacy">Manage mapping</button> }
             </div>
         </div>
@@ -162,6 +162,7 @@
                 <div id="entityMappingDetails" class="entity-mapping-list"><p>Select an entity to inspect all mapping records.</p></div>
             </div>
         </div>
+        @if (canAdd) { <partial name="DashboardPartials/_EntityUnifiedAddition" /> }
         <div id="entityMasterLegacy" class="entity-legacy-host" aria-live="polite"></div>
     </section>
 
@@ -196,7 +197,7 @@
             @if (canReverse) { <button type="button" class="entity-option" data-legacy-step="SETUP_ENGAGEMENT_REVERSAL" data-legacy-target="entityEngagementLegacy"><strong>Engagement details &amp; reversal</strong><span>Original business logic and validations</span></button> }
             @if (canShiftEngagement) { <button type="button" class="entity-option" data-legacy-step="ENGAGEMENT_SHIFTING" data-legacy-target="entityEngagementLegacy"><strong>Shift an engagement</strong><span>Existing authorized engagement shifting</span></button> }
         </div>
-        <p class="entity-context-note">The existing engagement operations retain their own selection and authorization checks. No reversal procedure or API has been modified.</p>
+        <p id="entityEngagementContextNote" class="entity-context-note">Select an entity in the register above. Engagement details and shifting will use that selection automatically; the original operations, validations and permissions are unchanged.</p>
         <div id="entityEngagementLegacy" class="entity-legacy-host" aria-live="polite"></div>
     </section>
 
@@ -216,3 +217,4 @@
     </section>
 </main>
 <script src="@Url.Content("~/js/administration-entity-dashboard.js")" asp-append-version="true"></script>
+<script src="@Url.Content("~/js/entity-workspace-selection.js")" asp-append-version="true"></script>
