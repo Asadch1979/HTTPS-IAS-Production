@@ -155,9 +155,16 @@ namespace AIS
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.Cookie.Path = string.IsNullOrWhiteSpace(baseUrl) ? "/" : baseUrl;
-                options.LoginPath = baseUrl + "/Login/Index";
-                options.LogoutPath = baseUrl + "/Login/Logout";
-                options.AccessDeniedPath = baseUrl + "/Login/Index";
+                // Cookie authentication appends Request.PathBase itself.
+                // Supplying BaseURL here produced /ZTBLAIS/ZTBLAIS/Login/Index.
+                options.LoginPath = "/Login/Index";
+                options.LogoutPath = "/Login/Logout";
+                // Authorization failures are 403, not a misleading login redirect.
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
                 options.SlidingExpiration = true;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
             });

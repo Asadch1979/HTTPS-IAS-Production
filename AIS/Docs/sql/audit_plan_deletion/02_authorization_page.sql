@@ -1,5 +1,6 @@
 -- Execute manually in UAT after verifying the unused page ID and IAS menu.
--- No approval roles are granted automatically. Assign selected group in IAS admin.
+-- Automatically grants the approval page only to verified active IAS role-1 Super User groups.
+-- Other authorizer groups must be explicitly reviewed and assigned by IAS administration.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 DECLARE
   V_PAGE_ID NUMBER := 460;
@@ -29,18 +30,20 @@ BEGIN
        'AUDIT_PLAN_DELETION_AUTHORIZATION',
        '/Planning/audit_plan_deletion_authorization');
   END IF;
-  -- Known Super User group: grant only when group 1 / role 1 is confirmed.
-  SELECT COUNT(*) INTO V_COUNT FROM T_GROUPS
-   WHERE GROUP_ID=1 AND ROLE_ID=1 AND STATUS='Y';
-  IF V_COUNT=1 THEN
+  -- IAS role 1 is the verified Super User role. Grant only its active
+  -- groups, rather than incorrectly assuming that GROUP_ID must equal 1.
+  FOR GR IN (
+    SELECT GROUP_ID FROM T_GROUPS
+     WHERE ROLE_ID=1 AND STATUS='Y'
+  ) LOOP
     SELECT COUNT(*) INTO V_COUNT FROM T_MENU_PAGES_GROUPMAP
-     WHERE GROUP_ID=1 AND PAGE_ID=V_PAGE_ID;
+     WHERE GROUP_ID=GR.GROUP_ID AND PAGE_ID=V_PAGE_ID;
     IF V_COUNT=0 THEN
       INSERT INTO T_MENU_PAGES_GROUPMAP(GROUPMAP_ID,GROUP_ID,PAGE_ID)
-      SELECT NVL(MAX(GROUPMAP_ID),0)+1,1,V_PAGE_ID
+      SELECT NVL(MAX(GROUPMAP_ID),0)+1,GR.GROUP_ID,V_PAGE_ID
         FROM T_MENU_PAGES_GROUPMAP;
     END IF;
-  END IF;
+  END LOOP;
   COMMIT;
 END;
 /
