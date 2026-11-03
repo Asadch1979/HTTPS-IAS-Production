@@ -237,3 +237,7 @@
 .entity-workspace .entity-legacy-edit-host #updateEntityModal.show {
     display: block;
 }
+
+.entity-selected-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.entity-selected-controls .entity-reference { margin-left: 0; }
+.entity-selected-controls button { white-space: nowrap; }
