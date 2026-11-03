@@ -366,6 +366,8 @@
         if (!Number.isInteger(id) || id <= 0) return;
         const version = ++selectionVersion;
         currentEntity = { id: id, name: name, active: active };
+        const refreshButton = byId('entityRefreshSelected');
+        if (refreshButton) refreshButton.disabled = false;
         currentProfile = [];
         // Invalidate any partially loaded operation belonging to a different entity.
         ++legacyVersion;
@@ -495,6 +497,10 @@
             loadLegacyOperation(button.getAttribute('data-legacy-step'),
                 button.getAttribute('data-legacy-target'));
         });
+    });
+    const refreshSelected = byId('entityRefreshSelected');
+    if (refreshSelected) refreshSelected.addEventListener('click', function () {
+        if (currentEntity) selectEntity(currentEntity.id, currentEntity.name, currentEntity.active);
     });
     const without = byId('entityWithoutParas');
     if (without) without.addEventListener('click', function () {
