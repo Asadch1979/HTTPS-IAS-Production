@@ -115,8 +115,9 @@
     <section class="entity-selected" aria-label="Selected entity at a glance">
         <div class="entity-selected-heading">
             <div><span class="entity-eyebrow">Current selection</span><h2 id="selectedEntityLabel">Select an entity above</h2></div>
-            <div><span id="selectedEntityStatus" class="entity-state-pill">No selection</span>
-                <span id="selectedEntityReference" class="entity-reference"></span></div>
+            <div class="entity-selected-controls"><span id="selectedEntityStatus" class="entity-state-pill">No selection</span>
+                <span id="selectedEntityReference" class="entity-reference"></span>
+                <button id="entityRefreshSelected" type="button" class="entity-secondary-btn" disabled title="Reload current master and mapping information from Oracle">Refresh details</button></div>
         </div>
         <div class="entity-identity-grid">
             <div><span>Name</span><strong id="identityName">Not selected</strong></div>
