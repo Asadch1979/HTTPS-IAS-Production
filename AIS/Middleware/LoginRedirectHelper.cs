@@ -130,7 +130,9 @@ namespace AIS.Middleware
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/json";
 
-            var payload = JsonSerializer.Serialize(new { error, message }, SerializerOptions);
+            context.Response.Headers["Cache-Control"] = "no-store";
+            context.Response.Headers["X-Trace-Id"] = context.TraceIdentifier;
+            var payload = JsonSerializer.Serialize(new { error, message, reference = context.TraceIdentifier }, SerializerOptions);
             await context.Response.WriteAsync(payload);
         }
     }
