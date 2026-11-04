@@ -1,6 +1,7 @@
 using AIS.Exceptions;
 using AIS.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Linq;
