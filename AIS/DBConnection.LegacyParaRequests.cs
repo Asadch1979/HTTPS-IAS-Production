@@ -31,6 +31,8 @@ namespace AIS.Controllers
                 command.Parameters.Add("p_operation", OracleDbType.Varchar2).Value = operation;
                 command.Parameters.Add("p_ppno", OracleDbType.Int64).Value = pp;
                 command.Parameters.Add("p_context", OracleDbType.Int32).Value = user.UserContextAssignmentId.Value;
+                command.Parameters.Add("p_role", OracleDbType.Int32).Value = user.UserRoleID;
+                command.Parameters.Add("p_group", OracleDbType.Int32).Value = user.UserGroupID;
                 command.Parameters.Add("p_page", OracleDbType.Int32).Value = page;
                 command.Parameters.Add("p_input", OracleDbType.Clob).Value = JsonSerializer.Serialize(input,
                     new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });

@@ -1,13 +1,13 @@
 CREATE OR REPLACE PACKAGE PKG_IAS_LEGACY_PARA AS
   -- Called with server-session identity only; scope/permissions are re-derived.
   PROCEDURE P_EXECUTE(p_operation IN VARCHAR2, p_ppno IN NUMBER,
-    p_context IN NUMBER, p_page IN NUMBER, p_input IN CLOB,
+    p_context IN NUMBER, p_role IN NUMBER, p_group IN NUMBER, p_page IN NUMBER, p_input IN CLOB,
     io_cursor OUT SYS_REFCURSOR);
 END PKG_IAS_LEGACY_PARA;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
   PROCEDURE P_EXECUTE(p_operation IN VARCHAR2, p_ppno IN NUMBER,
-    p_context IN NUMBER, p_page IN NUMBER, p_input IN CLOB,
+    p_context IN NUMBER, p_role IN NUMBER, p_group IN NUMBER, p_page IN NUMBER, p_input IN CLOB,
     io_cursor OUT SYS_REFCURSOR) IS
     v_entity NUMBER; v_group NUMBER; v_role NUMBER; v_enabled CHAR(1);
     v_id NUMBER; v_version NUMBER; v_count NUMBER; v_risk NUMBER;
@@ -28,7 +28,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     BEGIN
       SELECT e.type_id,e.code,e.auditby_id INTO v_type,v_code,v_auditor
         FROM t_auditee_entities e
-       WHERE e.entity_id=p_entity AND e.auditable='Y' AND e.auditby_id=v_entity;
+       WHERE e.entity_id=p_entity AND e.auditable='Y' AND e.active='Y' AND e.auditby_id=v_entity;
     EXCEPTION WHEN NO_DATA_FOUND THEN fail('Entity is outside the selected Audit Cluster.');
     END;
 
@@ -102,8 +102,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     BEGIN
       SELECT a.entity_id,NVL(a.group_id,a.role_id),a.role_id INTO v_entity,v_group,v_role
         FROM T_USER_CONTEXT_ASSIGNMENT a JOIN t_user u ON u.userid=a.user_id AND u.ppno=a.ppno
+        JOIN t_groups g ON g.group_id=NVL(a.group_id,a.role_id) AND g.role_id=a.role_id AND g.status='Y'
+        JOIN t_auditee_entities cluster_entity ON cluster_entity.entity_id=a.entity_id AND cluster_entity.active='Y'
        WHERE a.user_context_id=p_context AND a.ppno=p_ppno AND a.is_active='Y'
-         AND NVL(u.isactive,'Y')='Y'
+         AND u.isactive='Y' AND a.role_id=p_role AND NVL(a.group_id,a.role_id)=p_group
+         AND EXISTS (SELECT 1 FROM T_USER_MAPING m WHERE m.userid=a.user_id AND m.ppno=a.ppno
+                      AND m.group_id=g.group_id AND m.role_id=g.role_id)
          AND (a.effective_from IS NULL OR a.effective_from<=TRUNC(SYSDATE))
          AND (a.effective_to IS NULL OR a.effective_to>=TRUNC(SYSDATE));
     EXCEPTION WHEN NO_DATA_FOUND THEN fail('The selected user context is no longer active.'); END;
@@ -257,35 +261,29 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         BEGIN
           SELECT recognition_on INTO v_rec FROM T_IAS_LEGACY_RECOGNITION WHERE audit_year=v_row.audit_year;
         EXCEPTION WHEN NO_DATA_FOUND THEN fail('Approved historical recognition policy is not recorded for this audit year.'); END;
-        -- Existing source explicitly assigns IDs and supplies no common sequence.
-        -- Exclusive locks make the maximum-based allocator safe for this operation.
-        -- Locks are retained through caller COMMIT/ROLLBACK; no intermediate commits.
-        LOCK TABLE T_AU_OLD_PARAS_FAD IN EXCLUSIVE MODE NOWAIT;
-        LOCK TABLE T_AU_OLD_PARAS_FAD_TEXT IN EXCLUSIVE MODE NOWAIT;
-        LOCK TABLE AIS_T_AU_POST_COMPLIANCE IN EXCLUSIVE MODE NOWAIT;
-        LOCK TABLE T_AU_OLD_PARAS_FAD_RESPONSIBILITY_ASSIGNED IN EXCLUSIVE MODE NOWAIT;
+        -- Shared allocator bindings are deliberately unconfigured by default.
+        -- No operational table locks or per-workflow MAX(ID)+1 allocation.
         duplicate_check(v_row.entity_id,v_row.audit_year,v_row.nature_id,v_row.para_no,v_id);
-        SELECT NVL(MAX(id),0)+1 INTO v_legacy FROM T_AU_OLD_PARAS_FAD;
-        SELECT NVL(MAX(id),0)+1 INTO v_text FROM T_AU_OLD_PARAS_FAD_TEXT;
-        SELECT NVL(MAX(com_id),0)+1 INTO v_com FROM AIS_T_AU_POST_COMPLIANCE;
+        v_legacy:=PKG_IAS_LEGACY_IDS.NEXT_ID('FAD');
+        v_text:=PKG_IAS_LEGACY_IDS.NEXT_ID('TEXT');
+        v_com:=PKG_IAS_LEGACY_IDS.NEXT_ID('COMPLIANCE');
         v_ref:='B'||TO_CHAR(v_legacy,'FM9999999999999999999999999999');
         INSERT INTO T_AU_OLD_PARAS_FAD
-          (id,ref_p,type_id,audit_period,para_no,gist_of_paras,annexure,amount_involved,audited_by,
-           entity_id,nature_of_audit,entered_by,entered_on,para_status,update_status,risk,process_detail)
+          (id,ref_p,type_id,audit_period,para_no,gist_of_paras,annex,amount_involved,audited_by,
+           entity_id,nature_of_audit,entered_by,entered_on,para_status,update_status,risk,process_detail,no_of_instances)
         VALUES(v_legacy,v_ref,v_type,TO_CHAR(v_row.audit_year,'FM9999'),v_row.para_no,v_row.heading,
           v_row.annexure_id,v_row.amount_involved,v_auditor,v_row.entity_id,v_row.nature_id,
-          v_row.requested_by,CAST(v_row.requested_on AS DATE),8,2,v_row.risk_id,v_row.checklist_id);
+          v_row.requested_by,CAST(v_row.requested_on AS DATE),8,2,v_row.risk_id,v_row.checklist_id,v_row.no_of_instances);
         INSERT INTO T_AU_OLD_PARAS_FAD_TEXT(id,ref_p,para_text) VALUES(v_text,v_ref,v_row.observation_html);
         INSERT INTO AIS_T_AU_POST_COMPLIANCE
           (com_id,old_para_id,audit_period,entity_id,entity_code,audited_by,entity_type_id,
-           com_cycle,com_status,com_stage,para_status,para_no,gist_of_paras,ind,para_added_on,risk)
+           com_cycle,com_status,com_stage,para_status,para_no,gist_of_paras,ind,para_added_on,risk,annex,amount,no_of_instances)
         VALUES(v_com,v_legacy,TO_CHAR(v_row.audit_year,'FM9999'),v_row.entity_id,v_code,v_auditor,v_type,
-          0,8,CASE WHEN v_type=6 THEN 13 ELSE 21 END,8,v_row.para_no,v_row.heading,'O',v_rec,v_row.risk_id);
-        SELECT NVL(MAX(id),0) INTO v_resp FROM T_AU_OLD_PARAS_FAD_RESPONSIBILITY_ASSIGNED;
+          0,8,CASE WHEN v_type=6 THEN 13 ELSE 21 END,8,v_row.para_no,v_row.heading,'O',v_rec,v_row.risk_id,v_row.annexure_id,v_row.amount_involved,v_row.no_of_instances);
         FOR person IN (SELECT j.* FROM JSON_TABLE(v_row.payload_json,'$.responsiblePersons[*]'
           COLUMNS(pp NUMBER PATH '$.ppNo',loan_case VARCHAR2(40) PATH '$.loanCase',
           account_number VARCHAR2(40) PATH '$.accountNumber',lc NUMBER PATH '$.loanAmount',ac NUMBER PATH '$.accountAmount')) j) LOOP
-          v_resp:=v_resp+1;
+          v_resp:=PKG_IAS_LEGACY_IDS.NEXT_ID('RESPONSIBILITY');
           INSERT INTO T_AU_OLD_PARAS_FAD_RESPONSIBILITY_ASSIGNED
             (id,obs_id,pp_no,assignedby,lastupdatedby,lastupdateddate,is_active,loan_case,account_number,lc_amount,ac_amount,ref_p)
           VALUES(v_resp,v_legacy,person.pp,v_entity,p_ppno,SYSDATE,'Y',person.loan_case,person.account_number,person.lc,person.ac,v_ref);
