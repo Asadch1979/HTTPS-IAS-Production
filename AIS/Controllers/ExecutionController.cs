@@ -34,8 +34,12 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
                 return RedirectToAction("Index", "PageNotFound");
+            ViewData["PageId"] = 192;
+            ViewData["LegacyParaEditor"] = true;
+            ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
+            ViewData["ProcessList"] = dBConnection.GetAuditChecklistCAD();
             ViewData["EntitiesTypeList"] = dBConnection.GetAuditeeEntitiesType();
-            ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara();
+            ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara().Where(p => p.AUDITPERIODID >= 1900 && p.AUDITPERIODID <= 2025).ToList();
             ViewData["AuditNatureList"] = dBConnection.GetAuditNatureForAddLegacyPara();
             return View();
             }
@@ -49,6 +53,7 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
                 return RedirectToAction("Index", "PageNotFound");
+            ViewData["PageId"] = 193;
             return View();
             }
         public IActionResult Index()

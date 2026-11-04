@@ -1,10 +1,38 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @{
     ViewData["Title"] = "Add Legacy Para";
     Layout = "_Layout";
+    ViewData["LegacyParaEditor"] = true;
+    var enabled = Configuration.GetValue<bool>("LegacyParaAddition:Enabled");
 }
-<div class="container-fluid mt-3">
+<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/LegacyParaRequests/")">
+    @Html.AntiForgeryToken()
     <h3>Add Legacy Para</h3>
-    <div class="alert alert-warning" role="status">
-        Legacy para addition is unavailable pending completion of the redesigned request and authorization workflow and database/security review.
-    </div>
+    <p class="text-muted">Submit a missing historical observation for Audit Cluster authorization.</p>
+    @if (!enabled) { <div class="alert alert-warning">This module is not activated. Entry and request actions are unavailable.</div> }
+    <div id="legacyMessage" role="status" class="alert d-none"></div>
+    <fieldset disabled="@(!enabled)">
+        <div class="card mb-3"><div class="card-body row g-3">
+            <input id="legacyRequestId" type="hidden" value="0" /><input id="legacyVersion" type="hidden" value="0" />
+            <div class="col-md-6"><label for="entityTypeSelectField" class="form-label">Entity Type</label><select id="entityTypeSelectField" class="form-select"><option value="">Select entity type</option>
+                @if (ViewData["EntitiesTypeList"] != null) { foreach (var item in (dynamic)ViewData["EntitiesTypeList"]) { <option value="@item.TYPE_ID">@item.ENTITYTYPEDESC</option> } }
+            </select></div>
+            <div class="col-md-6"><label for="entitySelectField" class="form-label">Audit Entity</label><select id="entitySelectField" class="form-select"><option value="">Select audit entity</option></select></div>
+            <div class="col-md-4"><label for="natureSelectField" class="form-label">Audit Nature</label><select id="natureSelectField" class="form-select"><option value="">Select nature</option>
+                @if (ViewData["AuditNatureList"] != null) { foreach (var item in (dynamic)ViewData["AuditNatureList"]) { <option value="@item.N_ID">@item.DESCRIPTION</option> } }
+            </select></div>
+            <div class="col-md-4"><label for="yearSelectField" class="form-label">Historical Audit Year (through 2025)</label><select id="yearSelectField" class="form-select"><option value="">Select year</option>
+                @if (ViewData["AuditYearList"] != null) { foreach (var item in (dynamic)ViewData["AuditYearList"]) { <option value="@item.AUDITPERIODID">@item.DESCRIPTION</option> } }
+            </select></div>
+            <div class="col-md-4"><label for="paraNoField" class="form-label">Original Para Number</label><input id="paraNoField" class="form-control" maxlength="100" /></div>
+        </div></div>
+        <div class="card"><div class="card-body"><partial name="_CauObservationEditor" /></div></div>
+        <button id="legacyNewRequest" type="button" class="btn btn-outline-secondary mt-3">Start New Request</button>
+    </fieldset>
+    <h4 class="mt-4">My Requests / Returned Requests</h4><partial name="_LegacyParaRequestQueue" />
 </div>
+<script type="application/json" id="legacy-page-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { AnnexList = ViewData["AnnexList"] }))</script>
+<script src="~/js/obsreference.js" asp-append-version="true"></script>
+<script src="~/js/Execution/legacy-para-requests.js" asp-append-version="true"></script>
+<script src="~/js/Execution/Views_Execution_Add_Legacy_Para.js" asp-append-version="true"></script>

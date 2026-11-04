@@ -1,1 +1,1 @@
-// Retired direct-to-live legacy addition workflow. Intentionally no API calls.
+// Queue, sandboxed preview, history and decision actions share legacy-para-requests.js.
