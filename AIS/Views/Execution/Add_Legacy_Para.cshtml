@@ -6,7 +6,7 @@
     ViewData["LegacyParaEditor"] = true;
     var enabled = Configuration.GetValue<bool>("LegacyParaAddition:Enabled");
 }
-<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/LegacyParaRequests/")">
+<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/api/LegacyParaRequests/")">
     @Html.AntiForgeryToken()
     <h3>Add Legacy Para</h3>
     <p class="text-muted">Submit a missing historical observation for Audit Cluster authorization.</p>
