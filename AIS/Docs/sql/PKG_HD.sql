@@ -2307,208 +2307,27 @@ create or replace package body PKG_HD is
                               ppno        in number,
                               io_cursor   OUT t_cursor) is
   begin
-    if (ppno is not null) then
-      if (USER_ENT_ID in (112242, 112248)) then
-        insert into T_AU_OBSERVATION_OLD_CAD_PARAS --(PERIOD
-          (PARA_ID,
-           PERIOD,
-           PARA_NO,
-           GIST_OF_PARAS,
-           ENTITY_ID,
-           AUDITED_BY,
-           ENTERED_BY,
-           ENTERED_ON)
-        values
-          ((select COALESCE(max(ac.PARA_ID) + 1, 1)
-             from T_AU_OBSERVATION_OLD_CAD_PARAS ac),
-           to_date(audityear, 'YYYY'),
-           PARANO,
-           GIST,
-           Entityid,
-           USER_ENT_ID,
-           ppno,
-           sysdate);
-        commit;
-        OPEN io_cursor FOR
-          SELECT 'Para added in legacy list and submitted to Head for Authorization' as remarks
-            from dual;
-      else
-        INSERT into t_au_old_paras_fad
-          (id,
-           ref_P,
-           type_id,
-           audit_period,
-           para_no,
-           gist_of_paras,
-           annexure,
-           amount_involved,
-           vol_i_ii,
-           audited_by,
-           entity_id,
-           nature_of_audit,
-           entered_by,
-           entered_on)
-        values
-          ((select COALESCE(max(acc.ID) + 1, 1) from t_au_old_paras_fad acc),
-           ('B' ||
-           (select COALESCE(max(acc.ID) + 1, 1) from t_au_old_paras_fad acc)),
-           typeid,
-           audityear,
-           PARANO,
-           GIST,
-           ANEXURE,
-           amount,
-           VOL,
-           USER_ENT_ID,
-           Entityid,
-           nature,
-           ppno,
-           sysdate);
-        COMMIT;
-
-        OPEN io_cursor FOR
-          SELECT 'Para added in legacy list and submitted to Incharge Audit Zone for Authorization' as remarks
-            from dual;
-      end if;
-    else
-      insert into t_au_error_logs
-        (id, package_name, procedure_name, nature, ppno, record_on, status)
-      Values
-        ((select COALESCE(max(p.id) + 1, 1) from t_au_error_logs p),
-         'HD',
-         'P_add_legacy_Para',
-         'PP No was null',
-         USER_ENT_ID,
-         sysdate,
-         'to be checked');
-      commit;
-      open io_cursor for
-        select 'Your session has been expired, Logout and Login again.' as remarks
-          from dual;
-    end if;
+    raise_application_error(-20870, 'Legacy para addition disabled pending redesign and security review.');
   end P_add_legacy_Para;
 
   procedure P_Get_legacy_Para_to_authorize(ENTITYID  IN NUMBER,
                                            io_cursor OUT t_cursor) as
   begin
-
-    if (ENTITYID in (112242, 112248)) then
-      open io_cursor for
-        SELECT f.para_id as ref_p,
-               f.period as Audit_year,
-               e.code as e_code,
-               e.name as e_name,
-               'Regular' as nature,
-               f.para_no,
-               f.gist_of_paras,
-               '' as annexure,
-               '' as amount_involved,
-               '' as vol_i_ii
-
-          FROM T_AU_OBSERVATION_OLD_CAD_PARAS f
-         inner join t_auditee_entities e
-            on e.entity_id = f.entity_id
-         where f.para_status is null
-           and f.audited_by = ENTITYID;
-
-    else
-      OPEN io_cursor FOR
-        SELECT f.ref_p,
-               p.description || '  ' || p.audit_year as Audit_year,
-               e.code as e_code,
-               e.name as e_name,
-               n.description as nature,
-               f.para_no,
-               f.gist_of_paras,
-               f.annexure,
-               f.amount_involved,
-               f.vol_i_ii
-          FROM t_au_old_paras_fad f
-         inner join t_auditee_entities e
-            on e.entity_id = f.entity_id
-         inner join T_AU_OLD_AUDIT_NATURE n
-            on n.nid = f.nature_of_audit
-         inner join T_AU_OLD_AUDIT_PERIOD p
-            on p.audit_year = f.audit_period
-         where f.para_status is null
-           and f.audited_by = ENTITYID;
-    end if;
+    raise_application_error(-20870, 'Legacy para addition disabled pending redesign and security review.');
   end P_Get_legacy_Para_to_authorize;
 
   procedure P_Authorize_legacy_Para_addition(RefP      in varchar2,
                                              PPNO      IN NUMBER,
                                              io_cursor OUT t_cursor) as
   begin
-    if (ppno in (113092, 111564)) then
-      update T_AU_OBSERVATION_OLD_CAD_PARAS c
-         set c.para_status = 8, c.status = 2
-       where c.para_id = refp;
-    else
-      if (ppno not in (113092, 111564)) then
-        /* update t_au_old_paras_fad t
-          set t.para_status         = 8,
-              t.parastatusupdatedby = ppno,
-              t.update_status       = 1
-        where t.ref_p = refp; */
-        commit;
-        open io_cursor for
-          select 'Request for addition has been Authorized, please tell your team to add para text' as remarks
-            from dual;
-      else
-        insert into t_au_error_logs
-          (id,
-           package_name,
-           procedure_name,
-           nature,
-           ppno,
-           record_on,
-           status)
-        Values
-          ((select COALESCE(max(p.id) + 1, 1) from t_au_error_logs p),
-           'HD',
-           'P_add_legacy_Para',
-           'PP No was null',
-           PPNO,
-           sysdate,
-           'to be checked');
-        commit;
-        open io_cursor for
-          select 'Your session has been expired, Logout and Login again.' as remarks
-            from dual;
-      end if;
-    end if;
+    raise_application_error(-20870, 'Legacy para addition disabled pending redesign and security review.');
   end P_Authorize_legacy_Para_addition;
 
   procedure P_referedback_Del_para(RefP      in varchar2,
                                    PPNO      IN NUMBER,
                                    io_cursor OUT t_cursor) as
   begin
-    if (ppno is not null) then
-
-      delete from T_AU_OBSERVATION_OLD_CAD_PARAS t where t.para_id = refp;
-      commit;
-
-      -- delete from t_au_old_paras_fad t where t.ref_p = refp;
-      -- commit;
-
-      open io_cursor for
-        select 'Para Deleted' as remarks from dual;
-    else
-      insert into t_au_error_logs
-        (id, package_name, procedure_name, nature, ppno, record_on, status)
-      Values
-        ((select COALESCE(max(p.id) + 1, 1) from t_au_error_logs p),
-         'HD',
-         'P_add_legacy_Para',
-         'PP No was null',
-         PPNO,
-         sysdate,
-         'to be checked');
-      commit;
-      open io_cursor for
-        select 'Your session has been expired, Logout and Login again.' as remarks
-          from dual;
-    end if;
+    raise_application_error(-20870, 'Legacy para addition disabled pending redesign and security review.');
   end P_referedback_Del_para;
 
   Procedure p_update_para_no(obs_id    in number,

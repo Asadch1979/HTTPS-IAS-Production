@@ -3401,9 +3401,9 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ApplicationAudit("LEGACY_PARA_ADDED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_ADD_LEGACY_PARA", ObjectType = "LEGACY_PARA", RequireResultMessage = true)]
-        public string add_new_legacy_para(AddNewLegacyParaModel LEGACY_PARA)
+        public IActionResult add_new_legacy_para(AddNewLegacyParaModel LEGACY_PARA)
             {
-            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AddNewLegacyPara(LEGACY_PARA) + "\"}";
+            return LegacyParaAdditionUnavailable();
             }
 
         [HttpPost]
@@ -3414,9 +3414,9 @@ namespace AIS.Controllers
             }
         [HttpGet]
         [HttpPost]
-        public List<AddNewLegacyParaModel> get_add_legacy_paras_autorize()
+        public IActionResult get_add_legacy_paras_autorize()
             {
-            return archiveDbConnection.GetAddedLegacyParaForAuthorize();
+            return LegacyParaAdditionUnavailable();
             }
 
         //
@@ -3429,9 +3429,9 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ApplicationAudit("LEGACY_PARA_ADDITION_AUTHORIZED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_AUTHORIZE_LEGACY_PARA_ADDITION", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
-        public string Authorize_Legacy_Para_addition(string PARA_REF)
+        public IActionResult Authorize_Legacy_Para_addition(string PARA_REF)
             {
-            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.AuthorizeLegacyParaAddition(PARA_REF) + "\"}";
+            return LegacyParaAdditionUnavailable();
             }
         [HttpPost]
         [ApplicationAudit("LEGACY_PARA_GIST_NUMBER_AUTHORIZED", "COMPLIANCE", "LEGACY PARA", "PKG_AR", "P_AUTHORIZE_PARA_GIST", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
@@ -3442,9 +3442,9 @@ namespace AIS.Controllers
 
         [HttpPost]
         [ApplicationAudit("LEGACY_PARA_ADDITION_REQUEST_DELETED", "COMPLIANCE", "LEGACY PARA", "PKG_HD", "P_REFERREDBACK_DEL_PARA", ObjectType = "LEGACY_PARA", ObjectId = "PARA_REF", RequireResultMessage = true)]
-        public string Delete_Legacy_Para_addition_request(string PARA_REF)
+        public IActionResult Delete_Legacy_Para_addition_request(string PARA_REF)
             {
-            return "{\"Status\":true,\"Message\":\"" + archiveDbConnection.DeleteLegacyParaAdditionRequest(PARA_REF) + "\"}";
+            return LegacyParaAdditionUnavailable();
             }
 
         [HttpGet]

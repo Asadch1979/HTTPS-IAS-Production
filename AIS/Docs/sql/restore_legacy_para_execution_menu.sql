@@ -1,6 +1,7 @@
 -- Restore the existing legacy-para pages to Execution; retain all group grants.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 BEGIN
+  RAISE_APPLICATION_ERROR(-20870, 'Menu activation blocked pending completed legacy redesign and SQL/security review.');
   UPDATE T_MENU_PAGES
      SET MENU_ID = 4, PAGE_NAME = 'Add Legacy Para',
          PAGE_PATH = 'Execution/Add_Legacy_Para',

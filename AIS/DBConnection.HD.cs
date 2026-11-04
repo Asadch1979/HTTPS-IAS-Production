@@ -1824,165 +1824,22 @@ namespace AIS.Controllers
 
         public string AddNewLegacyPara(AddNewLegacyParaModel LEGACY_PARA)
             {
-            string resp = "";
-            var sessionHandler = CreateSessionHandler();
-
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
-
-            List<AuditNatureModel> entitiesList = new List<AuditNatureModel>();
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_hd.P_add_legacy_Para";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("typeid", OracleDbType.Int32).Value = LEGACY_PARA.ENTITY_TYPE_ID;
-                cmd.Parameters.Add("audityear", OracleDbType.Varchar2).Value = LEGACY_PARA.AUDIT_YEAR;
-                cmd.Parameters.Add("PARANO", OracleDbType.Varchar2).Value = LEGACY_PARA.PARA_NO;
-                cmd.Parameters.Add("GIST", OracleDbType.Varchar2).Value = LEGACY_PARA.GIST_OF_PARA;
-                cmd.Parameters.Add("ANEXURE", OracleDbType.Varchar2).Value = LEGACY_PARA.ANNEXURE;
-                cmd.Parameters.Add("amount", OracleDbType.Varchar2).Value = LEGACY_PARA.AMOUNT;
-                cmd.Parameters.Add("VOL", OracleDbType.Varchar2).Value = LEGACY_PARA.VOL_I_II;
-                cmd.Parameters.Add("Entityid", OracleDbType.Int32).Value = LEGACY_PARA.ENTITY_ID;
-                cmd.Parameters.Add("USER_ENT_ID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("nature", OracleDbType.Int32).Value = LEGACY_PARA.NATURE_ID;
-                cmd.Parameters.Add("ppno", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-
-                    resp = rdr["remarks"].ToString();
-
-                    }
-                }
-            return resp;
-
+            throw new System.NotSupportedException("Legacy para addition is disabled pending redesign and database/security review.");
             }
 
         public List<AddNewLegacyParaModel> GetAddedLegacyParaForAuthorize()
             {
-            List<AddNewLegacyParaModel> list = new List<AddNewLegacyParaModel>();
-            var sessionHandler = CreateSessionHandler();
-
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return new List<AddNewLegacyParaModel>();
-                }            using var con = this.DatabaseConnection();
-
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_hd.P_get_legacy_para_to_authorize";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("ENTITYID", OracleDbType.Int32).Value = loggedInUser.UserEntityID;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    AddNewLegacyParaModel lpara = new AddNewLegacyParaModel();
-                    lpara.PARA_REF = rdr["REF_P"].ToString();
-                    lpara.ANNEXURE = rdr["ANNEXURE"].ToString();
-                    lpara.VOL_I_II = rdr["VOL_I_II"].ToString();
-                    lpara.PARA_NO = rdr["PARA_NO"].ToString();
-                    lpara.GIST_OF_PARA = rdr["GIST_OF_PARAS"].ToString();
-                    lpara.AUDIT_YEAR = rdr["AUDIT_YEAR"].ToString();
-                    lpara.E_CODE = rdr["E_CODE"].ToString();
-                    lpara.NATURE = rdr["NATURE"].ToString();
-                    lpara.E_NAME = rdr["E_NAME"].ToString();
-                    lpara.AMOUNT = rdr["AMOUNT_INVOLVED"].ToString();
-                    list.Add(lpara);
-                    }
-                }
-            return list;
-
+            throw new System.NotSupportedException("Legacy para addition is disabled pending redesign and database/security review.");
             }
 
         public string AuthorizeLegacyParaAddition(string PARA_REF)
             {
-            string resp = "";
-            var sessionHandler = CreateSessionHandler();
-
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_hd.P_Authorize_legacy_para_addition";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = PARA_REF;
-                cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    resp = rdr["Remarks"].ToString();
-                    }
-                }
-            return resp;
-
+            throw new System.NotSupportedException("Legacy para addition is disabled pending redesign and database/security review.");
             }
 
         public string DeleteLegacyParaAdditionRequest(string PARA_REF)
             {
-            string resp = "";
-            var sessionHandler = CreateSessionHandler();
-
-            var loggedInUser = sessionHandler.GetUser();
-            if (loggedInUser == null
-                || loggedInUser.UserEntityID.GetValueOrDefault() <= 0
-                || string.IsNullOrWhiteSpace(loggedInUser.PPNumber)
-                || loggedInUser.UserRoleID <= 0)
-                {
-                return string.Empty;
-                }            using var con = this.DatabaseConnection();
-
-
-            using (OracleCommand cmd = con.CreateCommand())
-                {
-                cmd.CommandText = "pkg_hd.P_referedback_Del_para";
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.BindByName = true;
-                GuardAgainstDynamicSql(cmd);
-                cmd.Parameters.Clear();
-                cmd.Parameters.Add("REFP", OracleDbType.Varchar2).Value = PARA_REF;
-                cmd.Parameters.Add("PPNO", OracleDbType.Int32).Value = loggedInUser.PPNumber;
-                cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-                using OracleDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
-                    {
-                    resp = rdr["Remarks"].ToString();
-                    }
-                }
-            return resp;
-
+            throw new System.NotSupportedException("Legacy para addition is disabled pending redesign and database/security review.");
             }
 
         public string GetNewParaText(string OBS_ID)
