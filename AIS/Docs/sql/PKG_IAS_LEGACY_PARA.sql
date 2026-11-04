@@ -24,12 +24,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     PROCEDURE fail(p_message VARCHAR2) IS
     BEGIN RAISE_APPLICATION_ERROR(-20801,p_message); END;
 
+    PROCEDURE deny(p_message VARCHAR2) IS
+    BEGIN RAISE_APPLICATION_ERROR(-20811,p_message); END;
+
     PROCEDURE entity_scope(p_entity NUMBER) IS
     BEGIN
       SELECT e.type_id,e.code,e.auditby_id INTO v_type,v_code,v_auditor
         FROM t_auditee_entities e
        WHERE e.entity_id=p_entity AND e.auditable='Y' AND e.active='Y' AND e.auditby_id=v_entity;
-    EXCEPTION WHEN NO_DATA_FOUND THEN fail('Entity is outside the selected Audit Cluster.');
+    EXCEPTION WHEN NO_DATA_FOUND THEN deny('Entity is outside the selected Audit Cluster.');
     END;
 
     PROCEDURE duplicate_check(p_entity NUMBER,p_year NUMBER,p_nature NUMBER,p_para VARCHAR2,p_request NUMBER) IS
@@ -98,28 +101,28 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     IF p_operation NOT IN ('SUBMIT','LIST','DETAIL','LOOKUP','DECIDE') OR p_operation IS NULL
        OR p_page IS NULL OR p_page NOT IN (192,193) THEN fail('Unsupported legacy request operation.'); END IF;
     IF (p_operation IN ('SUBMIT','LOOKUP') AND p_page<>192) OR (p_operation='DECIDE' AND p_page<>193)
-      THEN fail('Page permission is required for this action.'); END IF;
+      THEN deny('Page permission is required for this action.'); END IF;
     BEGIN
       SELECT a.entity_id,NVL(a.group_id,a.role_id),a.role_id INTO v_entity,v_group,v_role
+        -- The selected active assignment is the membership authority. T_USER_MAPING
+        -- stores the synchronized default and must not veto another active assignment.
         FROM T_USER_CONTEXT_ASSIGNMENT a JOIN t_user u ON u.userid=a.user_id AND u.ppno=a.ppno
         JOIN t_groups g ON g.group_id=NVL(a.group_id,a.role_id) AND g.role_id=a.role_id AND g.status='Y'
         JOIN t_auditee_entities cluster_entity ON cluster_entity.entity_id=a.entity_id AND cluster_entity.active='Y'
        WHERE a.user_context_id=p_context AND a.ppno=p_ppno AND a.is_active='Y'
          AND u.isactive='Y' AND a.role_id=p_role AND NVL(a.group_id,a.role_id)=p_group
-         AND EXISTS (SELECT 1 FROM T_USER_MAPING m WHERE m.userid=a.user_id AND m.ppno=a.ppno
-                      AND m.group_id=g.group_id AND m.role_id=g.role_id)
          AND (a.effective_from IS NULL OR a.effective_from<=TRUNC(SYSDATE))
          AND (a.effective_to IS NULL OR a.effective_to>=TRUNC(SYSDATE));
-    EXCEPTION WHEN NO_DATA_FOUND THEN fail('The selected user context is no longer active.'); END;
+    EXCEPTION WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20810,'The selected user context is no longer active.'); END;
     SELECT COUNT(*) INTO v_count FROM t_menu_pages_groupmap g JOIN t_menu_pages p ON p.id=g.page_id
      WHERE g.group_id=v_group AND p.id=p_page AND p.status='A';
-    IF v_count=0 OR v_role IS NULL OR v_entity IS NULL THEN fail('Permission denied for the current page.'); END IF;
+    IF v_count=0 OR v_role IS NULL OR v_entity IS NULL THEN deny('Permission denied for the current page.'); END IF;
     -- This singleton also serializes new keys and corrected requests. No activation source is included.
     IF p_operation IN ('SUBMIT','DECIDE') THEN
       SELECT enabled INTO v_enabled FROM T_IAS_LEGACY_PARA_CONTROL WHERE control_id=1 FOR UPDATE;
     ELSE SELECT enabled INTO v_enabled FROM T_IAS_LEGACY_PARA_CONTROL WHERE control_id=1;
     END IF;
-    IF v_enabled<>'Y' THEN fail('Legacy para addition is not activated.'); END IF;
+    IF v_enabled<>'Y' THEN RAISE_APPLICATION_ERROR(-20812,'Legacy para addition is not activated.'); END IF;
     v_id:=JSON_VALUE(p_input,'$.requestId' RETURNING NUMBER ERROR ON ERROR);
     v_version:=JSON_VALUE(p_input,'$.version' RETURNING NUMBER ERROR ON ERROR);
     v_search:=TRIM(JSON_VALUE(p_input,'$.search'));
@@ -178,7 +181,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       END IF;
       entity_scope(v_row.entity_id);
       IF v_row.audited_by<>v_entity OR (p_page=192 AND v_row.requested_by<>p_ppno)
-        OR (p_page=193 AND v_row.requested_by=p_ppno) THEN fail('Request is not accessible in the selected context.'); END IF;
+        OR (p_page=193 AND v_row.requested_by=p_ppno) THEN deny('Request is not accessible in the selected context.'); END IF;
     END IF;
 
     IF p_operation='DETAIL' THEN
@@ -244,7 +247,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       v_action:=JSON_VALUE(p_input,'$.action');
       v_remarks:=TRIM(JSON_VALUE(p_input,'$.remarks' RETURNING VARCHAR2(2000) ERROR ON ERROR));
       IF v_action NOT IN ('AUTHORIZE','RETURN','REJECT') OR v_action IS NULL THEN fail('Invalid action.'); END IF;
-      IF v_row.requested_by=p_ppno THEN fail('Maker cannot authorize or decide their own request.'); END IF;
+      IF v_row.requested_by=p_ppno THEN deny('Maker cannot authorize or decide their own request.'); END IF;
       IF v_row.status='AUTHORIZED' AND v_action='AUTHORIZE' THEN
         OPEN io_cursor FOR SELECT request_id,version_no,status,legacy_para_id,legacy_ref_p,compliance_id
           FROM T_IAS_LEGACY_PARA_REQUEST WHERE request_id=v_id;

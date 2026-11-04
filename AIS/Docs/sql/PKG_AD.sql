@@ -1790,6 +1790,7 @@ create or replace package body PKG_AD is
   PROCEDURE P_AddGroupMenuItemsAssignment(groupid IN T_MENU_PAGES_GROUPMAP.GROUP_ID%TYPE,
                                           PAGEID  IN T_MENU_PAGES_GROUPMAP.PAGE_ID%TYPE) IS
     v_api_count NUMBER := 0;
+    v_legacy_role NUMBER;
   BEGIN
     -- Existing front-end assignment workflow retained. A dedicated executive
     -- page receives only its explicitly mapped, active GET APIs, even where
@@ -1801,7 +1802,20 @@ create or replace package body PKG_AD is
     VALUES ((SELECT COALESCE(MAX(p.GROUPMAP_ID)+1,1)
               FROM T_MENU_PAGES_GROUPMAP p),groupid,PAGEID);
 
-    IF PAGEID BETWEEN 1000300 AND 1000305 THEN
+    IF PAGEID IN (192,193) THEN
+      -- Selected-context API authorization uses the group's role. The explicit
+      -- dependency manifest handles shared List/Detail and read-only picker APIs.
+      SELECT role_id INTO v_legacy_role FROM t_groups WHERE group_id=groupid AND status='Y';
+      MERGE INTO T_AU_ROLE_API_PERMISSION p
+      USING (SELECT DISTINCT v_legacy_role role_id,m.api_id
+        FROM T_IAS_LEGACY_PAGE_API d JOIN T_AU_API_MASTER m ON m.api_id=d.api_id
+        WHERE d.page_id=PAGEID AND d.is_active='Y' AND m.is_active='Y') v
+        ON (p.role_id=v.role_id AND p.api_id=v.api_id)
+      -- A page assignment must not reverse an explicit API denial or activate
+      -- a new grant. New rows require separate explicit permission approval.
+      WHEN NOT MATCHED THEN INSERT(role_id,api_id,is_active,created_by)
+        VALUES(v.role_id,v.api_id,'N',NULL);
+    ELSIF PAGEID BETWEEN 1000300 AND 1000305 THEN
       MERGE INTO T_AU_ROLE_API_PERMISSION p
       USING
       (
@@ -1841,11 +1855,29 @@ create or replace package body PKG_AD is
   PROCEDURE P_RemoveGroupMenuItemsAssignment(
       groupid IN T_MENU_PAGES_GROUPMAP.GROUP_ID%TYPE,
       PAGEID IN T_MENU_PAGES_GROUPMAP.PAGE_ID%TYPE) IS
+    v_legacy_role NUMBER;
   BEGIN
     DELETE FROM T_MENU_PAGES_GROUPMAP mp
      WHERE mp.group_id=groupid AND mp.page_id=PAGEID;
 
-    IF PAGEID BETWEEN 1000300 AND 1000305 THEN
+    IF PAGEID IN (192,193) THEN
+      SELECT role_id INTO v_legacy_role FROM t_groups WHERE group_id=groupid;
+      -- Revoke only dependencies no longer needed by ANY group of this role.
+      -- Preserve the other legacy page, as well as existing non-legacy anchors
+      -- for shared reference APIs. Keep the role row/explicit denial history.
+      UPDATE T_AU_ROLE_API_PERMISSION permission SET is_active='N'
+       WHERE permission.role_id=v_legacy_role AND permission.is_active='Y'
+         AND EXISTS (SELECT 1 FROM T_IAS_LEGACY_PAGE_API d
+                      WHERE d.page_id=PAGEID AND d.api_id=permission.api_id)
+         AND NOT EXISTS (SELECT 1 FROM t_menu_pages_groupmap assigned
+           JOIN t_groups g ON g.group_id=assigned.group_id
+           JOIN T_IAS_LEGACY_PAGE_API d ON d.page_id=assigned.page_id
+           WHERE g.role_id=v_legacy_role AND d.api_id=permission.api_id)
+         AND NOT EXISTS (SELECT 1 FROM t_menu_pages_groupmap assigned
+           JOIN t_groups g ON g.group_id=assigned.group_id
+           JOIN T_AU_API_MASTER m ON m.page_id=assigned.page_id
+           WHERE g.role_id=v_legacy_role AND m.api_id=permission.api_id);
+    ELSIF PAGEID BETWEEN 1000300 AND 1000305 THEN
       -- Only revoke endpoints mapped to the removed executive page,
       -- preserving an API if another ASSIGNED dashboard still uses it.
       DELETE FROM T_AU_ROLE_API_PERMISSION p
@@ -1855,13 +1887,25 @@ create or replace package body PKG_AD is
          AND NOT EXISTS
              (SELECT 1 FROM T_MENU_PAGES_GROUPMAP g
                JOIN T_IAS_EXEC_PAGE_API x ON x.PAGE_ID=g.PAGE_ID
-              WHERE g.GROUP_ID=groupid AND x.API_ID=p.API_ID);
+              WHERE g.GROUP_ID=groupid AND x.API_ID=p.API_ID)
+         -- Shared dependencies may still be required by an assigned legacy page,
+         -- even when this API is anchored on the page being removed.
+         AND NOT EXISTS (SELECT 1 FROM t_menu_pages_groupmap remaining
+           JOIN t_groups rg ON rg.group_id=remaining.group_id
+           JOIN T_IAS_LEGACY_PAGE_API dependency ON dependency.page_id=remaining.page_id
+           WHERE rg.role_id=p.role_id AND dependency.api_id=p.api_id);
     ELSE
       -- Preserve the preexisting permission handling for other IAS pages.
       DELETE FROM T_AU_ROLE_API_PERMISSION p
        WHERE p.ROLE_ID=groupid
          AND p.API_ID IN (SELECT m.API_ID FROM T_AU_API_MASTER m
-                           WHERE m.PAGE_ID=PAGEID);
+                           WHERE m.PAGE_ID=PAGEID)
+         -- Shared dependencies may still be required by an assigned legacy page,
+         -- even when this API is anchored on the page being removed.
+         AND NOT EXISTS (SELECT 1 FROM t_menu_pages_groupmap remaining
+           JOIN t_groups rg ON rg.group_id=remaining.group_id
+           JOIN T_IAS_LEGACY_PAGE_API dependency ON dependency.page_id=remaining.page_id
+           WHERE rg.role_id=p.role_id AND dependency.api_id=p.api_id);
     END IF;
     COMMIT;
   END P_RemoveGroupMenuItemsAssignment;

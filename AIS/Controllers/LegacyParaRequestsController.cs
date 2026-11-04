@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 namespace AIS.Controllers
 {
     [Authorize, ValidateAntiForgeryToken]
-    [Route("LegacyParaRequests/[action]")]
+    [Route("api/LegacyParaRequests/[action]")]
     public sealed class LegacyParaRequestsController : Controller
     {
         private readonly DBConnection db;
@@ -32,23 +32,30 @@ namespace AIS.Controllers
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             Response.Headers["Cache-Control"] = "no-store";
+            Response.Headers["X-Trace-Id"] = HttpContext.TraceIdentifier;
             var user = session.GetUser();
             var action = context.ActionDescriptor.RouteValues["action"];
             var query = context.ActionArguments.Values.OfType<LegacyParaQuery>().FirstOrDefault();
             var page = action == nameof(Decide) || query?.Queue == true ? 193 : 192;
             HttpContext.Items["LegacyParaPage"] = page;
-            if (User.Identity?.IsAuthenticated != true || user == null || user.ID <= 0
-                || user.UserRoleID <= 0 || user.UserEntityID.GetValueOrDefault() <= 0
+            if (User.Identity?.IsAuthenticated != true || user == null || user.ID <= 0)
+                context.Result = ApiFailure(401, "UNAUTHENTICATED", "Your session is missing or expired. Sign in again.");
+            else if (user.UserRoleID <= 0 || user.UserGroupID <= 0 || user.UserEntityID.GetValueOrDefault() <= 0
                 || string.Equals(user.IsActive, "N", StringComparison.OrdinalIgnoreCase)
                 || user.UserContextAssignmentId.GetValueOrDefault() <= 0 || string.IsNullOrWhiteSpace(user.PPNumber))
-                context.Result = Unauthorized(new { Status = false, Message = "Select an active user context." });
-            else if (!permissions.HasViewPermission(user, page)) context.Result = Forbid();
-            else if (!permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value)) context.Result = Forbid();
+                context.Result = ApiFailure(403, "CONTEXT_REQUIRED", "Select an active authorized user context.");
+            else if (!permissions.HasViewPermission(user, page))
+                context.Result = ApiFailure(403, "PAGE_FORBIDDEN", "You do not have permission for this page.");
+            else if (!permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value))
+                context.Result = ApiFailure(403, "API_FORBIDDEN", "You do not have permission for this operation.");
             else if (!configuration.GetValue<bool>("LegacyParaAddition:Enabled"))
-                context.Result = StatusCode(503, new { Status = false, Message = "Legacy para addition is not activated." });
+                context.Result = ApiFailure(503, "MODULE_DISABLED", "Legacy para addition is not activated.");
             else if (!ModelState.IsValid) context.Result = BadRequest(new { Status = false, Message = "Check the required fields and allowed values." });
             base.OnActionExecuting(context);
         }
+
+        private IActionResult ApiFailure(int status, string code, string message) =>
+            StatusCode(status, new { Status = false, Code = code, Message = message, Reference = HttpContext.TraceIdentifier });
 
         private IActionResult Execute(string operation, object input)
         {
@@ -70,16 +77,24 @@ namespace AIS.Controllers
             catch (OracleException exception)
             {
                 logger.LogWarning("Legacy para operation {Operation} failed, Oracle code {Code}, trace {Trace}", operation, exception.Number, HttpContext.TraceIdentifier);
-                var message = exception.Number is >= 20800 and <= 20849
-                    ? exception.Message.Split('\n')[0].Replace("ORA-" + exception.Number + ": ", "")
-                    : "The request could not be processed. Reference: " + HttpContext.TraceIdentifier;
-                return StatusCode(exception.Number is >= 20800 and <= 20849 ? 409 : 500, new { Status = false, Message = message });
+                // Only fixed, public messages cross the API boundary. Never return Oracle exception text.
+                if (exception.Number is 20810 or 20811)
+                    return ApiFailure(403, "DATABASE_FORBIDDEN", "The selected context or organizational scope is not authorized.");
+                if (exception.Number == 20803)
+                    return ApiFailure(404, "NOT_FOUND", "The request or required reference is unavailable.");
+                if (exception.Number == 20812)
+                    return ApiFailure(503, "MODULE_DISABLED", "Legacy para addition is not activated.");
+                if (exception.Number == 20804)
+                    return ApiFailure(503, "POSTING_UNAVAILABLE", "Posting is unavailable until approved configuration is recorded.");
+                if (exception.Number is >= 20800 and <= 20849)
+                    return ApiFailure(409, "REQUEST_CONFLICT", "The request cannot be processed in its current state. Refresh it and review the supplied details.");
+                return ApiFailure(500, "REQUEST_FAILED", "The request could not be processed.");
             }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (UnauthorizedAccessException) { return ApiFailure(403, "CONTEXT_FORBIDDEN", "The selected user context is unavailable."); }
             catch (Exception exception)
             {
                 logger.LogError("Legacy para operation {Operation} failed ({Type}), trace {Trace}", operation, exception.GetType().Name, HttpContext.TraceIdentifier);
-                return StatusCode(500, new { Status = false, Message = "Unable to process request. Reference: " + HttpContext.TraceIdentifier });
+                return ApiFailure(500, "REQUEST_FAILED", "The request could not be processed.");
             }
         }
 

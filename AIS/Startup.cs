@@ -158,6 +158,21 @@ namespace AIS
                 options.LoginPath = baseUrl + "/Login/Index";
                 options.LogoutPath = baseUrl + "/Login/Logout";
                 options.AccessDeniedPath = baseUrl + "/Login/Index";
+                // APIs use the same cookie/session security, with JSON challenge/forbid responses.
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    if (LoginRedirectHelper.IsApiRequest(context.Request))
+                        return LoginRedirectHelper.WriteUnauthorizedAsync(context.HttpContext);
+                    context.Response.Redirect(context.RedirectUri);
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    if (LoginRedirectHelper.IsApiRequest(context.Request))
+                        return LoginRedirectHelper.WriteForbiddenAsync(context.HttpContext);
+                    context.Response.Redirect(context.RedirectUri);
+                    return System.Threading.Tasks.Task.CompletedTask;
+                };
                 options.SlidingExpiration = true;
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
             });

@@ -1,16 +1,23 @@
+-- Idempotent SOURCE ONLY. Canonical routes are application-relative; never include PathBase.
 -- Repository-only registration source. No menu/group assignments, no activation.
 -- Existing API anchors/activation and existing role decisions are never changed.
-CREATE TABLE T_IAS_LEGACY_PAGE_API (
-  PAGE_ID NUMBER NOT NULL CHECK (PAGE_ID IN (192,193)),
-  API_ID NUMBER NOT NULL,
-  IS_ACTIVE CHAR(1) DEFAULT 'N' NOT NULL CHECK (IS_ACTIVE IN ('N','Y')),
-  CONSTRAINT PK_IAS_LEGACY_PAGE_API PRIMARY KEY(PAGE_ID,API_ID)
-);
+DECLARE
+  v_exists NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO v_exists FROM user_tables WHERE table_name='T_IAS_LEGACY_PAGE_API';
+  IF v_exists=0 THEN
+    EXECUTE IMMEDIATE 'CREATE TABLE T_IAS_LEGACY_PAGE_API (
+      PAGE_ID NUMBER NOT NULL CHECK (PAGE_ID IN (192,193)), API_ID NUMBER NOT NULL,
+      IS_ACTIVE CHAR(1) DEFAULT ''N'' NOT NULL CHECK (IS_ACTIVE IN (''N'',''Y'')),
+      CONSTRAINT PK_IAS_LEGACY_PAGE_API PRIMARY KEY(PAGE_ID,API_ID))';
+  END IF;
+END;
+/
 DECLARE
   v_id NUMBER;
   v_count NUMBER;
   PROCEDURE register_api(p_page NUMBER,p_controller VARCHAR2,p_action VARCHAR2,p_method VARCHAR2) IS
-    v_path VARCHAR2(300):='/'||p_controller||'/'||p_action;
+    v_path VARCHAR2(300):=CASE WHEN p_controller='LegacyParaRequests' THEN '/api/' ELSE '/' END||p_controller||'/'||p_action;
   BEGIN
     SELECT COUNT(*),MIN(api_id) INTO v_count,v_id FROM T_AU_API_MASTER
      WHERE LOWER(TRIM(BOTH '/' FROM api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
@@ -38,6 +45,14 @@ DECLARE
         VALUES(s.role_id,s.api_id,'N',NULL);
   END;
 BEGIN
+  -- Remove only obsolete dependency declarations. Old API registrations and
+  -- role decisions are retained, but there is no old-route controller alias.
+  DELETE FROM T_IAS_LEGACY_PAGE_API d WHERE d.page_id IN (192,193)
+    AND EXISTS (SELECT 1 FROM T_AU_API_MASTER m WHERE m.api_id=d.api_id
+      AND UPPER(TRIM(m.http_method))='POST'
+      AND LOWER(TRIM(BOTH '/' FROM m.api_path)) IN
+        ('legacypararequests/submit','legacypararequests/lookup','legacypararequests/list',
+         'legacypararequests/detail','legacypararequests/decide'));
   register_api(192,'LegacyParaRequests','Submit','POST');
   register_api(192,'LegacyParaRequests','Lookup','POST');
   register_api(192,'LegacyParaRequests','List','POST');

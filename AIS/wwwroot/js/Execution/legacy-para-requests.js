@@ -7,11 +7,55 @@
     let offset = 0, selected = null;
     const node = (tag, text, cls) => { const el = document.createElement(tag); if (text != null) el.textContent = text; if (cls) el.className = cls; return el; };
     function message(text, error) { const box = document.getElementById('legacyMessage'); box.textContent = text; box.className = 'alert ' + (error ? 'alert-danger' : 'alert-success'); }
+    const failureMessages = {
+        400: 'The request is invalid or its security token expired. Refresh the page and review the entered values.',
+        401: 'Your session has expired or you are signed out. Sign in again.',
+        403: 'Your selected context does not have permission for this operation.',
+        404: 'The requested resource or API is unavailable.',
+        409: 'The request changed, conflicts with another para, or cannot be processed in its current state. Refresh and review it.',
+        500: 'The server could not process the request. Use the reference below when reporting the problem.',
+        503: 'Legacy para addition or posting is currently unavailable.'
+    };
+    function safeReference(value) {
+        return typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,128}$/.test(value) ? value : '';
+    }
+    function apiFailure(operation, response, reference, reason) {
+        const status = response ? response.status : 0;
+        const responseType = response ? (response.headers.get('content-type') || '').split(';')[0].toLowerCase() : '';
+        // No URLs, cookies, tokens, observation text, request bodies or exceptions.
+        console.warn('Legacy para API failure', { operation, status, responseType,
+            redirected: !!(response && response.redirected), reference: reference || undefined, reason });
+        const text = response && response.redirected
+            ? 'The API unexpectedly redirected. Your session may have expired; sign in again.'
+            : failureMessages[status] || (status === 0 ? 'The server could not be reached. Try again when the connection is available.' : 'An unexpected API response was received. Refresh the page.');
+        return new Error(text + (reference ? ' Reference: ' + reference : ''));
+    }
     async function api(action, input) {
         if (!enabled) throw new Error('Legacy para addition is not activated.');
-        const response = await fetch(root.dataset.api + action, { method: 'POST', credentials: 'same-origin', cache: 'no-store', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'RequestVerificationToken': root.querySelector('[name="__RequestVerificationToken"]').value }, body: JSON.stringify(input) });
-        let result; try { result = await response.json(); } catch (_) { throw new Error('Unable to process request. Your session or permission may have changed.'); }
-        if (!response.ok || !(result.status ?? result.Status)) throw new Error(result.message || result.Message || 'Request failed.');
+        let response;
+        try {
+            response = await fetch(root.dataset.api + action, { method: 'POST', credentials: 'same-origin', cache: 'no-store',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest',
+                    'RequestVerificationToken': root.querySelector('[name="__RequestVerificationToken"]').value }, body: JSON.stringify(input) });
+        } catch (_) { throw apiFailure(action, null, '', 'network'); }
+        const status = response.status;
+        const successful = status >= 200 && status < 300;
+        const referenceHeader = safeReference(response.headers.get('X-Trace-Id'));
+        const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        // Inspect transport status and headers first. Never parse or display HTML,
+        // including a followed login redirect that happens to return HTTP 200.
+        if (response.redirected || response.type === 'opaqueredirect')
+            throw apiFailure(action, response, referenceHeader, 'redirect');
+        if (contentType !== 'application/json' && contentType !== 'application/problem+json')
+            throw apiFailure(action, response, referenceHeader, 'non-json');
+        let result;
+        try { result = await response.json(); }
+        catch (_) { throw apiFailure(action, response, referenceHeader, 'invalid-json'); }
+        const reference = referenceHeader || safeReference(result && (result.reference || result.Reference || result.traceId));
+        if (!successful || !result || typeof result !== 'object' || !(result.status ?? result.Status))
+            throw apiFailure(action, response, reference, 'rejected');
+        // Server messages are intentionally not shown: error text can be an HTML
+        // status page or an internal exception from an upstream component.
         return result.data || result.Data || [];
     }
     function table(headers, rows) {
