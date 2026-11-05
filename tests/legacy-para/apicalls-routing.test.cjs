@@ -50,7 +50,7 @@ test('both views, Oracle permission contract and permission manifest use ApiCall
         assert.doesNotMatch(view, /~\/api\/LegacyParaRequests/);
     }
     assert.match(pkg, /'apicalls\/legacypara'\|\|LOWER\(p_operation\)/);
-    assert.doesNotMatch(pkg, /'api\/legacypararequests\/ '\|\|LOWER\(p_operation\)/);
+    assert.doesNotMatch(pkg, /'api\\/legacypararequests\\/'\\|\\|LOWER\\(p_operation\\)/);
     for (const action of ['Submit', 'Lookup', 'List', 'Detail', 'Decide']) {
         assert.match(grants, new RegExp("'ApiCalls','LegacyPara" + action + "','POST'"));
     }
