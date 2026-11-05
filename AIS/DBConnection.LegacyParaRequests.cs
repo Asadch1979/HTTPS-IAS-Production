@@ -11,8 +11,13 @@ namespace AIS.Controllers
     public partial class DBConnection
     {
         // Identities/context are always obtained from the authenticated server session.
-        public List<Dictionary<string, object>> LegacyParaRequests(string operation, object input, int page)
+        public List<Dictionary<string, object>> LegacyParaRequests(LegacyParaOperation operation, object input, LegacyParaPage page)
         {
+            // Reject programming/configuration mistakes before opening a transaction.
+            if (!Enum.IsDefined(typeof(LegacyParaOperation), operation))
+                throw new ArgumentOutOfRangeException(nameof(operation));
+            if (!Enum.IsDefined(typeof(LegacyParaPage), page))
+                throw new ArgumentOutOfRangeException(nameof(page));
             var user = CreateSessionHandler().GetUser();
             if (user == null || user.UserContextAssignmentId.GetValueOrDefault() <= 0
                 || user.UserEntityID.GetValueOrDefault() <= 0 || user.UserRoleID <= 0
@@ -28,12 +33,12 @@ namespace AIS.Controllers
                 command.CommandType = CommandType.StoredProcedure;
                 command.CommandText = "PKG_IAS_LEGACY_PARA.P_EXECUTE";
                 GuardAgainstDynamicSql(command);
-                command.Parameters.Add("p_operation", OracleDbType.Varchar2).Value = operation;
+                command.Parameters.Add("p_operation", OracleDbType.Varchar2).Value = operation.ToString().ToUpperInvariant();
                 command.Parameters.Add("p_ppno", OracleDbType.Int64).Value = pp;
                 command.Parameters.Add("p_context", OracleDbType.Int32).Value = user.UserContextAssignmentId.Value;
                 command.Parameters.Add("p_role", OracleDbType.Int32).Value = user.UserRoleID;
                 command.Parameters.Add("p_group", OracleDbType.Int32).Value = user.UserGroupID;
-                command.Parameters.Add("p_page", OracleDbType.Int32).Value = page;
+                command.Parameters.Add("p_page", OracleDbType.Int32).Value = (int)page;
                 command.Parameters.Add("p_input", OracleDbType.Clob).Value = JsonSerializer.Serialize(input,
                     new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
                 command.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
