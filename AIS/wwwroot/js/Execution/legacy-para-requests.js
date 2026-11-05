@@ -10,7 +10,7 @@
     const failureMessages = {
         400: 'The request is invalid or its security token expired. Refresh the page and review the entered values.',
         401: 'Your session has expired or you are signed out. Sign in again.',
-        403: 'Your selected context does not have permission for this operation.',
+        403: 'Access was denied. Verify the selected role, assigned page and approved API route permissions.',
         404: 'The requested resource or API is unavailable.',
         409: 'The request changed, conflicts with another para, or cannot be processed in its current state. Refresh and review it.',
         500: 'The server could not process the request. Use the reference below when reporting the problem.',
@@ -52,9 +52,21 @@
         try { result = await response.json(); }
         catch (_) { throw apiFailure(action, response, referenceHeader, 'invalid-json'); }
         const reference = referenceHeader || safeReference(result && (result.reference || result.Reference || result.traceId));
-        const publicErrors={CAD_HO_UNSUPPORTED:'CAD/HO historical posting is disabled pending an approved authorization workflow.',ENTITY_SCOPE_CHANGED:'Entity scope cannot be established for this Audit By office. Organizational reassignment requires controlled resolution.',HISTORICAL_FIELDS_REQUIRED:'Enter the historical gist and review annexure details before resubmission.'};
+        const publicErrors={
+            UNAUTHENTICATED:'Your session has expired. Sign in again.',
+            CONTEXT_REQUIRED:'Select an active authorized user context.',
+            PAGE_FORBIDDEN:'The selected group is not authorized for this Legacy Para page.',
+            API_FORBIDDEN:'The selected role does not have an active grant for this API route. Check the ApiCalls registration and sign in again after approved updates.',
+            DATABASE_FORBIDDEN:'Oracle denied this operation. Check the active role grant, page dependency and selected organizational scope.',
+            CONTEXT_FORBIDDEN:'The selected user context is unavailable or no longer authorized.',
+            MODULE_DISABLED:'Legacy para addition is not activated.',
+            OPERATION_CONTRACT_MISMATCH:'The deployed application and Oracle package operation contract do not match. Report this reference.',
+            CAD_HO_UNSUPPORTED:'CAD/HO historical posting is disabled pending an approved authorization workflow.',
+            ENTITY_SCOPE_CHANGED:'Entity scope cannot be established for this Audit By office. Organizational reassignment requires controlled resolution.',
+            HISTORICAL_FIELDS_REQUIRED:'Enter the historical gist and review annexure details before resubmission.'
+        };
         const code=result && (result.code || result.Code);
-        if (!successful && publicErrors[code]) throw new Error(publicErrors[code]+(reference?' Reference: '+reference:''));
+        if (!successful && Object.prototype.hasOwnProperty.call(publicErrors,code)) throw new Error(publicErrors[code]+' ('+code+')'+(reference?' Reference: '+reference:''));
         if (!successful || !result || typeof result !== 'object' || !(result.status ?? result.Status))
             throw apiFailure(action, response, reference, 'rejected');
         // Server messages are intentionally not shown: error text can be an HTML
