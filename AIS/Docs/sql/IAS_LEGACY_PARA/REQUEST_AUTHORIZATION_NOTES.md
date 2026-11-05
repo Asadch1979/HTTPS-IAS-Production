@@ -1,5 +1,8 @@
 # Request classification, errors and permission lifecycle
 
+> **Route update (5 November 2026):** This document describes earlier revisions. The standalone `LegacyParaRequestsController` route was subsequently replaced with the existing `ApiCallsController` actions `/ApiCalls/LegacyPara*`. See `README.md` and `../IAS_LEGACY_PARA_APICALLS_MIGRATION.sql` for the current route, permission and cutover contract. Existing maker/checker security constraints remain in force.
+
+
 These are source-only corrections. No Oracle connection, SQL execution, tests,
 activation or deployment is part of this change.
 

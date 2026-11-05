@@ -138,7 +138,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       JOIN T_IAS_LEGACY_PAGE_API dep ON dep.api_id=am.api_id AND dep.page_id=p_page
      WHERE rp.role_id=v_role AND rp.is_active='Y' AND am.is_active='Y' AND dep.is_active='Y'
        AND UPPER(TRIM(am.http_method))='POST'
-       AND LOWER(TRIM(BOTH '/' FROM am.api_path))='api/legacypararequests/'||LOWER(p_operation);
+       AND LOWER(TRIM(BOTH '/' FROM am.api_path))='apicalls/legacypara'||LOWER(p_operation);
     IF v_count=0 THEN deny('Exact selected-role API permission is required.'); END IF;
     -- This singleton also serializes new keys and corrected requests. No activation source is included.
     IF p_operation IN ('SUBMIT','DECIDE') THEN

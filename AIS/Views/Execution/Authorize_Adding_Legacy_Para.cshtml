@@ -5,7 +5,7 @@
     Layout = "_Layout";
     var enabled = Configuration.GetValue<bool>("LegacyParaAddition:Enabled");
 }
-<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="checker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/api/LegacyParaRequests/")">
+<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="checker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/ApiCalls/LegacyPara")">
     @Html.AntiForgeryToken()
     <h3>Authorize Legacy Para Addition</h3><p class="text-muted">Review complete observations and history. Pending requests appear first.</p>
     @if (!enabled) { <div class="alert alert-warning">This module is not activated. Request actions are unavailable.</div> }

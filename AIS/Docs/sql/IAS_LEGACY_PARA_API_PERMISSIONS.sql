@@ -1,5 +1,6 @@
 -- Idempotent SOURCE ONLY. Canonical routes are application-relative; never include PathBase.
 -- Repository-only registration source. No menu/group assignments, no activation.
+-- Existing installations: run the reviewed ApiCalls migration before this manifest.
 -- Existing API anchors/activation and existing role decisions are never changed.
 DECLARE
   v_exists NUMBER;
@@ -17,7 +18,7 @@ DECLARE
   v_id NUMBER;
   v_count NUMBER;
   PROCEDURE register_api(p_page NUMBER,p_controller VARCHAR2,p_action VARCHAR2,p_method VARCHAR2) IS
-    v_path VARCHAR2(300):=CASE WHEN p_controller='LegacyParaRequests' THEN '/api/' ELSE '/' END||p_controller||'/'||p_action;
+    v_path VARCHAR2(300):='/'||p_controller||'/'||p_action;
   BEGIN
     SELECT COUNT(*) INTO v_count FROM T_AU_API_MASTER
      WHERE LOWER(TRIM(BOTH '/' FROM api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
@@ -58,15 +59,17 @@ BEGIN
     AND EXISTS (SELECT 1 FROM T_AU_API_MASTER m WHERE m.api_id=d.api_id
       AND UPPER(TRIM(m.http_method))='POST'
       AND LOWER(TRIM(BOTH '/' FROM m.api_path)) IN
-        ('legacypararequests/submit','legacypararequests/lookup','legacypararequests/list',
+        ('api/legacypararequests/submit','api/legacypararequests/lookup','api/legacypararequests/list',
+         'api/legacypararequests/detail','api/legacypararequests/decide',
+         'legacypararequests/submit','legacypararequests/lookup','legacypararequests/list',
          'legacypararequests/detail','legacypararequests/decide'));
-  register_api(192,'LegacyParaRequests','Submit','POST');
-  register_api(192,'LegacyParaRequests','Lookup','POST');
-  register_api(192,'LegacyParaRequests','List','POST');
-  register_api(193,'LegacyParaRequests','List','POST');
-  register_api(192,'LegacyParaRequests','Detail','POST');
-  register_api(193,'LegacyParaRequests','Detail','POST');
-  register_api(193,'LegacyParaRequests','Decide','POST');
+  register_api(192,'ApiCalls','LegacyParaSubmit','POST');
+  register_api(192,'ApiCalls','LegacyParaLookup','POST');
+  register_api(192,'ApiCalls','LegacyParaList','POST');
+  register_api(193,'ApiCalls','LegacyParaList','POST');
+  register_api(192,'ApiCalls','LegacyParaDetail','POST');
+  register_api(193,'ApiCalls','LegacyParaDetail','POST');
+  register_api(193,'ApiCalls','LegacyParaDecide','POST');
   -- Exact observation picker dependencies from initObservationReference in
   -- obsreference.js. No SaveParaReferences or engagement/compliance write APIs.
   register_api(192,'ApiCalls','GetReferenceMasterDetail','GET');
