@@ -1,5 +1,8 @@
 # Legacy selection and historical mapping correction
 
+> **Route update (5 November 2026):** This document describes earlier revisions. The standalone `LegacyParaRequestsController` route was subsequently replaced with the existing `ApiCallsController` actions `/ApiCalls/LegacyPara*`. See `README.md` and `../IAS_LEGACY_PARA_APICALLS_MIGRATION.sql` for the current route, permission and cutover contract. Existing maker/checker security constraints remain in force.
+
+
 Source review only, 2026-11-04. No Oracle connections, SQL execution, builds,
 tests, application execution, activation or deployment were performed.
 
