@@ -31,7 +31,7 @@ test('operation, page and active context are server-bound, never in request payl
     assert.match(model, /enum LegacyParaOperation/);
     assert.match(model, /Maker = 192/);
     assert.match(model, /Checker = 193/);
-    assert.match(db, /LegacyParaRequests\(LegacyParaOperation operation, object input, LegacyParaPage page\)/);
+    assert.match(db, /LegacyParaWorkflow\(LegacyParaOperation operation, object input, LegacyParaPage page\)/);
     assert.match(db, /Enum\.IsDefined\(typeof\(LegacyParaOperation\)/);
     assert.match(db, /Enum\.IsDefined\(typeof\(LegacyParaPage\)/);
     assert.match(db, /operation\.ToString\(\)\.ToUpperInvariant\(\)/);
