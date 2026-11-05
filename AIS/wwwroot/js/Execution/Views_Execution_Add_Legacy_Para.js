@@ -7,7 +7,7 @@
     const run=fn => Promise.resolve().then(fn).catch(e => app.message(e.message,true));
     const val=id => $('#' + id).val();
     const num=id => Number(val(id));
-    const lookup=(kind,parentId,search) => app.api('Lookup',{kind,parentId:Number(parentId)||0,search:search||''});
+    const lookup=(kind,parentId,search,relationshipId) => app.api('Lookup',{kind,parentId:Number(parentId)||0,search:search||'',relationshipId:Number(relationshipId)||0});
     async function options(id,kind,parent) { const select=document.getElementById(id); select.replaceChildren(new Option('Select an option','')); if (Number(parent)>0) (await lookup(kind,parent)).forEach(row => select.add(new Option(row.label,row.id))); }
     function risk() { const a=annexes.find(a => String(a.ID)===String(val('updatedAnnexlist'))); $('#viewMemo_risk_display').val(a ? a.RISK : ''); }
     function renderPersons() {
@@ -57,24 +57,51 @@
     $('#amount_inv_field').attr({min:0,step:'0.01'});$('#no_instances_field').attr({min:0,step:1});
     $('#updatedAnnexlist').on('change',risk);
     function clearEntityData() { ++entityLoad;persons=[];staged=[];editing=null;renderPersons();renderStaged();fillPerson({});$('#responsibleLCNoEntryField,#responsibleBrCodeEntryField').val(''); }
-    $('#entitySelectField').on('change',clearEntityData);
-    $('#entityTypeSelectField').on('change',() => {clearEntityData();const generation=entityLoad;const select=document.getElementById('entitySelectField');select.replaceChildren(new Option('Select entity',''));run(async () => {const rows=await lookup('ENTITIES',val('entityTypeSelectField'));if(generation===entityLoad) rows.forEach(r => select.add(new Option(r.label,r.id)));});});
-    // Initial options and office come from the authenticated server-rendered page.
-    // Lookup is only a fallback; never clear valid options because an API is unavailable.
-    run(async () => {
-        if (!auditBy) {
-            const context=await lookup('CONTEXT');
-            if (!Array.isArray(context) || context.length!==1 || !(Number(context[0].id)>0) || !context[0].label)
-                throw new Error('The selected Audit By office is unavailable. Refresh the page or select an active context.');
-            auditBy=Number(context[0].id);$('#legacyAuditBy').val(context[0].label);
-        }
-        const select=document.getElementById('entityTypeSelectField');
-        if (Array.from(select.options).some(option => Number(option.value)>0)) return;
-        const types=await lookup('ENTITY_TYPES');
-        if (!Array.isArray(types) || !types.length || types.some(row => !(Number(row.id)>0) || !row.label))
-            throw new Error('No eligible Relation Types are available for the selected Audit By office.');
-        if (Array.from(select.options).some(option => Number(option.value)>0)) return;
-        types.forEach(row => select.add(new Option(row.label,row.id)));
+    function clearOffices() {
+        document.getElementById('reportingOfficeSelectField').replaceChildren(new Option('--Select Controlling/Reporting Office--',''));
+    }
+    function clearPostings() {
+        document.getElementById('entitySelectField').replaceChildren(new Option('--Select Place of Posting--',''));
+        $('#legacyEntityTypeId').val('');
+    }
+    $('#relationshipSelectField').on('change',() => {
+        clearEntityData(); clearOffices(); clearPostings();
+        const generation=entityLoad, relation=num('relationshipSelectField');
+        if (!relation) return;
+        run(async () => {
+            const offices=await lookup('REPORTING_OFFICES',relation);
+            if (generation!==entityLoad || relation!==num('relationshipSelectField')) return;
+            const select=document.getElementById('reportingOfficeSelectField');
+            offices.forEach(r => select.add(new Option(r.label,r.id)));
+        });
+    });
+    $('#reportingOfficeSelectField').on('change',() => {
+        clearEntityData(); clearPostings();
+        const generation=entityLoad, relation=num('relationshipSelectField'), office=num('reportingOfficeSelectField');
+        if (!relation || !office) return;
+        run(async () => {
+            const postings=await lookup('POSTINGS',office,'',relation);
+            if (generation!==entityLoad || relation!==num('relationshipSelectField') || office!==num('reportingOfficeSelectField')) return;
+            const select=document.getElementById('entitySelectField');
+            postings.forEach(r => {
+                const option=new Option(r.label,r.id);
+                option.dataset.entityTypeId=String(r.entity_type_id);
+                select.add(option);
+            });
+        });
+    });
+    $('#entitySelectField').on('change',() => {
+        clearEntityData();
+        const selected=document.getElementById('entitySelectField').selectedOptions[0];
+        $('#legacyEntityTypeId').val(selected && selected.dataset.entityTypeId || '');
+    });
+    // Audit By belongs to the authenticated selected context; it is not a
+    // user-editable controlling office or a routing hint.
+    if (!auditBy) run(async () => {
+        const context=await lookup('CONTEXT');
+        if (!Array.isArray(context) || context.length!==1 || !(Number(context[0].id)>0))
+            throw new Error('Select an active authorized audit context.');
+        auditBy=Number(context[0].id);
     });
     if ($.fn.select2) $('#updatedAnnexlist,#riskActivitiesSelectBox').select2();
     if (window.initObservationReference) window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:null});
@@ -82,13 +109,32 @@
     $('#responsibleBrCodeEntryField').prop('disabled',true).attr('placeholder','Uses selected audit entity');
     const renderFiles=() => app.attachments(document.getElementById('legacyAttachmentList'),files,index => {files.splice(index,1);renderFiles();});
     $('#legacyAttachments').on('change',() => run(async () => { const incoming=Array.from(document.getElementById('legacyAttachments').files); if (files.length+incoming.length>10) throw new Error('Select at most ten attachments.'); const additions=[];let total=files.reduce((sum,f) => sum+Math.floor(f.base64.length*3/4),0);for(const f of incoming) {total+=f.size;if(f.size>5000000 || total>10000000) throw new Error('Attachments allow 5 MB per file and 10 MB total.');const base64=await new Promise((resolve,reject) => {const reader=new FileReader();reader.onload=() => resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(f);});additions.push({name:f.name,contentType:f.type||'application/octet-stream',base64});}files.push(...additions);$('#legacyAttachments').val('');renderFiles(); }));
-    function clear() { ++entityLoad;clearEntityData();$('#entityTypeSelectField,#entitySelectField,#natureSelectField,#yearSelectField').val('');$('#legacyRequestId,#legacyVersion').val(0);$('#legacyGist,#legacyAnnexureDetails,#paraNoField,#viewMemo_heading,#amount_inv_field,#no_instances_field').val('');setObservationHtml('');persons=[];files=[];renderPersons();renderFiles();$('#legacySubmit').text('Submit for Authorization');$('#updatedAnnexlist,#riskGroupSelectBox').val('0').trigger('change');$('#riskSubGroupSelectBox,#riskActivitiesSelectBox').empty();$('#div_risksubcategory,#div_activityContainer').hide();$('#observationReferenceId').val('');if(window.initObservationReference)window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:null}); }
+    function clear() { ++entityLoad;clearEntityData();$('#relationshipSelectField,#reportingOfficeSelectField,#entitySelectField,#legacyEntityTypeId,#natureSelectField,#yearSelectField').val('');clearOffices();clearPostings();$('#legacyRequestId,#legacyVersion').val(0);$('#legacyGist,#legacyAnnexureDetails,#paraNoField,#viewMemo_heading,#amount_inv_field,#no_instances_field').val('');setObservationHtml('');persons=[];files=[];renderPersons();renderFiles();$('#legacySubmit').text('Submit for Authorization');$('#updatedAnnexlist,#riskGroupSelectBox').val('0').trigger('change');$('#riskSubGroupSelectBox,#riskActivitiesSelectBox').empty();$('#div_risksubcategory,#div_activityContainer').hide();$('#observationReferenceId').val('');if(window.initObservationReference)window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:null}); }
     $('#legacyNewRequest').on('click',clear);
-    $('#legacyCorrect').on('click',() => run(async () => { if (restoring) return; const selected=app.selected;if (!selected || selected.record.status!=='RETURNED') return;restoring=true;++entityLoad;$('#legacyParaWorkspace fieldset').prop('disabled',true);try {const p=selected.data;if(Number(selected.record.audited_by)!==auditBy || selected.record.scope_notice) throw new Error('The request Audit By association no longer matches an eligible entity.');$('#legacyRequestId').val(selected.record.request_id);$('#legacyVersion').val(selected.record.version_no);$('#entityTypeSelectField').val(p.entityTypeId);await options('entitySelectField','ENTITIES',p.entityTypeId);$('#entitySelectField').val(p.entityId);if(num('entitySelectField')!==Number(p.entityId)) throw new Error('The saved entity is no longer eligible for this Audit By office.');$('#yearSelectField').val(p.auditYear);$('#natureSelectField').val(p.natureId);$('#paraNoField').val(p.paraNo);$('#legacyGist').val(p.gist||'');$('#legacyAnnexureDetails').val(p.annexureDetails||'');$('#updatedAnnexlist').val(p.annexureId).trigger('change');$('#riskGroupSelectBox').val(p.categoryId);await options('riskSubGroupSelectBox','SUBCHECKLIST',p.categoryId);$('#riskSubGroupSelectBox').val(p.subChecklistId);await options('riskActivitiesSelectBox','CHECKLIST',p.subChecklistId);$('#riskActivitiesSelectBox').val(p.checklistId).trigger('change');$('#div_risksubcategory,#div_activityContainer').show();$('#viewMemo_heading').val(p.heading);setObservationHtml(p.observationHtml);$('#amount_inv_field').val(p.amount);$('#no_instances_field').val(p.instances);persons=p.responsiblePersons||[];files=p.attachments||[];renderPersons();renderFiles();$('#observationReferenceId').val(p.referenceId||'');if(window.initObservationReference)window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:p.referenceId});$('#legacySubmit').text('Resubmit for Authorization');bootstrap.Modal.getInstance(document.getElementById('legacyPreview')).hide();document.getElementById('legacyParaWorkspace').scrollIntoView(); } catch(error) { clear();throw error; } finally { restoring=false;$('#legacyParaWorkspace fieldset').prop('disabled',false); } }));
+    $('#legacyCorrect').on('click',() => run(async () => { if (restoring) return; const selected=app.selected;if (!selected || selected.record.status!=='RETURNED') return;restoring=true;++entityLoad;$('#legacyParaWorkspace fieldset').prop('disabled',true);try {const p=selected.data;if(Number(selected.record.audited_by)!==auditBy || selected.record.scope_notice) throw new Error('The request Audit By association no longer matches an eligible entity.');$('#legacyRequestId').val(selected.record.request_id);$('#legacyVersion').val(selected.record.version_no);const mappings=await lookup('ENTITY_LOCATION',p.entityId);
+        const location=p.relationshipId && p.reportingOfficeId
+            ? mappings.find(m => Number(m.relationship_id)===Number(p.relationshipId) && Number(m.reporting_office_id)===Number(p.reportingOfficeId))
+            : mappings.length===1 ? mappings[0] : null;
+        if (!location) throw new Error('No unique authorized relationship and reporting office exist for this posting. Review the entity mapping before correcting this request.');
+        $('#relationshipSelectField').val(location.relationship_id);
+        if (num('relationshipSelectField')!==Number(location.relationship_id)) throw new Error('The saved relationship is not available in the selected role.');
+        clearOffices(); clearPostings();
+        const offices=await lookup('REPORTING_OFFICES',location.relationship_id);
+        const officeSelect=document.getElementById('reportingOfficeSelectField');
+        offices.forEach(r => officeSelect.add(new Option(r.label,r.id)));
+        $('#reportingOfficeSelectField').val(location.reporting_office_id);
+        if (num('reportingOfficeSelectField')!==Number(location.reporting_office_id)) throw new Error('The reporting office is no longer available.');
+        const postings=await lookup('POSTINGS',location.reporting_office_id,'',location.relationship_id);
+        const postingSelect=document.getElementById('entitySelectField');
+        postings.forEach(r => {const option=new Option(r.label,r.id);option.dataset.entityTypeId=String(r.entity_type_id);postingSelect.add(option);});
+        $('#entitySelectField').val(p.entityId);
+        $('#legacyEntityTypeId').val(location.entity_type_id);if(num('entitySelectField')!==Number(p.entityId)) throw new Error('The saved entity is no longer eligible for this Audit By office.');$('#yearSelectField').val(p.auditYear);$('#natureSelectField').val(p.natureId);$('#paraNoField').val(p.paraNo);$('#legacyGist').val(p.gist||'');$('#legacyAnnexureDetails').val(p.annexureDetails||'');$('#updatedAnnexlist').val(p.annexureId).trigger('change');$('#riskGroupSelectBox').val(p.categoryId);await options('riskSubGroupSelectBox','SUBCHECKLIST',p.categoryId);$('#riskSubGroupSelectBox').val(p.subChecklistId);await options('riskActivitiesSelectBox','CHECKLIST',p.subChecklistId);$('#riskActivitiesSelectBox').val(p.checklistId).trigger('change');$('#div_risksubcategory,#div_activityContainer').show();$('#viewMemo_heading').val(p.heading);setObservationHtml(p.observationHtml);$('#amount_inv_field').val(p.amount);$('#no_instances_field').val(p.instances);persons=p.responsiblePersons||[];files=p.attachments||[];renderPersons();renderFiles();$('#observationReferenceId').val(p.referenceId||'');if(window.initObservationReference)window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:p.referenceId});$('#legacySubmit').text('Resubmit for Authorization');bootstrap.Modal.getInstance(document.getElementById('legacyPreview')).hide();document.getElementById('legacyParaWorkspace').scrollIntoView(); } catch(error) { clear();throw error; } finally { restoring=false;$('#legacyParaWorkspace fieldset').prop('disabled',false); } }));
     $('#legacySubmit').on('click',() => run(async () => {
         if (restoring) return;
+        if (!num('relationshipSelectField') || !num('reportingOfficeSelectField') || !num('entitySelectField') || !num('legacyEntityTypeId'))
+            throw new Error('Select Relationship Type, Controlling/Reporting Office and Place of Posting.');
         const reference=window.getSelectedObservationReference ? window.getSelectedObservationReference('#observationReferenceSection') : null;
-        const payload={requestId:num('legacyRequestId'),version:num('legacyVersion'),entityTypeId:num('entityTypeSelectField'),entityId:num('entitySelectField'),natureId:num('natureSelectField'),auditYear:num('yearSelectField'),paraNo:val('paraNoField'),gist:val('legacyGist'),annexureDetails:val('legacyAnnexureDetails'),annexureId:num('updatedAnnexlist'),categoryId:num('riskGroupSelectBox'),subChecklistId:num('riskSubGroupSelectBox'),checklistId:num('riskActivitiesSelectBox'),heading:val('viewMemo_heading'),observationHtml:observationHtml(),amount:num('amount_inv_field'),instances:num('no_instances_field'),referenceId:Number(reference && reference.refId || val('observationReferenceId'))||null,responsiblePersons:persons,attachments:files};
+        const payload={requestId:num('legacyRequestId'),version:num('legacyVersion'),relationshipId:num('relationshipSelectField'),reportingOfficeId:num('reportingOfficeSelectField'),entityTypeId:num('legacyEntityTypeId'),entityId:num('entitySelectField'),natureId:num('natureSelectField'),auditYear:num('yearSelectField'),paraNo:val('paraNoField'),gist:val('legacyGist'),annexureDetails:val('legacyAnnexureDetails'),annexureId:num('updatedAnnexlist'),categoryId:num('riskGroupSelectBox'),subChecklistId:num('riskSubGroupSelectBox'),checklistId:num('riskActivitiesSelectBox'),heading:val('viewMemo_heading'),observationHtml:observationHtml(),amount:num('amount_inv_field'),instances:num('no_instances_field'),referenceId:Number(reference && reference.refId || val('observationReferenceId'))||null,responsiblePersons:persons,attachments:files};
         $('#legacySubmit').prop('disabled',true);try {const rows=await app.api('Submit',payload);app.message('Request '+rows[0].request_id+' submitted for authorization.');clear();await app.refresh();}finally{$('#legacySubmit').prop('disabled',false);}
     }));
     });

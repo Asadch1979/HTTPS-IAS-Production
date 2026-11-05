@@ -8,6 +8,10 @@ namespace AIS.Models
     {
         [Range(0, long.MaxValue)] public long RequestId { get; set; }
         [Range(0, int.MaxValue)] public int Version { get; set; }
+        // Relationship/office are user selections, validated against the actual
+        // entity mapping and selected audit authority in Oracle at submit/authorize.
+        [Range(1, int.MaxValue)] public int RelationshipId { get; set; }
+        [Range(1, int.MaxValue)] public int ReportingOfficeId { get; set; }
         [Range(1, int.MaxValue)] public int EntityTypeId { get; set; }
         [Range(1, int.MaxValue)] public int EntityId { get; set; }
         [Range(1, int.MaxValue)] public int NatureId { get; set; }
@@ -59,8 +63,9 @@ namespace AIS.Models
     }
     public sealed class LegacyParaLookup
     {
-        [Required, RegularExpression("^(CONTEXT|ENTITY_TYPES|ENTITIES|SUBCHECKLIST|CHECKLIST|REFERENCES|PERSON|LC)$")] public string Kind { get; set; }
+        [Required, RegularExpression("^(CONTEXT|REPORTING_OFFICES|POSTINGS|ENTITY_LOCATION|ENTITY_TYPES|ENTITIES|SUBCHECKLIST|CHECKLIST|REFERENCES|PERSON|LC)$")] public string Kind { get; set; }
         public long ParentId { get; set; }
+        public long RelationshipId { get; set; }
         [StringLength(200)] public string Search { get; set; }
     }
 }
