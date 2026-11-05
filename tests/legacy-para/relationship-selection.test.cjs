@@ -51,6 +51,9 @@ test('server and Oracle deny posting outside authorized relation/office/entity m
   const pkg = read('AIS/Docs/sql/PKG_IAS_LEGACY_PARA.sql');
   assert.match(models, /public int RelationshipId/);
   assert.match(models, /public int ReportingOfficeId/);
+  assert.doesNotMatch(models, /public int EntityTypeId/);
+  assert.doesNotMatch(pkg, /JSON_VALUE\(p_input,'\$\.entityTypeId'/);
+  assert.match(pkg, /v_data\.entity_type_id:=v_type/);
   assert.match(models, /REPORTING_OFFICES\|POSTINGS\|ENTITY_LOCATION/);
   assert.match(pkg, /FUNCTION relationship_allowed\(p_relationship NUMBER\) RETURN BOOLEAN/);
   assert.match(pkg, /PROCEDURE check_location\(p_entity NUMBER,p_relationship NUMBER,p_office NUMBER\)/);
