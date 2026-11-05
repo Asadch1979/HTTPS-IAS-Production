@@ -71,7 +71,7 @@ namespace AIS.Controllers
                 {
                     LegacyParaOperation.List => dBConnection.LegacyParaPending((LegacyParaQuery)input, page),
                     LegacyParaOperation.Lookup => dBConnection.LegacyParaReferenceLookup((LegacyParaLookup)input, page),
-                    _ => dBConnection.LegacyParaRequests(operation, input, page)
+                    _ => dBConnection.LegacyParaWorkflow(operation, input, page)
                 };
                 if (operation == LegacyParaOperation.Detail)
                     foreach (var row in rows)
