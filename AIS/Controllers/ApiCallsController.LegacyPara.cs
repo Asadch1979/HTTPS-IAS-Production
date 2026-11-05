@@ -67,9 +67,12 @@ namespace AIS.Controllers
             try
             {
                 // The checker queue uses its own read-only procedure.
-                var rows = operation == LegacyParaOperation.List
-                    ? dBConnection.LegacyParaPending((LegacyParaQuery)input, page)
-                    : dBConnection.LegacyParaRequests(operation, input, page);
+                var rows = operation switch
+                {
+                    LegacyParaOperation.List => dBConnection.LegacyParaPending((LegacyParaQuery)input, page),
+                    LegacyParaOperation.Lookup => dBConnection.LegacyParaReferenceLookup((LegacyParaLookup)input, page),
+                    _ => dBConnection.LegacyParaRequests(operation, input, page)
+                };
                 if (operation == LegacyParaOperation.Detail)
                     foreach (var row in rows)
                     {
