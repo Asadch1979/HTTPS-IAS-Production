@@ -6,7 +6,7 @@
     ViewData["LegacyParaEditor"] = true;
     var enabled = Configuration.GetValue<bool>("LegacyParaAddition:Enabled");
 }
-<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/api/LegacyParaRequests/")">
+<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-audit-by="@ViewData["LegacyAuditById"]" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/api/LegacyParaRequests/")">
     @Html.AntiForgeryToken()
     <h3>Add Legacy Para</h3>
     <p class="text-muted">Submit a missing historical observation for Audit Cluster authorization.</p>
@@ -16,8 +16,15 @@
         <div class="card mb-3"><div class="card-body row g-3">
             <input id="legacyRequestId" type="hidden" value="0" /><input id="legacyVersion" type="hidden" value="0" />
             <div class="col-md-6"><label for="entityTypeSelectField" class="form-label">Relation Type (Entity Type)</label><select id="entityTypeSelectField" class="form-select"><option value="">Select entity type</option>
+                @if (ViewData["EntitiesTypeList"] is IEnumerable<AIS.Models.AuditEntitiesModel> entityTypes)
+                {
+                    foreach (var item in entityTypes)
+                    {
+                        <option value="@item.TYPE_ID">@item.ENTITYTYPEDESC</option>
+                    }
+                }
             </select></div>
-            <div class="col-md-6"><label for="legacyAuditBy" class="form-label">Reporting Office (Audit By)</label><input id="legacyAuditBy" class="form-control" readonly /></div>
+            <div class="col-md-6"><label for="legacyAuditBy" class="form-label">Reporting Office (Audit By)</label><input id="legacyAuditBy" class="form-control" value="@ViewData["LegacyAuditByLabel"]" readonly /></div>
             <div class="col-md-6"><label for="entitySelectField" class="form-label">Audit Entity</label><select id="entitySelectField" class="form-select"><option value="">Select audit entity</option></select></div>
             <div class="col-md-4"><label for="natureSelectField" class="form-label">Audit Nature</label><select id="natureSelectField" class="form-select"><option value="">Select nature</option>
                 @if (ViewData["AuditNatureList"] != null) { foreach (var item in (dynamic)ViewData["AuditNatureList"]) { <option value="@item.N_ID">@item.DESCRIPTION</option> } }

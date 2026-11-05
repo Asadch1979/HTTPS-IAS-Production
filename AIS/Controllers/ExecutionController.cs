@@ -34,6 +34,18 @@ namespace AIS.Controllers
                 return RedirectToAction("Index", "Login");
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
                 return RedirectToAction("Index", "PageNotFound");
+            var user = sessionHandler.GetUser();
+            if (user == null || user.UserContextAssignmentId.GetValueOrDefault() <= 0)
+                return RedirectToAction("Index", "Login");
+            var context = dBConnection.GetValidatedLoginContext(user.PPNumber, user.UserContextAssignmentId.Value, user.ID);
+            if (context == null || context.EntityId != user.UserEntityID || context.RoleId != user.UserRoleID
+                || context.GroupId != user.UserGroupID || context.IsActive != "Y")
+                return RedirectToAction("Index", "Login");
+            _permissionService.EnsurePermissionsCached(user);
+            if (!sessionHandler.TryGetAllowedViewIds(out var pages) || !pages.Contains(192))
+                return RedirectToAction("Index", "PageNotFound");
+            ViewData["LegacyAuditById"] = context.EntityId;
+            ViewData["LegacyAuditByLabel"] = context.EntityName + (context.EntityCode.HasValue ? " (" + context.EntityCode.Value + ")" : "");
             ViewData["PageId"] = 192;
             ViewData["LegacyParaEditor"] = true;
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();

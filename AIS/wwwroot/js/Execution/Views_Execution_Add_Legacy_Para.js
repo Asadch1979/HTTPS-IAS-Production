@@ -3,7 +3,7 @@
     $(function () {
     const app=window.legacyPara; if (!app || !app.enabled) return;
     const annexes=JSON.parse(document.getElementById('legacy-page-data').textContent).AnnexList || [];
-    let persons=[], staged=[], editing=null, files=[], restoring=false, auditBy=null, entityLoad=0;
+    let persons=[], staged=[], editing=null, files=[], restoring=false, auditBy=Number(document.getElementById('legacyParaWorkspace').dataset.auditBy)||null, entityLoad=0;
     const run=fn => Promise.resolve().then(fn).catch(e => app.message(e.message,true));
     const val=id => $('#' + id).val();
     const num=id => Number(val(id));
@@ -59,7 +59,23 @@
     function clearEntityData() { ++entityLoad;persons=[];staged=[];editing=null;renderPersons();renderStaged();fillPerson({});$('#responsibleLCNoEntryField,#responsibleBrCodeEntryField').val(''); }
     $('#entitySelectField').on('change',clearEntityData);
     $('#entityTypeSelectField').on('change',() => {clearEntityData();const generation=entityLoad;const select=document.getElementById('entitySelectField');select.replaceChildren(new Option('Select entity',''));run(async () => {const rows=await lookup('ENTITIES',val('entityTypeSelectField'));if(generation===entityLoad) rows.forEach(r => select.add(new Option(r.label,r.id)));});});
-    run(async () => {const context=await lookup('CONTEXT');auditBy=Number(context[0].id);$('#legacyAuditBy').val(context[0].label);const types=await lookup('ENTITY_TYPES');const select=document.getElementById('entityTypeSelectField');select.replaceChildren(new Option('Select entity type',''));types.forEach(r => select.add(new Option(r.label,r.id)));});
+    // Initial options and office come from the authenticated server-rendered page.
+    // Lookup is only a fallback; never clear valid options because an API is unavailable.
+    run(async () => {
+        if (!auditBy) {
+            const context=await lookup('CONTEXT');
+            if (!Array.isArray(context) || context.length!==1 || !(Number(context[0].id)>0) || !context[0].label)
+                throw new Error('The selected Audit By office is unavailable. Refresh the page or select an active context.');
+            auditBy=Number(context[0].id);$('#legacyAuditBy').val(context[0].label);
+        }
+        const select=document.getElementById('entityTypeSelectField');
+        if (Array.from(select.options).some(option => Number(option.value)>0)) return;
+        const types=await lookup('ENTITY_TYPES');
+        if (!Array.isArray(types) || !types.length || types.some(row => !(Number(row.id)>0) || !row.label))
+            throw new Error('No eligible Relation Types are available for the selected Audit By office.');
+        if (Array.from(select.options).some(option => Number(option.value)>0)) return;
+        types.forEach(row => select.add(new Option(row.label,row.id)));
+    });
     if ($.fn.select2) $('#updatedAnnexlist,#riskActivitiesSelectBox').select2();
     if (window.initObservationReference) window.initObservationReference('#observationReferenceSection',{forceReload:true,initialRefId:null});
     // The selected audit entity is the trusted loan-lookup scope; no free branch-code routing.
