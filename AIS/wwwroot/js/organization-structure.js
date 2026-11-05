@@ -439,19 +439,33 @@
     }
 
     let moveEntity = null, movePreview = null, moveVersion = 0, moveBusy = false;
+    // A successful server preview enables the button. The mandatory reason is
+    // validated separately on submission, so an empty field cannot trap users
+    // behind a permanently disabled control.
     function canConfirmMove() {
-        const reason = $('move-reason').value.trim();
         return !moveBusy && !!movePreview && movePreview.entityId === moveEntity &&
-            movePreview.newParentId === Number($('move-destination').value) &&
-            reason.length > 0 && new TextEncoder().encode(reason).length <= 1000 &&
-            $('move-reason').checkValidity();
+            movePreview.newParentId === Number($('move-destination').value);
+    }
+    function moveReasonError() {
+        const reason = $('move-reason').value.trim();
+        if (!reason) return 'Enter a change reason before confirming the move.';
+        if (new TextEncoder().encode(reason).length > 1000)
+            return 'The change reason must not exceed 1000 bytes.';
+        if (!$('move-reason').checkValidity())
+            return 'Enter a valid change reason before confirming the move.';
+        return '';
     }
     function updateMoveConfirmation() {
         $('move-confirm').disabled = !canConfirmMove();
+        $('move-requirement').textContent = moveBusy
+            ? 'Processing the move request…'
+            : !movePreview
+                ? 'Preview a destination to enable Confirm move.'
+                : moveReasonError() || 'Preview validated. The move is ready to confirm.';
     }
     function invalidateMovePreview() {
         ++moveVersion; movePreview = null;
-        $('move-confirm').disabled = true;
+        updateMoveConfirmation();
         $('move-feedback').textContent = 'Preview the destination before confirming.';
     }
     function moveDestinations() {
@@ -493,6 +507,9 @@
         $('move-destination').addEventListener('change', invalidateMovePreview);
         $('move-reason').addEventListener('input', updateMoveConfirmation);
         $('move-reason').addEventListener('change', updateMoveConfirmation);
+        $('move-reason').addEventListener('invalid', () => {
+            $('move-requirement').textContent = moveReasonError() || 'Enter a valid change reason.';
+        });
         $('move-cancel').addEventListener('click', () => { invalidateMovePreview(); $('move-dialog').close(); });
         $('move-dialog').addEventListener('cancel', event => { if (moveBusy) event.preventDefault(); else invalidateMovePreview(); });
         $('move-preview').addEventListener('click', async () => {
@@ -519,6 +536,12 @@
         $('move-form').addEventListener('submit', async event => {
             event.preventDefault();
             if (!canConfirmMove()) return;
+            const reasonError = moveReasonError();
+            if (reasonError) {
+                $('move-requirement').textContent = reasonError;
+                $('move-reason').focus();
+                return;
+            }
             const body = new FormData($('move-form'));
             body.set('EntityId', movePreview.entityId);
             body.set('ExpectedParentId', movePreview.currentParentId);
