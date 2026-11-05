@@ -41,16 +41,36 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
   
     PROCEDURE entity_scope(p_entity NUMBER) IS
     BEGIN
+      -- The selected Audit By office and master/mapping values must agree.
+      -- The original historical-entity eligibility policy may admit
+      -- an inactive entity only when its mapping corroborates ownership.
       SELECT e.type_id, e.code, e.auditby_id
         INTO v_type, v_code, v_auditor
         FROM t_auditee_entities e
        WHERE e.entity_id = p_entity
          AND e.auditable = 'Y'
-         AND e.active = 'Y'
-         AND e.auditby_id = v_entity;
+         AND e.auditby_id = v_entity
+         AND NOT EXISTS
+             (SELECT 1 FROM t_auditee_entities_maping m
+               WHERE m.entity_id = e.entity_id
+                 AND m.auditedby IS NOT NULL
+                 AND m.auditedby <> e.auditby_id)
+         AND (e.active = 'Y' OR EXISTS
+             (SELECT 1 FROM t_auditee_entities_maping m
+               WHERE m.entity_id = e.entity_id AND m.auditedby = e.auditby_id))
+         AND EXISTS
+             (SELECT 1 FROM t_auditee_ent_types et
+               WHERE et.autid = e.type_id
+                 AND et.auditable = 'A'
+                 AND ((v_entity IN (112242,112248)
+                         AND et.audited_by_enitity = v_entity)
+                   OR (v_entity NOT IN (112242,112248) AND EXISTS
+                       (SELECT 1 FROM v_get_parent_office mp
+                         WHERE mp.entity_id = v_entity
+                           AND mp.parent_id = et.audited_by_enitity))));
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
-        deny('Entity is outside the selected Audit Cluster.');
+        RAISE_APPLICATION_ERROR(-20814, 'Entity scope is not established for this Audit By office.');
     END;
 
     -- Mirror the report's role-scoped relationship codes, but do not use its
@@ -281,6 +301,24 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
        AND p.status = 'A';
     IF v_count = 0 OR v_role IS NULL OR v_entity IS NULL THEN
       deny('Permission denied for the current page.');
+    END IF;
+    -- Do not rely on the generic API guard's Super User shortcut: require
+    -- the selected active role, method, exact ApiCalls route and page 192/193
+    -- dependency within the database as well.
+    SELECT COUNT(*) INTO v_count
+      FROM T_AU_ROLE_API_PERMISSION rp
+      JOIN T_AU_API_MASTER am ON am.api_id = rp.api_id
+      JOIN T_IAS_LEGACY_PAGE_API dep
+        ON dep.api_id = am.api_id AND dep.page_id = p_page
+     WHERE rp.role_id = v_role
+       AND rp.is_active = 'Y'
+       AND am.is_active = 'Y'
+       AND dep.is_active = 'Y'
+       AND UPPER(TRIM(am.http_method)) = 'POST'
+       AND LOWER(TRIM(BOTH '/' FROM am.api_path)) =
+           'apicalls/legacypara' || LOWER(p_operation);
+    IF v_count = 0 THEN
+      deny('Exact selected-role API permission is required.');
     END IF;
     -- This singleton also serializes new keys and corrected requests. No activation source is included.
     IF p_operation IN ('SUBMIT', 'DECIDE') THEN
