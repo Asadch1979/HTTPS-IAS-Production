@@ -66,7 +66,10 @@ namespace AIS.Controllers
             if (input == null) return BadRequest(new { Status = false, Message = "A valid request body is required." });
             try
             {
-                var rows = dBConnection.LegacyParaRequests(operation, input, page);
+                // The checker queue uses its own read-only procedure.
+                var rows = operation == LegacyParaOperation.List
+                    ? dBConnection.LegacyParaPending((LegacyParaQuery)input, page)
+                    : dBConnection.LegacyParaRequests(operation, input, page);
                 if (operation == LegacyParaOperation.Detail)
                     foreach (var row in rows)
                     {
