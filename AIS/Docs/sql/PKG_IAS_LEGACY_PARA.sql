@@ -21,6 +21,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     v_data T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
     v_kind VARCHAR2(30); v_parent NUMBER; v_search VARCHAR2(200);
     v_offset NUMBER; v_queue VARCHAR2(5);
+    v_relation NUMBER; v_reporting_office NUMBER;
     v_json JSON_OBJECT_T;
 
     PROCEDURE fail(p_message VARCHAR2) IS
@@ -42,6 +43,34 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
              OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
                WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity))));
     EXCEPTION WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20814,'Entity scope is not established for this Audit By office.');
+    END;
+
+    -- Mirror the report's role-scoped relationship codes, but do not use its
+    -- broad, read-only parent/posting selectors for a write workflow.
+    FUNCTION relationship_allowed(p_relationship NUMBER) RETURN BOOLEAN IS
+      v_found NUMBER;
+    BEGIN
+      SELECT COUNT(*) INTO v_found FROM t_auditee_ent_relation r
+       WHERE r.entity_realtion_id=p_relationship AND r.status='Y'
+         AND ((v_role IN (15,16,17) AND r.id IN (5,9))
+           OR (v_role=35 AND r.id IN (1,2))
+           OR (v_role IN (1,3))
+           OR (v_role IN (6,7) AND r.entity_realtion_id=3));
+      RETURN v_found>0;
+    END;
+
+    PROCEDURE check_location(p_entity NUMBER,p_relationship NUMBER,p_office NUMBER) IS
+    BEGIN
+      IF p_relationship IS NULL OR p_office IS NULL
+         OR p_relationship<=0 OR p_office<=0 OR NOT relationship_allowed(p_relationship) THEN
+        deny('Relationship and reporting office are not authorized.');
+      END IF;
+      SELECT COUNT(*) INTO v_count FROM t_auditee_entities_maping m
+        JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+          AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+       WHERE m.entity_id=p_entity AND m.parent_id=p_office
+         AND m.relation_type_id=p_relationship AND r.status='Y';
+      IF v_count=0 THEN deny('Selected posting does not belong to the reporting office and relationship.'); END IF;
     END;
 
     PROCEDURE duplicate_check(p_entity NUMBER,p_year NUMBER,p_nature NUMBER,p_para VARCHAR2,p_request NUMBER) IS
@@ -156,6 +185,71 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       IF v_kind='CONTEXT' THEN
         OPEN io_cursor FOR SELECT entity_id AS id,NVL(description,name)||' ('||code||')' AS label
           FROM t_auditee_entities WHERE entity_id=v_entity;
+      ELSIF v_kind='REPORTING_OFFICES' THEN
+        IF NOT relationship_allowed(v_parent) THEN deny('Relationship is not available in the selected role.'); END IF;
+        OPEN io_cursor FOR
+          SELECT DISTINCT m.parent_id AS id, NVL(m.p_name,p.name) AS label
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_entities p ON p.entity_id=m.parent_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE m.relation_type_id=v_parent AND r.status='Y'
+             AND e.auditby_id=v_entity AND e.auditable='Y' AND et.auditable='A'
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))
+           ORDER BY label;
+      ELSIF v_kind='POSTINGS' THEN
+        v_relation:=JSON_VALUE(p_input,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        IF NOT relationship_allowed(v_relation) THEN deny('Relationship is not available in the selected role.'); END IF;
+        OPEN io_cursor FOR
+          SELECT DISTINCT e.entity_id AS id, NVL(e.description,e.name)||' ('||e.code||')' AS label,
+            e.type_id AS entity_type_id
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE m.parent_id=v_parent AND m.relation_type_id=v_relation AND r.status='Y'
+             AND e.auditby_id=v_entity AND e.auditable='Y' AND et.auditable='A'
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))
+           ORDER BY label;
+      ELSIF v_kind='ENTITY_LOCATION' THEN
+        -- Return all eligible mappings for older returned requests. Never guess
+        -- if an entity has multiple relationships or reporting parents.
+        OPEN io_cursor FOR
+          SELECT DISTINCT m.relation_type_id AS relationship_id,
+            m.parent_id AS reporting_office_id, e.type_id AS entity_type_id
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE e.entity_id=v_parent AND e.auditby_id=v_entity
+             AND e.auditable='Y' AND et.auditable='A' AND r.status='Y'
+             AND ((v_role IN (15,16,17) AND r.id IN (5,9))
+               OR (v_role=35 AND r.id IN (1,2))
+               OR (v_role IN (1,3))
+               OR (v_role IN (6,7) AND r.entity_realtion_id=3))
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)));
       ELSIF v_kind='ENTITY_TYPES' THEN
         OPEN io_cursor FOR SELECT DISTINCT et.autid AS id,et.entitytypedesc AS label FROM t_auditee_ent_types et
           WHERE et.auditable='A' AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
@@ -248,10 +342,21 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       IF v_entity IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
       IF NVL(v_id,0)>0 THEN
         entity_scope(v_row.entity_id);
+        -- Previous submissions may predate the three-level selector. Their
+        -- original entity_scope validation remains mandatory; new requests
+        -- additionally revalidate the recorded relationship and office.
+        v_relation:=JSON_VALUE(v_row.payload_json,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        v_reporting_office:=JSON_VALUE(v_row.payload_json,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+        IF v_relation IS NOT NULL OR v_reporting_office IS NOT NULL THEN
+          check_location(v_row.entity_id,v_relation,v_reporting_office);
+        END IF;
         IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; correction is blocked.'); END IF;
       END IF;
       v_data.entity_id:=JSON_VALUE(p_input,'$.entityId' RETURNING NUMBER ERROR ON ERROR);
       entity_scope(v_data.entity_id);
+      v_relation:=JSON_VALUE(p_input,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+      v_reporting_office:=JSON_VALUE(p_input,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+      check_location(v_data.entity_id,v_relation,v_reporting_office);
       v_data.entity_type_id:=v_type; v_data.audited_by:=v_auditor;
       IF NVL(JSON_VALUE(p_input,'$.entityTypeId' RETURNING NUMBER ERROR ON ERROR),-1)<>v_type THEN fail('Invalid entity type.'); END IF;
       v_data.audit_year:=JSON_VALUE(p_input,'$.auditYear' RETURNING NUMBER ERROR ON ERROR);
