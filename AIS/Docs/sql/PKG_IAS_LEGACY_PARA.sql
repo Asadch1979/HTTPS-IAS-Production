@@ -292,11 +292,33 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       RAISE_APPLICATION_ERROR(-20812,
                               'Legacy para addition is not activated.');
     END IF;
-    v_id      := JSON_VALUE(p_input,
-                            '$.requestId' RETURNING NUMBER ERROR ON ERROR);
-    v_version := JSON_VALUE(p_input,
-                            '$.version' RETURNING NUMBER ERROR ON ERROR);
-    v_search  := TRIM(JSON_VALUE(p_input, '$.search'));
+    -- The five operations have distinct request DTOs. In particular, LIST and
+    -- LOOKUP do not carry requestId/version, and DETAIL has no version.
+    -- Do not raise ORA-40462 by extracting fields that the operation does
+    -- not require. Preserve strict errors for malformed JSON numeric values.
+    IF p_operation IN ('SUBMIT', 'DETAIL', 'DECIDE') THEN
+      v_id := JSON_VALUE(p_input,
+                         '$.requestId' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
+      IF p_operation IN ('DETAIL', 'DECIDE') AND NVL(v_id, 0) <= 0 THEN
+        fail('A valid request ID is required.');
+      END IF;
+      IF p_operation = 'SUBMIT' AND NVL(v_id, 0) < 0 THEN
+        fail('Invalid request ID.');
+      END IF;
+    END IF;
+
+    IF p_operation IN ('SUBMIT', 'DECIDE') THEN
+      v_version := JSON_VALUE(p_input,
+                              '$.version' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
+      IF (p_operation = 'DECIDE' OR NVL(v_id, 0) > 0)
+         AND NVL(v_version, 0) <= 0 THEN
+        fail('A valid request version is required.');
+      END IF;
+    END IF;
+
+    IF p_operation IN ('LOOKUP', 'LIST') THEN
+      v_search := TRIM(JSON_VALUE(p_input, '$.search'));
+    END IF;
   
     IF p_operation = 'LOOKUP' THEN
       v_kind   := JSON_VALUE(p_input, '$.kind');
