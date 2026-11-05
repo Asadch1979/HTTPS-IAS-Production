@@ -414,6 +414,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       ELSE
         IF v_row.audited_by IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
         entity_scope(v_row.entity_id);
+        -- Revalidate the selected relationship/office at authorization as well
+        -- as submission. Older pending requests retain their previous entity
+        -- scope rule until returned and resubmitted through the new selector.
+        v_relation:=JSON_VALUE(v_row.payload_json,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        v_reporting_office:=JSON_VALUE(v_row.payload_json,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+        IF v_relation IS NOT NULL OR v_reporting_office IS NOT NULL THEN
+          check_location(v_row.entity_id,v_relation,v_reporting_office);
+        END IF;
         IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; posting is blocked.'); END IF;
         v_data:=v_row; check_attributes;
         IF v_data.risk_id<>v_row.risk_id THEN fail('Annexure risk has changed; return this request for correction.'); END IF;
