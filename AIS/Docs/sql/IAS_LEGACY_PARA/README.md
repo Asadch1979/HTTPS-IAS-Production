@@ -8,7 +8,7 @@ The two existing routes and page IDs 192/193 are retained. No menu or user assig
 - `Views/Execution/Authorize_Adding_Legacy_Para.cshtml` provides a searchable, paginated queue, complete sandboxed observation preview, details, attachments, history and checker decisions.
 - `_CauObservationEditor.cshtml` is extracted from the existing CAU view and used by both flows. CAU routing/reply controls remain CAU-only; legacy requests use the selected audit entity. The CAU view retains its existing script and save behavior. The legacy view loads only the dedicated request scripts and never requires an engagement.
 - `_LegacyParaRequestQueue.cshtml`, `legacy-para-requests.js` and the two existing view scripts implement the consolidated entry and review flow with DOM text encoding and direct event binding.
-- `LegacyParaRequest.cs`, `LegacyParaRequestsController.cs`, `DBConnection.LegacyParaRequests.cs` and `LegacyParaHtml.cs` provide typed validation, authenticated selected context, page/API permission enforcement, CSRF, parameter binding, safe complete HTML handling and audit events.
+- `LegacyParaRequest.cs`, `LegacyParaOperation.cs`, `ApiCallsController.LegacyPara.cs`, `DBConnection.LegacyParaRequests.cs` and `LegacyParaHtml.cs` provide typed validation, authenticated selected context, page/API permission enforcement, CSRF, parameter binding, safe complete HTML handling and audit events.
 - `IAS_LEGACY_PARA_DDL.sql` defines requests, immutable revision/action snapshots, a permanent linked attributes record, historical recognition policy and a disabled control row. The request payload includes responsible-person details and attachment bytes; no files are written to public storage.
 - `PKG_IAS_LEGACY_PARA.sql` implements submission, correction/resubmission, lists/details/lookups, return, rejection and authorization. `P_EXECUTE` receives identity/context only from the server session and re-derives active assignment, group permissions and organizational scope in the database.
 
@@ -36,8 +36,48 @@ Only repository source was modified. No database connection, SQL execution, pack
 
 ## Correction source files
 
-`PKG_IAS_LEGACY_IDS.sql` adds disabled/unconfigured shared allocator bindings without operational table locks. `IAS_LEGACY_PARA_API_PERMISSIONS.sql` registers new endpoints inactive, maps pages 192/193 and the six read-only observation picker dependencies, and prepares inactive API-role rows only for existing page assignments. Existing API anchors, grants and activation states are preserved; no page assignment or activation is supplied. The mapping is an explicit source manifest, not a permission bypass. Canonical JSON routes are /api/LegacyParaRequests/* and do not contain PathBase. PKG_AD uses these dependencies for page assignment and preserves shared dependencies on revocation.
+`PKG_IAS_LEGACY_IDS.sql` adds disabled/unconfigured shared allocator bindings without operational table locks. `IAS_LEGACY_PARA_API_PERMISSIONS.sql` registers new endpoints inactive, maps pages 192/193 and the six read-only observation picker dependencies, and prepares inactive API-role rows only for existing page assignments. Existing API anchors, grants and activation states are preserved; no page assignment or activation is supplied. The mapping is an explicit source manifest, not a permission bypass. Canonical POST routes are /ApiCalls/LegacyParaSubmit, /ApiCalls/LegacyParaLookup, /ApiCalls/LegacyParaList, /ApiCalls/LegacyParaDetail and /ApiCalls/LegacyParaDecide. They do not contain PathBase. PKG_AD uses these dependencies for page assignment and preserves shared dependencies on revocation.
 
 `IAS_LEGACY_RECOGNITION_POLICY.sql` provides an empty reviewed-policy JSON manifest and an insert-only importer. Explicit dates, approving employee and approval reference/rule must be present in repository policy; no rule/date can be inferred from the available reporting SQL. Existing differing policy is rejected. No date is invented or seeded.
 
 The legacy editor now reacquires the plugin-cloned textarea, rebuilds the editor for clear/restore to reset code view and undo history, reads the active editing surface, and prevents submission during asynchronous restoration. No fallback can resurrect cleared observation HTML. Existing controllers, DBConnection and package files retain their original encoding/newline conventions.
+
+## ApiCalls consolidation (5 November 2026)
+
+The separate LegacyParaRequestsController and /api/LegacyParaRequests/* endpoints are retired.
+The existing ApiCallsController exposes five protected POST actions from
+ApiCallsController.LegacyPara.cs, preserving the page views and their maker/checker flow.
+The action-level [Authorize, ValidateAntiForgeryToken] attributes are essential
+because the main ApiCallsController has an [IgnoreAntiforgeryToken] controller default.
+The normal ApiCalls rate limit still applies.
+
+The operation is a server-selected LegacyParaOperation enum. The maker/checker page
+is the server-selected LegacyParaPage enum (192/193); the client submits only the
+queue indicator and request details, never the operation or page number.
+The Oracle P_EXECUTE contract still accepts the exact operation and page values
+and strictly validates them. Its permission query now checks the new ApiCalls
+route prefix. No database permission, session, selected role, scope, activity
+logging, or posting validation is bypassed. Full API and page permission checks
+remain mandatory even for Super Users.
+
+**Coordinated DBA and application release is required.** For an existing database,
+review and execute IAS_LEGACY_PARA_APICALLS_MIGRATION.sql to rename the five
+previously approved API registrations *in place*, preserving API_ID and active
+role/page decisions. Check all maker/checker dependencies and selected-role
+grants before commit. Deploy the matching PKG_IAS_LEGACY_PARA.sql and application
+during the same controlled cutover; there is no old-route alias or automatic
+activation. The registration manifest handles fresh installations and still
+creates any missing rows inactive. Users must sign out and sign in to refresh
+cached permissions after approved changes. Roll back the coordinated release
+if either the package, API routes or registrations are out of sync.
+
+ORA-20801 remains a fail-closed unsupported-operation/page error. The new
+server code binds strongly typed operations and page values to reduce
+mismatches, and reports a fixed OPERATION_CONTRACT_MISMATCH reference on 20801
+without revealing Oracle errors to browsers. A persistent 20801 requires an
+examination of the server log and deployed code/package versions, not disabling
+the database validation.
+
+Source-level tests: tests/legacy-para/apicalls-routing.test.cjs.
+No application compilation, Oracle deployment or end-to-end checks have been
+performed by this repository edit.
