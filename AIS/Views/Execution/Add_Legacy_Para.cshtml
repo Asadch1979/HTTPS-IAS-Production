@@ -48,7 +48,7 @@
         <div class="card"><div class="card-body"><partial name="_CauObservationEditor" /></div></div>
         <button id="legacyNewRequest" type="button" class="btn btn-outline-secondary mt-3">Start New Request</button>
     </fieldset>
-    <h4 class="mt-4">My Requests / Returned Requests</h4><partial name="_LegacyParaRequestQueue" />
+    <p class="text-muted mt-3">Submitted requests are sent to the authorized checker for review.</p>
 </div>
 <script type="application/json" id="legacy-page-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { AnnexList = ViewData["AnnexList"] }))</script>
 <script src="~/js/obsreference.js" asp-append-version="true"></script>
