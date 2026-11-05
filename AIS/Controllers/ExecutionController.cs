@@ -38,7 +38,7 @@ namespace AIS.Controllers
             ViewData["LegacyParaEditor"] = true;
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
             ViewData["ProcessList"] = dBConnection.GetAuditChecklistCAD();
-            // Load office and types through the selected-context request API.
+            ViewData["EntitiesTypeList"] = dBConnection.GetAuditeeEntitiesType();
             ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara().Where(p => p.AUDITPERIODID >= 1900 && p.AUDITPERIODID <= 2025).ToList();
             ViewData["AuditNatureList"] = dBConnection.GetAuditNatureForAddLegacyPara();
             return View();
