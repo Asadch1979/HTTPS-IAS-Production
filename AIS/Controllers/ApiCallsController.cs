@@ -3396,7 +3396,7 @@ namespace AIS.Controllers
         [HttpPost]
         public List<AuditEntitiesModel> get_auditee_entities_by_entity_type_id(int ENTITY_TYPE_ID)
             {
-            return archiveDbConnection.GetAuditEntitiesByTypeId(ENTITY_TYPE_ID);
+            return dBConnection.GetAuditEntitiesByTypeId(ENTITY_TYPE_ID);
             }
 
         [HttpPost]
