@@ -15,17 +15,24 @@
     <fieldset disabled="@(!enabled)">
         <div class="card mb-3"><div class="card-body row g-3">
             <input id="legacyRequestId" type="hidden" value="0" /><input id="legacyVersion" type="hidden" value="0" />
-            <div class="col-md-6"><label for="entityTypeSelectField" class="form-label">Relation Type (Entity Type)</label><select id="entityTypeSelectField" class="form-select"><option value="">Select entity type</option>
-                @if (ViewData["EntitiesTypeList"] is IEnumerable<AIS.Models.AuditEntitiesModel> entityTypes)
-                {
-                    foreach (var item in entityTypes)
+            <div class="col-md-12"><label for="relationshipSelectField" class="form-label">Relationship Type</label>
+                <select id="relationshipSelectField" class="form-select"><option value="">--Select Relationship Type--</option>
+                    @if (ViewData["Userrelationship"] != null)
                     {
-                        <option value="@item.TYPE_ID">@item.ENTITYTYPEDESC</option>
+                        foreach (var item in (IEnumerable<AIS.Models.UserRelationshipModel>)ViewData["Userrelationship"])
+                        {
+                            <option value="@item.ENTITY_REALTION_ID">@item.FIELD_NAME</option>
+                        }
                     }
-                }
-            </select></div>
-            <div class="col-md-6"><label for="legacyAuditBy" class="form-label">Reporting Office (Audit By)</label><input id="legacyAuditBy" class="form-control" value="@ViewData["LegacyAuditByLabel"]" readonly /></div>
-            <div class="col-md-6"><label for="entitySelectField" class="form-label">Audit Entity</label><select id="entitySelectField" class="form-select"><option value="">Select audit entity</option></select></div>
+                </select>
+            </div>
+            <div class="col-md-6"><label for="reportingOfficeSelectField" class="form-label">Controlling/Reporting Office</label>
+                <select id="reportingOfficeSelectField" class="form-select"><option value="">--Select Controlling/Reporting Office--</option></select>
+            </div>
+            <div class="col-md-6"><label for="entitySelectField" class="form-label">Place of Posting</label>
+                <select id="entitySelectField" class="form-select"><option value="">--Select Place of Posting--</option></select>
+                <input id="legacyEntityTypeId" type="hidden" value="" />
+            </div>
             <div class="col-md-4"><label for="natureSelectField" class="form-label">Audit Nature</label><select id="natureSelectField" class="form-select"><option value="">Select nature</option>
                 @if (ViewData["AuditNatureList"] != null) { foreach (var item in (dynamic)ViewData["AuditNatureList"]) { <option value="@item.N_ID">@item.DESCRIPTION</option> } }
             </select></div>

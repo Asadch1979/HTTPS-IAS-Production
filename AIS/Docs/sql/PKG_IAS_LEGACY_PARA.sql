@@ -11,42 +11,24 @@ CREATE OR REPLACE PACKAGE PKG_IAS_LEGACY_PARA AS
 END PKG_IAS_LEGACY_PARA;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
-  PROCEDURE P_EXECUTE(p_operation IN VARCHAR2,
-                      p_ppno      IN NUMBER,
-                      p_context   IN NUMBER,
-                      p_role      IN NUMBER,
-                      p_group     IN NUMBER,
-                      p_page      IN NUMBER,
-                      p_input     IN CLOB,
-                      io_cursor   OUT SYS_REFCURSOR) IS
-    v_entity  NUMBER;
-    v_group   NUMBER;
-    v_role    NUMBER;
-    v_enabled CHAR(1);
-    v_id      NUMBER;
-    v_version NUMBER;
-    v_count   NUMBER;
-    v_risk    NUMBER;
-    v_type    NUMBER;
-    v_code    T_AUDITEE_ENTITIES.CODE%TYPE;
-    v_auditor NUMBER;
-    v_legacy  NUMBER;
-    v_text    NUMBER;
-    v_com     NUMBER;
-    v_resp    NUMBER;
-    v_ref     T_AU_OLD_PARAS_FAD.REF_P%TYPE;
-    v_rec     DATE;
-    v_action  VARCHAR2(12);
-    v_remarks VARCHAR2(2000);
-    v_row     T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
-    v_data    T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
-    v_kind    VARCHAR2(30);
-    v_parent  NUMBER;
-    v_search  VARCHAR2(200);
-    v_offset  NUMBER;
-    v_queue   VARCHAR2(5);
-    v_json    JSON_OBJECT_T;
-  
+  PROCEDURE P_EXECUTE(p_operation IN VARCHAR2, p_ppno IN NUMBER,
+    p_context IN NUMBER, p_role IN NUMBER, p_group IN NUMBER, p_page IN NUMBER, p_input IN CLOB,
+    io_cursor OUT SYS_REFCURSOR) IS
+    v_entity NUMBER; v_group NUMBER; v_role NUMBER; v_enabled CHAR(1);
+    v_id NUMBER; v_version NUMBER; v_count NUMBER; v_risk NUMBER;
+    v_type NUMBER; v_code T_AUDITEE_ENTITIES.CODE%TYPE; v_auditor NUMBER;
+    v_legacy NUMBER; v_text NUMBER; v_com NUMBER; v_resp NUMBER;
+    v_ref T_AU_OLD_PARAS_FAD.REF_P%TYPE;
+    v_gist T_AU_OLD_PARAS_FAD.GIST_OF_PARAS%TYPE;
+    v_annexure T_AU_OLD_PARAS_FAD.ANNEXURE%TYPE;
+    v_rec DATE; v_action VARCHAR2(12); v_remarks VARCHAR2(2000);
+    v_row T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
+    v_data T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
+    v_kind VARCHAR2(30); v_parent NUMBER; v_search VARCHAR2(200);
+    v_offset NUMBER; v_queue VARCHAR2(5);
+    v_relation NUMBER; v_reporting_office NUMBER;
+    v_json JSON_OBJECT_T;
+
     PROCEDURE fail(p_message VARCHAR2) IS
     BEGIN
       RAISE_APPLICATION_ERROR(-20801, p_message);
@@ -91,11 +73,36 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         RAISE_APPLICATION_ERROR(-20814, 'Entity scope is not established for this Audit By office.');
     END;
 
-    PROCEDURE duplicate_check(p_entity  NUMBER,
-                              p_year    NUMBER,
-                              p_nature  NUMBER,
-                              p_para    VARCHAR2,
-                              p_request NUMBER) IS
+    -- Mirror the report's role-scoped relationship codes, but do not use its
+    -- broad, read-only parent/posting selectors for a write workflow.
+    FUNCTION relationship_allowed(p_relationship NUMBER) RETURN BOOLEAN IS
+      v_found NUMBER;
+    BEGIN
+      SELECT COUNT(*) INTO v_found FROM t_auditee_ent_relation r
+       WHERE r.entity_realtion_id=p_relationship AND r.status='Y'
+         AND ((v_role IN (15,16,17) AND r.id IN (5,9))
+           OR (v_role=35 AND r.id IN (1,2))
+           OR (v_role IN (1,3))
+           OR (v_role IN (6,7) AND r.entity_realtion_id=3));
+      RETURN v_found>0;
+    END;
+
+    PROCEDURE check_location(p_entity NUMBER,p_relationship NUMBER,p_office NUMBER) IS
+    BEGIN
+      IF p_relationship IS NULL OR p_office IS NULL
+         OR p_relationship<=0 OR p_office<=0 OR NOT relationship_allowed(p_relationship) THEN
+        deny('Relationship and reporting office are not authorized.');
+      END IF;
+      SELECT COUNT(*) INTO v_count FROM t_auditee_entities_maping m
+        JOIN t_auditee_entities p ON p.entity_id=m.parent_id
+        JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+          AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+       WHERE m.entity_id=p_entity AND m.parent_id=p_office
+         AND m.relation_type_id=p_relationship AND r.status='Y';
+      IF v_count=0 THEN deny('Selected posting does not belong to the reporting office and relationship.'); END IF;
+    END;
+
+    PROCEDURE duplicate_check(p_entity NUMBER,p_year NUMBER,p_nature NUMBER,p_para VARCHAR2,p_request NUMBER) IS
     BEGIN
       SELECT COUNT(*)
         INTO v_count
@@ -326,83 +333,113 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         FROM T_IAS_LEGACY_PARA_CONTROL
        WHERE control_id = 1;
     END IF;
-    IF v_enabled <> 'Y' THEN
-      RAISE_APPLICATION_ERROR(-20812,
-                              'Legacy para addition is not activated.');
-    END IF;
-    -- The five operations have distinct request DTOs. In particular, LIST and
-    -- LOOKUP do not carry requestId/version, and DETAIL has no version.
-    -- Do not raise ORA-40462 by extracting fields that the operation does
-    -- not require. Preserve strict errors for malformed JSON numeric values.
-    IF p_operation IN ('SUBMIT', 'DETAIL', 'DECIDE') THEN
-      v_id := JSON_VALUE(p_input,
-                         '$.requestId' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
-      IF p_operation IN ('DETAIL', 'DECIDE') AND NVL(v_id, 0) <= 0 THEN
-        fail('A valid request ID is required.');
-      END IF;
-      IF p_operation = 'SUBMIT' AND NVL(v_id, 0) < 0 THEN
-        fail('Invalid request ID.');
-      END IF;
-    END IF;
+    IF v_enabled<>'Y' THEN RAISE_APPLICATION_ERROR(-20812,'Legacy para addition is not activated.'); END IF;
+    v_id:=JSON_VALUE(p_input,'$.requestId' RETURNING NUMBER ERROR ON ERROR);
+    v_version:=JSON_VALUE(p_input,'$.version' RETURNING NUMBER ERROR ON ERROR);
+    v_search:=TRIM(JSON_VALUE(p_input,'$.search'));
 
-    IF p_operation IN ('SUBMIT', 'DECIDE') THEN
-      v_version := JSON_VALUE(p_input,
-                              '$.version' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
-      IF (p_operation = 'DECIDE' OR NVL(v_id, 0) > 0)
-         AND NVL(v_version, 0) <= 0 THEN
-        fail('A valid request version is required.');
-      END IF;
-    END IF;
-
-    IF p_operation IN ('LOOKUP', 'LIST') THEN
-      v_search := TRIM(JSON_VALUE(p_input, '$.search'));
-    END IF;
-  
-    IF p_operation = 'LOOKUP' THEN
-      v_kind   := JSON_VALUE(p_input, '$.kind');
-      v_parent := JSON_VALUE(p_input,
-                             '$.parentId' RETURNING NUMBER ERROR ON ERROR);
-      IF v_kind = 'ENTITIES' THEN
+    IF p_operation='LOOKUP' THEN
+      v_kind:=JSON_VALUE(p_input,'$.kind');
+      v_parent:=JSON_VALUE(p_input,'$.parentId' RETURNING NUMBER ERROR ON ERROR);
+      IF v_kind='CONTEXT' THEN
+        OPEN io_cursor FOR SELECT entity_id AS id,NVL(description,name)||' ('||code||')' AS label
+          FROM t_auditee_entities WHERE entity_id=v_entity;
+      ELSIF v_kind='REPORTING_OFFICES' THEN
+        IF NOT relationship_allowed(v_parent) THEN deny('Relationship is not available in the selected role.'); END IF;
         OPEN io_cursor FOR
-          SELECT entity_id AS id, name AS label
-            FROM t_auditee_entities
-           WHERE auditby_id = v_entity
-             AND auditable = 'Y'
-             AND type_id = v_parent
-           ORDER BY name;
-      ELSIF v_kind = 'SUBCHECKLIST' THEN
+          SELECT DISTINCT m.parent_id AS id, NVL(m.p_name,p.name) AS label
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_entities p ON p.entity_id=m.parent_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE m.relation_type_id=v_parent AND r.status='Y'
+             AND e.auditby_id=v_entity AND e.auditable='Y' AND et.auditable='A'
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))
+           ORDER BY label;
+      ELSIF v_kind='POSTINGS' THEN
+        v_relation:=JSON_VALUE(p_input,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        IF NOT relationship_allowed(v_relation) THEN deny('Relationship is not available in the selected role.'); END IF;
         OPEN io_cursor FOR
-          SELECT s_id AS id, heading AS label
-            FROM t_audit_checklist_sub
-           WHERE t_id = v_parent
-             AND status = 'Y'
-           ORDER BY s_id;
-      ELSIF v_kind = 'CHECKLIST' THEN
+          SELECT DISTINCT e.entity_id AS id, NVL(e.description,e.name)||' ('||e.code||')' AS label,
+            e.type_id AS entity_type_id
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE m.parent_id=v_parent AND m.relation_type_id=v_relation AND r.status='Y'
+             AND e.auditby_id=v_entity AND e.auditable='Y' AND et.auditable='A'
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))
+           ORDER BY label;
+      ELSIF v_kind='ENTITY_LOCATION' THEN
+        -- Return all eligible mappings for older returned requests. Never guess
+        -- if an entity has multiple relationships or reporting parents.
         OPEN io_cursor FOR
-          SELECT id, heading AS label
-            FROM t_audit_checklist_details
-           WHERE s_id = v_parent
-             AND status = 'Y'
-           ORDER BY id;
-      ELSIF v_kind = 'REFERENCES' THEN
-        OPEN io_cursor FOR
-          SELECT ref_id                AS id,
-                 reference_source_type,
-                 title_or_heading      AS label,
-                 section_text,
-                 chapter_no,
-                 sub_section_no
-            FROM vw_reference_master_detail
-           WHERE v_search IS NOT NULL
-             AND INSTR(UPPER(title_or_heading), UPPER(v_search)) > 0
-           ORDER BY title_or_heading
-           FETCH FIRST 100 ROWS ONLY;
-      ELSIF v_kind = 'PERSON' THEN
-        OPEN io_cursor FOR
-          SELECT DISTINCT p_no AS id, employee_name AS label
-            FROM V_HR_EMPLOYEE_INFO_PPNO_NDC
-           WHERE p_no = v_parent;
-      ELSIF v_kind = 'LC' THEN
+          SELECT DISTINCT m.relation_type_id AS relationship_id,
+            m.parent_id AS reporting_office_id, e.type_id AS entity_type_id
+            FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities p ON p.entity_id=m.parent_id
+            JOIN t_auditee_entities e ON e.entity_id=m.entity_id
+            JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
+              AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
+            JOIN t_auditee_ent_types et ON et.autid=e.type_id
+           WHERE e.entity_id=v_parent AND e.auditby_id=v_entity
+             AND e.auditable='Y' AND et.auditable='A' AND r.status='Y'
+             AND ((v_role IN (15,16,17) AND r.id IN (5,9))
+               OR (v_role=35 AND r.id IN (1,2))
+               OR (v_role IN (1,3))
+               OR (v_role IN (6,7) AND r.entity_realtion_id=3))
+             AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby IS NOT NULL AND cx.auditedby<>e.auditby_id)
+             AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping cx
+               WHERE cx.entity_id=e.entity_id AND cx.auditedby=e.auditby_id))
+             AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+               OR (v_entity NOT IN (112242,112248) AND EXISTS
+                 (SELECT 1 FROM v_get_parent_office mp WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)));
+      ELSIF v_kind='ENTITY_TYPES' THEN
+        OPEN io_cursor FOR SELECT DISTINCT et.autid AS id,et.entitytypedesc AS label FROM t_auditee_ent_types et
+          WHERE et.auditable='A' AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+          OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
+            WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity))) ORDER BY label;
+      ELSIF v_kind='ENTITIES' THEN
+        OPEN io_cursor FOR SELECT e.entity_id AS id,NVL(e.description,e.name)||' ('||e.code||')' AS label
+          FROM t_auditee_entities e WHERE e.auditby_id=v_entity
+         AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping m WHERE m.entity_id=e.entity_id
+           AND m.auditedby IS NOT NULL AND m.auditedby<>e.auditby_id)
+         AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping m
+           WHERE m.entity_id=e.entity_id AND m.auditedby=e.auditby_id)) AND e.auditable='Y' AND e.type_id=v_parent
+          AND EXISTS (SELECT 1 FROM t_auditee_ent_types et WHERE et.autid=e.type_id AND et.auditable='A'
+           AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+             OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
+               WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))) ORDER BY label;
+      ELSIF v_kind='SUBCHECKLIST' THEN
+        OPEN io_cursor FOR SELECT s_id AS id,heading AS label FROM t_audit_checklist_sub
+          WHERE t_id=v_parent AND status='Y' ORDER BY s_id;
+      ELSIF v_kind='CHECKLIST' THEN
+        OPEN io_cursor FOR SELECT id,heading AS label FROM t_audit_checklist_details
+          WHERE s_id=v_parent AND status='Y' ORDER BY id;
+      ELSIF v_kind='REFERENCES' THEN
+        OPEN io_cursor FOR SELECT ref_id AS id,reference_source_type,title_or_heading AS label,
+          section_text,chapter_no,sub_section_no FROM vw_reference_master_detail
+          WHERE v_search IS NOT NULL AND INSTR(UPPER(title_or_heading),UPPER(v_search))>0
+          ORDER BY title_or_heading FETCH FIRST 100 ROWS ONLY;
+      ELSIF v_kind='PERSON' THEN
+        OPEN io_cursor FOR SELECT DISTINCT p_no AS id,employee_name AS label FROM V_HR_EMPLOYEE_INFO_PPNO_NDC WHERE p_no=v_parent;
+      ELSIF v_kind='LC' THEN
         entity_scope(v_parent);
         IF NOT REGEXP_LIKE(v_search, '^[0-9]{1,20}$') OR v_search IS NULL THEN
           fail('Enter a loan case number.');
@@ -553,62 +590,47 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
          WHERE r.request_id = v_id;
       RETURN;
     END IF;
-  
-    IF p_operation = 'SUBMIT' THEN
-      IF NVL(v_id, 0) > 0 AND
-         (v_row.status <> 'RETURNED' OR
-          v_row.version_no <> NVL(v_version, -1)) THEN
-        fail('Only the current returned request can be corrected.');
+
+    IF p_operation='SUBMIT' THEN
+      IF NVL(v_id,0)>0 AND (v_row.status<>'RETURNED' OR v_row.version_no<>NVL(v_version,-1)) THEN fail('Only the current returned request can be corrected.'); END IF;
+      IF v_entity IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
+      IF NVL(v_id,0)>0 THEN
+        entity_scope(v_row.entity_id);
+        -- Previous submissions may predate the three-level selector. Their
+        -- original entity_scope validation remains mandatory; new requests
+        -- additionally revalidate the recorded relationship and office.
+        v_relation:=JSON_VALUE(v_row.payload_json,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        v_reporting_office:=JSON_VALUE(v_row.payload_json,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+        IF v_relation IS NOT NULL OR v_reporting_office IS NOT NULL THEN
+          check_location(v_row.entity_id,v_relation,v_reporting_office);
+        END IF;
+        IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; correction is blocked.'); END IF;
       END IF;
       v_data.entity_id := JSON_VALUE(p_input,
                                      '$.entityId' RETURNING NUMBER ERROR ON
                                      ERROR);
       entity_scope(v_data.entity_id);
-      v_data.entity_type_id := v_type;
-      v_data.audited_by     := v_auditor;
-      IF NVL(JSON_VALUE(p_input,
-                        '$.entityTypeId' RETURNING NUMBER ERROR ON ERROR),
-             -1) <> v_type THEN
-        fail('Invalid entity type.');
-      END IF;
-      v_data.audit_year       := JSON_VALUE(p_input,
-                                            '$.auditYear' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.nature_id        := JSON_VALUE(p_input,
-                                            '$.natureId' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.para_no          := TRIM(JSON_VALUE(p_input,
-                                                 '$.paraNo' RETURNING
-                                                 VARCHAR2(100) ERROR ON
-                                                 ERROR));
-      v_data.heading          := TRIM(JSON_VALUE(p_input,
-                                                 '$.heading' RETURNING
-                                                 VARCHAR2(500) ERROR ON
-                                                 ERROR));
-      v_json                  := JSON_OBJECT_T.PARSE(p_input);
-      v_data.observation_html := v_json.GET_CLOB('observationHtml');
-      v_data.payload_json     := p_input;
-      v_data.annexure_id      := JSON_VALUE(p_input,
-                                            '$.annexureId' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.category_id      := JSON_VALUE(p_input,
-                                            '$.categoryId' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.subchecklist_id  := JSON_VALUE(p_input,
-                                            '$.subChecklistId' RETURNING
-                                            NUMBER ERROR ON ERROR);
-      v_data.checklist_id     := JSON_VALUE(p_input,
-                                            '$.checklistId' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.reference_id     := JSON_VALUE(p_input,
-                                            '$.referenceId' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.amount_involved  := JSON_VALUE(p_input,
-                                            '$.amount' RETURNING NUMBER
-                                            ERROR ON ERROR);
-      v_data.no_of_instances  := JSON_VALUE(p_input,
-                                            '$.instances' RETURNING NUMBER
-                                            ERROR ON ERROR);
+      v_relation:=JSON_VALUE(p_input,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+      v_reporting_office:=JSON_VALUE(p_input,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+      check_location(v_data.entity_id,v_relation,v_reporting_office);
+      v_data.entity_type_id:=v_type; v_data.audited_by:=v_auditor;
+      IF NVL(JSON_VALUE(p_input,'$.entityTypeId' RETURNING NUMBER ERROR ON ERROR),-1)<>v_type THEN fail('Invalid entity type.'); END IF;
+      v_data.audit_year:=JSON_VALUE(p_input,'$.auditYear' RETURNING NUMBER ERROR ON ERROR);
+      v_data.nature_id:=JSON_VALUE(p_input,'$.natureId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.para_no:=TRIM(JSON_VALUE(p_input,'$.paraNo' RETURNING VARCHAR2(100) ERROR ON ERROR));
+      v_data.heading:=TRIM(JSON_VALUE(p_input,'$.heading' RETURNING VARCHAR2(500) ERROR ON ERROR));
+      v_json:=JSON_OBJECT_T.PARSE(p_input);
+      v_data.observation_html:=v_json.GET_CLOB('observationHtml');
+      v_data.gist:=v_json.GET_CLOB('gist');
+      v_data.annexure_details:=v_json.GET_CLOB('annexureDetails');
+      v_data.payload_json:=p_input;
+      v_data.annexure_id:=JSON_VALUE(p_input,'$.annexureId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.category_id:=JSON_VALUE(p_input,'$.categoryId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.subchecklist_id:=JSON_VALUE(p_input,'$.subChecklistId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.checklist_id:=JSON_VALUE(p_input,'$.checklistId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.reference_id:=JSON_VALUE(p_input,'$.referenceId' RETURNING NUMBER ERROR ON ERROR);
+      v_data.amount_involved:=JSON_VALUE(p_input,'$.amount' RETURNING NUMBER ERROR ON ERROR);
+      v_data.no_of_instances:=JSON_VALUE(p_input,'$.instances' RETURNING NUMBER ERROR ON ERROR);
       check_attributes;
       duplicate_check(v_data.entity_id,
                       v_data.audit_year,
@@ -699,11 +721,19 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
                version_no = version_no + 1
          WHERE request_id = v_id;
       ELSE
-        v_data := v_row;
-        check_attributes;
-        IF v_data.risk_id <> v_row.risk_id THEN
-          fail('Annexure risk has changed; return this request for correction.');
+        IF v_row.audited_by IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
+        entity_scope(v_row.entity_id);
+        -- Revalidate the selected relationship/office at authorization as well
+        -- as submission. Older pending requests retain their previous entity
+        -- scope rule until returned and resubmitted through the new selector.
+        v_relation:=JSON_VALUE(v_row.payload_json,'$.relationshipId' RETURNING NUMBER ERROR ON ERROR);
+        v_reporting_office:=JSON_VALUE(v_row.payload_json,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
+        IF v_relation IS NOT NULL OR v_reporting_office IS NOT NULL THEN
+          check_location(v_row.entity_id,v_relation,v_reporting_office);
         END IF;
+        IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; posting is blocked.'); END IF;
+        v_data:=v_row; check_attributes;
+        IF v_data.risk_id<>v_row.risk_id THEN fail('Annexure risk has changed; return this request for correction.'); END IF;
         BEGIN
           SELECT recognition_on
             INTO v_rec

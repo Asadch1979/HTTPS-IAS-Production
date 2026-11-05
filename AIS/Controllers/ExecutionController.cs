@@ -50,7 +50,8 @@ namespace AIS.Controllers
             ViewData["LegacyParaEditor"] = true;
             ViewData["AnnexList"] = dBConnection.GetAnnexuresForChecklistDetail();
             ViewData["ProcessList"] = dBConnection.GetAuditChecklistCAD();
-            ViewData["EntitiesTypeList"] = dBConnection.GetAuditeeEntitiesType();
+            // The Legacy Para location selector uses the same role-scoped relationship source as manage_audit_paras.
+            ViewData["Userrelationship"] = dBConnection.GetrealtionshiptypeForParaPositionReport();
             ViewData["AuditYearList"] = dBConnection.GetAuditYearForAddLegacyPara().Where(p => p.AUDITPERIODID >= 1900 && p.AUDITPERIODID <= 2025).ToList();
             ViewData["AuditNatureList"] = dBConnection.GetAuditNatureForAddLegacyPara();
             return View();
