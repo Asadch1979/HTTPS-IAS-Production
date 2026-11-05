@@ -118,3 +118,33 @@ Added regression source checks:
 `tests/legacy-para/relationship-selection.test.cjs`.
 No live Oracle compilation, application deployment or runtime verification
 was carried out by this source update.
+
+## Existing Manage Audit Paras location cascade (5 November 2026)
+
+The Legacy Para maker's **Relationship Type -> Controlling/Reporting Office ->
+Place of Posting** selections deliberately replicate the existing
+`Execution/manage_audit_paras` calls and responses. The selected relation
+calls `POST /ApiCalls/getparentrelForParaPositionReport` with form key
+`ENTITY_REALTION_ID`; selecting a reporting office calls
+`POST /ApiCalls/getpostplaceForParaPositionReport` with `E_R_ID`.
+The JavaScript consumes the same response fields as the reference screen
+(`entitY_ID`, `description`, `c_NAME`); these two events never call
+`/ApiCalls/LegacyParaLookup` or the new lookup package.
+
+The hidden client `EntityTypeId` is removed. The database derives the
+trusted entity type directly from the selected entity master when saving the
+request and applies the preexisting selected-context, relationship/mapping,
+role, page and API authorization checks. Other form lookups (subchecklist,
+checklist, person and loan case) still use their existing separate lookup
+path and are **not** modified by this fix.
+
+No new API endpoint or extra dropdown authorization layer was added.
+The existing `ApiCalls` endpoints are read-only; existing selected-context
+and audit-posting checks remain in force. The existing endpoint permissions
+must already be approved for the active role; do not activate missing grants
+automatically.
+
+The package source change to remove the redundant client entity type comparison
+must be deployed in step with the revised maker model and JavaScript.
+Check the Network tab for exact route, HTTP status and returned options in DEV;
+do not claim the old ORA-06550 is fixed for other unrelated lookup kinds.
