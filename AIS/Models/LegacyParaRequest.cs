@@ -12,7 +12,6 @@ namespace AIS.Models
         // entity mapping and selected audit authority in Oracle at submit/authorize.
         [Range(1, int.MaxValue)] public int RelationshipId { get; set; }
         [Range(1, int.MaxValue)] public int ReportingOfficeId { get; set; }
-        [Range(1, int.MaxValue)] public int EntityTypeId { get; set; }
         [Range(1, int.MaxValue)] public int EntityId { get; set; }
         [Range(1, int.MaxValue)] public int NatureId { get; set; }
         [Range(1900, 2025)] public int AuditYear { get; set; }

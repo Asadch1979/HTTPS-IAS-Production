@@ -631,7 +631,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       v_reporting_office:=JSON_VALUE(p_input,'$.reportingOfficeId' RETURNING NUMBER ERROR ON ERROR);
       check_location(v_data.entity_id,v_relation,v_reporting_office);
       v_data.entity_type_id:=v_type; v_data.audited_by:=v_auditor;
-      IF NVL(JSON_VALUE(p_input,'$.entityTypeId' RETURNING NUMBER ERROR ON ERROR),-1)<>v_type THEN fail('Invalid entity type.'); END IF;
+      -- Entity type is derived from the selected Place of Posting by entity_scope.
+      -- It is not supplied or trusted from a client-side hidden field. END IF;
       v_data.audit_year:=JSON_VALUE(p_input,'$.auditYear' RETURNING NUMBER ERROR ON ERROR);
       v_data.nature_id:=JSON_VALUE(p_input,'$.natureId' RETURNING NUMBER ERROR ON ERROR);
       v_data.para_no:=TRIM(JSON_VALUE(p_input,'$.paraNo' RETURNING VARCHAR2(100) ERROR ON ERROR));

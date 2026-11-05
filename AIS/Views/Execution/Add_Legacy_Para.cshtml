@@ -6,7 +6,7 @@
     ViewData["LegacyParaEditor"] = true;
     var enabled = Configuration.GetValue<bool>("LegacyParaAddition:Enabled");
 }
-<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-audit-by="@ViewData["LegacyAuditById"]" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/ApiCalls/LegacyPara")">
+<div id="legacyParaWorkspace" class="container-fluid mt-3" data-mode="maker" data-audit-by="@ViewData["LegacyAuditById"]" data-enabled="@enabled.ToString().ToLowerInvariant()" data-api="@Url.Content("~/ApiCalls/LegacyPara")" data-location-api="@Url.Content("~/ApiCalls/")">
     @Html.AntiForgeryToken()
     <h3>Add Legacy Para</h3>
     <p class="text-muted">Submit a missing historical observation for Audit Cluster authorization.</p>
@@ -31,7 +31,6 @@
             </div>
             <div class="col-md-6"><label for="entitySelectField" class="form-label">Place of Posting</label>
                 <select id="entitySelectField" class="form-select"><option value="">--Select Place of Posting--</option></select>
-                <input id="legacyEntityTypeId" type="hidden" value="" />
             </div>
             <div class="col-md-4"><label for="natureSelectField" class="form-label">Audit Nature</label><select id="natureSelectField" class="form-select"><option value="">Select nature</option>
                 @if (ViewData["AuditNatureList"] != null) { foreach (var item in (dynamic)ViewData["AuditNatureList"]) { <option value="@item.N_ID">@item.DESCRIPTION</option> } }

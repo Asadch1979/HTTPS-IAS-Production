@@ -23,16 +23,27 @@ test('Legacy Para mirrors manage-audit-paras location labels and relationship so
   assert.match(controller, /ViewData\["Userrelationship"\] = dBConnection\.GetrealtionshiptypeForParaPositionReport\(\)/);
 });
 
-test('place of posting is loaded only after scoped relationship and controlling office', () => {
+test('location dropdowns reuse the two existing Manage Audit Paras endpoints', () => {
+  const ref = read('AIS/wwwroot/js/csp/Views_Execution_manage_audit_paras.js');
   const js = read('AIS/wwwroot/js/Execution/Views_Execution_Add_Legacy_Para.js');
-  assert.match(js, /lookup\('REPORTING_OFFICES',relation\)/);
-  assert.match(js, /lookup\('POSTINGS',office,'',relation\)/);
-  assert.match(js, /option\.dataset\.entityTypeId/);
+  const view = read('AIS/Views/Execution/Add_Legacy_Para.cshtml');
+  for (const endpoint of ['getparentrelForParaPositionReport','getpostplaceForParaPositionReport']) {
+    assert.match(ref, new RegExp(endpoint));
+    assert.match(js, new RegExp(endpoint));
+  }
+  assert.match(js, /ENTITY_REALTION_ID:relation/);
+  assert.match(js, /E_R_ID:office/);
+  assert.match(js, /item\.entitY_ID/);
+  assert.match(js, /item\.description/);
+  assert.match(js, /item\.c_NAME/);
   assert.match(js, /relationshipId:num\('relationshipSelectField'\)/);
   assert.match(js, /reportingOfficeId:num\('reportingOfficeSelectField'\)/);
-  assert.match(js, /entityTypeId:num\('legacyEntityTypeId'\)/);
-  assert.doesNotMatch(js, /lookup\('ENTITY_LOCATION',p\.entityId\)/);
-  assert.doesNotMatch(js, /lookup\('ENTITIES',val\('entityTypeSelectField'\)/);
+  assert.match(js, /entityId:num\('entitySelectField'\)/);
+  assert.match(view, /data-location-api=/);
+  assert.doesNotMatch(js, /lookup\('REPORTING_OFFICES'/);
+  assert.doesNotMatch(js, /lookup\('POSTINGS'/);
+  assert.doesNotMatch(js, /legacyEntityTypeId/);
+  assert.doesNotMatch(view, /legacyEntityTypeId/);
 });
 
 test('server and Oracle deny posting outside authorized relation/office/entity mapping', () => {
@@ -40,6 +51,9 @@ test('server and Oracle deny posting outside authorized relation/office/entity m
   const pkg = read('AIS/Docs/sql/PKG_IAS_LEGACY_PARA.sql');
   assert.match(models, /public int RelationshipId/);
   assert.match(models, /public int ReportingOfficeId/);
+  assert.doesNotMatch(models, /public int EntityTypeId/);
+  assert.doesNotMatch(pkg, /JSON_VALUE\(p_input,'\$\.entityTypeId'/);
+  assert.match(pkg, /v_data\.entity_type_id:=v_type/);
   assert.match(models, /REPORTING_OFFICES\|POSTINGS\|ENTITY_LOCATION/);
   assert.match(pkg, /FUNCTION relationship_allowed\(p_relationship NUMBER\) RETURN BOOLEAN/);
   assert.match(pkg, /PROCEDURE check_location\(p_entity NUMBER,p_relationship NUMBER,p_office NUMBER\)/);
