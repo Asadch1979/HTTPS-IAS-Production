@@ -49,7 +49,7 @@ test('server and Oracle deny posting outside authorized relation/office/entity m
   assert.match(pkg, /check_location\(v_row\.entity_id,v_relation,v_reporting_office\)/);
   assert.match(pkg, /e\.auditby_id=v_entity AND e\.auditable='Y'/);
   assert.match(pkg, /v_kind='REPORTING_OFFICES'/);
-  assert.match(pkg, /v_kind='POSTINGS'/);
+  assert.match(pkg, /v_kind='POSTINGS'/);\n  const lookups = read('AIS/Docs/sql/PKG_IAS_LEGACY_PARA_LOOKUP.sql');\n  assert.match(lookups, /PROCEDURE P_GET_LOOKUP/);\n  assert.match(lookups, /p_kind='POSTINGS'/);
   assert.match(pkg, /v_kind='ENTITY_LOCATION'/);
 });
 
