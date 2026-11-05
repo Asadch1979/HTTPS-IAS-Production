@@ -66,6 +66,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         deny('Relationship and reporting office are not authorized.');
       END IF;
       SELECT COUNT(*) INTO v_count FROM t_auditee_entities_maping m
+        JOIN t_auditee_entities p ON p.entity_id=m.parent_id
         JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
           AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
        WHERE m.entity_id=p_entity AND m.parent_id=p_office
@@ -233,6 +234,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
           SELECT DISTINCT m.relation_type_id AS relationship_id,
             m.parent_id AS reporting_office_id, e.type_id AS entity_type_id
             FROM t_auditee_entities_maping m
+            JOIN t_auditee_entities p ON p.entity_id=m.parent_id
             JOIN t_auditee_entities e ON e.entity_id=m.entity_id
             JOIN t_auditee_ent_relation r ON r.entity_realtion_id=m.relation_type_id
               AND r.parent_entity_typeid=m.p_type_id AND r.child_entity_typeid=m.c_type_id
