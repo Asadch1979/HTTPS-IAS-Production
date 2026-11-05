@@ -9,8 +9,8 @@ const source = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 
 test('List/Lookup do not parse missing request ID or version', () => {
   const pkg = source('AIS/Docs/sql/PKG_IAS_LEGACY_PARA.sql');
-  const pos = pkg.indexOf('-- The five operations have distinct request DTOs.');
-  const end = pkg.indexOf("IF p_operation = 'LOOKUP' THEN", pos);
+  const pos = pkg.indexOf('-- The request JSON schemas are operation-specific.');
+  const end = pkg.indexOf("IF p_operation='LOOKUP' THEN", pos);
   assert.ok(pos >= 0 && end > pos, 'Expected operation-specific input parsing block');
   const parsing = pkg.slice(pos, end);
   assert.match(parsing, /IF p_operation IN \('SUBMIT', 'DETAIL', 'DECIDE'\) THEN/);
@@ -25,8 +25,8 @@ test('Invalid detail/decision IDs and version mismatches still fail closed', () 
   const pkg = source('AIS/Docs/sql/PKG_IAS_LEGACY_PARA.sql');
   assert.match(pkg, /p_operation IN \('DETAIL', 'DECIDE'\) AND NVL\(v_id, 0\) <= 0/);
   assert.match(pkg, /p_operation = 'DECIDE' OR NVL\(v_id, 0\) > 0/);
-  assert.match(pkg, /A valid request ID is required/);
-  assert.match(pkg, /A valid request version is required/);
+  assert.match(pkg, /A positive request ID is required/);
+  assert.match(pkg, /A positive request version is required/);
   assert.match(pkg, /Only the current returned request can be corrected/);
 });
 
@@ -44,7 +44,7 @@ test('Database retains exact role/API/page grant and mapping scope checks', () =
 });
 
 test('Controller supplies operation/page from internal enums and DTOs differ', () => {
-  const db = source('AIS/DBConnection.LegacyParaRequests.cs');
+  const db = source('AIS/DBConnection.LegacyParaWorkflow.cs');
   const models = source('AIS/Models/LegacyParaRequest.cs');
   assert.match(db, /operation\.ToString\(\)\.ToUpperInvariant\(\)/);
   assert.match(db, /Enum\.IsDefined\(typeof\(LegacyParaPage\), page\)/);
