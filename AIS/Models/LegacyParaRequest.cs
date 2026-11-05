@@ -13,6 +13,8 @@ namespace AIS.Models
         [Range(1, int.MaxValue)] public int NatureId { get; set; }
         [Range(1900, 2025)] public int AuditYear { get; set; }
         [Required, StringLength(100)] public string ParaNo { get; set; }
+        [Required, StringLength(4000)] public string Gist { get; set; }
+        [StringLength(4000)] public string AnnexureDetails { get; set; }
         [Required, StringLength(500)] public string Heading { get; set; }
         [Required, StringLength(2000000)] public string ObservationHtml { get; set; }
         [Range(1, int.MaxValue)] public int AnnexureId { get; set; }
@@ -57,7 +59,7 @@ namespace AIS.Models
     }
     public sealed class LegacyParaLookup
     {
-        [Required, RegularExpression("^(ENTITIES|SUBCHECKLIST|CHECKLIST|REFERENCES|PERSON|LC)$")] public string Kind { get; set; }
+        [Required, RegularExpression("^(CONTEXT|ENTITY_TYPES|ENTITIES|SUBCHECKLIST|CHECKLIST|REFERENCES|PERSON|LC)$")] public string Kind { get; set; }
         public long ParentId { get; set; }
         [StringLength(200)] public string Search { get; set; }
     }

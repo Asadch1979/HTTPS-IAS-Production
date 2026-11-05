@@ -19,32 +19,39 @@ DECLARE
   PROCEDURE register_api(p_page NUMBER,p_controller VARCHAR2,p_action VARCHAR2,p_method VARCHAR2) IS
     v_path VARCHAR2(300):=CASE WHEN p_controller='LegacyParaRequests' THEN '/api/' ELSE '/' END||p_controller||'/'||p_action;
   BEGIN
-    SELECT COUNT(*),MIN(api_id) INTO v_count,v_id FROM T_AU_API_MASTER
+    SELECT COUNT(*) INTO v_count FROM T_AU_API_MASTER
      WHERE LOWER(TRIM(BOTH '/' FROM api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
        AND UPPER(TRIM(http_method))=p_method;
-    IF v_count>1 THEN RAISE_APPLICATION_ERROR(-20806,'Duplicate API registration: '||v_path); END IF;
     IF v_count=0 THEN
       -- API_ID uses the existing master default, as in executive_dashboard_permissions.sql.
       INSERT INTO T_AU_API_MASTER(action_name,page_id,controller_name,api_path,http_method,is_active,created_on)
-        VALUES(p_action,p_page,p_controller,v_path,p_method,'N',SYSDATE);
-      SELECT api_id INTO v_id FROM T_AU_API_MASTER
-       WHERE LOWER(TRIM(BOTH '/' FROM api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
-         AND UPPER(TRIM(http_method))=p_method;
+        VALUES(p_action,p_page,p_controller,v_path,p_method,'N',SYSDATE)
+        RETURNING api_id INTO v_id;
     END IF;
-    MERGE INTO T_IAS_LEGACY_PAGE_API t USING (SELECT p_page page_id,v_id api_id FROM dual) s
+    -- Existing IAS pages can register the same route/verb under separate API_IDs.
+    -- Treat all exact route/verb matches as dependencies. Do not choose an
+    -- arbitrary MIN(API_ID), delete duplicates, merge grants or alter decisions.
+    MERGE INTO T_IAS_LEGACY_PAGE_API t
+    USING (SELECT p_page page_id,m.api_id FROM T_AU_API_MASTER m
+      WHERE LOWER(TRIM(BOTH '/' FROM m.api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
+        AND UPPER(TRIM(m.http_method))=p_method) s
       ON (t.page_id=s.page_id AND t.api_id=s.api_id)
       WHEN NOT MATCHED THEN INSERT(page_id,api_id,is_active) VALUES(s.page_id,s.api_id,'N');
     -- Prepare only INACTIVE grants for roles of groups already assigned the page.
     -- Do not grant the page to any group, and do not update existing grants.
     MERGE INTO T_AU_ROLE_API_PERMISSION t
-    USING (SELECT DISTINCT g.role_id,v_id api_id FROM t_menu_pages_groupmap m
+    USING (SELECT DISTINCT g.role_id,a.api_id FROM t_menu_pages_groupmap m
       JOIN t_groups g ON g.group_id=m.group_id AND g.status='Y'
-      WHERE m.page_id=p_page AND g.role_id IS NOT NULL) s
+      CROSS JOIN T_AU_API_MASTER a
+      WHERE m.page_id=p_page AND g.role_id IS NOT NULL
+        AND LOWER(TRIM(BOTH '/' FROM a.api_path))=LOWER(TRIM(BOTH '/' FROM v_path))
+        AND UPPER(TRIM(a.http_method))=p_method) s
       ON (t.role_id=s.role_id AND t.api_id=s.api_id)
       WHEN NOT MATCHED THEN INSERT(role_id,api_id,is_active,created_by)
         VALUES(s.role_id,s.api_id,'N',NULL);
   END;
 BEGIN
+  SAVEPOINT legacy_api_registration;
   -- Remove only obsolete dependency declarations. Old API registrations and
   -- role decisions are retained, but there is no old-route controller alias.
   DELETE FROM T_IAS_LEGACY_PAGE_API d WHERE d.page_id IN (192,193)
@@ -68,5 +75,8 @@ BEGIN
   register_api(192,'ApiCalls','GetObservationManualChapters','GET');
   register_api(192,'ApiCalls','GetObservationManualReferenceGrid','GET');
   register_api(192,'ApiCalls','GetReferenceDetailByRefId','GET');
+EXCEPTION WHEN OTHERS THEN
+  ROLLBACK TO legacy_api_registration;
+  RAISE;
 END;
 /

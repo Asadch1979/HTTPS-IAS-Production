@@ -38,15 +38,16 @@ namespace AIS.Controllers
             var query = context.ActionArguments.Values.OfType<LegacyParaQuery>().FirstOrDefault();
             var page = action == nameof(Decide) || query?.Queue == true ? 193 : 192;
             HttpContext.Items["LegacyParaPage"] = page;
+            if (user != null) permissions.EnsurePermissionsCached(user);
             if (User.Identity?.IsAuthenticated != true || user == null || user.ID <= 0)
                 context.Result = ApiFailure(401, "UNAUTHENTICATED", "Your session is missing or expired. Sign in again.");
             else if (user.UserRoleID <= 0 || user.UserGroupID <= 0 || user.UserEntityID.GetValueOrDefault() <= 0
                 || string.Equals(user.IsActive, "N", StringComparison.OrdinalIgnoreCase)
                 || user.UserContextAssignmentId.GetValueOrDefault() <= 0 || string.IsNullOrWhiteSpace(user.PPNumber))
                 context.Result = ApiFailure(403, "CONTEXT_REQUIRED", "Select an active authorized user context.");
-            else if (!permissions.HasViewPermission(user, page))
+            else if ((!session.TryGetAllowedViewIds(out var allowedPages) || !allowedPages.Contains(page)))
                 context.Result = ApiFailure(403, "PAGE_FORBIDDEN", "You do not have permission for this page.");
-            else if (!permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value))
+            else if (!session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value))
                 context.Result = ApiFailure(403, "API_FORBIDDEN", "You do not have permission for this operation.");
             else if (!configuration.GetValue<bool>("LegacyParaAddition:Enabled"))
                 context.Result = ApiFailure(503, "MODULE_DISABLED", "Legacy para addition is not activated.");
@@ -78,6 +79,9 @@ namespace AIS.Controllers
             {
                 logger.LogWarning("Legacy para operation {Operation} failed, Oracle code {Code}, trace {Trace}", operation, exception.Number, HttpContext.TraceIdentifier);
                 // Only fixed, public messages cross the API boundary. Never return Oracle exception text.
+                if (exception.Number == 20813) return ApiFailure(409, "CAD_HO_UNSUPPORTED", "CAD/HO historical posting is disabled pending an approved authorization workflow.");
+                if (exception.Number == 20814) return ApiFailure(409, "ENTITY_SCOPE_CHANGED", "Entity scope cannot be established for this Audit By office. Organizational reassignment requires controlled resolution.");
+                if (exception.Number == 20815) return ApiFailure(409, "HISTORICAL_FIELDS_REQUIRED", "Enter the historical gist and review annexure details before resubmission.");
                 if (exception.Number is 20810 or 20811)
                     return ApiFailure(403, "DATABASE_FORBIDDEN", "The selected context or organizational scope is not authorized.");
                 if (exception.Number == 20803)

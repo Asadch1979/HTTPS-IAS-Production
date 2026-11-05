@@ -32,6 +32,11 @@ activation or deployment is part of this change.
    New master rows, dependency rows and role grants start inactive. Existing
    activation/role decisions are preserved. Old registrations are retained but
    are not routed, and obsolete dependency declarations are removed.
+   Multiple existing API_IDs for the same exact route/HTTP method are retained
+   and mapped as shared dependencies. The script neither selects an arbitrary
+   minimum ID nor deduplicates records/grants. Missing role rows remain inactive;
+   no existing active or denied decision is rewritten. Registration DML rolls
+   back to its own savepoint on failure, without intermediate commits.
 5. PKG_AD assignment for 192/193 uses explicit approved dependencies and creates
    only missing inactive role grants, never reversing an existing API denial.
    Revocation deactivates only orphaned dependencies, preserving the other

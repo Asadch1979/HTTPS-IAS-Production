@@ -15,9 +15,9 @@
     <fieldset disabled="@(!enabled)">
         <div class="card mb-3"><div class="card-body row g-3">
             <input id="legacyRequestId" type="hidden" value="0" /><input id="legacyVersion" type="hidden" value="0" />
-            <div class="col-md-6"><label for="entityTypeSelectField" class="form-label">Entity Type</label><select id="entityTypeSelectField" class="form-select"><option value="">Select entity type</option>
-                @if (ViewData["EntitiesTypeList"] != null) { foreach (var item in (dynamic)ViewData["EntitiesTypeList"]) { <option value="@item.TYPE_ID">@item.ENTITYTYPEDESC</option> } }
+            <div class="col-md-6"><label for="entityTypeSelectField" class="form-label">Relation Type (Entity Type)</label><select id="entityTypeSelectField" class="form-select"><option value="">Select entity type</option>
             </select></div>
+            <div class="col-md-6"><label for="legacyAuditBy" class="form-label">Reporting Office (Audit By)</label><input id="legacyAuditBy" class="form-control" readonly /></div>
             <div class="col-md-6"><label for="entitySelectField" class="form-label">Audit Entity</label><select id="entitySelectField" class="form-select"><option value="">Select audit entity</option></select></div>
             <div class="col-md-4"><label for="natureSelectField" class="form-label">Audit Nature</label><select id="natureSelectField" class="form-select"><option value="">Select nature</option>
                 @if (ViewData["AuditNatureList"] != null) { foreach (var item in (dynamic)ViewData["AuditNatureList"]) { <option value="@item.N_ID">@item.DESCRIPTION</option> } }
@@ -26,6 +26,10 @@
                 @if (ViewData["AuditYearList"] != null) { foreach (var item in (dynamic)ViewData["AuditYearList"]) { <option value="@item.AUDITPERIODID">@item.DESCRIPTION</option> } }
             </select></div>
             <div class="col-md-4"><label for="paraNoField" class="form-label">Original Para Number</label><input id="paraNoField" class="form-control" maxlength="100" /></div>
+        </div></div>
+        <div class="card mb-3"><div class="card-body">
+            <label for="legacyGist">Gist of Para</label><textarea id="legacyGist" class="form-control" maxlength="4000" rows="3" required></textarea>
+            <label for="legacyAnnexureDetails">Historical Annexure Details</label><textarea id="legacyAnnexureDetails" class="form-control" maxlength="4000" rows="2"></textarea>
         </div></div>
         <div class="card"><div class="card-body"><partial name="_CauObservationEditor" /></div></div>
         <button id="legacyNewRequest" type="button" class="btn btn-outline-secondary mt-3">Start New Request</button>

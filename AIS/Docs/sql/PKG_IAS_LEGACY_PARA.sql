@@ -14,6 +14,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     v_type NUMBER; v_code T_AUDITEE_ENTITIES.CODE%TYPE; v_auditor NUMBER;
     v_legacy NUMBER; v_text NUMBER; v_com NUMBER; v_resp NUMBER;
     v_ref T_AU_OLD_PARAS_FAD.REF_P%TYPE;
+    v_gist T_AU_OLD_PARAS_FAD.GIST_OF_PARAS%TYPE;
+    v_annexure T_AU_OLD_PARAS_FAD.ANNEXURE%TYPE;
     v_rec DATE; v_action VARCHAR2(12); v_remarks VARCHAR2(2000);
     v_row T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
     v_data T_IAS_LEGACY_PARA_REQUEST%ROWTYPE;
@@ -31,8 +33,15 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     BEGIN
       SELECT e.type_id,e.code,e.auditby_id INTO v_type,v_code,v_auditor
         FROM t_auditee_entities e
-       WHERE e.entity_id=p_entity AND e.auditable='Y' AND e.active='Y' AND e.auditby_id=v_entity;
-    EXCEPTION WHEN NO_DATA_FOUND THEN deny('Entity is outside the selected Audit Cluster.');
+       WHERE e.entity_id=p_entity AND e.auditable='Y' AND e.auditby_id=v_entity
+         AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping m WHERE m.entity_id=e.entity_id
+           AND m.auditedby IS NOT NULL AND m.auditedby<>e.auditby_id)
+         AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping m
+           WHERE m.entity_id=e.entity_id AND m.auditedby=e.auditby_id)) AND EXISTS (SELECT 1 FROM t_auditee_ent_types et WHERE et.autid=e.type_id AND et.auditable='A'
+           AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+             OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
+               WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity))));
+    EXCEPTION WHEN NO_DATA_FOUND THEN RAISE_APPLICATION_ERROR(-20814,'Entity scope is not established for this Audit By office.');
     END;
 
     PROCEDURE duplicate_check(p_entity NUMBER,p_year NUMBER,p_nature NUMBER,p_para VARCHAR2,p_request NUMBER) IS
@@ -69,6 +78,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       IF v_count=0 THEN fail('Select an existing historical audit period.'); END IF;
       SELECT COUNT(*) INTO v_count FROM T_AU_OLD_AUDIT_NATURE WHERE nid=v_data.nature_id;
       IF v_count<>1 THEN fail('Invalid audit nature.'); END IF;
+      IF v_data.gist IS NULL OR TRIM(DBMS_LOB.SUBSTR(v_data.gist,4000,1)) IS NULL OR DBMS_LOB.GETLENGTH(v_data.gist)>4000
+        OR DBMS_LOB.GETLENGTH(v_data.annexure_details)>4000 THEN
+        RAISE_APPLICATION_ERROR(-20815,'Review historical gist and annexure details.'); END IF;
       IF v_data.heading IS NULL OR LENGTH(v_data.heading)>500 OR REGEXP_LIKE(v_data.heading,'[<>[:cntrl:]]')
         OR v_data.para_no IS NULL OR LENGTH(v_data.para_no)>100
         OR NOT REGEXP_LIKE(v_data.para_no,'^[[:alnum:] ._()/\-]+$')
@@ -77,6 +89,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         OR v_data.no_of_instances IS NULL OR v_data.no_of_instances<0
         OR v_data.no_of_instances<>TRUNC(v_data.no_of_instances)
         THEN fail('Invalid observation attributes.'); END IF;
+      BEGIN
+        v_gist:=v_data.gist; v_annexure:=v_data.annexure_details;
+      EXCEPTION WHEN VALUE_ERROR THEN RAISE_APPLICATION_ERROR(-20815,'Historical text exceeds destination capacity.'); END;
       SELECT COUNT(*) INTO v_count FROM t_audit_checklist c
         JOIN t_audit_checklist_sub s ON s.t_id=c.t_id
         JOIN t_audit_checklist_details d ON d.s_id=s.s_id
@@ -117,6 +132,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     SELECT COUNT(*) INTO v_count FROM t_menu_pages_groupmap g JOIN t_menu_pages p ON p.id=g.page_id
      WHERE g.group_id=v_group AND p.id=p_page AND p.status='A';
     IF v_count=0 OR v_role IS NULL OR v_entity IS NULL THEN deny('Permission denied for the current page.'); END IF;
+    -- Exact selected-role grants only; no inherited team-role or Super User bypass.
+    SELECT COUNT(*) INTO v_count FROM T_AU_ROLE_API_PERMISSION rp
+      JOIN T_AU_API_MASTER am ON am.api_id=rp.api_id
+      JOIN T_IAS_LEGACY_PAGE_API dep ON dep.api_id=am.api_id AND dep.page_id=p_page
+     WHERE rp.role_id=v_role AND rp.is_active='Y' AND am.is_active='Y' AND dep.is_active='Y'
+       AND UPPER(TRIM(am.http_method))='POST'
+       AND LOWER(TRIM(BOTH '/' FROM am.api_path))='api/legacypararequests/'||LOWER(p_operation);
+    IF v_count=0 THEN deny('Exact selected-role API permission is required.'); END IF;
     -- This singleton also serializes new keys and corrected requests. No activation source is included.
     IF p_operation IN ('SUBMIT','DECIDE') THEN
       SELECT enabled INTO v_enabled FROM T_IAS_LEGACY_PARA_CONTROL WHERE control_id=1 FOR UPDATE;
@@ -130,9 +153,25 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     IF p_operation='LOOKUP' THEN
       v_kind:=JSON_VALUE(p_input,'$.kind');
       v_parent:=JSON_VALUE(p_input,'$.parentId' RETURNING NUMBER ERROR ON ERROR);
-      IF v_kind='ENTITIES' THEN
-        OPEN io_cursor FOR SELECT entity_id AS id,name AS label FROM t_auditee_entities
-          WHERE auditby_id=v_entity AND auditable='Y' AND type_id=v_parent ORDER BY name;
+      IF v_kind='CONTEXT' THEN
+        OPEN io_cursor FOR SELECT entity_id AS id,NVL(description,name)||' ('||code||')' AS label
+          FROM t_auditee_entities WHERE entity_id=v_entity;
+      ELSIF v_kind='ENTITY_TYPES' THEN
+        OPEN io_cursor FOR SELECT DISTINCT et.autid AS id,et.entitytypedesc AS label FROM t_auditee_ent_types et
+          WHERE et.auditable='A' AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+          OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
+            WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity))) ORDER BY label;
+      ELSIF v_kind='ENTITIES' THEN
+        OPEN io_cursor FOR SELECT e.entity_id AS id,NVL(e.description,e.name)||' ('||e.code||')' AS label
+          FROM t_auditee_entities e WHERE e.auditby_id=v_entity
+         AND NOT EXISTS (SELECT 1 FROM t_auditee_entities_maping m WHERE m.entity_id=e.entity_id
+           AND m.auditedby IS NOT NULL AND m.auditedby<>e.auditby_id)
+         AND (e.active='Y' OR EXISTS (SELECT 1 FROM t_auditee_entities_maping m
+           WHERE m.entity_id=e.entity_id AND m.auditedby=e.auditby_id)) AND e.auditable='Y' AND e.type_id=v_parent
+          AND EXISTS (SELECT 1 FROM t_auditee_ent_types et WHERE et.autid=e.type_id AND et.auditable='A'
+           AND ((v_entity IN (112242,112248) AND et.audited_by_enitity=v_entity)
+             OR (v_entity NOT IN (112242,112248) AND EXISTS (SELECT 1 FROM v_get_parent_office mp
+               WHERE mp.entity_id=v_entity AND mp.parent_id=et.audited_by_enitity)))) ORDER BY label;
       ELSIF v_kind='SUBCHECKLIST' THEN
         OPEN io_cursor FOR SELECT s_id AS id,heading AS label FROM t_audit_checklist_sub
           WHERE t_id=v_parent AND status='Y' ORDER BY s_id;
@@ -162,11 +201,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       v_offset:=NVL(JSON_VALUE(p_input,'$.offset' RETURNING NUMBER ERROR ON ERROR),0);
       IF v_offset<0 OR v_offset>100000 OR v_offset<>TRUNC(v_offset) THEN fail('Invalid page offset.'); END IF;
       OPEN io_cursor FOR SELECT r.request_id,r.version_no,r.status,e.name AS entity,
+        CASE WHEN NVL(e.auditby_id,-1)<>r.audited_by OR e.type_id<>r.entity_type_id THEN 'Organizational reassignment: posting blocked' END AS scope_notice,
         r.audit_year,r.para_no,r.heading,k.description AS risk,
         u.login_name AS requested_by_name,r.requested_by,r.submitted_on,r.remarks
-        FROM T_IAS_LEGACY_PARA_REQUEST r JOIN t_auditee_entities e ON e.entity_id=r.entity_id
+        FROM T_IAS_LEGACY_PARA_REQUEST r LEFT JOIN t_auditee_entities e ON e.entity_id=r.entity_id
         JOIN t_risk k ON k.r_id=r.risk_id LEFT JOIN t_user u ON u.ppno=r.requested_by
-       WHERE r.audited_by=v_entity AND e.auditby_id=v_entity
+       WHERE r.audited_by=v_entity
          AND ((p_page=192 AND r.requested_by=p_ppno) OR (p_page=193 AND r.requested_by<>p_ppno))
          AND (v_search IS NULL OR INSTR(UPPER(e.name||' '||r.heading||' '||r.para_no||' '||r.status||' '||TO_CHAR(r.request_id)),UPPER(v_search))>0)
        ORDER BY CASE WHEN r.status='PENDING' THEN 0 ELSE 1 END,r.request_id DESC
@@ -179,7 +219,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         SELECT * INTO v_row FROM T_IAS_LEGACY_PARA_REQUEST WHERE request_id=v_id;
       ELSE SELECT * INTO v_row FROM T_IAS_LEGACY_PARA_REQUEST WHERE request_id=v_id FOR UPDATE;
       END IF;
-      entity_scope(v_row.entity_id);
       IF v_row.audited_by<>v_entity OR (p_page=192 AND v_row.requested_by<>p_ppno)
         OR (p_page=193 AND v_row.requested_by=p_ppno) THEN deny('Request is not accessible in the selected context.'); END IF;
     END IF;
@@ -187,6 +226,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
     IF p_operation='DETAIL' THEN
       OPEN io_cursor FOR
         SELECT 'REQUEST' AS record_kind,r.request_id,r.version_no,r.status,r.payload_json,
+          r.audited_by,CASE WHEN NVL(e.auditby_id,-1)<>r.audited_by OR e.type_id<>r.entity_type_id THEN 'Organizational reassignment: posting blocked' END AS scope_notice,
           r.observation_html,r.requested_by AS actor,r.requested_on AS action_on,r.remarks,
           r.legacy_para_id,r.legacy_ref_p,r.compliance_id,e.name AS entity,k.description AS risk,
           a.code||' '||a.heading AS annexure,c.heading AS category,s.heading AS subchecklist,d.heading AS checklist,
@@ -195,7 +235,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
             'actor' VALUE h.actor_ppno,'action_on' VALUE h.action_on,'remarks' VALUE h.remarks RETURNING CLOB)
             ORDER BY h.history_id RETURNING CLOB)
             FROM T_IAS_LEGACY_PARA_HISTORY h WHERE h.request_id=r.request_id) AS history_json
-        FROM T_IAS_LEGACY_PARA_REQUEST r JOIN t_auditee_entities e ON e.entity_id=r.entity_id
+        FROM T_IAS_LEGACY_PARA_REQUEST r LEFT JOIN t_auditee_entities e ON e.entity_id=r.entity_id
           JOIN t_risk k ON k.r_id=r.risk_id JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON a.id=r.annexure_id
           JOIN t_audit_checklist c ON c.t_id=r.category_id JOIN t_audit_checklist_sub s ON s.s_id=r.subchecklist_id
           JOIN t_audit_checklist_details d ON d.id=r.checklist_id JOIN T_AU_OLD_AUDIT_NATURE n ON n.nid=r.nature_id
@@ -205,6 +245,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
 
     IF p_operation='SUBMIT' THEN
       IF NVL(v_id,0)>0 AND (v_row.status<>'RETURNED' OR v_row.version_no<>NVL(v_version,-1)) THEN fail('Only the current returned request can be corrected.'); END IF;
+      IF v_entity IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
+      IF NVL(v_id,0)>0 THEN
+        entity_scope(v_row.entity_id);
+        IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; correction is blocked.'); END IF;
+      END IF;
       v_data.entity_id:=JSON_VALUE(p_input,'$.entityId' RETURNING NUMBER ERROR ON ERROR);
       entity_scope(v_data.entity_id);
       v_data.entity_type_id:=v_type; v_data.audited_by:=v_auditor;
@@ -215,6 +260,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
       v_data.heading:=TRIM(JSON_VALUE(p_input,'$.heading' RETURNING VARCHAR2(500) ERROR ON ERROR));
       v_json:=JSON_OBJECT_T.PARSE(p_input);
       v_data.observation_html:=v_json.GET_CLOB('observationHtml');
+      v_data.gist:=v_json.GET_CLOB('gist');
+      v_data.annexure_details:=v_json.GET_CLOB('annexureDetails');
       v_data.payload_json:=p_input;
       v_data.annexure_id:=JSON_VALUE(p_input,'$.annexureId' RETURNING NUMBER ERROR ON ERROR);
       v_data.category_id:=JSON_VALUE(p_input,'$.categoryId' RETURNING NUMBER ERROR ON ERROR);
@@ -233,7 +280,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         INSERT INTO T_IAS_LEGACY_PARA_REQUEST VALUES v_data;
         history('SUBMIT');
       ELSE
-        UPDATE T_IAS_LEGACY_PARA_REQUEST SET entity_id=v_data.entity_id,entity_type_id=v_type,audited_by=v_auditor,
+        UPDATE T_IAS_LEGACY_PARA_REQUEST SET entity_id=v_data.entity_id,entity_type_id=v_type,
+          gist=v_data.gist,annexure_details=v_data.annexure_details,
           audit_year=v_data.audit_year,nature_id=v_data.nature_id,para_no=v_data.para_no,heading=v_data.heading,
           annexure_id=v_data.annexure_id,category_id=v_data.category_id,subchecklist_id=v_data.subchecklist_id,
           checklist_id=v_data.checklist_id,risk_id=v_data.risk_id,reference_id=v_data.reference_id,
@@ -259,6 +307,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         UPDATE T_IAS_LEGACY_PARA_REQUEST SET status=CASE v_action WHEN 'RETURN' THEN 'RETURNED' ELSE 'REJECTED' END,
           remarks=v_remarks,decided_by=p_ppno,decided_on=SYSTIMESTAMP,version_no=version_no+1 WHERE request_id=v_id;
       ELSE
+        IF v_row.audited_by IN (112242,112248) THEN RAISE_APPLICATION_ERROR(-20813,'CAD/HO posting is not supported.'); END IF;
+        entity_scope(v_row.entity_id);
+        IF v_type<>v_row.entity_type_id THEN RAISE_APPLICATION_ERROR(-20814,'Entity type changed; posting is blocked.'); END IF;
         v_data:=v_row; check_attributes;
         IF v_data.risk_id<>v_row.risk_id THEN fail('Annexure risk has changed; return this request for correction.'); END IF;
         BEGIN
@@ -272,9 +323,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
         v_com:=PKG_IAS_LEGACY_IDS.NEXT_ID('COMPLIANCE');
         v_ref:='B'||TO_CHAR(v_legacy,'FM9999999999999999999999999999');
         INSERT INTO T_AU_OLD_PARAS_FAD
-          (id,ref_p,type_id,audit_period,para_no,gist_of_paras,annex,amount_involved,audited_by,
+          (id,ref_p,type_id,audit_period,para_no,gist_of_paras,annexure,annex,amount_involved,audited_by,
            entity_id,nature_of_audit,entered_by,entered_on,para_status,update_status,risk,process_detail,no_of_instances)
-        VALUES(v_legacy,v_ref,v_type,TO_CHAR(v_row.audit_year,'FM9999'),v_row.para_no,v_row.heading,
+        VALUES(v_legacy,v_ref,v_type,TO_CHAR(v_row.audit_year,'FM9999'),v_row.para_no,v_gist,v_annexure,
           v_row.annexure_id,v_row.amount_involved,v_auditor,v_row.entity_id,v_row.nature_id,
           v_row.requested_by,CAST(v_row.requested_on AS DATE),8,2,v_row.risk_id,v_row.checklist_id,v_row.no_of_instances);
         INSERT INTO T_AU_OLD_PARAS_FAD_TEXT(id,ref_p,para_text) VALUES(v_text,v_ref,v_row.observation_html);
@@ -282,7 +333,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
           (com_id,old_para_id,audit_period,entity_id,entity_code,audited_by,entity_type_id,
            com_cycle,com_status,com_stage,para_status,para_no,gist_of_paras,ind,para_added_on,risk,annex,amount,no_of_instances)
         VALUES(v_com,v_legacy,TO_CHAR(v_row.audit_year,'FM9999'),v_row.entity_id,v_code,v_auditor,v_type,
-          0,8,CASE WHEN v_type=6 THEN 13 ELSE 21 END,8,v_row.para_no,v_row.heading,'O',v_rec,v_row.risk_id,v_row.annexure_id,v_row.amount_involved,v_row.no_of_instances);
+          0,8,CASE WHEN v_type=6 THEN 13 ELSE 21 END,8,v_row.para_no,v_gist,'O',v_rec,v_row.risk_id,v_row.annexure_id,v_row.amount_involved,v_row.no_of_instances);
         FOR person IN (SELECT j.* FROM JSON_TABLE(v_row.payload_json,'$.responsiblePersons[*]'
           COLUMNS(pp NUMBER PATH '$.ppNo',loan_case VARCHAR2(40) PATH '$.loanCase',
           account_number VARCHAR2(40) PATH '$.accountNumber',lc NUMBER PATH '$.loanAmount',ac NUMBER PATH '$.accountAmount')) j) LOOP

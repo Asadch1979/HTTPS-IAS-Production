@@ -52,6 +52,9 @@
         try { result = await response.json(); }
         catch (_) { throw apiFailure(action, response, referenceHeader, 'invalid-json'); }
         const reference = referenceHeader || safeReference(result && (result.reference || result.Reference || result.traceId));
+        const publicErrors={CAD_HO_UNSUPPORTED:'CAD/HO historical posting is disabled pending an approved authorization workflow.',ENTITY_SCOPE_CHANGED:'Entity scope cannot be established for this Audit By office. Organizational reassignment requires controlled resolution.',HISTORICAL_FIELDS_REQUIRED:'Enter the historical gist and review annexure details before resubmission.'};
+        const code=result && (result.code || result.Code);
+        if (!successful && publicErrors[code]) throw new Error(publicErrors[code]+(reference?' Reference: '+reference:''));
         if (!successful || !result || typeof result !== 'object' || !(result.status ?? result.Status))
             throw apiFailure(action, response, reference, 'rejected');
         // Server messages are intentionally not shown: error text can be an HTML
@@ -76,7 +79,7 @@
         const rows = await api('List', { queue: checker, search: $('#legacySearch').val(), offset });
         const body = document.getElementById('legacyRequests'); body.replaceChildren();
         rows.forEach(row => {
-            const tr = node('tr'); [row.request_id,row.entity,row.audit_year,row.para_no,row.heading,row.risk,(row.requested_by_name || '') + ' (' + row.requested_by + ')',row.submitted_on,row.status].forEach(v => tr.append(node('td', v)));
+            const tr = node('tr'); [row.request_id,row.entity,row.audit_year,row.para_no,row.heading,row.risk,(row.requested_by_name || '') + ' (' + row.requested_by + ')',row.submitted_on,row.status+(row.scope_notice?' — '+row.scope_notice:'')].forEach(v => tr.append(node('td', v)));
             const td = node('td'), button = node('button', row.status === 'RETURNED' && !checker ? 'View / Correct' : 'View', 'btn btn-sm btn-outline-primary'); button.type = 'button'; button.onclick = () => preview(row.request_id).catch(e => message(e.message,true)); td.append(button); tr.append(td); body.append(tr);
         });
         if (!rows.length) { const tr = node('tr'), td = node('td','No requests found.'); td.colSpan = 10; tr.append(td); body.append(tr); }
@@ -87,13 +90,13 @@
         const record = rows.find(r => r.record_kind === 'REQUEST'); if (!record) throw new Error('Request is unavailable.');
         const data = JSON.parse(record.payload_json); selected = { record, data };
         const list = document.getElementById('legacyPreviewAttributes'); list.replaceChildren();
-        const values = { 'Request': record.request_id,'Status': record.status,'Entity': record.entity,'Audit Year': data.auditYear,'Audit Nature': record.nature,'Original Para Number': data.paraNo,'Heading': data.heading,'Annexure': record.annexure,'Risk': record.risk,'Violation Category': record.category,'Violation Nature': record.subchecklist,'Checklist Detail': record.checklist,'Reference': record.reference_label || 'None selected','Amount Involved': data.amount,'Instances': data.instances,'Remarks': record.remarks || '','Legacy Reference': record.legacy_ref_p || '','Compliance Reference': record.compliance_id || '' };
+        const values = { 'Request': record.request_id,'Status': record.status,'Entity': record.entity,'Audit Year': data.auditYear,'Audit Nature': record.nature,'Original Para Number': data.paraNo,'Gist of Para':data.gist || 'Not supplied','Historical Annexure Details':data.annexureDetails || '','Audit By ID':record.audited_by,'Scope Notice':record.scope_notice || '','Heading': data.heading,'Annexure': record.annexure,'Risk': record.risk,'Violation Category': record.category,'Violation Nature': record.subchecklist,'Checklist Detail': record.checklist,'Reference': record.reference_label || 'None selected','Amount Involved': data.amount,'Instances': data.instances,'Remarks': record.remarks || '','Legacy Reference': record.legacy_ref_p || '','Compliance Reference': record.compliance_id || '' };
         Object.entries(values).forEach(([label,value]) => { list.append(node('dt',label,'col-sm-3')); list.append(node('dd',value,'col-sm-9')); });
         document.getElementById('legacyObservationPreview').srcdoc = record.observation_html;
         document.getElementById('legacyPreviewPersons').replaceChildren(table(['PP No','Name','Role','Loan Case','Loan Amount','Account','Account Amount'],(data.responsiblePersons || []).map(p => [p.ppNo,p.employeeName,p.role,p.loanCase,p.loanAmount,p.accountNumber,p.accountAmount])));
         attachments(document.getElementById('legacyPreviewAttachments'),data.attachments || []);
         document.getElementById('legacyPreviewHistory').replaceChildren(table(['Action','Version','Actor PP No','Date','Remarks'],JSON.parse(record.history_json || '[]').map(h => [h.status,h.version_no,h.actor,h.action_on,h.remarks])));
-        $('#legacyDecisionPanel').toggleClass('d-none',!checker || record.status !== 'PENDING'); $('#legacyCorrect').toggleClass('d-none',checker || record.status !== 'RETURNED'); $('#legacyRemarks').val('');
+        $('#legacyDecisionPanel').toggleClass('d-none',!checker || record.status !== 'PENDING'); $('#legacyCorrect').toggleClass('d-none',checker || record.status !== 'RETURNED' || !!record.scope_notice); $('#legacyRemarks').val('');
         bootstrap.Modal.getOrCreateInstance(document.getElementById('legacyPreview')).show();
     }
     async function decide(action) {
