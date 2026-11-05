@@ -334,9 +334,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_IAS_LEGACY_PARA AS
        WHERE control_id = 1;
     END IF;
     IF v_enabled<>'Y' THEN RAISE_APPLICATION_ERROR(-20812,'Legacy para addition is not activated.'); END IF;
-    v_id:=JSON_VALUE(p_input,'$.requestId' RETURNING NUMBER ERROR ON ERROR);
-    v_version:=JSON_VALUE(p_input,'$.version' RETURNING NUMBER ERROR ON ERROR);
-    v_search:=TRIM(JSON_VALUE(p_input,'$.search'));
+    -- The request JSON schemas are operation-specific. Never extract
+    -- requestId/version for LIST or LOOKUP: those JSON keys are absent.
+    -- Preserve malformed-number errors while accepting optional missing keys.
+    IF p_operation IN ('SUBMIT','DETAIL','DECIDE') THEN
+      v_id := JSON_VALUE(p_input,'$.requestId'
+                         RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
+      IF p_operation IN ('DETAIL','DECIDE') AND NVL(v_id,0)<=0 THEN
+        fail('A positive request ID is required.');
+      END IF;
+    END IF;
+    IF p_operation IN ('SUBMIT','DECIDE') THEN
+      v_version := JSON_VALUE(p_input,'$.version'
+                              RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY);
+      IF (p_operation='DECIDE' OR NVL(v_id,0)>0) AND NVL(v_version,0)<=0 THEN
+        fail('A positive request version is required.');
+      END IF;
+    END IF;
+    IF p_operation IN ('LOOKUP','LIST') THEN
+      v_search:=TRIM(JSON_VALUE(p_input,'$.search'));
+    END IF;
 
     IF p_operation='LOOKUP' THEN
       v_kind:=JSON_VALUE(p_input,'$.kind');

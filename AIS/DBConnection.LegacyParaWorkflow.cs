@@ -11,8 +11,12 @@ namespace AIS.Controllers
     public partial class DBConnection
     {
         // Identities/context are always obtained from the authenticated server session.
-        public List<Dictionary<string, object>> LegacyParaRequests(LegacyParaOperation operation, object input, LegacyParaPage page)
+        public List<Dictionary<string, object>> LegacyParaWorkflow(LegacyParaOperation operation, object input, LegacyParaPage page)
         {
+            // Only write/review operations remain on the existing workflow package.
+            // Read-only form lookups and checker pending lists have dedicated procedures.
+            if (operation is LegacyParaOperation.List or LegacyParaOperation.Lookup)
+                throw new NotSupportedException("Use dedicated read-only Legacy Para procedures.");
             // Reject programming/configuration mistakes before opening a transaction.
             if (!Enum.IsDefined(typeof(LegacyParaOperation), operation))
                 throw new ArgumentOutOfRangeException(nameof(operation));

@@ -124,6 +124,12 @@
     $('#legacyPrevious').on('click',() => { offset=Math.max(0,offset-50); refresh().catch(e => message(e.message,true)); });
     $('#legacyNext').on('click',() => { offset+=50; refresh().catch(e => message(e.message,true)); });
     [['legacyAuthorize','AUTHORIZE'],['legacyReturn','RETURN'],['legacyReject','REJECT']].forEach(([id,action]) => $('#' + id).on('click',() => decide(action).catch(e => message(e.message,true))));
-    if (enabled) refresh().catch(e => message(e.message,true)); else $('#legacyRefresh,#legacyNext,#legacyPrevious,#legacySearch').prop('disabled',true);
+    // The maker page is data capture only. It must not query LIST or DETAIL
+    // on load, and it does not expose the request queue or preview UI.
+    // Only the separate checker page may initialize the review queue.
+    if (checker) {
+        if (enabled) refresh().catch(e => message(e.message,true));
+        else $('#legacyRefresh,#legacyNext,#legacyPrevious,#legacySearch').prop('disabled',true);
+    }
     });
 })(window,window.jQuery);

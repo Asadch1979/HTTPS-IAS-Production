@@ -27,11 +27,11 @@ test('Legacy Para has five dedicated secure actions within ApiCalls', () => {
 
 test('operation, page and active context are server-bound, never in request payload', () => {
     const model = read('AIS/Models/LegacyParaOperation.cs');
-    const db = read('AIS/DBConnection.LegacyParaRequests.cs');
+    const db = read('AIS/DBConnection.LegacyParaWorkflow.cs');
     assert.match(model, /enum LegacyParaOperation/);
     assert.match(model, /Maker = 192/);
     assert.match(model, /Checker = 193/);
-    assert.match(db, /LegacyParaRequests\(LegacyParaOperation operation, object input, LegacyParaPage page\)/);
+    assert.match(db, /LegacyParaWorkflow\(LegacyParaOperation operation, object input, LegacyParaPage page\)/);
     assert.match(db, /Enum\.IsDefined\(typeof\(LegacyParaOperation\)/);
     assert.match(db, /Enum\.IsDefined\(typeof\(LegacyParaPage\)/);
     assert.match(db, /operation\.ToString\(\)\.ToUpperInvariant\(\)/);
@@ -49,7 +49,7 @@ test('both views, Oracle permission contract and permission manifest use ApiCall
         assert.match(view, /~\/ApiCalls\/LegacyPara/);
         assert.doesNotMatch(view, /~\/api\/LegacyParaRequests/);
     }
-    assert.match(pkg, /'apicalls\/legacypara'\|\|LOWER\(p_operation\)/);
+    assert.match(pkg, /'apicalls\/legacypara'\s*\|\|\s*LOWER\(p_operation\)/);
     assert.doesNotMatch(pkg, /'api\/legacypararequests\/'\|\|LOWER\(p_operation\)/);
     for (const action of ['Submit', 'Lookup', 'List', 'Detail', 'Decide']) {
         assert.match(grants, new RegExp("'ApiCalls','LegacyPara" + action + "','POST'"));
