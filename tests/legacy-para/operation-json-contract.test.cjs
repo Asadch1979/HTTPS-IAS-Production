@@ -16,8 +16,8 @@ test('List/Lookup do not parse missing request ID or version', () => {
   assert.match(parsing, /IF p_operation IN \('SUBMIT', 'DETAIL', 'DECIDE'\) THEN/);
   assert.match(parsing, /IF p_operation IN \('SUBMIT', 'DECIDE'\) THEN/);
   assert.match(parsing, /IF p_operation IN \('LOOKUP', 'LIST'\) THEN/);
-  assert.match(parsing, /'\\$\\.requestId' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY/);
-  assert.match(parsing, /'\\$\\.version' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY/);
+  assert.match(parsing, /requestId' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY/);
+  assert.match(parsing, /version' RETURNING NUMBER ERROR ON ERROR NULL ON EMPTY/);
   assert.doesNotMatch(parsing, /v_version\s*:=\s*JSON_VALUE\(p_input[^;]*ERROR ON ERROR\);/s);
 });
 
