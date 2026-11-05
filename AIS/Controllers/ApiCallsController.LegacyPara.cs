@@ -108,7 +108,7 @@ namespace AIS.Controllers
         }
 
         [HttpPost, RequestSizeLimit(16000000)]
-        [Authorize, ValidateAntiForgeryToken]
+        [Authorize, ValidateAntiForgeryToken(Order = 1001)]
         [ApplicationAudit("LEGACY_PARA_REQUEST_SUBMITTED", "COMPLIANCE", "LEGACY PARA", "PKG_IAS_LEGACY_PARA", "P_EXECUTE", ObjectType = "LEGACY_PARA_REQUEST", ObjectIdItem = "LegacyParaRequestId", ActionNameItem = "LegacyParaAction", RequireResultMessage = true, LogFailures = true)]
         public IActionResult LegacyParaSubmit([FromBody] LegacyParaRequest request)
         {
@@ -141,16 +141,16 @@ namespace AIS.Controllers
             HttpContext.Items["LegacyParaAction"] = request.RequestId > 0 ? "LEGACY_PARA_REQUEST_RESUBMITTED" : "LEGACY_PARA_REQUEST_SUBMITTED";
             return ExecuteLegacyParaRequest(LegacyParaOperation.Submit, request);
         }
-        [HttpPost, Authorize, ValidateAntiForgeryToken]
+        [HttpPost, Authorize, ValidateAntiForgeryToken(Order = 1001)]
         public IActionResult LegacyParaList([FromBody] LegacyParaQuery query) =>
             ExecuteLegacyParaRequest(LegacyParaOperation.List, query, query?.Queue == true);
-        [HttpPost, Authorize, ValidateAntiForgeryToken]
+        [HttpPost, Authorize, ValidateAntiForgeryToken(Order = 1001)]
         public IActionResult LegacyParaDetail([FromBody] LegacyParaQuery query) =>
             ExecuteLegacyParaRequest(LegacyParaOperation.Detail, query, query?.Queue == true);
-        [HttpPost, Authorize, ValidateAntiForgeryToken]
+        [HttpPost, Authorize, ValidateAntiForgeryToken(Order = 1001)]
         public IActionResult LegacyParaLookup([FromBody] LegacyParaLookup query) =>
             ExecuteLegacyParaRequest(LegacyParaOperation.Lookup, query);
-        [HttpPost, Authorize, ValidateAntiForgeryToken]
+        [HttpPost, Authorize, ValidateAntiForgeryToken(Order = 1001)]
         [ApplicationAudit("LEGACY_PARA_REQUEST_DECIDED", "COMPLIANCE", "LEGACY PARA", "PKG_IAS_LEGACY_PARA", "P_EXECUTE", ObjectType = "LEGACY_PARA_REQUEST", ObjectIdItem = "LegacyParaRequestId", ActionNameItem = "LegacyParaAction", RequireResultMessage = true, LogFailures = true)]
         public IActionResult LegacyParaDecide([FromBody] LegacyParaAction request)
         {
