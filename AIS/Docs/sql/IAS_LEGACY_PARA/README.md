@@ -81,3 +81,40 @@ the database validation.
 Source-level tests: tests/legacy-para/apicalls-routing.test.cjs.
 No application compilation, Oracle deployment or end-to-end checks have been
 performed by this repository edit.
+
+## Relationship/office/posting selection and permission diagnosis (5 November 2026)
+
+The maker form now mirrors the labels and three-step hierarchy of
+`Execution/manage_audit_paras`: Relationship Type, Controlling/Reporting Office,
+and Place of Posting. The relationship list comes from the same
+`GetrealtionshiptypeForParaPositionReport()` role-scoped source.
+Controlling offices and child postings are loaded through new authorized
+`LegacyParaLookup` kinds `REPORTING_OFFICES`, `POSTINGS` and
+`ENTITY_LOCATION` in `PKG_IAS_LEGACY_PARA`. Unlike the broad read-only
+PKG_RPT selectors, these SQL lookups filter by the selected active auditing
+office, auditable entity status and eligibility, approved relationship and
+mapping consistency. The reporting office is now a true user selection, not a
+replacement for the selected session audit authority. EntityTypeId is derived
+from the selected posting and independently re-derived and matched in Oracle.
+
+For new submissions the package checks the exact relationship/office/posting
+mapping on submission and again at checker authorization. Existing requests
+without these new payload fields retain their preexisting authenticated entity
+scope check; on maker correction, a unique currently authorized location is
+recovered through `ENTITY_LOCATION` or correction fails closed when mapping
+is missing/ambiguous. No changes to request table schema are required.
+
+The initial queue still uses `POST /ApiCalls/LegacyParaList`. If an existing
+database has not been migrated from `/api/LegacyParaRequests/List`, or has
+an inactive role grant/page dependency, a legitimate 403 remains possible.
+`IAS_LEGACY_PARA_ACCESS_DIAGNOSTIC.sql` checks the current routes, role 15
+grants and page dependencies **read only**. The JavaScript now distinguishes
+reported API/page/database permission failure codes instead of claiming that
+every 403 is due to the selected context. It never activates permissions or
+bypasses the selected-role/page checks. Re-login after an approved DB change is
+required for cached API/page permissions.
+
+Added regression source checks:
+`tests/legacy-para/relationship-selection.test.cjs`.
+No live Oracle compilation, application deployment or runtime verification
+was carried out by this source update.
