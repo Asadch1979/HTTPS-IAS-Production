@@ -600,9 +600,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                     0
                  END AS ambiguous_audit_by
             FROM t_auditee_entities_maping m
-            LEFT JOIN t_auditee_entities gm
+            JOIN t_auditee_entities gm
               ON gm.entity_id = m.gm_office
-           WHERE NVL(m.status, 'Y') = 'Y'
+            join t_auditee_ent_types t
+              on t.autid = m.c_type_id
+             and t.audit_type = 'B'
+           WHERE NVL(gm.active, 'Y') = 'Y'
            GROUP BY m.entity_id),
         report_c_auditor_gm AS
          (
@@ -616,9 +619,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                   END AS unique_gm_id
             FROM t_auditee_entities_maping m
             JOIN t_auditee_entities gm
-              ON gm.entity_id = m.entity_id
+              ON gm.entity_id = m.gm_office
+            join t_auditee_ent_types t
+              on t.autid = m.c_type_id
+             and t.audit_type = 'B'
+           WHERE NVL(gm.active, 'Y') = 'Y'
              AND gm.type_id = 21
-           WHERE NVL(m.status, 'Y') = 'Y'
              AND m.auditedby IS NOT NULL
            GROUP BY m.auditedby),
         report_c_gm_auditor AS
@@ -630,8 +636,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
             FROM t_auditee_entities_maping m
             JOIN t_auditee_entities gm
               ON gm.entity_id = m.entity_id
-             AND gm.type_id = 21
-           WHERE NVL(m.status, 'Y') = 'Y'
+            join t_auditee_ent_types t
+              on t.autid = m.c_type_id
+             and t.audit_type = 'B'
+           WHERE NVL(gm.active, 'Y') = 'Y'
            GROUP BY m.entity_id),
         report_c_offices AS
          (SELECT f.*,
@@ -677,7 +685,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
             LEFT JOIN t_auditee_entities parent_region
               ON parent_region.entity_id =
                  f.reporting_1
-             AND parent_region.type_id = 22
+                --AND parent_region.type_id = 22
              AND P_REPORT_ID = 'C'),
         -- Report E maps the audited entity's unique division to the existing
         -- Group/Division view. Reduce mapping BEFORE joining individual paras.
