@@ -178,7 +178,7 @@ DECLARE
       GRANT_API(3,V_API_ID);
       GRANT_API(38,V_API_ID);
       GRANT_API(V_TOP_ROLE,V_API_ID);
-      GRANT_API(V_GROUP_ROLE,V_API_ID);
+      GRANT_API(14,V_API_ID);
       FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
         GRANT_API(V_RLM_REGIONAL_ROLES(i),V_API_ID);
       END LOOP;
@@ -194,7 +194,7 @@ DECLARE
         GRANT_API(V_RLM_REGIONAL_ROLES(i),V_API_ID);
       END LOOP;
     ELSIF P_CLASS='MANAGEMENT' THEN
-      GRANT_API(V_GROUP_ROLE,V_API_ID);
+      GRANT_API(14,V_API_ID);
       FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
         GRANT_API(V_RLM_MANAGEMENT_ROLES(i),V_API_ID);
       END LOOP;
@@ -235,7 +235,7 @@ BEGIN
 
   -- Each parent has a distinct page ID and authorization path.
   REGISTER_PAGE(1000300,'TOP','Top Management Dashboard',V_TOP_ROLE);
-  REGISTER_PAGE(1000301,'GROUP','ZTBL | Management Audit Dashboard',V_GROUP_ROLE);
+  REGISTER_PAGE(1000301,'GROUP','ZTBL | Management Audit Dashboard',14);
   REGISTER_PAGE(1000302,'CCO','Chief Compliance Officer Dashboard',38);
   REGISTER_PAGE(1000303,'CIA','CIA Audit Command Center',3);
   REGISTER_PAGE(1000304,'AuditParaSnap','ZTBL | Audit Para Snap',3);
