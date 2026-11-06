@@ -1,0 +1,11 @@
+# GROUP HEAD authorization deployment
+
+Root cause: Role 14 was absent from fixed role resolution and depended on a unique ExecutiveDashboard:RoleMappings entry. SQL hardcoded 14 for grants while leaving V_GROUP_ROLE null, so its validation did not describe the grants actually applied. Missing or duplicate application mappings denied GROUP at RoleMapping before page authorization.
+
+Deploy the application change. Role 14 needs no RoleMappings entry; remove stale Role 14 entries from deployed configuration after review. Preserve other approved role mappings and ManagementRlmRoleIds. No appsettings secrets or unrelated local changes are included.
+
+Have the DBA review and execute executive_dashboard_permissions.sql as a whole script in the normal approval window. V_GROUP_ROLE is 14. Preserve page 1000301, EXECUTIVE_GROUP and /ExecutiveOverview/GROUP. Verify the active page and T_MENU_PAGES_GROUPMAP row for group 14. The script preserves existing statuses and creates new API registrations/grants inactive. Through the existing approval process, approve only the required COMMON and MANAGEMENT GET API registrations and Role 14 grants; never blanket-activate grants. Review existing executive_dashboard_page_api_manifest.sql/PKG_AD deployment dependencies. No change to PKG_EXEC_DASHBOARD is required: GROUP remains the perspective.
+
+Verify the authenticated user's UserEntityID is the assigned Group Head entity, category 18, with no organization type conflict. Existing organization reporting ancestry checks restrict requested entities to this root. Test a valid assigned root, missing/invalid posting, a foreign group entity, supplied groupRootId, TOP/CIA/CCO attempts, missing page grant and inactive API grant. Preserve separately approved RLM access. Refresh permission sessions through the normal sign-out/sign-in/cache process after deployment.
+
+Existing controller diagnostics distinguish RoleMapping, PagePermission, EntityScope and ApiPermission; management-view posting denials now also log EntityScope. Production database state and authenticated HTTP behavior must be verified in staging/production: repository tests are source-contract regression checks, not an Oracle integration test.

@@ -51,6 +51,7 @@ namespace AIS.Controllers
             if (user.UserRoleID == 1)
                 return session.IsSuperUser() ? RedirectToAction(nameof(TOP)) : StatusCode(403);
 
+            if (user.UserRoleID == 14) return RedirectToAction(nameof(GROUP));
             if (user.UserRoleID == 3) return RedirectToAction(nameof(CIA));
             if (user.UserRoleID == 38) return RedirectToAction(nameof(CCO));
 
@@ -220,7 +221,7 @@ namespace AIS.Controllers
                      (allowedManagementRoles.Contains(scope.RoleId) ||
                       (superUser && scope.GroupRootId.HasValue)) &&
                      (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
-                if ((view == "regional" && !regional) || (view == "management" && !management)) return StatusCode(403);
+                if ((view == "regional" && !regional) || (view == "management" && !management)) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
                 if (!management) views.RemoveAll(v => v.Id == "management");
                 // Preserve explicitly chosen views; only replace the initial default.

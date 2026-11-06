@@ -78,6 +78,18 @@ namespace AIS.Controllers
                 return new ExecutiveDashboardScope(user, verifiedType, "/ExecutiveOverview/" + verifiedType, null);
             }
 
+            // Verified IAS GROUP HEAD role; configuration cannot elevate it to TOP.
+            if (user.UserRoleID == 14)
+            {
+                if (requested != null && requested != "GROUP")
+                    throw new ExecutiveDashboardAccessException("RoleMapping", "GROUP HEAD requires the GROUP perspective.");
+                if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0)
+                    throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires the assigned entity without a root override.");
+                RequireExecutiveGroupRoot(user.UserEntityID.Value);
+                return new ExecutiveDashboardScope(user, "GROUP", "/ExecutiveOverview/GROUP",
+                    user.UserEntityID, user.UserEntityID);
+            }
+
             var mappings = _configuration.GetSection("ExecutiveDashboard:RoleMappings")
                 .Get<List<ExecutiveDashboardRoleMapping>>() ?? new List<ExecutiveDashboardRoleMapping>();
             var matches = mappings.Where(mapping => mapping != null && mapping.RoleId > 0 && mapping.RoleId == user.UserRoleID).ToList();
