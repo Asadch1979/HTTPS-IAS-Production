@@ -600,11 +600,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                     0
                  END AS ambiguous_audit_by
             FROM t_auditee_entities_maping m
-              JOIN t_auditee_entities gm
+            LEFT JOIN t_auditee_entities gm
               ON gm.entity_id = m.gm_office
-             join t_auditee_ent_types t
-              on t.autid = m.c_type_id and t.audit_type = 'B'
-           WHERE NVL(gm.active, 'Y') = 'Y'
+           WHERE NVL(m.status, 'Y') = 'Y'
            GROUP BY m.entity_id),
         report_c_auditor_gm AS
          (
