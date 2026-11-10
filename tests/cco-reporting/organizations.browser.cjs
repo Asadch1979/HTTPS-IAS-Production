@@ -12,9 +12,14 @@ const source = fs.readFileSync('AIS/wwwroot/js/cco-organizations.js', 'utf8');
             let requests = 0;
             const rows = [
                 { rowKind: 'GROUP', groupId: 1, groupName: 'Retail', totalCases: 2 },
-                { rowKind: 'GROUP', groupId: 2, groupName: 'Wholesale', totalCases: 1 },
-                { rowKind: 'DIVISION', groupId: 1, divisionId: 5, divisionName: '<img src=x>', totalCases: 2 },
-                { rowKind: 'GM', groupId: 1, divisionId: 5, auditType: 'B', mappingQuality: 'Conflicting', totalCases: 2 },
+                { rowKind: 'DIVISION', groupId: 1, divisionId: 5, divisionName: 'Operations', totalCases: 2 },
+                { rowKind: 'GM', groupId: 1, divisionId: 5, gmOfficeId: 7, gmOfficeName: 'North GM', auditType: 'B', totalCases: 1 },
+                { rowKind: 'DETAIL', groupId: 1, divisionId: 5, gmOfficeId: 7, auditType: 'B', reportingEntityName: 'North Region', totalCases: 1 },
+                { rowKind: 'DETAIL', groupId: 1, divisionId: 5, auditType: 'D', reportingEntityName: 'Finance', openingCases: 0, totalCases: 1 },
+                // No ordinary Group/Division parent rows for this exception.
+                { rowKind: 'DETAIL', auditType: 'D', reportingEntityName: '<img src=x>', mappingQuality: 'Conflicting', totalCases: 1 },
+                { rowKind: 'POPULATION', auditType: 'B', totalCases: 1 },
+                { rowKind: 'POPULATION', auditType: 'D', totalCases: 2 },
                 { rowKind: 'TOTAL', totalCases: 3, settlementRate: null }
             ];
             await page.route('https://ias.test/**', route => {
@@ -37,14 +42,19 @@ const source = fs.readFileSync('AIS/wwwroot/js/cco-organizations.js', 'utf8');
             await page.addScriptTag({ content: source });
             await page.waitForSelector('tbody tr');
             assert.equal(requests, 1);
-            assert.equal(await page.locator('tbody tr').count(), 3);
-            await page.click('#cco-expand-all');
             assert.equal(await page.locator('tbody tr').count(), 5);
+            await page.click('#cco-expand-all');
+            assert.equal(await page.locator('tbody tr').count(), 11);
             assert.equal(await page.locator('img').count(), 0);
             assert.match(await page.locator('tbody').innerText(), /conflicting mapping/);
+            assert.doesNotMatch(await page.locator('tbody').innerText(), /Unassigned GM/);
+            assert.match(await page.locator('tbody tr').filter({ hasText: 'Finance' }).innerText(), /Management Audit \(D\).*0/s);
+            assert.match(await page.locator('tbody tr').filter({ hasText: 'Unassigned Division' }).innerText(), /N\/A/);
+            await page.getByRole('button', { name: 'Total Paras', exact: true }).click();
+            assert.equal(await page.locator('thead th[aria-sort]').innerText(), 'Total Paras');
             assert.match(await page.locator('tbody tr').last().innerText(), /Grand Total[\s\S]*N\/A/);
             await page.fill('#cco-org-search', '<img');
-            assert.equal(await page.locator('tbody tr').count(), 4);
+            assert.equal(await page.locator('tbody tr').count(), 6);
             await page.locator('#exec-end-date').dispatchEvent('change');
             assert.equal(await page.locator('tbody tr').count(), 0);
             await page.close();

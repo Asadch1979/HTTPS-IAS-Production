@@ -9,8 +9,8 @@ test('only the Performance adapter has a bound reader and a staging gate',()=>{
  const partial=read('AIS/Views/ExecutiveOverview/_CcoCompliance.cshtml');
  assert.ok(partial.indexOf('name="_Sections"')<partial.indexOf('id="cco-summary"'),'Main KPI cards precede supplementary cycle cards');
  const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
- assert.equal((adapter.match(/throw new CcoOrganizationUnavailableException/g)||[]).length,2);
  const dormant=adapter.slice(adapter.indexOf('internal List<CcoOrganizationPath> GetCcoOrganizationPaths'));
+ assert.equal((dormant.match(/throw new CcoOrganizationUnavailableException/g)||[]).length,2);
  assert.doesNotMatch(dormant,/DatabaseConnection\(|CreateCommand\(|GetValue<bool>|ConnectionString/);
  assert.match(adapter,/PKG_EXEC_CCO_PERFORMANCE\.P_GET_PERFORMANCE/);
  assert.match(adapter,/command\.BindByName = true/);
@@ -22,6 +22,25 @@ test('only the Performance adapter has a bound reader and a staging gate',()=>{
  assert.equal(fs.existsSync('AIS/Docs/sql/PKG_CCO_FUNCTION_POSITION.sql'),false);
  assert.doesNotMatch(adapter,/PKG_CCO_SCOPE|PKG_CCO_REPORTING|PKG_CCO_FUNCTION_POSITION/);
  assert.match(read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'),/GetValue<bool>\("CcoReporting:PerformanceEnabled"\)/);
+});
+
+test('Performance Oracle contract restricts runtime, validates selected context and separates reporting populations', () => {
+ const sql=read('AIS/Docs/sql/PKG_EXEC_CCO_PERFORMANCE.sql');
+ const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
+ assert.match(sql,/AUTHID DEFINER/);
+ assert.match(sql,/SYS_CONTEXT\('USERENV', 'SESSION_USER'\)[^\n]*'IAS_CCO_PERF_RUNTIME'/);
+ assert.match(sql,/SYS_CONTEXT\('USERENV', 'PROXY_USER'\) IS NOT NULL/);
+ for (const key of ['USER_ID', 'CONTEXT_ID', 'ROLE_ID', 'POSTING_ID'])
+  assert.match(adapter,new RegExp('command\\.Parameters\\.Add\\("P_'+key+'"'));
+ assert.ok(sql.indexOf('FROM T_USER_CONTEXT_ASSIGNMENT') < sql.indexOf('OPEN IO_CURSOR'));
+ assert.match(sql,/v_exec_report_source\s+WHERE audit_type IN \('B','D'\)/i);
+ assert.match(sql,/V_IAS_ENTITY_REPORTING_IDS_Group_reports/);
+ assert.match(sql,/WHEN s.audit_type = 'D' THEN s.entity_id/);
+ assert.match(sql,/WHERE \(t.row_kind <> 'GM' OR t.audit_type = 'B'\)/);
+ assert.match(sql,/GROUP BY com_id/);
+ assert.match(sql,/GROUP BY GROUPING SETS/);
+ assert.match(adapter,/filters.MaxRows \+ 1/);
+ assert.match(adapter,/while \(reader.Read\(\)\)\s*\{\s*if \(rows.Count >= filters.MaxRows\)/);
 });
 
 test('CCO presentation changes retain canonical report APIs and safe text rendering',()=>{

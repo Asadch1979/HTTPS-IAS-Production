@@ -7,7 +7,7 @@
 <section id="cco-organizations" data-enabled="@(enabled ? "true" : "false")" data-url="@Url.Content("~/api/CcoCompliance/GetOrgPerformance")" aria-label="Group Head organizational analysis">
     @if (enabled)
     {
-        <p class="exec-note">Historical positions use available IAS dates and current organizational mapping. GM Office rows identify the Field or Management audit population.</p>
+        <p class="exec-note">Historical positions use available IAS dates and current organizational mapping. Field Audit (B) expands from GM Office to reporting entities. Management Audit (D) shows departments under their division.</p>
         <div class="exec-filters">
             <div><label for="cco-org-search">Search organizations</label><input id="cco-org-search" type="search" /></div>
             <button class="org-button" id="cco-expand-all" type="button">Expand all</button>

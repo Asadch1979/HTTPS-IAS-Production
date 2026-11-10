@@ -1,6 +1,7 @@
 using AIS.Models;
 using AIS.Services;
 using AIS.Session;
+using Oracle.ManagedDataAccess.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -83,6 +84,18 @@ namespace AIS.Controllers
             catch (UnauthenticatedException) { return Error(401,"unauthenticated","The IAS context is no longer valid."); }
             catch (UnauthorizedAccessException) { return Error(403,"forbidden","The CCO perspective or scope is not authorized."); }
             catch (ArgumentException) { return Error(400,"invalid_request","Select a valid date range and verified organizational parent path."); }
+            catch (CcoPerformanceRowLimitException)
+            {
+                return Error(422,"row_limit","The result exceeds the row limit. Select one Group or a shorter period.");
+            }
+            catch (OracleException ex) when (action == nameof(GetOrgPerformance) && ex.Number == 20811)
+            {
+                return Error(403,"forbidden","The CCO context is no longer authorized.");
+            }
+            catch (OracleException ex) when (action == nameof(GetOrgPerformance) && ex.Number == 20810)
+            {
+                return Error(400,"invalid_request","Select a valid reporting period and Group.");
+            }
             catch (CcoOrganizationUnavailableException) { outcome="pending_staging";return Error(503,"cco_not_verified","Organizational reporting awaits approved staging mappings and database authorization."); }
             catch (CcoFunctionPositionReadException ex)
             {
