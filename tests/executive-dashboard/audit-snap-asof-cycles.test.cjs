@@ -36,8 +36,8 @@ test('critical cursor uses master COM_CYCLE and history only for movement date',
   assert.match(critical,/k\.snap_cycle AS com_cycle/);
   assert.match(critical,/TRUNC\(P_END_DATE\) - TRUNC\(k\.last_movement_on\)/);
   assert.match(critical,/END AS days_since_movement/);
-  assert.match(critical,/CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,\s+days_since_movement/);
-  assert.match(critical,/AND k\.risk_id = 1 -- ZTBL Critical = High-risk open/);
+  assert.match(critical,/CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,\s+p\.days_since_movement/);
+  assert.match(critical,/NVL\(P_CCO_RISK,'HIGH'\) = 'HIGH' AND k\.risk_id = 1/);
 });
 
 test('scope restrictions and API cursor input contracts remain in both procedures',()=>{

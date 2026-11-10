@@ -59,6 +59,7 @@ namespace AIS.Models
         public string DivisionName { get; set; }
         public int? GmOfficeId { get; set; }
         public string GmOfficeName { get; set; }
+        public string AuditType { get; set; }
         public long? OpeningCases { get; set; }
         public long? ParaAdded { get; set; }
         public long? TotalCases { get; set; }

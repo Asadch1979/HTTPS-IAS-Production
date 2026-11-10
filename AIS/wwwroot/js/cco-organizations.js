@@ -1,45 +1,184 @@
 (() => {
     'use strict';
     const root = document.getElementById('cco-organizations');
-    if (!root) return;
+    if (root?.dataset.enabled !== 'true') return;
     const target = document.getElementById('cco-org-results');
     const search = document.getElementById('cco-org-search');
+    const status = document.getElementById('cco-org-status');
     const expanded = new Set();
-    let rows = [];
-    const node = (tag, text) => { const n = document.createElement(tag); if (text != null) n.textContent = text; return n; };
+    const start = document.getElementById('exec-start-date');
+    const end = document.getElementById('exec-end-date');
+    const groupSelect = document.getElementById('exec-entity');
+    const request = new AbortController();
+    const columns = [
+        ['Group', 'groupName'], ['Division', 'divisionName'], ['GM Office', 'gmOfficeName'],
+        ['Population', 'population'], ['Opening Balance', 'openingCases'], ['Para Added', 'paraAdded'],
+        ['Total Paras', 'totalCases'], ['Paras Settled', 'parasSettled'], ['Outstanding', 'outstanding'],
+        ['Settlement %', 'settlementRate'], ['Net Backlog Change', 'netBacklogChange'],
+        ['High-Risk Outstanding', 'highRiskOpen'], ['Reconciliation Difference', 'reconciliationDifference'],
+        ['Mapping Exceptions', 'mappingExceptions']
+    ];
+    const number = new Intl.NumberFormat('en-GB');
+    const percent = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const node = (tag, text) => {
+        const element = document.createElement(tag);
+        if (text != null) element.textContent = text;
+        return element;
+    };
+    let groups = [], grandTotal, ready = false;
+    let sortIndex = 0, direction = 1;
+
+    function buildTree(rows) {
+        const groupKey = row => JSON.stringify([row.groupId]);
+        const divisionKey = row => JSON.stringify([row.groupId, row.divisionId]);
+        const branches = new Map(), divisions = new Map();
+        for (const row of rows.filter(row => row.rowKind === 'GROUP')) {
+            row.groupName ||= 'Unassigned Group';
+            branches.set(groupKey(row), { row, key: groupKey(row), children: [] });
+        }
+        for (const row of rows.filter(row => row.rowKind === 'DIVISION')) {
+            row.divisionName ||= 'Unassigned Division';
+            const branch = { row, key: divisionKey(row), children: [] };
+            divisions.set(branch.key, branch);
+            branches.get(groupKey(row)).children.push(branch);
+        }
+        for (const row of rows.filter(row => row.rowKind === 'GM')) {
+            row.gmOfficeName ||= 'Unassigned GM Office';
+            if (row.mappingQuality === 'Conflicting') row.gmOfficeName += ' (conflicting mapping)';
+            row.population = row.auditType === 'B' ? 'Field Audit (B)' : 'Management Audit (D)';
+            divisions.get(divisionKey(row)).children.push({ row, children: [] });
+        }
+        groups = [...branches.values()];
+        grandTotal = rows.find(row => row.rowKind === 'TOTAL');
+    }
+
     function render() {
-        const table = node('table'); table.className = 'exec-table';
+        if (!ready) return;
+        const term = search.value.trim().toLocaleLowerCase();
+        const matches = row => columns.slice(0, 4).some(([, key]) =>
+            String(row[key] || '').toLocaleLowerCase().includes(term));
+        const sorted = branches => [...branches].sort((a, b) => {
+            const key = columns[sortIndex][1], left = a.row[key], right = b.row[key];
+            if (left == null || right == null) return Number(left == null) - Number(right == null);
+            return direction * (sortIndex < 4 ? String(left).localeCompare(right) : left - right);
+        });
+        const table = node('table');
+        table.className = 'exec-table exec-report-table';
         const head = node('thead'), header = node('tr'), body = node('tbody');
-        ['Organization Level','Reporting Office','Entity','Opening Cases','Para Added','Total Cases','Settled','Outstanding','Settlement %','Mapping Status'].forEach(label => { const th=node('th',label); th.scope='col'; header.append(th); });
+        columns.forEach(([label], index) => {
+            const th = node('th'), button = node('button', label);
+            th.scope = 'col';
+            if (index >= 4) th.className = 'exec-number';
+            if (sortIndex === index) th.setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending');
+            button.type = 'button';
+            button.addEventListener('click', () => {
+                direction = sortIndex === index ? -direction : 1;
+                sortIndex = index;
+                render();
+                target.querySelectorAll('thead button')[index].focus();
+            });
+            th.append(button);
+            header.append(th);
+        });
         head.append(header);
-        const byId = new Map(rows.map(r => [r.entityId,r]));
-        const term=(search?.value || '').trim().toLocaleLowerCase();
-        for (const row of rows) {
-            const chain=[], seen=new Set([row.entityId]); let parent=byId.get(row.parentEntityId), cycle=false;
-            while(parent) { if(seen.has(parent.entityId)) {cycle=true;break;} seen.add(parent.entityId);chain.push(parent);parent=byId.get(parent.parentEntityId); }
-            if (term ? ![row.entityName,row.parentEntityName,row.entityCategory].some(v=>String(v||'').toLocaleLowerCase().includes(term)) : !cycle && chain.some(p=>!expanded.has(p.entityId))) continue;
-            const tr=node('tr'), level=node('td');
-            for(let i=0;i<chain.length;i++)level.append(node('span','　'));
-            if(rows.some(r=>r.parentEntityId===row.entityId)) { const button=node('button',expanded.has(row.entityId)?'−':'+');button.type='button';button.setAttribute('aria-label','Expand or collapse '+row.entityName);button.setAttribute('aria-expanded',String(expanded.has(row.entityId)));button.addEventListener('click',()=>{expanded.has(row.entityId)?expanded.delete(row.entityId):expanded.add(row.entityId);render();});level.append(button); }
-            level.append(node('span',row.organizationLevel||row.entityCategory||'Unmapped')); tr.append(level);
-            const quality=cycle||row.hasTypeConflict?'Conflict':row.isOrphan?'Unmapped':row.mappingQuality||'Unverified';
-            [row.parentEntityName||'Unmapped reporting office',row.entityName,...['openingCases','paraAdded','totalCases','parasSettled','outstanding','settlementRate'].map(k=>row[k]),quality].forEach(v=>tr.append(node('td',v==null?'N/A':String(v))));
+        function appendRow(row, depth, branch) {
+            const tr = node('tr');
+            if (row.rowKind === 'TOTAL') tr.className = 'exec-report-total';
+            else if (depth < 2) tr.className = 'exec-report-subtotal';
+            columns.forEach(([, key], index) => {
+                const value = row[key];
+                const cell = node(index === depth ? 'th' : 'td');
+                if (index === depth) cell.scope = 'row';
+                if (index >= 4) cell.className = 'exec-number';
+                if (index === depth && branch?.children.length && !term) {
+                    const open = expanded.has(branch.key);
+                    const button = node('button', open ? '−' : '+');
+                    button.type = 'button';
+                    button.dataset.branch = branch.key;
+                    button.setAttribute('aria-label', (open ? 'Collapse ' : 'Expand ') + value);
+                    button.setAttribute('aria-expanded', String(open));
+                    button.addEventListener('click', () => {
+                        if (open) expanded.delete(branch.key); else expanded.add(branch.key);
+                        render();
+                        [...target.querySelectorAll('[data-branch]')].find(el => el.dataset.branch === branch.key)?.focus();
+                    });
+                    cell.append(button, ' ');
+                }
+                cell.append(index < 4 ? (index === depth || index === 3 ? value ?? '' : '')
+                    : value == null ? 'N/A' : key === 'settlementRate' ? percent.format(value) + '%' : number.format(value));
+                tr.append(cell);
+            });
             body.append(tr);
         }
-        if(!body.children.length){const tr=node('tr'),cell=node('td',rows.length?'No matching organizations.':'No verified organizational figures available.');cell.colSpan=10;tr.append(cell);body.append(tr);}
-        table.append(head,body);target.replaceChildren(table);
+        function visibleBranch(branch, ancestorMatches = false) {
+            const include = ancestorMatches || matches(branch.row);
+            const children = branch.children.map(child => visibleBranch(child, include)).filter(Boolean);
+            return include || children.length ? { ...branch, children } : null;
+        }
+        function appendBranches(branches, depth) {
+            for (const branch of sorted(branches)) {
+                appendRow(branch.row, depth, branch);
+                if (term || expanded.has(branch.key)) appendBranches(branch.children, depth + 1);
+            }
+        }
+        const visible = term ? groups.map(branch => visibleBranch(branch)).filter(Boolean) : groups;
+        appendBranches(visible, 0);
+        if (grandTotal && groups.length) appendRow({ ...grandTotal, groupName: 'Grand Total' }, 0);
+        status.textContent = !groups.length ? 'No performance activity for the selected scope and dates.'
+            : !visible.length ? 'No matching organizations. Grand Total covers the selected scope.'
+            : term ? 'Showing search matches. Subtotals and Grand Total cover the selected scope.' : 'Performance analysis loaded.';
+        table.append(head, body);
+        target.replaceChildren(...(groups.length ? [table] : []));
     }
-    search?.addEventListener('input',render);
-    document.getElementById('cco-expand-all')?.addEventListener('click',()=>{rows.forEach(r=>expanded.add(r.entityId));render();});
-    document.getElementById('cco-collapse-all')?.addEventListener('click',()=>{expanded.clear();render();});
-    // Only a separately verified adapter may supply data. No directory requests.
-    root.addEventListener('cco:authorized-rows',event=>{
-        if(root.dataset.enabled!=='true')return;
-        const data=event.detail;
-        if(!Array.isArray(data)||data.length>500||new Set(data.map(r=>r.entityId)).size!==data.length)throw Error('Invalid organizational response');
-        rows=data;expanded.clear();render();
+
+    search.addEventListener('input', render);
+    document.getElementById('cco-expand-all').addEventListener('click', () => {
+        groups.forEach(group => {
+            expanded.add(group.key);
+            group.children.forEach(division => expanded.add(division.key));
+        });
+        render();
     });
-    ['exec-start-date','exec-end-date'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{rows=[];expanded.clear();render();}));
-    // No organizational requests while the trusted reporting adapter is disabled.
-    if (root.dataset.enabled === 'true') render();
+    document.getElementById('cco-collapse-all').addEventListener('click', () => { expanded.clear(); render(); });
+
+    for (const input of [start, end, groupSelect]) {
+        input.addEventListener('change', () => {
+            request.abort();
+            ready = false;
+            target.replaceChildren();
+            status.textContent = 'Filters changed. Choose Apply to load performance data.';
+        });
+    }
+
+    async function load() {
+        const startDate = start.value, endDate = end.value, groupId = groupSelect.value;
+        const query = new URLSearchParams({ startDate, endDate, maxRows: 1000 });
+        if (groupId) query.set('groupId', groupId);
+        root.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch(root.dataset.url + '?' + query, {
+                credentials: 'same-origin', cache: 'no-store', signal: request.signal,
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (response.redirected || response.status === 401 || response.status === 403) {
+                status.textContent = 'Your session or reporting access has changed. Sign in again or contact your administrator.';
+                return;
+            }
+            if (!response.ok || !(response.headers.get('content-type') || '').includes('application/json'))
+                throw new Error('Performance data unavailable.');
+            const result = await response.json();
+            if (result.success !== true || !Array.isArray(result.data))
+                throw new Error('Incomplete performance response.');
+            if (request.signal.aborted) return;
+            buildTree(result.data);
+            ready = true;
+            render();
+        } catch {
+            if (request.signal.aborted) return;
+            status.textContent = 'Unable to load performance data. Check the selected filters and choose Apply to retry.';
+        } finally {
+            root.setAttribute('aria-busy', 'false');
+        }
+    }
+    load();
 })();

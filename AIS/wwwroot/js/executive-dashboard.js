@@ -203,12 +203,20 @@
             });
         $('kpis').replaceChildren(cards);
     }
-    let criticalRows = [], criticalCount = 0;
+    let criticalRows = [], criticalCount = 0, criticalOffset = 0;
+    const criticalPageSize = 100;
+    const pagedCritical = app.dataset.perspective === 'CCO' && app.dataset.view === 'critical-observations';
     function critical(rows, count) {
         const target = $('critical'); if (!target) return; target.replaceChildren();
         const selection = $('critical-risk').value;
-        rows = rows.filter(row => !selection || row.riskName === selection);
-        $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
+        if (!pagedCritical) rows = rows.filter(row => !selection || row.riskName === selection);
+        if (pagedCritical) {
+            const from = rows.length ? criticalOffset + 1 : 0;
+            const to = rows.length ? criticalOffset + rows.length : 0;
+            $('critical-note').textContent = `Showing ${number(from)}–${number(to)} of ${number(count)} observations · ${$('critical-risk').selectedOptions[0].textContent}.`;
+            $('critical-prev').disabled = criticalOffset === 0;
+            $('critical-next').disabled = criticalOffset + rows.length >= count || !rows.length;
+        } else $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = app.dataset.perspective === 'CCO' ? 8 : 7; tr.append(cell); target.append(tr);
         }
@@ -271,6 +279,12 @@
                         actionQuery.set('endDate', end);
                     }
                 }
+                const observationPage = pagedCritical && action === 'GetCriticalItems';
+                if (observationPage) {
+                    actionQuery.set('risk', $('critical-risk').value);
+                    actionQuery.set('offset', criticalOffset);
+                    actionQuery.set('maxRows', criticalPageSize);
+                }
                 const response = await fetch(`${app.dataset.apiUrl}${action}?${actionQuery}`, { signal, credentials: 'same-origin', cache: 'no-store',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                 if (response.status === 401 || response.status === 403 || response.redirected)
@@ -280,7 +294,9 @@
                 if (!response.ok || result.success !== true) throw new Error(result.message || 'Dashboard data is temporarily unavailable.');
                 if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective) && result.dateRangeApplied !== true)
                     throw new Error('Compliance requires a date-aware response for every dataset.');
-                if (['GetKpiSummary', 'GetKpiLifecycle'].includes(action) ? !result.data || typeof result.data !== 'object' || Array.isArray(result.data) : !Array.isArray(result.data))
+                if (observationPage
+                    ? !Array.isArray(result.data?.rows) || !Number.isSafeInteger(result.data.count)
+                    : ['GetKpiSummary', 'GetKpiLifecycle'].includes(action) ? !result.data || typeof result.data !== 'object' || Array.isArray(result.data) : !Array.isArray(result.data))
                     throw new Error('Dashboard response is incomplete. Please refresh.');
                 return [action, result.data];
             }));
@@ -293,7 +309,8 @@
             if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);
             if (datasets.GetSettlementTrend) trend(datasets.GetSettlementTrend);
             if (datasets.GetCriticalItems) {
-                criticalRows = datasets.GetCriticalItems; criticalCount = datasets.GetKpiSummary.criticalItems;
+                criticalRows = pagedCritical ? datasets.GetCriticalItems.rows : datasets.GetCriticalItems;
+                criticalCount = pagedCritical ? datasets.GetCriticalItems.count : datasets.GetKpiSummary.criticalItems;
                 const filter = $('critical-risk'), selected = filter.value;
                 if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
                 if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
@@ -355,6 +372,7 @@
         });
     }
     form.addEventListener('submit', event => {
+        criticalOffset = 0;
         if (!validateDates()) { event.preventDefault(); form.reportValidity(); }
     });
     // Parent changes reset children before asking the server for the next scoped options.
@@ -382,7 +400,19 @@
     app.querySelectorAll('[data-view-navigation] a, .exec-next a').forEach(link => link.addEventListener('click', event => {
         if (!validateDates()) { event.preventDefault(); form.reportValidity(); }
     }));
-    $('critical-risk')?.addEventListener('change', () => critical(criticalRows, criticalCount));
+    $('critical-risk')?.addEventListener('change', () => {
+        if (!pagedCritical) { critical(criticalRows, criticalCount); return; }
+        criticalOffset = 0;
+        refresh();
+    });
+    $('critical-prev')?.addEventListener('click', () => {
+        criticalOffset = Math.max(0, criticalOffset - criticalPageSize);
+        refresh();
+    });
+    $('critical-next')?.addEventListener('click', () => {
+        criticalOffset += criticalPageSize;
+        refresh();
+    });
     updateNavigation();
     if (app.dataset.view !== 'reports') refresh();
 })();

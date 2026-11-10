@@ -128,7 +128,7 @@ foreach(var report in new[]{"C","D"}) {
 foreach(var action in new[]{"GetFunctionPosition","GetOrgFilters","GetOrgPosition","GetOrgPerformance","GetOrgSettlement","GetOrgExceptions"}) {
  foreach(var role in new[]{38,1,3,5}) {
   var (context,session,db)=Context(role);context.Request.Path="/api/CcoCompliance/"+action;Grant(context);
-  var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
+  var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context}};
   var result=(IActionResult)typeof(CcoComplianceController).GetMethod(action).Invoke(c,new object[]{new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"}});
   Check(Status(result)==(role==38||role==1?503:403),"New CCO action role/gate "+action+"/"+role);
  }
@@ -144,7 +144,7 @@ foreach(var denied in new[]{"page","api","revoked","root","snap","duplicate","in
  if(denied=="duplicate")context.Request.QueryString=new QueryString("?groupId=1&groupId=2");
  var f=new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"};
  if(denied=="invalidPath")f.DivisionId=2;if(denied=="invalidDate")f.EndDate="2099-01-01";
- var c=new CcoComplianceController(db,session,new Permissions(),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
+ var c=new CcoComplianceController(db,session,new Permissions(),new Pages(),NullLogger<CcoComplianceController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context}};
  Check(Status(c.GetOrgPosition(f))==(denied=="page"||denied=="api"?403:denied=="revoked"||denied=="unauthenticated"?401:400),"New API rejection "+denied);
 }
 var pathSet=new[]{new CcoOrganizationPath{GroupId=1,DivisionId=2,GmOfficeId=3,EntityId=4,IsVerified=true},new CcoOrganizationPath{GroupId=5,DivisionId=6,GmOfficeId=7,EntityId=8,IsVerified=true}};

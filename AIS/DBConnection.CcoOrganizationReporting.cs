@@ -1,5 +1,7 @@
 using AIS.Models;
+using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,6 +31,62 @@ namespace AIS.Controllers
             ValidateCcoOrganizationContext(scope);
             return groups;
         }
+        internal List<CcoOrganizationRow> GetCcoPerformance(ExecutiveDashboardScope scope, CcoOrganizationFilter filters)
+        {
+            ValidateCcoOrganizationContext(scope);
+            filters.Validate();
+            if (scope.EntityId.HasValue)
+                throw new UnauthorizedAccessException();
+            if (filters.GroupId.HasValue && !GetCcoGroupHeads(scope).Any(g => g.EntityId == filters.GroupId))
+                throw new ArgumentException("Select a verified Group Head.");
+
+            var dates = new ExecutiveDashboardFilterRequest {
+                StartDate = filters.StartDate, EndDate = filters.EndDate
+            }.Validate();
+            using var connection = DatabaseConnection();
+            using var command = connection.CreateCommand();
+            command.BindByName = true;
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = "PKG_EXEC_CCO_PERFORMANCE.P_GET_PERFORMANCE";
+            GuardAgainstDynamicSql(command);
+            command.Parameters.Add("P_START_DATE", OracleDbType.Date).Value = dates.StartDate;
+            command.Parameters.Add("P_END_DATE", OracleDbType.Date).Value = dates.EndDate;
+            command.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = (object)filters.GroupId ?? DBNull.Value;
+            command.Parameters.Add("P_ROW_LIMIT", OracleDbType.Int32).Value = filters.MaxRows + 1;
+
+            command.Parameters.Add("IO_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            var rows = new List<CcoOrganizationRow>();
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                if (rows.Count == filters.MaxRows || ExecutiveCount(reader, "FACT_CONFLICT") != 0)
+                    throw new InvalidOperationException("Performance results exceed the row limit or contain conflicting para facts.");
+                var opening = ExecutiveCount(reader, "OPENING_BALANCE");
+                var added = ExecutiveCount(reader, "PARAS_ADDED");
+                var settled = ExecutiveCount(reader, "SETTLED_PARAS");
+                var outstanding = ExecutiveCount(reader, "OUTSTANDING_PARAS");
+                var total = checked(opening + added);
+                rows.Add(new CcoOrganizationRow {
+                    RowKind = ExecutiveText(reader, "ROW_KIND"),
+                    GroupId = OrgNumber(reader, "GROUP_ID"), GroupName = ExecutiveText(reader, "GROUP_NAME"),
+                    DivisionId = OrgNumber(reader, "DIVISION_ID"), DivisionName = ExecutiveText(reader, "DIVISION_NAME"),
+                    GmOfficeId = OrgNumber(reader, "GM_ID"), GmOfficeName = ExecutiveText(reader, "GM_NAME"),
+                    AuditType = ExecutiveText(reader, "AUDIT_TYPE"),
+                    OpeningCases = opening, ParaAdded = added, TotalCases = total, ParasSettled = settled,
+                    Outstanding = outstanding,
+                    SettlementRate = total == 0 ? null : Math.Round(100m * settled / total, 2),
+                    NetBacklogChange = outstanding - opening,
+                    HighRiskOpen = ExecutiveCount(reader, "HIGH_RISK_OPEN"),
+                    ReconciliationDifference = outstanding - total + settled,
+                    MappingExceptions = ExecutiveCount(reader, "MAPPING_EXCEPTIONS"),
+                    MappingQuality = ExecutiveText(reader, "MAPPING_QUALITY")
+                });
+            }
+            ValidateCcoOrganizationContext(scope);
+            return rows;
+        }
+
         internal List<CcoOrganizationPath> GetCcoOrganizationPaths(ExecutiveDashboardScope scope, CcoOrganizationFilter filters)
         {
             ValidateCcoOrganizationContext(scope);

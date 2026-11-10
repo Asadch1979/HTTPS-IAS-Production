@@ -4,6 +4,7 @@ using AIS.Session;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
@@ -21,8 +22,9 @@ namespace AIS.Controllers
         readonly IPermissionService permissions;
         readonly IPageIdResolver pages;
         readonly ILogger<CcoComplianceController> logger;
-        public CcoComplianceController(DBConnection database,SessionHandler session,IPermissionService permissions,IPageIdResolver pages,ILogger<CcoComplianceController> logger)
-        { this.database=database;this.session=session;this.permissions=permissions;this.pages=pages;this.logger=logger; }
+        readonly IConfiguration configuration;
+        public CcoComplianceController(DBConnection database,SessionHandler session,IPermissionService permissions,IPageIdResolver pages,ILogger<CcoComplianceController> logger,IConfiguration configuration)
+        { this.database=database;this.session=session;this.permissions=permissions;this.pages=pages;this.logger=logger;this.configuration=configuration; }
         [HttpGet] public IActionResult GetFunctionPosition([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetFunctionPosition));
         [HttpGet] public IActionResult GetOrgFilters([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgFilters));
         [HttpGet] public IActionResult GetOrgPosition([FromQuery] CcoOrganizationFilter filters)=>Read(filters,nameof(GetOrgPosition));
@@ -36,7 +38,7 @@ namespace AIS.Controllers
             {
                 if (User.Identity?.IsAuthenticated!=true || user==null || session.IsSessionRevoked(user)) return Error(401,"unauthenticated","An active IAS session is required.");
                 // Reject unknown, duplicate and foreign selectors; never silently drop a root or export request.
-                var allowed=action==nameof(GetFunctionPosition) ? new[]{"startDate","endDate","maxRows"} : new[]{"startDate","endDate","groupBy","groupId","divisionId","gmOfficeId","regionId","entityId","maxRows"};
+                var allowed=action==nameof(GetFunctionPosition) ? new[]{"startDate","endDate","maxRows"} : action==nameof(GetOrgPerformance) ? new[]{"startDate","endDate","groupId","maxRows"} : new[]{"startDate","endDate","groupBy","groupId","divisionId","gmOfficeId","regionId","entityId","maxRows"};
                 if (!ModelState.IsValid || filters==null || Request.Query.Any(q=>q.Value.Count!=1 || !allowed.Contains(q.Key,StringComparer.OrdinalIgnoreCase)))
                     return Error(400,"invalid_request","Provide only supported CCO organization filters.");
                 var scope=database.ResolveExecutiveDashboardScope("CCO",null);
@@ -53,6 +55,12 @@ namespace AIS.Controllers
                 object data;
                 if(action==nameof(GetFunctionPosition))
                     data=CcoReportVisibility.FunctionRows(database.GetCcoFunctionPosition(scope,filters),super);
+                else if (action == nameof(GetOrgPerformance))
+                {
+                    if (!configuration.GetValue<bool>("CcoReporting:PerformanceEnabled"))
+                        throw new CcoOrganizationUnavailableException();
+                    data = database.GetCcoPerformance(scope, filters);
+                }
                 else {
                 var paths=database.GetCcoOrganizationPaths(scope,filters);
                 database.ValidateCcoOrganizationContext(scope);

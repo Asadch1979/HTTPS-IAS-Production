@@ -72,8 +72,20 @@ namespace AIS.Controllers
 
         [HttpGet]
         public IActionResult GetCriticalItems([FromQuery] int? entityId = null, [FromQuery] string auditPeriod = null, [FromQuery] int maxRows = 100,
-            [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
-            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) => database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f));
+            [FromQuery] string risk = null, [FromQuery] int? offset = null, [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
+            => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) =>
+            {
+                if (risk == null && !offset.HasValue)
+                    return (object)database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f);
+                if (scope.DashboardType != "CCO" || f.View != "critical-observations")
+                    throw new ArgumentException("Risk paging is available in CCO Critical Audit Observations.");
+                if (pageIds.ResolvePageId(scope.PermissionPagePath) != 1000302)
+                    throw new UnauthorizedAccessException();
+                return database.GetCcoObservationPage(scope, f, new CcoObservationFilter {
+                    StartDate = f.StartDate, EndDate = f.EndDate, Risk = risk ?? "HIGH",
+                    Offset = offset ?? 0, Limit = maxRows
+                });
+            });
 
 
         // CIA Command Center is not the TOP lifecycle perspective.
