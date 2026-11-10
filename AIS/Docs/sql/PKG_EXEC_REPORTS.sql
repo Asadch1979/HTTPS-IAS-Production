@@ -270,19 +270,20 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                    WHEN (s.close_on >= p.period_start AND
                         s.close_on < p.period_end + 1 AND
                         s.effective_added_on < p.period_end + 1) AND
-                        TRUNC(s.history_close_on) = TRUNC(s.close_on) AND
-                        s.history_close_stage IN (41, 45) THEN
+                        s.history_close_stage IN (41, 44, 45) THEN
                     1
                    ELSE
                     0
                  END AS settled_com,
                  CASE
-                   WHEN (s.close_on >= p.period_start AND
-                        s.close_on < p.period_end + 1 AND
-                        s.effective_added_on < p.period_end + 1) AND
-                        TRUNC(s.history_close_on) = TRUNC(s.close_on) AND
-                        s.history_close_stage IS NOT NULL AND
-                        s.history_close_stage NOT IN (41, 45) THEN
+                   WHEN s.close_on >= P_START_DATE AND
+                        s.close_on < P_END_DATE + 1 AND
+                        s.effective_added_on < P_END_DATE + 1 AND
+                        ((s.history_close_stage NOT IN (41, 44, 45) AND
+                        TRUNC(s.history_close_on) = TRUNC(s.close_on)) OR
+                        (s.audit_type = 'B' AND
+                        s.history_close_stage IS NULL AND
+                        s.history_close_on IS NULL)) THEN
                     1
                    ELSE
                     0
@@ -339,8 +340,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                                   s.reporting_4,
                                   s.reporting_5,
                                   s.reporting_6))
-             AND ((P_REPORT_ID = 'E' AND s.audit_type = 'D') OR
-                 (P_REPORT_ID <> 'E' AND s.audit_type IN ('B', 'D')))),
+             AND ((P_REPORT_ID = 'C' AND s.audit_type = 'B') OR
+                 (P_REPORT_ID = 'E' AND s.audit_type = 'D') OR
+                 (P_REPORT_ID IN ('B', 'D') AND s.audit_type IN ('B', 'D')))),
         facts AS
          (SELECT f.*,
                  (f.settled_paras - f.settled_com - f.settled_aud) AS settled_unknown,
@@ -477,26 +479,25 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                         P_END_DATE + 1 AND
                         s.effective_added_on <
                         P_END_DATE + 1) AND
-                        TRUNC(s.history_close_on) =
-                        TRUNC(s.close_on) AND
                         s.history_close_stage IN
-                        (41, 45) THEN
+                        (41, 44, 45) THEN
                     1
                    ELSE
                     0
                  END AS settled_com,
                  CASE
-                   WHEN (s.close_on >=
-                        P_START_DATE AND
+                   WHEN s.close_on >= P_START_DATE AND
                         s.close_on <
                         P_END_DATE + 1 AND
                         s.effective_added_on <
-                        P_END_DATE + 1) AND
+                        P_END_DATE + 1 AND
+                        ((s.history_close_stage NOT IN
+                        (41, 44, 45) AND
                         TRUNC(s.history_close_on) =
-                        TRUNC(s.close_on) AND
-                        s.history_close_stage IS NOT NULL AND
-                        s.history_close_stage NOT IN
-                        (41, 45) THEN
+                        TRUNC(s.close_on)) OR
+                        (s.audit_type = 'B' AND
+                        s.history_close_stage IS NULL AND
+                        s.history_close_on IS NULL)) THEN
                     1
                    ELSE
                     0
@@ -565,10 +566,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                    s.reporting_4,
                    s.reporting_5,
                    s.reporting_6))
-             AND ((P_REPORT_ID = 'E' AND
+             AND ((P_REPORT_ID = 'C' AND
+                 s.audit_type = 'B') OR
+                 (P_REPORT_ID = 'E' AND
                  s.audit_type = 'D') OR
-                 (P_REPORT_ID <> 'E' AND
-                 s.audit_type IN ('B', 'D')))),
+                 (P_REPORT_ID = 'B' AND
+                 s.audit_type IN ('B', 'D') OR
+                 (P_REPORT_ID = 'D' and
+                 s.entity_type_id in (5, 6))))),
         facts AS
          (SELECT f.*,
                  (f.settled_paras - f.settled_com -
@@ -577,70 +582,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                  f.opening_balance -
                  f.paras_added + f.settled_paras) AS reconciliation_difference
             FROM seed f),
-        -- Report C's GM/Region dimensions must be derived from the auditee's
-        -- approved GM mapping. Never join the raw mapping to para rows: multiple
-        -- mapping records would multiply balances and settlements.
-        report_c_direct_gm AS
-         (SELECT m.entity_id,
-                 CASE
-                   WHEN COUNT(DISTINCT m.gm_office) = 1 THEN
-                    MAX(CASE
-                          WHEN gm.type_id = 21 THEN
-                           m.gm_office
-                        END)
-                 END AS mapped_gm_id,
-                 CASE
-                   WHEN COUNT(DISTINCT m.auditedby) = 1 THEN
-                    MAX(m.auditedby)
-                 END AS mapped_audit_by,
-                 CASE
-                   WHEN COUNT(DISTINCT m.auditedby) > 1 THEN
-                    1
-                   ELSE
-                    0
-                 END AS ambiguous_audit_by
-            FROM t_auditee_entities_maping m
-            JOIN t_auditee_entities gm
-              ON gm.entity_id = m.gm_office
-            join t_auditee_ent_types t
-              on t.autid = m.c_type_id
-             and t.audit_type = 'B'
-           WHERE NVL(gm.active, 'Y') = 'Y'
-           GROUP BY m.entity_id),
-        report_c_auditor_gm AS
-         (
-          -- HO units (audit family B, not Branch/Region/GM/CAU): only
-          -- infer a GM Office by matching AUDIT_BY when it is UNIQUE.
-          -- Ambiguous auditors remain Unassigned GM for correction.
-          SELECT m.auditedby,
-                  CASE
-                    WHEN COUNT(DISTINCT m.entity_id) = 1 THEN
-                     MAX(m.entity_id)
-                  END AS unique_gm_id
-            FROM t_auditee_entities_maping m
-            JOIN t_auditee_entities gm
-              ON gm.entity_id = m.gm_office
-            join t_auditee_ent_types t
-              on t.autid = m.c_type_id
-             and t.audit_type = 'B'
-           WHERE NVL(gm.active, 'Y') = 'Y'
-             AND gm.type_id = 21
-             AND m.auditedby IS NOT NULL
-           GROUP BY m.auditedby),
-        report_c_gm_auditor AS
-         (SELECT m.entity_id,
-                 CASE
-                   WHEN COUNT(DISTINCT m.auditedby) = 1 THEN
-                    MAX(m.auditedby)
-                 END AS audited_by
-            FROM t_auditee_entities_maping m
-            JOIN t_auditee_entities gm
-              ON gm.entity_id = m.entity_id
-            join t_auditee_ent_types t
-              on t.autid = m.c_type_id
-             and t.audit_type = 'B'
-           WHERE NVL(gm.active, 'Y') = 'Y'
-           GROUP BY m.entity_id),
+        -- Report C: GM / Region / Head Office Unit
+        -- GM Office is resolved through V_EXEC_ENTITY_SCOPE
+        -- and carried by V_EXEC_REPORT_SOURCE.
+        -- Do not rejoin raw entity mappings to para records.
+        
         report_c_offices AS
          (SELECT f.*,
                  
@@ -648,44 +594,34 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
                    WHEN f.entity_type_id = 21 THEN
                     f.entity_id
                  
-                   WHEN md.mapped_gm_id IS NOT NULL THEN
-                    md.mapped_gm_id
-                 
                    ELSE
-                    COALESCE(f.gm_office_id,
-                             ag.unique_gm_id)
+                    f.gm_office_id
                  END AS report_c_gm_id,
+                 
                  CASE
                    WHEN f.entity_type_id IN
                         (21, 22, 28) THEN
                     f.entity_id
+                 
                    WHEN f.audit_type = 'B' AND
                         f.entity_type_id NOT IN
                         (6, 21, 22, 28) THEN
                     f.entity_id
+                 
                    WHEN f.entity_type_id = 6 THEN
                     COALESCE(f.region_id,
                              parent_region.entity_id)
+                 
                    ELSE
                     f.region_id
                  END AS report_c_item_id
+          
             FROM facts f
-            LEFT JOIN report_c_direct_gm md
-              ON md.entity_id = f.entity_id
-             AND P_REPORT_ID = 'C'
-            LEFT JOIN report_c_auditor_gm ag
-              ON ag.auditedby =
-                 COALESCE(md.mapped_audit_by,
-                          f.audited_by)
-             AND P_REPORT_ID = 'C'
-            LEFT JOIN report_c_gm_auditor gm_audited
-              ON gm_audited.entity_id =
-                 md.mapped_gm_id
-             AND P_REPORT_ID = 'C'
-            LEFT JOIN t_auditee_entities parent_region
+          
+            left JOIN t_auditee_entities parent_region
               ON parent_region.entity_id =
                  f.reporting_1
-                --AND parent_region.type_id = 22
+             AND parent_region.type_id = 21
              AND P_REPORT_ID = 'C'),
         -- Report E maps the audited entity's unique division to the existing
         -- Group/Division view. Reduce mapping BEFORE joining individual paras.
