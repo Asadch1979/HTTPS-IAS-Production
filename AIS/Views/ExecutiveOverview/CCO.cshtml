@@ -69,7 +69,10 @@
     {
         <p class="exec-note">Activity is measured over the selected period; balances are as of the End Date. Historical balances are estimates.</p>
     }
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : Model.SelectedView.Id == "org-position" ? "Function Wise Position" : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
+    @if (Model.SelectedView.Id != "org-position" && Model.SelectedView.Id != "performance")
+    {
+        <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
+    }
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(!isReport && !pending)">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>

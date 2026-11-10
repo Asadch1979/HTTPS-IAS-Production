@@ -50,7 +50,7 @@ namespace AIS.Services
             "total" => N(r.TotalParas), "settled" => N(r.SettledParas),
             "rate" => P(r.SettlementPercentage), "open" => N(r.OutstandingParas),
             "low" => N(r.LowRisk), "medium" => N(r.MediumRisk),
-            "high" => N(r.HighRisk), "compliance" => N(r.SettledByCompliance),
+            "high" => N(r.HighRisk), "unrated" => N(r.UnratedRisk), "compliance" => N(r.SettledByCompliance),
             "audit" => N(r.SettledByAudit), "unknown" => N(r.SettledByUnknown),
             _ => ""
         };
@@ -129,6 +129,12 @@ namespace AIS.Services
         {
             var rows = data.Rows;
             var columns = hideSettlementSources ? Position.Where(c => c.Key != "compliance" && c.Key != "audit" && c.Key != "unknown").ToArray() : Position;
+            var cco = data.DashboardType == "CCO";
+            if (cco)
+                columns = Position.Take(6).Concat(new[] {
+                    ("High risk", "high"), ("Medium risk", "medium"),
+                    ("Low risk", "low"), ("Unrated risk", "unrated")
+                }).ToArray();
             var html = new StringBuilder();
             // Per-report visual identity. Numbers, rows and PDF structure are unchanged.
             // Colors intentionally match the on-screen report A-E palettes.
@@ -196,7 +202,7 @@ namespace AIS.Services
                 if (total != null) gm.Add(total);
                 AddPosition(html, gm, r => r.RowKind == "TOTAL" ? "Grand total" : r.GroupName, false, true, columns);
                 html.Append("<h2>GM / region and H.O. unit paras position</h2>");
-                AddPosition(html, rows, r => r.ItemName, true);
+                AddPosition(html, rows, r => r.ItemName, true, columns: cco ? columns : Position);
             }
             else if (id == "D")
             {
@@ -226,7 +232,8 @@ namespace AIS.Services
                 else
                     AddFunctionPosition(html, visibleRows);
             }
-            html.Append("<p class='note'>Data note: historical positions use available IAS dates and current organizational mapping; settlement attribution is indicative.</p>");
+            html.Append("<p class='note'>Data note: historical positions use available IAS dates and current organizational mapping")
+                .Append(cco ? "." : "; settlement attribution is indicative.").Append("</p>");
             html.Append("</body></html>");
             return html.ToString();
         }
@@ -244,7 +251,7 @@ namespace AIS.Services
                 var kind = r.RowKind?.ToUpperInvariant();
                 if (group && kind != "TOTAL" && r.GroupName != last)
                 {
-                    html.Append("<tr class='group'><td colspan='13'>")
+                    html.Append("<tr class='group'><td colspan='").Append((columns ?? Position).Length + 1).Append("'>")
                         .Append(H(r.GroupName == "GM Field Offices" || r.GroupName == "Other Field Offices"
                             ? Family(r.GroupName) : r.GroupName))
                         .Append("</td></tr>");

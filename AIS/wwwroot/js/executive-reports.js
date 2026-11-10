@@ -3,6 +3,7 @@
     const root = document.getElementById('exec-reports');
     if (!root) return;
     const app = document.getElementById('executive-dashboard');
+    const cco = root.dataset.perspective === 'CCO';
     const snap=app?.classList.contains('exec-snap') === true;
     const settlementSources=new Set(['settledByCompliance','settledByAudit','settledByUnknown']);
     const $ = id => document.getElementById(`exec-${id}`);
@@ -36,7 +37,7 @@
     const rankingColumns = [column('Rank', 'rankPosition'), column('Region', 'itemName', plain), column('Total paras', 'totalParas'),
         column('Settlement %', 'settlementPercentage', percent), column('Outstanding paras', 'outstandingParas')];
     function table(target, title, columns, rows, grouped = false) {
-        if(snap) columns=columns.filter(col=>!settlementSources.has(col.key));
+        if(snap || cco) columns=columns.filter(col=>!settlementSources.has(col.key));
         const wrap = node('div', null, 'exec-table-wrap exec-report-table-wrap');
         wrap.tabIndex = 0; wrap.setAttribute('role', 'region'); wrap.setAttribute('aria-label', title);
         const table = node('table', null, 'exec-table exec-report-table');
@@ -169,7 +170,11 @@
             table(summary, 'Annual field audit summary', [column('Reporting year', 'yearLabel', plain), column('Total paras settled','settledParas'), column('Settlement %','settlementPercentage',percent), column('Paras added','parasAdded'), column('Paras outstanding','outstandingParas')], rows.map(row => ({...row,yearLabel:year(row)})));
             layout.append(summary); target.append(layout);
         } else if (id === 'B' || id === 'C') {
-            const dynamicPosition = position.filter(col => col.key !== 'unratedRisk' || rows.some(row => (Number(row.unratedRisk)||0) !== 0));
+            const ccoRiskOrder = ['highRisk', 'mediumRisk', 'lowRisk', 'unratedRisk'];
+            const dynamicPosition = cco
+                ? [...position.filter(col => !ccoRiskOrder.includes(col.key) && !settlementSources.has(col.key)),
+                    ...ccoRiskOrder.map(key => position.find(col => col.key === key))]
+                : position.filter(col => col.key !== 'unratedRisk' || rows.some(row => (Number(row.unratedRisk)||0) !== 0));
             if (id === 'C') {
                 const gmRows = rows.filter(row => kind(row) === 'SUBTOTAL')
                     .map(row => ({...row, itemName: groupLabel(row.groupName), rowKind:'DETAIL'}));
@@ -207,7 +212,7 @@
                 table(target, 'Division-wise management audit settlement', [column('Group','groupName',plain), column('Division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], visibleRows);
             }
         }
-        if (!snap) {
+        if (!snap && !cco) {
         const sources = node('details', null, 'exec-data'); sources.open = false;
         sources.append(node('summary', 'IAS Settlement Attribution and Reconciliation'));
         table(sources, 'IAS Settlement Attribution and Reconciliation', [

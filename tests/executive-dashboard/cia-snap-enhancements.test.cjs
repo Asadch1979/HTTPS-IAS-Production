@@ -77,17 +77,17 @@ test('actual para modal never displays another COM_ID or an API denial payload',
  const mismatch=client('risk',{data:{comId:99,html:'OTHER PARA'}});await mismatch.api.viewPara(42);assert.doesNotMatch(mismatch.ids['snap-para-text'].textContent+mismatch.ids['snap-para-text'].innerHTML,/OTHER PARA/);
  const denied=client('risk',{success:false,message:'Denied',data:{comId:42,html:'SECRET'}});await denied.api.viewPara(42);assert.doesNotMatch(denied.ids['snap-para-text'].textContent+denied.ids['snap-para-text'].innerHTML,/SECRET/);
 });
-test('actual report table removes settlement sources only for Snap, including the CSV DOM source',()=>{
+test('actual report table removes settlement sources for Snap and CCO, including the CSV DOM source',()=>{
  const source=read('AIS/wwwroot/js/executive-reports.js');
  const fn=source.slice(source.indexOf('    function table('),source.indexOf('    function bars('));
- for(const snap of [true,false]){
-  const target=new Element(),context={snap,settlementSources:new Set(['settledByCompliance','settledByAudit','settledByUnknown']),
+ for(const [snap,cco] of [[true,false],[false,true],[false,false]]){
+  const target=new Element(),context={snap,cco,settlementSources:new Set(['settledByCompliance','settledByAudit','settledByUnknown']),
    node:(tag,value)=>{const e=new Element(tag);if(value!=null)e.textContent=value;return e;},
    total:()=>false,kind:()=> 'DETAIL',groupLabel:x=>x,target,
    columns:[{label:'Office',key:'itemName',format:String},{label:'Settled by Compliance',key:'settledByCompliance',format:String},{label:'Settled by Audit',key:'settledByAudit',format:String},{label:'Settled by Unknown',key:'settledByUnknown',format:String}],
    rows:[{itemName:'Office A',settledByCompliance:911,settledByAudit:922,settledByUnknown:933}]};
   vm.runInNewContext(fn+'\ntable(target,"Report",columns,rows);',context);
-  if(snap){assert.doesNotMatch(target.textContent,/Settled by|911|922|933/);assert.match(target.textContent,/Office A/);}
+  if(snap || cco){assert.doesNotMatch(target.textContent,/Settled by|911|922|933/);assert.match(target.textContent,/Office A/);}
   else {assert.match(target.textContent,/Settled by Compliance/);assert.match(target.textContent,/933/);}
  }
  assert.match(source,/report-content'\)\.querySelectorAll\('table'\)/);

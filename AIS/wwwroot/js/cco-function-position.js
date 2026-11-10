@@ -47,7 +47,12 @@
             String(a.divisionName || '').localeCompare(String(b.divisionName || ''))
         ).forEach(row => {
             const tr = element('tr');
-            columns.forEach(([, key]) => tr.append(element('td', row[key] == null ? 'N/A' : row[key])));
+            columns.forEach(([, key]) => {
+                let value = row[key] ?? 'N/A';
+                if (row.rowKind === 'TOTAL' && key === 'groupName') value = 'Total';
+                if (row.rowKind === 'TOTAL' && key === 'divisionName') value = '';
+                tr.append(element('td', value));
+            });
             body.append(tr);
         });
         table.append(head, body);

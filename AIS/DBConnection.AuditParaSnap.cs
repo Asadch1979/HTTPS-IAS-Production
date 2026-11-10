@@ -76,7 +76,7 @@ namespace AIS.Controllers
             return result;
         }
         private List<T> ReadSnap<T>(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters,
-            string procedure, Func<OracleDataReader,T> map, int? maxRows = null, int? comId = null)
+            string procedure, Func<OracleDataReader,T> map, int? maxRows = null, int? comId = null, CcoObservationFilter observations = null)
         {
             ValidateDatedDashboardScope(scope, filters);
             var dates = filters.Validate();
@@ -99,6 +99,11 @@ namespace AIS.Controllers
             command.Parameters.Add("P_REPORTING_OFFICE_ID",OracleDbType.Int32).Value = (object)filters.ReportingOfficeId ?? DBNull.Value;
             if (maxRows.HasValue) command.Parameters.Add("P_MAX_ROWS",OracleDbType.Int32).Value = maxRows.Value;
             if (comId.HasValue) command.Parameters.Add("P_COM_ID",OracleDbType.Int32).Value = comId.Value;
+            if (observations != null)
+            {
+                command.Parameters.Add("P_CCO_RISK", OracleDbType.Varchar2).Value = observations.Risk;
+                command.Parameters.Add("P_CCO_OFFSET", OracleDbType.Int32).Value = observations.Offset;
+            }
             command.Parameters.Add("IO_CURSOR",OracleDbType.RefCursor).Direction = ParameterDirection.Output;
             command.Parameters.Add("P_SNAP_DIVISION_CODE",OracleDbType.Varchar2).Value = (object)filters.SnapDivision ?? DBNull.Value;
             if (scope.PermissionPagePath == AuditParaSnapPolicy.PagePath)
@@ -146,8 +151,33 @@ namespace AIS.Controllers
                 QualityCode=ExecutiveText(r,"QUALITY_CODE"),
                 ParasAdded=ExecutiveNullableCount(r,"PARAS_ADDED"), ParasSettled=ExecutiveNullableCount(r,"PARAS_SETTLED")
             });
+        internal object GetCcoObservationPage(ExecutiveDashboardScope scope,
+            ExecutiveDashboardFilterRequest filters, CcoObservationFilter observations)
+        {
+            ValidateCcoOrganizationContext(scope);
+            observations.Validate();
+            long count = 0;
+            var rows = ReadSnap(scope, filters, "PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL", r =>
+            {
+                count = ExecutiveCount(r, "MATCH_COUNT");
+                if (r.IsDBNull(r.GetOrdinal("COM_ID"))) return null;
+                var row = ReadSnapCritical(r);
+                return new ExecutiveCriticalItem {
+                    ComId = row.ComId, EntityId = row.EntityId, EntityName = row.EntityName,
+                    ParaNo = row.ParaNo, GistOfParas = row.GistOfParas,
+                    RiskId = row.RiskName switch { "High" => 1, "Medium" => 2, "Low" => 3, _ => 0 },
+                    RiskName = row.RiskName, AgingDays = row.AgingDays, ComCycle = row.ComCycle,
+                    AuditPeriod = row.AuditPeriod, ParaAddedOn = row.ParaAddedOn,
+                    DaysSinceLastMovement = row.DaysSinceLastMovement
+                };
+            }, observations.Limit, observations: observations);
+            return new { rows = rows.Where(row => row != null).ToList(), count };
+        }
+
         internal List<AuditParaSnapCritical> GetAuditParaSnapCritical(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters, int maxRows)
-            => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",r => new AuditParaSnapCritical
+            => ReadSnap(scope,filters,"PKG_EXEC_DASHBOARD.P_GET_SNAP_CRITICAL",ReadSnapCritical,maxRows);
+
+        private AuditParaSnapCritical ReadSnapCritical(OracleDataReader r) => new AuditParaSnapCritical
             {
                 ComId=ExecutiveCount(r,"COM_ID"),EntityId=OrgNumber(r,"ENTITY_ID"),EntityName=ExecutiveText(r,"ENTITY_NAME"),
                 ParaNo=ExecutiveText(r,"PARA_NO"),GistOfParas=ExecutiveText(r,"GIST_OF_PARAS"),
@@ -155,6 +185,6 @@ namespace AIS.Controllers
                 ComCycle=OrgNumber(r,"COM_CYCLE"),QualityCode=ExecutiveText(r,"QUALITY_CODE"),
                 AuditPeriod=ExecutiveText(r,"AUDIT_PERIOD"), ParaAddedOn=RoleDate(r,"PARA_ADDED_ON"),
                 DaysSinceLastMovement=OrgNumber(r,"DAYS_SINCE_MOVEMENT")
-            },maxRows);
+            };
     }
 }

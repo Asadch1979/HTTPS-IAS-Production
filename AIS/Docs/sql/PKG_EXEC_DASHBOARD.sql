@@ -442,7 +442,9 @@ CREATE OR REPLACE PACKAGE PKG_EXEC_DASHBOARD AS
       IO_CURSOR OUT SYS_REFCURSOR,
       P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
       P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
-      P_COM_ID IN NUMBER DEFAULT NULL);
+      P_COM_ID IN NUMBER DEFAULT NULL,
+      P_CCO_RISK IN VARCHAR2 DEFAULT NULL,
+      P_CCO_OFFSET IN NUMBER DEFAULT 0);
 
   -- Additional read-only cursors for Group, Division, GM and Region views.
   -- P_ROOT_ENTITY_ID must be a server-authorized hierarchy root.
@@ -2066,7 +2068,9 @@ END P_GET_CIA_EXEC_KPIS;
       IO_CURSOR OUT SYS_REFCURSOR,
       P_SNAP_DIVISION_CODE IN VARCHAR2 DEFAULT NULL,
       P_SNAP_AUDITED_BY_ID IN NUMBER DEFAULT NULL,
-      P_COM_ID IN NUMBER DEFAULT NULL) AS
+      P_COM_ID IN NUMBER DEFAULT NULL,
+      P_CCO_RISK IN VARCHAR2 DEFAULT NULL,
+      P_CCO_OFFSET IN NUMBER DEFAULT 0) AS
     V_TYPE VARCHAR2(20) := VALIDATE_REQUEST(P_DASHBOARD_TYPE, P_ENTITY_ID);
     V_FROM DATE;
     V_TO DATE;
@@ -2103,6 +2107,13 @@ END P_GET_CIA_EXEC_KPIS;
     END IF;
     IF P_COM_ID IS NOT NULL AND (P_COM_ID <= 0 OR P_COM_ID <> TRUNC(P_COM_ID)) THEN
       RAISE_APPLICATION_ERROR(-20047,'Invalid para identifier.');
+    END IF;
+    IF P_CCO_OFFSET IS NULL OR P_CCO_OFFSET < 0
+       OR P_CCO_OFFSET <> TRUNC(P_CCO_OFFSET)
+       OR (P_CCO_RISK IS NULL AND P_CCO_OFFSET <> 0)
+       OR (P_CCO_RISK IS NOT NULL AND
+           (V_TYPE <> 'CCO' OR P_CCO_RISK NOT IN ('HIGH','MEDIUM','LOW','UNRATED','ALL'))) THEN
+      RAISE_APPLICATION_ERROR(-20047,'Invalid CCO risk page.');
     END IF;
     OPEN IO_CURSOR FOR
       -- COM_CYCLE comes from the current master record (k.com_cycle).
@@ -2151,7 +2162,7 @@ END P_GET_CIA_EXEC_KPIS;
                 OR P_ENTITY_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
       ),
-      ranked AS
+      candidates AS
       (
         SELECT k.com_id, k.entity_id, e.name AS entity_name, p.audit_period, k.para_added_on,
                p.para_no, SUBSTR(p.gist_of_paras,1,1000) AS gist_of_paras,
@@ -2162,19 +2173,33 @@ END P_GET_CIA_EXEC_KPIS;
                CASE WHEN k.last_movement_on IS NOT NULL
                     THEN TRUNC(P_END_DATE) - TRUNC(k.last_movement_on)
                END AS days_since_movement,
-               ROW_NUMBER() OVER(ORDER BY CASE WHEN k.risk_id = 1 THEN 0 ELSE 1 END,
-                                          k.snap_age DESC NULLS LAST,k.com_id) rn
+               CASE WHEN k.risk_id = 1 THEN 0 ELSE 1 END risk_order,
+               ROW_NUMBER() OVER(PARTITION BY k.com_id
+                   ORDER BY k.snap_age DESC NULLS LAST, k.entity_id, k.risk_id, p.audit_period, p.para_no) com_rank
           FROM scoped k
           LEFT JOIN t_auditee_entities e ON e.entity_id = k.entity_id
           LEFT JOIN ais_t_au_post_compliance p ON p.com_id = k.com_id
          WHERE k.snap_open = 1
-           AND k.risk_id = 1 -- ZTBL Critical = High-risk open
+           AND (NVL(P_CCO_RISK,'HIGH') = 'HIGH' AND k.risk_id = 1
+                OR P_CCO_RISK = 'MEDIUM' AND k.risk_id = 2
+                OR P_CCO_RISK = 'LOW' AND k.risk_id = 3
+                OR P_CCO_RISK = 'UNRATED' AND (k.risk_id IS NULL OR k.risk_id NOT IN (1,2,3))
+                OR P_CCO_RISK = 'ALL')
+      ),
+      ranked AS
+      (
+        SELECT candidates.*, ROW_NUMBER() OVER(ORDER BY risk_order, aging_days DESC NULLS LAST, com_id) rn
+          FROM candidates
+         WHERE P_CCO_RISK IS NULL OR com_rank = 1
       )
-      SELECT com_id, entity_id, entity_name, para_no, gist_of_paras,
-             risk_name, aging_days, com_cycle,
+      SELECT p.com_id, p.entity_id, p.entity_name, p.para_no, p.gist_of_paras,
+             p.risk_name, p.aging_days, p.com_cycle,
              CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,
-             days_since_movement, audit_period, para_added_on
-        FROM ranked WHERE rn <= P_MAX_ROWS ORDER BY rn;
+             p.days_since_movement, p.audit_period, p.para_added_on, c.match_count
+        FROM (SELECT COUNT(*) match_count FROM ranked) c
+        LEFT JOIN ranked p ON p.rn > P_CCO_OFFSET AND p.rn <= P_CCO_OFFSET + P_MAX_ROWS
+       WHERE p.rn IS NOT NULL OR P_CCO_RISK IS NOT NULL
+       ORDER BY p.rn;
   END P_GET_SNAP_CRITICAL;
 
   -- These calls are read-only. The application must derive the root
