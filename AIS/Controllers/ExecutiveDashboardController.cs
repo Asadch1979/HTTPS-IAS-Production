@@ -75,10 +75,15 @@ namespace AIS.Controllers
             [FromQuery] string risk = null, [FromQuery] int? offset = null, [FromQuery] string dashboardType = null, [FromQuery] int? groupRootId = null, [FromQuery] ExecutiveDashboardFilterRequest filters = null)
             => ExecuteSummary(entityId, auditPeriod, dashboardType, groupRootId, filters, (scope, f) =>
             {
-                if (risk == null && !offset.HasValue)
+                var pagingRequested = Request.Query.ContainsKey("risk") || Request.Query.ContainsKey("offset");
+                if (!pagingRequested && risk == null && !offset.HasValue)
                     return (object)database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f);
                 if (scope.DashboardType != "CCO" || f.View != "critical-observations")
                     throw new ArgumentException("Risk paging is available in CCO Critical Audit Observations.");
+                foreach (var key in new[] { "risk", "offset", "maxRows" })
+                    if (Request.Query.TryGetValue(key, out var values) &&
+                        (values.Count != 1 || string.IsNullOrWhiteSpace(values[0])))
+                        throw new ArgumentException("Provide a single value for each observation filter.");
                 if (pageIds.ResolvePageId(scope.PermissionPagePath) != 1000302)
                     throw new UnauthorizedAccessException();
                 return database.GetCcoObservationPage(scope, f, new CcoObservationFilter {

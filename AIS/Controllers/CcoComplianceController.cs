@@ -38,8 +38,15 @@ namespace AIS.Controllers
             {
                 if (User.Identity?.IsAuthenticated!=true || user==null || session.IsSessionRevoked(user)) return Error(401,"unauthenticated","An active IAS session is required.");
                 // Reject unknown, duplicate and foreign selectors; never silently drop a root or export request.
-                var allowed=action==nameof(GetFunctionPosition) ? new[]{"startDate","endDate","maxRows"} : action==nameof(GetOrgPerformance) ? new[]{"startDate","endDate","groupId","maxRows"} : new[]{"startDate","endDate","groupBy","groupId","divisionId","gmOfficeId","regionId","entityId","maxRows"};
-                if (!ModelState.IsValid || filters==null || Request.Query.Any(q=>q.Value.Count!=1 || !allowed.Contains(q.Key,StringComparer.OrdinalIgnoreCase)))
+                var allowed = action switch
+                {
+                    nameof(GetFunctionPosition) => new[] { "startDate", "endDate", "maxRows" },
+                    nameof(GetOrgPerformance) => new[] { "startDate", "endDate", "groupId", "maxRows" },
+                    _ => new[] { "startDate", "endDate", "groupBy", "groupId", "divisionId", "gmOfficeId", "regionId", "entityId", "maxRows" }
+                };
+                if (!ModelState.IsValid || filters == null || Request.Query.Any(q =>
+                    q.Value.Count != 1 || !allowed.Contains(q.Key, StringComparer.OrdinalIgnoreCase) ||
+                    (action == nameof(GetOrgPerformance) && string.IsNullOrWhiteSpace(q.Value[0]))))
                     return Error(400,"invalid_request","Provide only supported CCO organization filters.");
                 var scope=database.ResolveExecutiveDashboardScope("CCO",null);
                 database.ValidateCcoOrganizationContext(scope);
