@@ -1,10 +1,13 @@
--- Execute as the reporting owner. The named runtime is a dedicated service account.
+-- Deploy under the existing IAS reporting schema and execute through the existing IAS Oracle connection.
+-- The application enforces CCO/Super User role, page and exact API grants; this package
+-- independently checks the same active IAS session and assigned context before reading.
 CREATE OR REPLACE PACKAGE PKG_EXEC_CCO_PERFORMANCE AUTHID DEFINER AS
   PROCEDURE P_GET_PERFORMANCE(
     P_USER_ID IN NUMBER,
     P_CONTEXT_ID IN NUMBER,
     P_ROLE_ID IN NUMBER,
     P_POSTING_ID IN NUMBER,
+    P_SESSION_ID IN VARCHAR2,
     P_START_DATE IN DATE,
     P_END_DATE IN DATE,
     P_GROUP_ID IN NUMBER,
@@ -19,6 +22,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_CCO_PERFORMANCE AS
     P_CONTEXT_ID IN NUMBER,
     P_ROLE_ID IN NUMBER,
     P_POSTING_ID IN NUMBER,
+    P_SESSION_ID IN VARCHAR2,
     P_START_DATE IN DATE,
     P_END_DATE IN DATE,
     P_GROUP_ID IN NUMBER,
@@ -27,11 +31,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_CCO_PERFORMANCE AS
     V_END_EXCLUSIVE DATE;
     V_MATCHES NUMBER;
   BEGIN
-    -- SESSION_USER is the database-authenticated principal, including in definer code.
-    -- Never use a caller-set client identifier as proof of database identity.
-    IF NVL(SYS_CONTEXT('USERENV', 'SESSION_USER'), '#') <> 'IAS_CCO_PERF_RUNTIME'
-       OR SYS_CONTEXT('USERENV', 'PROXY_USER') IS NOT NULL
-       OR P_USER_ID IS NULL OR P_CONTEXT_ID IS NULL
+    -- Identity and selectors come from the authenticated IAS server context, not HTTP input.
+    -- Do not trust the role/context arguments alone: require an active matching IAS DB session.
+    IF P_USER_ID IS NULL OR P_CONTEXT_ID IS NULL OR P_SESSION_ID IS NULL
+       OR TRIM(P_SESSION_ID) IS NULL
        OR P_ROLE_ID IS NULL OR P_ROLE_ID NOT IN (1, 38) THEN
       RAISE_APPLICATION_ERROR(-20811, 'CCO performance context is not authorized');
     END IF;
@@ -44,7 +47,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_CCO_PERFORMANCE AS
        AND (a.ENTITY_ID = P_POSTING_ID OR (a.ENTITY_ID IS NULL AND P_POSTING_ID IS NULL))
        AND a.IS_ACTIVE = 'Y'
        AND (a.EFFECTIVE_FROM IS NULL OR a.EFFECTIVE_FROM <= TRUNC(SYSDATE))
-       AND (a.EFFECTIVE_TO IS NULL OR a.EFFECTIVE_TO >= TRUNC(SYSDATE));
+       AND (a.EFFECTIVE_TO IS NULL OR a.EFFECTIVE_TO >= TRUNC(SYSDATE))
+       AND EXISTS (
+         SELECT 1 FROM T_USER_SESSION s
+         JOIN T_USER u ON u.PPNO = s.USER_PP_NUMBER AND u.USERID = a.USER_ID
+          WHERE s.SESSION_ID = P_SESSION_ID
+            AND s.SESSION_ACTIVE = 'Y' AND s.LOGGED_OUT_DATE IS NULL
+            AND s.ROLE_ID = P_ROLE_ID AND s.USER_CONTEXT_ID = P_CONTEXT_ID
+            AND (s.ENTITY_ID = P_POSTING_ID OR (s.ENTITY_ID IS NULL AND P_POSTING_ID IS NULL))
+            AND u.ISACTIVE = 'Y'
+       );
 
     IF V_MATCHES <> 1 THEN
       RAISE_APPLICATION_ERROR(-20811, 'CCO performance context is not authorized');
