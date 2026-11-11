@@ -96,8 +96,8 @@ namespace AIS.Models
             {
                 // At a Glance replaces RLM's former five-card and generic Audit Para Position views.
                 views.RemoveAll(v => v.Id == "position" || v.Id == "risk");
-                views.Insert(0, View("regional", "Regional Audit Pulse", "_RegionalPulse", "Current branch risk and follow-up priorities within your reporting descendants.",
-                    new[] { "openParas", "highRiskParas", "over1YearParas", "over3CycleParas" }, new[] { "risk", "aging", "cycle", "trend" }));
+                // GM-only Regional Audit Pulse is embedded into RLM At a Glance
+                // after verified root resolution, never exposed as a separate tab.
             }
             if (perspective == "CCO") return CcoDashboardPresentation.Definitions(views.Single(v => v.Id == "reports"));
             return views;
