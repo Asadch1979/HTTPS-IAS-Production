@@ -35,10 +35,10 @@ namespace AIS.Models
             var glanceKpis = perspective switch
             {
                 "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "settlementRatio" },
+                "GROUP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
                 "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio" },
                 "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas" },
-                "RLM" => new[] { "openingCases", "paraAdded", "settledTotal", "openParas", "settlementRatio" },
+                "RLM" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
@@ -54,7 +54,7 @@ namespace AIS.Models
             };
             var views = new List<ExecutiveDashboardViewDefinition>
             {
-                View("glance", "At a Glance", "_Glance", "Executive position in the authorized scope.", glanceKpis, perspective == "RLM" ? new[] { "risk" } : new[] { "trend", priority }),
+                View("glance", "At a Glance", "_Glance", "Executive position in the authorized scope.", glanceKpis, perspective == "RLM" ? Array.Empty<string>() : new[] { "trend", priority }),
                 View("position", "Audit Para Position", "_AuditParaPosition", "Current open position and risk mix. Historical opening and additions will follow in the reporting phase.", new[] { "totalCases", "openParas", "settledTotal", "highRiskParas" }, new[] { "risk" }),
                 View("settlement", "Settlement & Performance", "_SettlementPerformance", "Existing monthly settlements and settlement ratio. Settlement-source and regional comparisons will follow in the reporting phase.", new[] { "settledMtd", "settlementMtdRate" }, perspective == "CCO" ? new[] { "trend", "cycle" } : new[] { "trend" }),
                 View("risk", "High Risk", "_Risk", "High-risk observations in the authorized scope.", new[] { "highRiskParas" }, new[] { "critical" }),
@@ -85,23 +85,20 @@ namespace AIS.Models
                 // Management position is the canonical Group tab; the generic position tab duplicates it.
                 views.RemoveAll(v => v.Id == "position");
                 views.Single(v => v.Id == "reports").Title = "CCM Reports";
-                // GROUP High Risk displays a single high-risk KPI plus the approved High-risk observation register.
-                var highRisk = views.Single(v => v.Id == "risk");
-                highRisk.Title = "High Risk";
-                highRisk.Kpis = new[] { "highRiskParas" };
-                // Critical observations belong on High Risk, not the Aging & Compliance tab.
-                var aging = views.Single(v => v.Id == "aging");
-                aging.Kpis = new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas" };
-                aging.Sections = new[] { "aging", "cycle" };
+                // The Audit Para’s tab owns High-Risk detail; no duplicate High Risk tab.
+                views.RemoveAll(v => v.Id == "risk");
             }
             if (perspective == "GROUP")
                 views.Insert(0, View("management", "Audit Para Position", "_ManagementAudit",
-                    "Current management para position, subordinate unit comparisons and bounded follow-up priorities.",
-                    new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas" },
-                    new[] { "risk", "trend" }));
+                    "Nine dated lifecycle indicators for the Group reporting portfolio, followed by authorized organizational comparisons.",
+                    glanceKpis, Array.Empty<string>()));
             if (perspective == "RLM")
+            {
+                // At a Glance replaces RLM's former five-card and generic Audit Para Position views.
+                views.RemoveAll(v => v.Id == "position" || v.Id == "risk");
                 views.Insert(0, View("regional", "Regional Audit Pulse", "_RegionalPulse", "Current branch risk and follow-up priorities within your reporting descendants.",
                     new[] { "openParas", "highRiskParas", "over1YearParas", "over3CycleParas" }, new[] { "risk", "aging", "cycle", "trend" }));
+            }
             if (perspective == "CCO") return CcoDashboardPresentation.Definitions(views.Single(v => v.Id == "reports"));
             return views;
         }

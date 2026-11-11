@@ -28,9 +28,12 @@ test('Management and regional approved layouts stay in their respective authoriz
     const role = read('Views/ExecutiveOverview/_RoleReporting.cshtml');
     assert.match(read('Views/ExecutiveOverview/GROUP.cshtml'),/Management Audit Dashboard/);
     assert.doesNotMatch(management,/mgmt-hero/);
-    assert.match(management,/data-mgmt-ring="settlement"/);
-    assert.match(management,/data-mgmt-ring="risk"/);
-    assert.match(management,/data-mgmt-ring="aging"/);
+    // The Group scorecard now uses TOP's nine-indicator lifecycle design;
+    // three old gauge rings are deliberately retired to avoid duplicate metrics.
+    assert.match(management,/<partial name="_Sections" model="Model" \/>/);
+    assert.doesNotMatch(management,/data-mgmt-ring=/);
+    assert.match(read('Views/ExecutiveOverview/_Sections.cshtml'),/managementNine/);
+    assert.match(read('wwwroot/css/executive-dashboard-parents.css'),/exec\.exec-management \.exec-lifecycle-kpis/);
     assert.match(management,/<partial name="_RoleReporting" model="Model" \/>/);
     assert.doesNotMatch(management,/Oracle activation pending|mgmt-pending-bars/);
     assert.match(read('Views/ExecutiveOverview/RLM.cshtml'),/Regional Audit Pulse/);
