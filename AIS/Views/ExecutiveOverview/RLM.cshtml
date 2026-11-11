@@ -10,7 +10,7 @@
 @if (Model.ComparisonEntities.Any()) { <link rel="stylesheet" href="~/css/executive-entity-comparison.css" asp-append-version="true" /> }
 @* RLM retains the approved dark Design 3 on ALL analysis tabs. *@
 <link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" />
-@if (Model.SelectedView.Id == "management" || Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
+@if (Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
 <link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard-parents.css" asp-append-version="true" />
     @if (Model.IsSuperUser)
@@ -25,27 +25,15 @@
             <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
         </nav>
     }
-<section class="org exec exec-regional @(Model.SelectedView.Id == "management" ? "exec-management" : "")" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
+<section class="org exec exec-regional" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
     @if (Model.SelectedView.Id == "regional")
     {
     <div class="regional-hero">
         <div><span class="regional-eyebrow"><span class="regional-live-dot" aria-hidden="true"></span> REGIONAL AUDIT INTELLIGENCE</span>
             <h1>Regional Audit Pulse</h1>
-            <p>@Model.ScopeLabel · Authorized reporting descendants only</p></div>
+            <p>@Model.ScopeLabel</p></div>
         <div class="regional-hero-meta"><span>RISK &amp; COMPLIANCE</span><strong>Branch oversight</strong>
-            <small>Year-to-date activity · position at yesterday</small></div>
-    </div>
-    }
-    else if (Model.SelectedView.Id == "management")
-    {
-    <div class="mgmt-hero">
-        <div class="mgmt-hero-label"><span class="mgmt-symbol" aria-hidden="true">ZTBL</span>
-            <div><span class="mgmt-eyebrow">MANAGEMENT AUDIT · EXECUTIVE INTELLIGENCE</span>
-                <h1>Management Audit Dashboard</h1>
-                <p>Accountability, risk exposure and follow-up across your authorized Group/Division hierarchy.</p></div>
-        </div>
-        <div class="mgmt-hero-scope"><strong>AUTHORIZED MANAGEMENT SCOPE</strong>
-            <span>@Model.ScopeLabel</span><small>Year-to-date activity · position at yesterday</small></div>
+</div>
     </div>
     }
     else
@@ -117,8 +105,7 @@
     else
     {
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
-        @if (Model.SelectedView.Id == "management") { <script src="~/js/executive-role-visuals.js" asp-append-version="true"></script> }
         @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
-        @if (Model.SelectedView.Id == "management" || Model.SelectedView.Id == "regional") { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
+        @if (Model.SelectedView.Id == "regional") { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
     }
 }
