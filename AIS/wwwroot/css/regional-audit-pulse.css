@@ -69,7 +69,7 @@
 .exec.exec-regional .exec-entity-tile[data-risk=high]{background:#492431;border-color:#bd5867}
 .exec.exec-regional .exec-entity-tile[data-risk=medium]{background:#4a3524;border-color:#b68a4b}
 .exec.exec-regional .exec-entity-tile[data-risk=low]{background:#153a3c;border-color:#4e978f}
-.exec.exec-regional .exec-entity-tile[data-risk=unrated],.exec.exec-regional .exec-entity-tile[data-risk=none]{background:#263247;border-color:#67758e}
+.exec.exec-regional .exec-entity-tile[data-risk=unknown],.exec.exec-regional .exec-entity-tile[data-risk=none]{background:#263247;border-color:#67758e}
 .exec.exec-regional [data-entity-comparison] .exec-entity-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
 .exec.exec-regional [data-entity-comparison] .exec-entity-tile{min-height:136px}
 .exec.exec-regional [data-entity-comparison] .exec-entity-tile h3{font-size:.86rem}
@@ -85,8 +85,6 @@
 .exec.exec-regional .role-risk-medium { background:#c98f42; }
 .exec.exec-regional .role-heatmap-legend .role-risk-low,
 .exec.exec-regional .role-risk-low { background:#22897d; }
-.exec.exec-regional .role-heatmap-legend .role-risk-unrated,
-.exec.exec-regional .role-risk-unrated { background:#73859c; }
 .exec.exec-regional .regional-heat-tile { min-height:190px; }
 .exec.exec-regional .regional-heat-count { font-size:1.26rem; }
 .exec.exec-regional .regional-heat-total-label { color:#b5cbe0; }
