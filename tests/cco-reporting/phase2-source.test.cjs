@@ -24,15 +24,21 @@ test('only the Performance adapter has a bound reader and a staging gate',()=>{
  assert.match(read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'),/GetValue<bool>\("CcoReporting:PerformanceEnabled"\)/);
 });
 
-test('Performance Oracle contract restricts runtime, validates selected context and separates reporting populations', () => {
+test('Performance Oracle contract uses existing IAS DB login, validates live session and separates populations', () => {
  const sql=read('AIS/Docs/sql/PKG_EXEC_CCO_PERFORMANCE.sql');
  const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
  assert.match(sql,/AUTHID DEFINER/);
- assert.match(sql,/SYS_CONTEXT\('USERENV', 'SESSION_USER'\)[^\n]*'IAS_CCO_PERF_RUNTIME'/);
- assert.match(sql,/SYS_CONTEXT\('USERENV', 'PROXY_USER'\) IS NOT NULL/);
- for (const key of ['USER_ID', 'CONTEXT_ID', 'ROLE_ID', 'POSTING_ID'])
+ assert.doesNotMatch(sql,/IAS_CCO_PERF_RUNTIME|SESSION_USER|PROXY_USER/);
+ assert.doesNotMatch(adapter,/GetConnectionString\(|new OracleConnection\(|IAS_CCO_PERF_RUNTIME/);
+ assert.match(adapter,/using var connection = DatabaseConnection\(\)/);
+ assert.match(sql,/FROM T_USER_SESSION s/);
+ assert.match(sql,/s\.SESSION_ID = P_SESSION_ID/);
+ assert.match(sql,/s\.SESSION_ACTIVE = 'Y' AND s\.LOGGED_OUT_DATE IS NULL/);
+ for (const key of ['USER_ID', 'CONTEXT_ID', 'ROLE_ID', 'POSTING_ID', 'SESSION_ID'])
   assert.match(adapter,new RegExp('command\\.Parameters\\.Add\\("P_'+key+'"'));
+ assert.match(adapter,/OracleDbType\.Varchar2\)\.Value = scope\.SessionId/);
  assert.ok(sql.indexOf('FROM T_USER_CONTEXT_ASSIGNMENT') < sql.indexOf('OPEN IO_CURSOR'));
+ assert.ok(sql.indexOf('FROM T_USER_SESSION') < sql.indexOf('OPEN IO_CURSOR'));
  assert.match(sql,/v_exec_report_source\s+WHERE audit_type IN \('B','D'\)/i);
  assert.match(sql,/V_IAS_ENTITY_REPORTING_IDS_Group_reports/);
  assert.match(sql,/WHEN s.audit_type = 'D' THEN s.entity_id/);

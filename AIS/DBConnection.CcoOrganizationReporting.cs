@@ -1,6 +1,5 @@
 using AIS.Models;
 using Oracle.ManagedDataAccess.Client;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Data;
 using System.Collections.Generic;
@@ -44,18 +43,11 @@ namespace AIS.Controllers
             var dates = new ExecutiveDashboardFilterRequest {
                 StartDate = filters.StartDate, EndDate = filters.EndDate
             }.Validate();
-            // This credential has only CREATE SESSION and EXECUTE on the performance package.
-            // Never fall back to the general IAS reporting connection.
-            var connectionString = _configuration.GetConnectionString("CcoPerformance");
-            if (string.IsNullOrWhiteSpace(connectionString))
-                throw new CcoOrganizationUnavailableException();
-            var connectionSettings = new OracleConnectionStringBuilder(connectionString);
-            if (!string.Equals(connectionSettings.UserID, "IAS_CCO_PERF_RUNTIME", StringComparison.OrdinalIgnoreCase))
-                throw new CcoOrganizationUnavailableException();
-
+            // Reuse the same IAS Oracle connection as the existing CCO reporting tabs.
+            // Session, role, page and exact API permission gates are enforced by the controller;
+            // the package independently verifies the active IAS session and context assignment.
             ValidateCcoOrganizationContext(scope);
-            using var connection = new OracleConnection(connectionString);
-            connection.Open();
+            using var connection = DatabaseConnection();
             using var command = connection.CreateCommand();
             command.BindByName = true;
             command.CommandType = CommandType.StoredProcedure;
@@ -65,6 +57,7 @@ namespace AIS.Controllers
             command.Parameters.Add("P_CONTEXT_ID", OracleDbType.Int32).Value = scope.ContextAssignmentId.Value;
             command.Parameters.Add("P_ROLE_ID", OracleDbType.Int32).Value = scope.RoleId;
             command.Parameters.Add("P_POSTING_ID", OracleDbType.Int32).Value = (object)scope.SessionEntityId ?? DBNull.Value;
+            command.Parameters.Add("P_SESSION_ID", OracleDbType.Varchar2).Value = scope.SessionId;
             command.Parameters.Add("P_START_DATE", OracleDbType.Date).Value = dates.StartDate;
             command.Parameters.Add("P_END_DATE", OracleDbType.Date).Value = dates.EndDate;
             command.Parameters.Add("P_GROUP_ID", OracleDbType.Int32).Value = (object)filters.GroupId ?? DBNull.Value;
