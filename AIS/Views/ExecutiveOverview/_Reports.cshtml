@@ -2,14 +2,14 @@
 @{
     var needsGroup = Model.DashboardType == "GROUP" && !Model.GroupRootId.HasValue;
 }
-<section id="exec-reports" data-api-url="@Url.Content(Model.IsAuditParaSnap ? "~/api/AuditParaSnap/" : "~/api/ExecutiveReports/")" data-perspective="@Model.DashboardType" data-api-view="@(Model.DashboardType == "CCO" ? "reports" : null)" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" aria-label="Executive reports">
+<section id="exec-reports" data-api-url="@Url.Content(Model.IsAuditParaSnap ? "~/api/AuditParaSnap/" : "~/api/ExecutiveReports/")" data-perspective="@Model.DashboardType" data-api-view="@(Model.DashboardType == "CCO" ? "reports" : null)" data-group-root="@Model.GroupRootId" data-needs-group="@(needsGroup ? "true" : "false")" data-verified-super-user="@(Model.IsSuperUser ? "true" : "false")" aria-label="Executive reports">
     @if (Model.SelectedView.Reports.Length == 0)
     {
         <p class="exec-empty">Executive reports are not yet supported for Reporting Line Management.</p>
     }
     else
     {
-        <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report" hidden="@(Model.DashboardType == "CCO")">
+        <nav class="exec-navigation exec-report-selector" aria-label="Choose an executive report" hidden="@(Model.DashboardType == "CCO" || (Model.DashboardType == "GROUP" && Model.SelectedView.Reports.Length == 1))">
             @foreach (var report in Model.SelectedView.Reports)
             {
                 var title = Model.DashboardType == "CCO" ? AIS.Models.CcoDashboardPresentation.ReportTitle(report) : AIS.Models.ExecutiveDashboardViews.ReportTitle(report);
@@ -22,7 +22,7 @@
         }
         <article class="exec-panel exec-report-panel" id="exec-report-panel" hidden>
             <div class="exec-report-heading">
-                <div>
+                <div hidden="@(Model.DashboardType == "GROUP")">
                     <h2 id="exec-report-title"></h2>
                     <p class="exec-note" id="exec-report-period"></p>
                 </div>
