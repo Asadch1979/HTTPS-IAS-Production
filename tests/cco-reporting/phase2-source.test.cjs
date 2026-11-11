@@ -5,48 +5,26 @@ const baseline=p=>cp.execFileSync('git',['show','d3f2d144490d3744e766358c7b8beb1
 test('Phase 2 preserves existing APIs, permissions, report client, other parents and Oracle calculations',()=>{
  for(const p of ['AIS/Controllers/ExecutiveDashboardController.cs','AIS/Controllers/ExecutiveReportsController.cs','AIS/Controllers/AuditParaSnapController.cs','AIS/Models/ExecutiveDashboardFilters.cs','AIS/Models/ComplianceDashboardPolicy.cs',...['TOP','CIA','GROUP','RLM','AuditParaSnap'].map(v=>'AIS/Views/ExecutiveOverview/'+v+'.cshtml'),...['PKG_EXEC_DASHBOARD.sql','V_EXEC_KPI_LIFECYCLE.sql','executive_dashboard_permissions.sql'].map(v=>'AIS/Docs/sql/'+v)])assert.equal(read(p),baseline(p),p);
 });
-test('only the Performance adapter has a bound reader and a staging gate',()=>{
- const partial=read('AIS/Views/ExecutiveOverview/_CcoCompliance.cshtml');
- assert.ok(partial.indexOf('name="_Sections"')<partial.indexOf('id="cco-summary"'),'Main KPI cards precede supplementary cycle cards');
+test('Audit Performance code is removed and remaining organizational endpoints stay fail-closed',()=>{
  const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
- const dormant=adapter.slice(adapter.indexOf('internal List<CcoOrganizationPath> GetCcoOrganizationPaths'));
- assert.equal((dormant.match(/throw new CcoOrganizationUnavailableException/g)||[]).length,2);
- assert.doesNotMatch(dormant,/DatabaseConnection\(|CreateCommand\(|GetValue<bool>|ConnectionString/);
- assert.match(adapter,/PKG_EXEC_CCO_PERFORMANCE\.P_GET_PERFORMANCE/);
- assert.match(adapter,/command\.BindByName = true/);
- assert.match(read('AIS/Controllers/CcoComplianceController.cs'),/!configuration\.GetValue<bool>\("CcoReporting:PerformanceEnabled"\)/);
+ const controller=read('AIS/Controllers/CcoComplianceController.cs');
+ const definition=read('AIS/Models/CcoDashboardPresentation.cs');
+ const page=read('AIS/Views/ExecutiveOverview/CCO.cshtml');
+ assert.ok(!definition.includes('View("performance"'));
+ assert.match(definition,/"performance" => "overview"/);
+ assert.doesNotMatch(page,/cco-organizations\.js|Audit Performance Analysis/);
+ assert.doesNotMatch(controller,/GetOrgPerformance|CcoReporting:PerformanceEnabled/);
+ assert.doesNotMatch(adapter,/GetCcoPerformance|PKG_EXEC_CCO_PERFORMANCE/);
+ assert.equal((adapter.match(/throw new CcoOrganizationUnavailableException/g)||[]).length,2);
+ for(const path of [
+   'AIS/Docs/sql/PKG_EXEC_CCO_PERFORMANCE.sql',
+   'AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml',
+   'AIS/wwwroot/js/cco-organizations.js'
+ ]) assert.equal(fs.existsSync(path),false,path);
  const permissions=JSON.parse(read('AIS/Docs/sql/cco-review/permissions.review.json'));
- assert.equal(permissions.apiIsActive,'N');assert.equal(permissions.roleGrantIsActive,'N');assert.deepEqual(permissions.roles,[38,1]);assert.deepEqual(permissions.exports,[]);
- // The retired Oracle package is not an alternative or fallback path.
- assert.equal(fs.existsSync('AIS/Docs/sql/PKG_CCO_REPORTING.sql'),false);
- assert.equal(fs.existsSync('AIS/Docs/sql/PKG_CCO_FUNCTION_POSITION.sql'),false);
- assert.doesNotMatch(adapter,/PKG_CCO_SCOPE|PKG_CCO_REPORTING|PKG_CCO_FUNCTION_POSITION/);
- assert.match(read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'),/GetValue<bool>\("CcoReporting:PerformanceEnabled"\)/);
-});
-
-test('Performance Oracle contract uses existing IAS DB login, validates live session and separates populations', () => {
- const sql=read('AIS/Docs/sql/PKG_EXEC_CCO_PERFORMANCE.sql');
- const adapter=read('AIS/DBConnection.CcoOrganizationReporting.cs');
- assert.match(sql,/AUTHID DEFINER/);
- assert.doesNotMatch(sql,/IAS_CCO_PERF_RUNTIME|SESSION_USER|PROXY_USER/);
- assert.doesNotMatch(adapter,/GetConnectionString\(|new OracleConnection\(|IAS_CCO_PERF_RUNTIME/);
- assert.match(adapter,/using var connection = DatabaseConnection\(\)/);
- assert.match(sql,/FROM T_USER_SESSION s/);
- assert.match(sql,/s\.SESSION_ID = P_SESSION_ID/);
- assert.match(sql,/s\.SESSION_ACTIVE = 'Y' AND s\.LOGGED_OUT_DATE IS NULL/);
- for (const key of ['USER_ID', 'CONTEXT_ID', 'ROLE_ID', 'POSTING_ID', 'SESSION_ID'])
-  assert.match(adapter,new RegExp('command\\.Parameters\\.Add\\("P_'+key+'"'));
- assert.match(adapter,/OracleDbType\.Varchar2\)\.Value = scope\.SessionId/);
- assert.ok(sql.indexOf('FROM T_USER_CONTEXT_ASSIGNMENT') < sql.indexOf('OPEN IO_CURSOR'));
- assert.ok(sql.indexOf('FROM T_USER_SESSION') < sql.indexOf('OPEN IO_CURSOR'));
- assert.match(sql,/v_exec_report_source\s+WHERE audit_type IN \('B','D'\)/i);
- assert.match(sql,/V_IAS_ENTITY_REPORTING_IDS_Group_reports/);
- assert.match(sql,/WHEN s.audit_type = 'D' THEN s.entity_id/);
- assert.match(sql,/WHERE \(t.row_kind <> 'GM' OR t.audit_type = 'B'\)/);
- assert.match(sql,/GROUP BY com_id/);
- assert.match(sql,/GROUP BY GROUPING SETS/);
- assert.match(adapter,/filters.MaxRows \+ 1/);
- assert.match(adapter,/while \(reader.Read\(\)\)\s*\{\s*if \(rows.Count >= filters.MaxRows\)/);
+ assert.equal(permissions.actions.includes('GetOrgPerformance'),false);
+ assert.match(read('AIS/Views/ExecutiveOverview/_CcoCompliance.cshtml'),/_CcoFunctionPosition/);
+ assert.match(read('AIS/Views/ExecutiveOverview/_CcoCompliance.cshtml'),/_Sections/);
 });
 
 test('CCO presentation changes retain canonical report APIs and safe text rendering',()=>{
@@ -55,9 +33,7 @@ test('CCO presentation changes retain canonical report APIs and safe text render
  assert.match(client,/query.set\('view', 'reports'\)/);
  assert.match(client,/GetReportC\?\$\{query\}/);
  assert.match(read('AIS/Views/ExecutiveOverview/_Reports.cshtml'),/Model.IsSuperUser/);
- const tree=read('AIS/wwwroot/js/cco-organizations.js');
- assert.doesNotMatch(tree,/innerHTML/);
- assert.ok(tree.indexOf("root?.dataset.enabled !== 'true'") < tree.indexOf("await fetch(root.dataset.url"));
+ assert.doesNotMatch(read('AIS/Views/ExecutiveOverview/CCO.cshtml'),/cco-organizations\.js/);
 });
 // Report E intentionally uses the approved Group/Division view; avoid pinning
 // its package body to a pre-change snapshot while other protected SQL remains pinned.
