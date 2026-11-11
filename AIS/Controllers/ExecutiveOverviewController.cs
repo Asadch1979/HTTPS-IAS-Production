@@ -131,6 +131,10 @@ namespace AIS.Controllers
             if (!ModelState.IsValid || entityId <= 0 || groupRootId <= 0) return BadRequest();
             try
             {
+                // Retired view: old CCO bookmarks must never load the removed endpoint.
+                // Redirect before dimension validation, discarding any obsolete entityId.
+                if (requestedType == "CCO" && view == "performance")
+                    return RedirectToAction(nameof(CCO), new { view = "overview", startDate = filters?.StartDate, endDate = filters?.EndDate });
                 filters ??= new ExecutiveDashboardFilterRequest();
                 if (auditParaSnap)
                 {
@@ -141,11 +145,11 @@ namespace AIS.Controllers
                 else
                 {
                     filters.EntityId = entityId;
-                    // Only these two CCO views may accept a Group Head entity.
+                    // Only the CCO Settlement Effectiveness view may accept a Group Head entity.
                     // Full authorization and entity-type verification follow the
                     // page check below; never accept generic CCO entity drilldowns.
                     if (requestedType == "CCO" &&
-                        (view == "performance" || view == "effectiveness") &&
+                        view == "effectiveness" &&
                         entityId.HasValue)
                     {
                         if (filters.SelectBy != "entityType" || filters.DimensionId.HasValue ||
@@ -235,11 +239,11 @@ namespace AIS.Controllers
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
                 var ccoGroupHeads = scope.DashboardType == "CCO" &&
-                    (view == "performance" || view == "effectiveness")
+                    view == "effectiveness"
                     ? database.GetCcoGroupHeads(scope)
                     : new System.Collections.Generic.List<OrganizationNode>();
                 if (scope.DashboardType == "CCO" && entityId.HasValue &&
-                    (view == "performance" || view == "effectiveness") &&
+                    view == "effectiveness" &&
                     !ccoGroupHeads.Any(group => group.EntityId == entityId.Value))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Choose an authorized Group Head.");
                 var needsGroup = scope.DashboardType == "GROUP" && !scope.GroupRootId.HasValue;

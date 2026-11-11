@@ -3,7 +3,7 @@
   "pageId": 1000302,
   "method": "GET",
   "controller": "CcoCompliance",
-  "actions": ["GetOrgFilters", "GetOrgPosition", "GetOrgPerformance", "GetOrgSettlement", "GetOrgExceptions"],
+  "actions": ["GetOrgFilters", "GetOrgPosition", "GetOrgSettlement", "GetOrgExceptions"],
   "roles": [38, 1],
   "apiIsActive": "N",
   "roleGrantIsActive": "N",

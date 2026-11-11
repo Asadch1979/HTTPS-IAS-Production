@@ -256,7 +256,7 @@ namespace AIS.Controllers
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
                     database.GetExecutiveDashboardFilterOptions(scope, filters);
                 if (scope.DashboardType == "CCO" && entityId.HasValue &&
-                    (filters.View == "performance" || filters.View == "effectiveness") &&
+                    filters.View == "effectiveness" &&
                     !database.GetCcoGroupHeads(scope).Any(group => group.EntityId == entityId.Value))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Only a verified Group Head may be selected.");
                 scope = database.NarrowExecutiveDashboardScope(scope, entityId);

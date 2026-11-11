@@ -25,61 +25,29 @@ observationFilter.Risk="HIGH";observationFilter.Offset=int.MaxValue;
 try { observationFilter.Validate();throw new Exception("Paging overflow accepted"); } catch(ArgumentException) { checks++; }
 var definitions=ExecutiveDashboardViews.ForPerspective("CCO");
 var visible=definitions.Where(v=>v.Id!="reports").ToArray();
-Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,performance,effectiveness","Eight ordered CCO tabs");
+Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,effectiveness","Seven ordered CCO tabs");
 Check(string.Join(",",definitions.Single(v=>v.Id=="reports").Reports)=="B,C,D","CCO report allowlist");
 Check(!visible[0].UseLifecycleKpis && !visible[0].Datasets.Contains("GetKpiLifecycle") && new[]{"GetKpiSummary","GetRiskSummary","GetAgingSummary","GetCycleSummary","GetSettlementTrend"}.All(visible[0].Datasets.Contains),"Overview requests only authorized CCO summary/distribution datasets");
 Check(!visible[0].Datasets.Contains("GetCriticalItems") && definitions.Single(v=>v.Id=="critical-observations").Datasets.Contains("GetCriticalItems"),"Critical reader belongs to dedicated tab");
-foreach(var tab in new[]{"org-position","performance"}) Check(definitions.Single(v=>v.Id==tab).Datasets.Length==0,"Pending tabs must not fetch invented data");
+foreach(var tab in new[]{"org-position"}) Check(definitions.Single(v=>v.Id==tab).Datasets.Length==0,"Pending tabs must not fetch invented data");
 foreach(var role in new[]{"TOP","GROUP","RLM","CIA"}) Check(!ExecutiveDashboardViews.ForPerspective(role).Any(v=>v.Id=="overview"||v.Id=="field-office"),"CCO navigation isolation");
 foreach(var report in new[]{"A","E"}) { try { CcoDashboardPresentation.ResolveLegacy("reports",report); throw new Exception("Unapproved report accepted"); } catch(ArgumentException) { checks++; } }
 var config=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string>{{"Security:CauKey","cco-test-only"},{"SecretKey","cco-test-only-not-a-production-secret"}}).Build();
-if (args is ["--performance-only"])
-{
-    foreach (var test in new[] {
-        (Name: "disabled", Role: 38, Expected: 503),
-        (Name: "no dedicated credential", Role: 38, Expected: 503),
-        (Name: "verified super user", Role: 1, Expected: 503),
-        (Name: "wrong role", Role: 3, Expected: 403),
-        (Name: "unverified super user", Role: 1, Expected: 403),
-        (Name: "missing page", Role: 38, Expected: 403),
-        (Name: "missing exact API", Role: 38, Expected: 403),
-        (Name: "missing context", Role: 38, Expected: 403),
-        (Name: "revoked", Role: 38, Expected: 401),
-        (Name: "invalid Group", Role: 38, Expected: 400),
-        (Name: "duplicate Group", Role: 38, Expected: 400),
-        (Name: "foreign root", Role: 38, Expected: 400),
-        (Name: "invalid dates", Role: 38, Expected: 400)
-    })
-    {
-        var (context, session, db) = Context(test.Role, test.Name == "missing context" ? null : 123);
-        context.Request.Path = "/api/CcoCompliance/GetOrgPerformance";
-        if (test.Name != "missing exact API") Grant(context);
-        if (test.Name == "unverified super user") context.Session.SetString(SessionKeys.IsSuperUser, "N");
-        if (test.Name == "missing page") context.Session.SetString(SessionKeys.AllowedViewIds, "[]");
-        if (test.Name == "revoked") context.Session.Remove(SessionKeys.SessionStamp);
-        if (test.Name == "duplicate Group") context.Request.QueryString = new QueryString("?groupId=1&groupId=2");
-        if (test.Name == "foreign root") context.Request.QueryString = new QueryString("?groupRootId=1");
-        config["CcoReporting:PerformanceEnabled"] = test.Name == "disabled" ? "false" : "true";
-        var filters = new CcoOrganizationFilter { StartDate = "2024-01-01", EndDate = "2024-02-29" };
-        if (test.Name == "invalid Group") filters.GroupId = -1;
-        if (test.Name == "invalid dates") filters.EndDate = "2099-01-01";
-        var controller = new CcoComplianceController(db, session, new Permissions(true), new Pages(),
-            NullLogger<CcoComplianceController>.Instance, config) {
-                ControllerContext = new ControllerContext { HttpContext = context }
-            };
-        var actual = Status(controller.GetOrgPerformance(filters));
-        Check(actual == test.Expected, $"Performance {test.Name} expected {test.Expected}, received {actual}");
-    }
-    Console.WriteLine("PASS: 13 Performance authorization and filter probes without Oracle.");
-    return;
-}
-foreach(var pair in new[]{("glance","overview"),("position","overview"),("risk","overview"),("aging","overview"),("settlement","effectiveness"),("reports","field-office")}) {
+foreach(var pair in new[]{("glance","overview"),("position","overview"),("risk","overview"),("aging","overview"),("settlement","effectiveness"),("performance","overview"),("reports","field-office")}) {
  var (context,session,db)=Context(38);
  context.Request.QueryString=new QueryString("?report=B");
  var controller=new ExecutiveOverviewController(db,session,new Permissions(),new Pages(),null,NullLogger<ExecutiveOverviewController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context,RouteData=new Microsoft.AspNetCore.Routing.RouteData()}};
  var result=controller.CCO(view:pair.Item1,filters:Dates()) as RedirectToActionResult;
  Check(result?.ActionName=="CCO" && (string)result.RouteValues["view"]==pair.Item2,"Authorized legacy redirect "+pair.Item1);
  Check((string)result.RouteValues["startDate"]=="2024-01-01" && (string)result.RouteValues["endDate"]=="2024-02-29","Redirect date preservation");
+}
+// A bookmarked Performance URL, including a stale Group Head selector, safely
+// redirects to Compliance Overview rather than reaching a retired API.
+{
+ var (context,session,db)=Context(38);
+ var controller=new ExecutiveOverviewController(db,session,new Permissions(),new Pages(),null,NullLogger<ExecutiveOverviewController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context,RouteData=new Microsoft.AspNetCore.Routing.RouteData()}};
+ var result=controller.CCO(entityId:112206,view:"performance",filters:Dates()) as RedirectToActionResult;
+ Check(result?.ActionName=="CCO" && (string)result.RouteValues["view"]=="overview" && !result.RouteValues.ContainsKey("entityId"),"Retired Performance bookmark redirects safely without old entity selector");
 }
 foreach(var report in new[]{"B","C","D","A","E"}) foreach(var role in new[]{38,3,5}) {
  var (context,session,db)=Context(role);
@@ -165,10 +133,10 @@ foreach(var report in new[]{"C","D"}) {
  Check((string)result?.RouteValues["endDate"]=="2024-02-29","Legacy report retains dates");
 }
 // Phase 2 is deliberately unavailable even after all IAS gates pass.
-foreach(var action in new[]{"GetFunctionPosition","GetOrgFilters","GetOrgPosition","GetOrgPerformance","GetOrgSettlement","GetOrgExceptions"}) {
+foreach(var action in new[]{"GetFunctionPosition","GetOrgFilters","GetOrgPosition","GetOrgSettlement","GetOrgExceptions"}) {
  foreach(var role in new[]{38,1,3,5}) {
   var (context,session,db)=Context(role);context.Request.Path="/api/CcoCompliance/"+action;Grant(context);
-  var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context}};
+  var c=new CcoComplianceController(db,session,new Permissions(true),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
   var result=(IActionResult)typeof(CcoComplianceController).GetMethod(action).Invoke(c,new object[]{new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"}});
   Check(Status(result)==(role==38||role==1?503:403),"New CCO action role/gate "+action+"/"+role);
  }
@@ -184,7 +152,7 @@ foreach(var denied in new[]{"page","api","revoked","root","snap","duplicate","in
  if(denied=="duplicate")context.Request.QueryString=new QueryString("?groupId=1&groupId=2");
  var f=new CcoOrganizationFilter{StartDate="2024-01-01",EndDate="2024-02-29"};
  if(denied=="invalidPath")f.DivisionId=2;if(denied=="invalidDate")f.EndDate="2099-01-01";
- var c=new CcoComplianceController(db,session,new Permissions(),new Pages(),NullLogger<CcoComplianceController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context}};
+ var c=new CcoComplianceController(db,session,new Permissions(),new Pages(),NullLogger<CcoComplianceController>.Instance){ControllerContext=new ControllerContext{HttpContext=context}};
  Check(Status(c.GetOrgPosition(f))==(denied=="page"||denied=="api"?403:denied=="revoked"||denied=="unauthenticated"?401:400),"New API rejection "+denied);
 }
 var pathSet=new[]{new CcoOrganizationPath{GroupId=1,DivisionId=2,GmOfficeId=3,EntityId=4,IsVerified=true},new CcoOrganizationPath{GroupId=5,DivisionId=6,GmOfficeId=7,EntityId=8,IsVerified=true}};

@@ -363,10 +363,10 @@
                 const value = values.get(key);
                 if (value) url.searchParams.set(key, value); else url.searchParams.delete(key);
             }
-            // CCO permits a Group Head only on these two views. A navigation link
+            // CCO permits a Group Head only on Settlement Effectiveness. A navigation link
             // must not transport that selector into an unrelated reports/KPI view.
             if (app.dataset.perspective === 'CCO' &&
-                !['performance', 'effectiveness'].includes(url.searchParams.get('view')))
+                url.searchParams.get('view') !== 'effectiveness')
                 url.searchParams.delete('entityId');
             link.href = url.href;
         });
