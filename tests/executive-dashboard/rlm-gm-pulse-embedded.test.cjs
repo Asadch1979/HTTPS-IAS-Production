@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 
-test('Regional Pulse is not a second RLM tab, and only validated GM Office roots may embed it', () => {
+test('Regional Pulse is not a second RLM tab, and only validated GM Office or Region roots may embed it', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const controller = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const model = read('AIS/Models/ExecutiveDashboardPageModel.cs');
@@ -12,12 +12,12 @@ test('Regional Pulse is not a second RLM tab, and only validated GM Office roots
     const glance = read('AIS/Views/ExecutiveOverview/_Glance.cshtml');
     const regional = read('AIS/Views/ExecutiveOverview/_RegionalPulse.cshtml');
     assert.doesNotMatch(views, /View\("regional", "Regional Audit Pulse"/);
-    assert.match(controller, /gmOfficeSelected = scope\.DashboardType == "RLM" && root\?\.EntityTypeId == 21/);
-    assert.doesNotMatch(controller, /gmOfficeSelected = [^;]*EntityTypeId == 5/);
+    assert.match(controller, /regionalPulseSelected = scope\.DashboardType == "RLM" &&/);
+    assert.match(controller, /root\?\.EntityTypeId == 21 \|\| root\?\.EntityTypeId == 5/);
     assert.match(controller, /if \(view == "regional"\)/);
-    assert.match(controller, /if \(!gmOfficeSelected\).*StatusCode\(403\)/);
+    assert.match(controller, /if \(!regionalPulseSelected\).*StatusCode\(403\)/);
     assert.match(controller, /RedirectToAction\(nameof\(RLM\), new \{ view = "glance"/);
-    assert.match(controller, /ShowRegionalPulse = gmOfficeSelected && view == "glance"/);
+    assert.match(controller, /ShowRegionalPulse = regionalPulseSelected && view == "glance"/);
     assert.match(model, /public bool ShowRegionalPulse \{ get; set; \}/);
     assert.match(glance, /@if \(Model\.ShowRegionalPulse\)/);
     assert.match(glance, /<partial name="_RegionalPulse"/);
@@ -26,22 +26,22 @@ test('Regional Pulse is not a second RLM tab, and only validated GM Office roots
     assert.doesNotMatch(rlm, /SelectedView\.Id == "regional"/);
 });
 
-test('The GM-only RLM glance retains nine lifecycle cards and has the existing Pulse risk/aging/cycle/trend charts only at GM root', () => {
+test('The GM/Region RLM glance retains nine lifecycle cards and has the existing Pulse risk/aging/cycle/trend charts only at GM/Region root', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const controller = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const glance = read('AIS/Views/ExecutiveOverview/_Glance.cshtml');
     const regional = read('AIS/Views/ExecutiveOverview/_RegionalPulse.cshtml');
     assert.match(views, /"RLM" => new\[\] \{ "openingOpenParas", "issueIdentified", "issueRectified"/);
-    assert.match(controller, /if \(gmOfficeSelected && view == "glance"\)\s+selectedView\.Sections = new\[\] \{ "risk", "aging", "cycle", "trend" \}/);
+    assert.match(controller, /if \(regionalPulseSelected && view == "glance"\)\s+selectedView\.Sections = new\[\] \{ "risk", "aging", "cycle", "trend" \}/);
     assert.match(glance, /<partial name="_Sections"/);
     assert.match(regional, /<partial name="_RoleReporting"/);
     assert.doesNotMatch(regional, /<partial name="_Sections"/);
 });
 
-test('Role data endpoint requires GM type 21 and exact RLM glance, leaving GROUP management access intact', () => {
+test('Role data endpoint supports GM type 21 or Region type 5 and exact RLM glance, leaving GROUP management access intact', () => {
     const controller = read('AIS/Controllers/ExecutiveDashboardController.cs');
-    assert.match(controller, /isGmPulse = scope\.DashboardType == "RLM" && root\?\.EntityTypeId == 21/);
-    assert.match(controller, /gmGlanceView = isGmPulse && f\.View == "glance"/);
+    assert.match(controller, /isRegionalPulse = scope\.DashboardType == "RLM" &&/);
+    assert.match(controller, /gmGlanceView = isRegionalPulse && f\.View == "glance"/);
     assert.match(controller, /managementView = isManagement && f\.View == "management"/);
     assert.match(controller, /requiredPerspective == "regional" && !gmGlanceView/);
     assert.match(controller, /!managementView && !gmGlanceView/);
@@ -51,7 +51,7 @@ test('Role data endpoint requires GM type 21 and exact RLM glance, leaving GROUP
     assert.match(controller, /HasViewPermission/);
 });
 
-test('Only RLM glance declares the existing GM Pulse role datasets; TOP and GROUP do not gain them', () => {
+test('Only RLM glance declares the existing Regional Pulse role datasets; TOP and GROUP do not gain them', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const api = read('AIS/Controllers/ExecutiveDashboardController.cs');
     assert.match(views, /public bool EnableGmPulseRoleDatasets \{ get; set; \}/);
@@ -59,7 +59,7 @@ test('Only RLM glance declares the existing GM Pulse role datasets; TOP and GROU
     assert.match(views, /gmGlance.EnableGmPulseChartDatasets = true/);
     assert.match(views, /"GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend"/);
     assert.match(api, /scope\.DashboardType == "RLM" && filters\.View == "glance"/);
-    assert.match(api, /database\.GetExecutiveDashboardRoot\(scope\)\?\.EntityTypeId != 21/);
+    assert.match(api, /new\[\] \{ 21, 5 \}\.Contains\(database\.GetExecutiveDashboardRoot\(scope\)\?\.EntityTypeId \?\? -1\)/);
     assert.match(views, /Id == "glance" && EnableGmPulseRoleDatasets/);
     assert.match(views, /gmGlance.EnableGmPulseRoleDatasets = true/);
     assert.match(views, /new\[\] \{ "GetRoleEntityHeatmap", "GetRoleFollowups" \}/);
@@ -86,17 +86,20 @@ test('Heatmap shows each category percentage of branch open paras, with readable
     const css = read('AIS/wwwroot/css/regional-audit-pulse.css');
     assert.match(role, /Medium-risk share/);
     assert.match(role, /Low-risk share/);
-    assert.match(role, /Unrated share/);
+    assert.doesNotMatch(role, /Unrated share/);
     assert.match(role, /@\(regional \? "High-risk share"/);
     assert.match(js, /const share = \(count, open\) => open > 0 \? Math\.max\(0, count \/ open \* 100\) : 0/);
-    for(const field of ['highRisk', 'mediumRisk', 'lowRisk', 'unrated'])
+    for(const field of ['highRisk', 'mediumRisk', 'lowRisk'])
         assert.ok(js.includes('item.'+field));
     assert.match(js, /const mix = riskMix\(item\)/);
     assert.match(js, /stack\.setAttribute\('role', 'img'\)/);
     assert.match(js, /for \(const part of mix\)/);
-    assert.match(js, /empty\(tbody, rows, mode === 'regional' \? 9 : 6\)/);
+    assert.match(js, /empty\(tbody, rows, mode === 'regional' \? 8 : 6\)/);
     assert.match(js, /Risk classification totals require reconciliation/);
-    for(const color of ['high', 'medium', 'low', 'unrated'])
+    assert.doesNotMatch(js, /name: 'Unrated'/);
+    assert.match(js, /Number\(item\.unrated \|\| 0\)/);
+    assert.doesNotMatch(css, /role-risk-unrated/);
+    for(const color of ['high', 'medium', 'low'])
         assert.match(css, new RegExp('\\.role-risk-' + color));
 });
 
