@@ -70,7 +70,7 @@ namespace AIS.Controllers
                 if (pageId <= 0 || (superUser ? !permissions.HasViewPermission(user, pageId) :
                     !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(pageId)))
                     return Denied("PagePermission", user, scope.DashboardType);
-                if (!database.HasActiveExecutivePageApi(pageId, Request.Method, Request.Path.Value) ||
+                if (!database.HasActiveExecutivePageApi(pageId, user.UserRoleID, Request.Method, Request.Path.Value) ||
                     (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
                     !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value)))
                     return Denied("ApiPermission", user, scope.DashboardType);
