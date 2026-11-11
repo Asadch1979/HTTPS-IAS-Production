@@ -93,7 +93,7 @@
 .exec.exec-regional .regional-risk-mix-stack { display:flex;width:100%;height:12px;overflow:hidden;border-radius:5px;background:#2b3a51;flex-shrink:0; }
 .exec.exec-regional .regional-risk-segment { display:block;height:100%;min-width:0; }
 .exec.exec-regional .regional-risk-mix-labels {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px;}
-.exec.exec-regional .regional-risk-mix-label {display:flex;align-items:center;gap:5px;font-size:.68rem;color:#dae6f2;white-space:nowrap;}
+.exec.exec-regional .regional-risk-mix-label {display:flex;align-items:center;gap:5px;font-size:.67rem;color:#dae6f2;min-width:0;flex-wrap:wrap;}
 .exec.exec-regional .regional-risk-mix-label i {display:inline-block;flex:0 0 8px;width:8px;height:8px;border-radius:2px;}
 .exec.exec-regional .regional-risk-warning {color:#ffd69c;}
 .exec.exec-regional .regional-command .regional-section-label h2 {font-size:1.14rem;color:#f3f7ff;}
