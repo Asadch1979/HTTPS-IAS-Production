@@ -35,9 +35,9 @@ namespace AIS.Models
             var glanceKpis = perspective switch
             {
                 "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "settlementRatio", "criticalItems" },
-                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio", "criticalItems" },
-                "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas", "criticalItems" },
+                "GROUP" => new[] { "openParas", "highRiskParas", "over1YearParas", "settledMtd", "settlementRatio" },
+                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio" },
+                "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas" },
                 "RLM" => new[] { "openingCases", "paraAdded", "settledTotal", "openParas", "settlementRatio" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
