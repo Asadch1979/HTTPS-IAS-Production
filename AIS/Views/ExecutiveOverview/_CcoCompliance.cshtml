@@ -4,10 +4,6 @@
 {
     <partial name="_CcoFunctionPosition" model="Model" />
 }
-else if (Model.SelectedView.Id == "performance")
-{
-    <partial name="_CcoOrganizations" model="Model" />
-}
 else
 {
     @if (Model.SelectedView.Id == "overview")
@@ -18,9 +14,5 @@ else
     @if (Model.SelectedView.Id == "overview")
     {
         <div id="cco-summary" class="exec-kpis" aria-label="Compliance summary"></div>
-    }
-    @if (Model.SelectedView.Id == "effectiveness")
-    {
-        <partial name="_CcoOrganizations" model="Model" />
     }
 }
