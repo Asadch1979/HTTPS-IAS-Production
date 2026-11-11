@@ -395,7 +395,7 @@
     let criticalRows = [];
     function renderCritical() {
         const target = document.getElementById('exec-critical');
-        const selectedRisk = document.getElementById('exec-critical-risk').value;
+        const selectedRisk = document.getElementById('exec-critical-risk')?.value || '';
         target.replaceChildren();
         for (const row of criticalRows.filter(row => !selectedRisk || row.riskName === selectedRisk)) {
             const tr = element('tr'), entity = element('td');
@@ -416,11 +416,13 @@
         if (!Array.isArray(rows) || rows.length > 250) throw new Error('Invalid critical-item cursor.');
         criticalRows = rows;
         const risk = document.getElementById('exec-critical-risk');
-        risk.replaceChildren(new Option('All risks',''));
-        for (const value of [...new Set(rows.map(row => row.riskName))]) risk.add(new Option(value,value));
+        if (risk) {
+            risk.replaceChildren(new Option('All risks',''));
+            for (const value of [...new Set(rows.map(row => row.riskName))]) risk.add(new Option(value,value));
+        }
         renderCritical();
         document.getElementById('exec-critical-note').textContent =
-            'Critical = open High-Risk paras (ZTBL). Showing ' + rows.length + ' returned (limit 100). This capped list is not the entire population.';
+            'Showing ' + rows.length + ' high-risk audit paras.';
     }
     document.getElementById('exec-critical-risk')?.addEventListener('change',renderCritical);
     async function load() {
