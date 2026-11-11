@@ -1,5 +1,9 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 <partial name="_Sections" model="Model" />
+@if (Model.ShowRegionalPulse)
+{
+    <partial name="_RegionalPulse" model="Model" />
+}
 <nav class="exec-next" aria-label="Explore dashboard views">
 @foreach (var view in Model.Views.Where(v => v.Id != "glance"))
 {

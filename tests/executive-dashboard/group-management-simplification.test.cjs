@@ -60,15 +60,15 @@ test('existing CCO, CIA, RLM and frozen Oracle dashboard implementation are unto
     assert.match(read('AIS/Views/ExecutiveOverview/GROUP.cshtml'), /executive-role-reporting\.js/);
 });
 
-test('GROUP Risk is High Risk with one KPI and High-only observation list, while Aging avoids duplicate critical calls', () => {
+test('GROUP uses Audit Para’s for High Risk detail and keeps Aging without critical duplication', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const critical = read('AIS/Views/ExecutiveOverview/_Critical.cshtml');
     const client = read('AIS/wwwroot/js/executive-dashboard.js');
     const source = read('AIS/DBConnection.ComplianceDashboard.cs');
-    assert.match(views, /highRisk\.Title = "High Risk"/);
-    assert.match(views, /highRisk\.Kpis = new\[\] \{ "highRiskParas" \}/);
-    assert.match(views, /aging\.Kpis = new\[\] \{ "over1YearParas", "zeroCycleParas", "over3CycleParas" \}/);
-    assert.match(views, /aging\.Sections = new\[\] \{ "aging", "cycle" \}/);
+    assert.match(views, /views\.RemoveAll\(v => v\.Id == "risk"\)/);
+    assert.match(views, /View\("audit-paras", "Audit Para’s"/);
+    assert.match(views, /View\("aging", "Aging & Compliance"/);
+    assert.match(views, /new\[\] \{ "aging", "cycle" \}/);
     // No frontend-only High filter; the approved source reader already returns RiskId=1.
     assert.match(source, /RiskId = 1, RiskName = b\.RiskName/);
     assert.match(critical, /@if \(isCco\)/);
@@ -77,7 +77,7 @@ test('GROUP Risk is High Risk with one KPI and High-only observation list, while
     assert.match(client, /if \(filter\) \{/);
     assert.match(client, /Showing \$\{number\(rows\.length\)\} high-risk audit paras/);
     // Keep CCO multi-risk selection and its paging; other parents retain their dropdown.
-    for (const choice of ['HIGH', 'MEDIUM', 'LOW', 'UNRATED', 'ALL'])
+    for (const choice of ['HIGH', 'MEDIUM', 'LOW'])
         assert.match(critical, new RegExp('<option value="' + choice + '"'));
     assert.match(client, /const pagedCritical = app\.dataset\.perspective === 'CCO'/);
 });

@@ -3,21 +3,19 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 
-test('RLM removes management view and uses dated five-card At a Glance with risk distribution', () => {
+test('RLM uses Top-style nine-indicator lifecycle At a Glance without standalone position or High Risk', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const reader = read('AIS/DBConnection.ComplianceDashboard.cs');
     const client = read('AIS/wwwroot/js/executive-dashboard.js');
     const route = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const rlm = read('AIS/Views/ExecutiveOverview/RLM.cshtml');
-    assert.match(views, /"RLM" => new\[\] \{ "openingCases", "paraAdded", "settledTotal", "openParas", "settlementRatio" \}/);
-    assert.match(views, /perspective == "RLM" \? new\[\] \{ "risk" \}/);
-    assert.doesNotMatch(views, /views\.Insert\(0, View\("management", perspective == "GROUP"/);
+    assert.match(views, /"RLM" => new\[\] \{ "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" \}/);
+    assert.match(views, /perspective == "RLM" \? Array\.Empty<string>\(\)/);
+    assert.match(views, /views\.RemoveAll\(v => v\.Id == "position" \|\| v\.Id == "risk"\)/);
+    assert.match(route, /scope\.DashboardType == "RLM" && view == "position"/);
     assert.match(route, /scope\.DashboardType == "RLM" && view == "management"/);
-    assert.match(route, /if \(scope\.DashboardType == "RLM"\) views\.RemoveAll\(v => v\.Id == "management"\)/);
-    assert.match(reader, /scope\.DashboardType == "CCO" \|\| scope\.DashboardType == "RLM" \? opening/);
-    assert.match(reader, /scope\.DashboardType == "CCO" \|\| scope\.DashboardType == "RLM" \? added/);
-    for (const label of ['Opening Balance', 'Para Added', 'Closing Balance', 'Selected-Period Settlement Ratio'])
-        assert.ok(client.includes(label), label);
+    assert.match(reader, /Lifecycle = ManagementDashboardPeriod\.Applies\(scope\.DashboardType\) \? k : null/);
+    assert.match(client, /lifecycleKpis\(data\.lifecycle\)/);
     assert.doesNotMatch(rlm, /Model\.SelectedView\.Id == "management"/);
 });
 
@@ -42,8 +40,8 @@ test('High Risk KPI is never duplicated by Critical Items, and Aging never loads
     const cco = read('AIS/Models/CcoDashboardPresentation.cs');
     const critical = read('AIS/Views/ExecutiveOverview/_Critical.cshtml');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
-    assert.match(views, /View\("risk", "High Risk"/);
-    assert.match(views, /new\[\] \{ "highRiskParas" \}, new\[\] \{ "critical" \}/);
+    assert.match(views, /views\.RemoveAll\(v => v\.Id == "risk"\)/);
+    assert.match(views, /View\("audit-paras", "Audit Para’s"/);
     assert.match(views, /View\("aging", "Aging & Compliance"/);
     assert.match(views, /new\[\] \{ "aging", "cycle" \}/);
     assert.doesNotMatch(views, /"highRiskParas", "criticalItems"/);
@@ -68,13 +66,13 @@ test('CIA Command Center and Snap dedicated readers remain isolated and accessib
     assert.match(snapJs, /document\.getElementById\('exec-critical-risk'\)\?\.value \|\| ''/);
 });
 
-test('CCO preserves its server-side ALL, High, Medium, Low, Unrated risk paging', () => {
+test('CCO displays only High Medium Low risk choices while retaining secure server pagination', () => {
     const controller = read('AIS/Controllers/ExecutiveDashboardController.cs');
     const critical = read('AIS/Views/ExecutiveOverview/_Critical.cshtml');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
     assert.match(controller, /scope\.DashboardType != "CCO" \|\| f\.View != "audit-paras"/);
     assert.match(js, /actionQuery\.set\('risk', \$\('critical-risk'\)\.value\)/);
-    for (const risk of ['HIGH','MEDIUM','LOW','UNRATED','ALL'])
+    for (const risk of ['HIGH','MEDIUM','LOW'])
         assert.ok(critical.includes('<option value="' + risk + '"'));
     assert.match(controller, /database\.GetCcoObservationPage/);
 });

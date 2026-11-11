@@ -182,13 +182,16 @@ namespace AIS.Controllers
                     (managementRoles.Contains(scope.RoleId) ||
                      (scope.RoleId == 1 && scope.GroupRootId.HasValue && session.IsSuperUser())) &&
                     (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
-                var isRegional = scope.DashboardType == "RLM" &&
-                    (root?.EntityTypeId == 5 || root?.EntityTypeId == 21);
-                if ((!isManagement && !isRegional) ||
-                    (requiredPerspective == "management" && !isManagement) ||
-                    (requiredPerspective == "regional" && !isRegional) ||
-                    (f.View == "management" && !isManagement) ||
-                    (f.View == "regional" && !isRegional))
+                // Role readers are restricted to their exact authorized view.
+                // The existing RLM Regional Pulse supports GM Office (21) and Region (5).
+                // Root is derived from the authenticated IAS scope, not the browser.
+                var isRegionalPulse = scope.DashboardType == "RLM" &&
+                    (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
+                var managementView = isManagement && f.View == "management";
+                var gmGlanceView = isRegionalPulse && f.View == "glance";
+                if ((!managementView && !gmGlanceView) ||
+                    (requiredPerspective == "management" && !managementView) ||
+                    (requiredPerspective == "regional" && !gmGlanceView))
                     throw new ExecutiveDashboardAccessException("RoleMapping", "Role dashboard scope is not authorized.");
                 if (f.DimensionId.HasValue && requiredPerspective != "regional")
                     throw new ArgumentException("This aggregate cursor does not accept a dimension filter.");
@@ -258,6 +261,15 @@ namespace AIS.Controllers
                     if (definition == null || (!System.Linq.Enumerable.Contains(definition.Datasets, action) &&
                         !System.Linq.Enumerable.Contains(definition.RoleDatasets, action)))
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
+                    // RLM's embedded Regional Pulse charts are available only to
+                    // an authenticated GM Office or Region root. The same four actions can
+                    // serve other authorized tabs; restrict only RLM/glance.
+                    if (scope.DashboardType == "RLM" && filters.View == "glance" &&
+                        new[] { "GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend" }
+                            .Contains(action, StringComparer.Ordinal) &&
+                        !new[] { 21, 5 }.Contains(database.GetExecutiveDashboardRoot(scope)?.EntityTypeId ?? -1))
+                        throw new ExecutiveDashboardAccessException("EntityScope",
+                            "Regional Pulse charts require an authorized GM Office or Region root.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)

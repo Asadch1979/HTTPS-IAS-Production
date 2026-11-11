@@ -50,7 +50,7 @@ namespace AIS.Services
             "total" => N(r.TotalParas), "settled" => N(r.SettledParas),
             "rate" => P(r.SettlementPercentage), "open" => N(r.OutstandingParas),
             "low" => N(r.LowRisk), "medium" => N(r.MediumRisk),
-            "high" => N(r.HighRisk), "unrated" => N(r.UnratedRisk), "compliance" => N(r.SettledByCompliance),
+            "high" => N(r.HighRisk), "compliance" => N(r.SettledByCompliance),
             "audit" => N(r.SettledByAudit), "unknown" => N(r.SettledByUnknown),
             _ => ""
         };
@@ -133,7 +133,7 @@ namespace AIS.Services
             if (cco)
                 columns = Position.Take(6).Concat(new[] {
                     ("High risk", "high"), ("Medium risk", "medium"),
-                    ("Low risk", "low"), ("Unrated risk", "unrated")
+                    ("Low risk", "low")
                 }).ToArray();
             var html = new StringBuilder();
             // Per-report visual identity. Numbers, rows and PDF structure are unchanged.

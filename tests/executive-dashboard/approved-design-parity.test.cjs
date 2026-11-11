@@ -22,23 +22,31 @@ test('TeamMate design belongs to Head Audit Department after merged PR #329', ()
     assert.match(read('Controllers/HeadAuditDepartmentController.cs'),/HasViewPermission/);
 });
 
-test('Management and regional approved layouts stay in their respective authorized views', () => {
+test('Group comparisons stay separate while GM Regional Pulse is embedded in authorized RLM At a Glance', () => {
     const management = read('Views/ExecutiveOverview/_ManagementAudit.cshtml');
     const regional = read('Views/ExecutiveOverview/_RegionalPulse.cshtml');
     const role = read('Views/ExecutiveOverview/_RoleReporting.cshtml');
     assert.match(read('Views/ExecutiveOverview/GROUP.cshtml'),/Management Audit Dashboard/);
     assert.doesNotMatch(management,/mgmt-hero/);
-    assert.match(management,/data-mgmt-ring="settlement"/);
-    assert.match(management,/data-mgmt-ring="risk"/);
-    assert.match(management,/data-mgmt-ring="aging"/);
+    // The Group scorecard now uses TOP's nine-indicator lifecycle design;
+    // three old gauge rings are deliberately retired to avoid duplicate metrics.
+    assert.match(management,/<partial name="_Sections" model="Model" \/>/);
+    assert.doesNotMatch(management,/data-mgmt-ring=/);
+    assert.match(read('Views/ExecutiveOverview/_Sections.cshtml'),/managementNine/);
+    assert.match(read('wwwroot/css/executive-dashboard-parents.css'),/exec\.exec-management \.exec-lifecycle-kpis/);
     assert.match(management,/<partial name="_RoleReporting" model="Model" \/>/);
     assert.doesNotMatch(management,/Oracle activation pending|mgmt-pending-bars/);
-    assert.match(read('Views/ExecutiveOverview/RLM.cshtml'),/Regional Audit Pulse/);
+    assert.match(read('Views/ExecutiveOverview/RLM.cshtml'),/Model.ShowRegionalPulse/);
+    assert.match(read('Views/ExecutiveOverview/_Glance.cshtml'),/_RegionalPulse/);
     assert.doesNotMatch(regional,/regional-hero/);
     assert.match(regional,/<partial name="_RoleReporting" model="Model" \/>/);
     assert.match(role,/data-region-heatmap/);
+    assert.match(role,/Medium-risk share/);
+    assert.match(role,/Low-risk share/);
+    assert.doesNotMatch(role,/Unrated share/);
     assert.match(role,/data-management-bars/);
     assert.match(role,/data-role-followup-rows/);
+    assert.match(read('wwwroot/js/executive-role-reporting.js'),/riskMix\(item\)/);
 });
 
 test('CIA shows eight nature categories while preserving all ten Oracle classifications', () => {
@@ -72,7 +80,7 @@ test('Charts are purely presentation over authorized IAS responses', () => {
     assert.match(role,/GetRoleEntityHeatmap/);
     assert.match(role,/GetRoleUnitComparison/);
     assert.match(role,/GetRoleFollowups/);
-    assert.match(role,/share >= 20.*share >= 10/);
+    assert.match(role,/high\.pct >= 20.*high\.pct >= 10/);
     assert.match(role,/rows\.slice\(\)\.sort/);
 });
 
