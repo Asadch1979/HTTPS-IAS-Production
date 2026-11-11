@@ -4,6 +4,8 @@
 -- Run after existing API_MASTER and T_MENU_PAGES registrations; then compile PKG_LG, PKG_AD,
 -- redeploy IAS and require users to log out/in to refresh cached API permissions.
 -- Six verified pages supplied by management (menu 16) plus CURRENT RLM 1000305.
+-- Existing table: (PAGE_ID, API_ID), with NO dependency IS_ACTIVE column.
+-- Do not ALTER/DROP existing T_IAS_EXEC_PAGE_API to deploy this change.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 SET SERVEROUTPUT ON;
 
@@ -15,15 +17,33 @@ BEGIN
     EXECUTE IMMEDIATE 'CREATE TABLE T_IAS_EXEC_PAGE_API (
       PAGE_ID NUMBER NOT NULL,
       API_ID NUMBER NOT NULL,
-      IS_ACTIVE CHAR(1) DEFAULT ''N'' NOT NULL CHECK (IS_ACTIVE IN (''Y'',''N'')),
       CONSTRAINT PK_IAS_EXEC_PAGE_API PRIMARY KEY (PAGE_ID,API_ID))';
-    DBMS_OUTPUT.PUT_LINE('Created T_IAS_EXEC_PAGE_API (no grants activated).');
+    DBMS_OUTPUT.PUT_LINE('Created T_IAS_EXEC_PAGE_API (PAGE_ID, API_ID only).');
   END IF;
   SELECT COUNT(*) INTO v_exists FROM USER_TAB_COLUMNS
    WHERE TABLE_NAME='T_IAS_EXEC_PAGE_API'
-     AND COLUMN_NAME IN ('PAGE_ID','API_ID','IS_ACTIVE');
-  IF v_exists<>3 THEN
-    RAISE_APPLICATION_ERROR(-20910,'Existing T_IAS_EXEC_PAGE_API structure must be inspected before deployment.');
+     AND COLUMN_NAME IN ('PAGE_ID','API_ID')
+     AND DATA_TYPE='NUMBER';
+  IF v_exists<>2 THEN
+    RAISE_APPLICATION_ERROR(-20910,
+      'Expected numeric PAGE_ID and API_ID in existing T_IAS_EXEC_PAGE_API; inspect the table.');
+  END IF;
+  -- This IAS table has two-column dependency semantics. If a different
+  -- installation has a status column, do not ignore explicit deny decisions.
+  SELECT COUNT(*) INTO v_exists FROM USER_TAB_COLUMNS
+   WHERE TABLE_NAME='T_IAS_EXEC_PAGE_API' AND COLUMN_NAME='IS_ACTIVE';
+  IF v_exists<>0 THEN
+    RAISE_APPLICATION_ERROR(-20915,
+      'Status-enabled dependency schema requires separate reviewed migration.');
+  END IF;
+  -- Prevent duplicate (PAGE_ID,API_ID) dependencies even where old
+  -- installations lack the expected composite unique constraint.
+  SELECT COUNT(*) INTO v_exists FROM (
+    SELECT PAGE_ID,API_ID FROM T_IAS_EXEC_PAGE_API
+     GROUP BY PAGE_ID,API_ID HAVING COUNT(*)>1);
+  IF v_exists>0 THEN
+    RAISE_APPLICATION_ERROR(-20916,
+      'Duplicate existing PAGE_ID/API_ID dependencies; inspect before deployment.');
   END IF;
 END;
 /
@@ -32,7 +52,6 @@ DECLARE
   v_count NUMBER;
   v_api_id NUMBER;
   v_active VARCHAR2(1);
-  v_mapped_active VARCHAR2(1);
   v_rows NUMBER:=0;
   TYPE expected_map IS TABLE OF PLS_INTEGER INDEX BY VARCHAR2(100);
   approved expected_map;
@@ -59,16 +78,10 @@ DECLARE
     MERGE INTO T_IAS_EXEC_PAGE_API d
     USING (SELECT p_id PAGE_ID,v_api_id API_ID FROM dual) v
        ON (d.PAGE_ID=v.PAGE_ID AND d.API_ID=v.API_ID)
-    -- Only explicitly approved dependencies are activated on first registration.
-    -- Never reactivate a dependency deliberately disabled by the DBA.
-    WHEN NOT MATCHED THEN INSERT (PAGE_ID,API_ID,IS_ACTIVE)
-       VALUES(v.PAGE_ID,v.API_ID,'Y');
-    SELECT IS_ACTIVE INTO v_mapped_active FROM T_IAS_EXEC_PAGE_API
-      WHERE PAGE_ID=p_id AND API_ID=v_api_id;
-    IF v_mapped_active<>'Y' THEN
-      RAISE_APPLICATION_ERROR(-20913,
-        'Existing dependency is DISABLED; review manually: '||p_id||' / '||v_path);
-    END IF;
+    -- The existing mapping has no IS_ACTIVE column. Membership is approval;
+    -- master API IS_ACTIVE and page STATUS remain mandatory.
+    WHEN NOT MATCHED THEN INSERT (PAGE_ID,API_ID)
+       VALUES(v.PAGE_ID,v.API_ID);
     approved(TO_CHAR(p_id)||':'||TO_CHAR(v_api_id)):=1;
     v_rows:=v_rows+1;
   END;
@@ -148,16 +161,15 @@ BEGIN
   link_get(1000305,'ExecutiveDashboard','GetRoleEntityHeatmap');
   link_get(1000305,'ExecutiveDashboard','GetRoleFollowups');
 
-  -- An existing active dependency outside this exact reviewed list would
+  -- Any existing dependency outside this exact reviewed list would
   -- bypass the approval boundary. Reject it; do not silently delete it.
   FOR unexpected IN (
     SELECT PAGE_ID,API_ID FROM T_IAS_EXEC_PAGE_API
      WHERE PAGE_ID IN (1000300,1000301,1000302,1000303,1000304,1000305,1000401)
-       AND IS_ACTIVE='Y'
   ) LOOP
     IF NOT approved.EXISTS(TO_CHAR(unexpected.PAGE_ID)||':'||TO_CHAR(unexpected.API_ID)) THEN
       RAISE_APPLICATION_ERROR(-20914,
-        'Unexpected ACTIVE page/API dependency; review and reconcile: '||
+        'Unexpected page/API dependency; review and reconcile: '||
         unexpected.PAGE_ID||'/'||unexpected.API_ID);
     END IF;
   END LOOP;
@@ -170,7 +182,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 /
 -- Independent read-only reconciliation; run before enabling traffic:
-SELECT d.PAGE_ID,p.PAGE_PATH,m.HTTP_METHOD,m.API_PATH,d.IS_ACTIVE
+SELECT d.PAGE_ID,p.PAGE_PATH,m.HTTP_METHOD,m.API_PATH,m.IS_ACTIVE AS API_ACTIVE
   FROM T_IAS_EXEC_PAGE_API d
   JOIN T_MENU_PAGES p ON p.ID=d.PAGE_ID
   JOIN T_AU_API_MASTER m ON m.API_ID=d.API_ID
