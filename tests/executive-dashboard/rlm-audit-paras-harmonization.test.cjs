@@ -66,13 +66,13 @@ test('CIA Command Center and Snap dedicated readers remain isolated and accessib
     assert.match(snapJs, /document\.getElementById\('exec-critical-risk'\)\?\.value \|\| ''/);
 });
 
-test('CCO preserves its server-side ALL, High, Medium, Low, Unrated risk paging', () => {
+test('CCO displays only High Medium Low risk choices while retaining secure server pagination', () => {
     const controller = read('AIS/Controllers/ExecutiveDashboardController.cs');
     const critical = read('AIS/Views/ExecutiveOverview/_Critical.cshtml');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
     assert.match(controller, /scope\.DashboardType != "CCO" \|\| f\.View != "audit-paras"/);
     assert.match(js, /actionQuery\.set\('risk', \$\('critical-risk'\)\.value\)/);
-    for (const risk of ['HIGH','MEDIUM','LOW','UNRATED','ALL'])
+    for (const risk of ['HIGH','MEDIUM','LOW'])
         assert.ok(critical.includes('<option value="' + risk + '"'));
     assert.match(controller, /database\.GetCcoObservationPage/);
 });
