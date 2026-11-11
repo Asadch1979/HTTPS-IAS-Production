@@ -16,7 +16,6 @@
                 <span><i class="role-risk-high"></i>High</span>
                 <span><i class="role-risk-medium"></i>Medium</span>
                 <span><i class="role-risk-low"></i>Low</span>
-                <span><i class="role-risk-unrated"></i>Unrated</span>
                 <span>Percentages use each branch's total open paras</span>
             </div>
             <div class="role-heatmap" data-region-heatmap aria-label="Risk exposure by verified branch"><p>Loading authorized branch heatmap…</p></div>
@@ -31,7 +30,7 @@
                 <th scope="col">Unit</th><th scope="col">Open paras</th><th scope="col">High risk</th>
                 <th scope="col">Over 365 days</th><th scope="col">Over 3 cycles</th>
                 <th scope="col">@(regional ? "High-risk share" : "Settled YTD")</th>
-                @if (regional) { <th scope="col">Medium-risk share</th><th scope="col">Low-risk share</th><th scope="col">Unrated share</th> }
+                @if (regional) { <th scope="col">Medium-risk share</th><th scope="col">Low-risk share</th> }
             </tr></thead><tbody data-role-unit-rows></tbody></table>
         </div>
     </article>
