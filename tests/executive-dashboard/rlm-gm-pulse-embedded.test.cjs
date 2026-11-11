@@ -51,6 +51,17 @@ test('Role data endpoint requires GM type 21 and exact RLM glance, leaving GROUP
     assert.match(controller, /HasViewPermission/);
 });
 
+test('Only RLM glance declares the existing GM Pulse role datasets; TOP and GROUP do not gain them', () => {
+    const views = read('AIS/Models/ExecutiveDashboardViews.cs');
+    const api = read('AIS/Controllers/ExecutiveDashboardController.cs');
+    assert.match(views, /public bool EnableGmPulseRoleDatasets \{ get; set; \}/);
+    assert.match(views, /Id == "glance" && EnableGmPulseRoleDatasets/);
+    assert.match(views, /views\.Single\(v => v\.Id == "glance"\)\.EnableGmPulseRoleDatasets = true/);
+    assert.match(views, /new\[\] \{ "GetRoleEntityHeatmap", "GetRoleFollowups" \}/);
+    assert.match(api, /definition\.RoleDatasets, action/);
+    assert.match(api, /requiredPerspective == "regional" && !gmGlanceView/);
+});
+
 test('Existing Oracle reader already returns all four risk counts for scoped branches', () => {
     const adapter = read('AIS/DBConnection.RoleDashboard.cs');
     const model = read('AIS/Models/RoleDashboardData.cs');
