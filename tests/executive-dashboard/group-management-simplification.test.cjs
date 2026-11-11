@@ -46,7 +46,7 @@ test('GROUP report removes redundant labels and notes without removing report re
     assert.doesNotMatch(js, /ⓘ Data notes · Historical balances/);
     assert.match(js, /\$\('status'\)\.hidden = true/);
     assert.match(js, /\$\('status'\)\.hidden = false/);
-    assert.match(dashboard, /if \(app\.dataset\.perspective === 'GROUP'\)/);
+    assert.match(dashboard, /\$\('status'\)\.hidden = true/);
     assert.match(dashboard, /\$\('status'\)\.hidden = false/);
 });
 
