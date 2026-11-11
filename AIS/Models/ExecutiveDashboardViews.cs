@@ -14,12 +14,17 @@ namespace AIS.Models
         public string[] Sections { get; set; }
         public bool UseLifecycleKpis { get; set; }
         public bool EnableGmPulseRoleDatasets { get; set; }
+        public bool EnableGmPulseChartDatasets { get; set; }
         public string[] Datasets => (Kpis.Length > 0 && (!UseLifecycleKpis || Sections.Contains("critical"))
                 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
             .Concat(UseLifecycleKpis ? new[] { "GetKpiLifecycle" } : Array.Empty<string>())
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
-                _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
+                _ => throw new InvalidOperationException("Unknown dashboard section.") }))
+            .Concat(EnableGmPulseChartDatasets
+                ? new[] { "GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend" }
+                : Array.Empty<string>())
+            .Distinct().ToArray();
         // Separate endpoints, fetched only by the scoped role-dashboard UI.
         // Keep them out of Datasets so the existing executive charts are untouched.
         public string[] RoleDatasets => Id == "command" ? new[] { "GetCiaCommandKpis", "GetCiaIssueNature" }
@@ -103,7 +108,9 @@ namespace AIS.Models
                 // after verified root resolution, never exposed as a separate tab.
                 // Admit its existing endpoints at the tab-dataset gate only
                 // for RLM; the endpoint independently enforces GM Office type 21.
-                views.Single(v => v.Id == "glance").EnableGmPulseRoleDatasets = true;
+                var gmGlance = views.Single(v => v.Id == "glance");
+                gmGlance.EnableGmPulseRoleDatasets = true;
+                gmGlance.EnableGmPulseChartDatasets = true;
             }
             if (perspective == "CCO") return CcoDashboardPresentation.Definitions(views.Single(v => v.Id == "reports"));
             return views;
