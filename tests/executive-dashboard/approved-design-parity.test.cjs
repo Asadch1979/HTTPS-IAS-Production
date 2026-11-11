@@ -43,7 +43,7 @@ test('Group comparisons stay separate while GM Regional Pulse is embedded in aut
     assert.match(role,/data-region-heatmap/);
     assert.match(role,/Medium-risk share/);
     assert.match(role,/Low-risk share/);
-    assert.match(role,/Unrated share/);
+    assert.doesNotMatch(role,/Unrated share/);
     assert.match(role,/data-management-bars/);
     assert.match(role,/data-role-followup-rows/);
     assert.match(read('wwwroot/js/executive-role-reporting.js'),/riskMix\(item\)/);
