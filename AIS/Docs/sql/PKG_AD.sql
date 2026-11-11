@@ -1126,9 +1126,9 @@ create or replace package body PKG_AD is
          ROLEID);
       COMMIT;
     END IF;
-
+  
     IF (EMAIL_ADDRESS is not null or EMAIL_ADDRESS != '') THEN
-
+    
       SELECT COUNT(*)
         INTO v_count
         FROM t_email_address
@@ -1797,10 +1797,16 @@ create or replace package body PKG_AD is
     -- the endpoint is registered once under another parent page.
     -- Deploy T_IAS_EXEC_PAGE_API manifest FIRST before compiling this body.
     DELETE FROM T_MENU_PAGES_GROUPMAP mp
-     WHERE mp.group_id = groupid AND mp.page_id = PAGEID;
-    INSERT INTO T_MENU_PAGES_GROUPMAP (GROUPMAP_ID,GROUP_ID,PAGE_ID)
-    VALUES ((SELECT COALESCE(MAX(p.GROUPMAP_ID)+1,1)
-              FROM T_MENU_PAGES_GROUPMAP p),groupid,PAGEID);
+     WHERE mp.group_id = groupid
+       AND mp.page_id = PAGEID;
+
+    INSERT INTO T_MENU_PAGES_GROUPMAP
+      (GROUPMAP_ID, GROUP_ID, PAGE_ID)
+    VALUES
+      ((SELECT COALESCE(MAX(p.GROUPMAP_ID) + 1, 1)
+         FROM T_MENU_PAGES_GROUPMAP p),
+       groupid,
+       PAGEID);
 
     IF PAGEID IN (192,193) THEN
       -- Selected-context API authorization uses the group's role. The explicit
@@ -4444,17 +4450,18 @@ create or replace package body PKG_AD is
 
     if P_REASON is null or length(trim(P_REASON)) = 0 then
       open IO_CURSOR for
-        select 'FALSE' as status, 'Reason / remarks are mandatory.' as remarks
+        select 'FALSE' as status,
+               'Reason / remarks are mandatory.' as remarks
           from dual;
       return;
     end if;
 
     begin
       select ENG.ENTITY_ID, ENG.STATUS
-          into V_OLD_ENTITY_ID, V_STATUS_ID
+        into V_OLD_ENTITY_ID, V_STATUS_ID
         from T_AU_PLAN_ENG ENG
        where ENG.ENG_ID = P_ENG_ID
-       for update;
+         for update;
     exception
       when NO_DATA_FOUND then
         open IO_CURSOR for
@@ -4471,22 +4478,34 @@ create or replace package body PKG_AD is
 
     if V_DEST_COUNT = 0 then
       open IO_CURSOR for
-        select 'FALSE' as status, 'Invalid or inactive destination Entity ID.' as remarks
+        select 'FALSE' as status,
+               'Invalid or inactive destination Entity ID.' as remarks
           from dual;
       return;
     end if;
 
     if V_OLD_ENTITY_ID = P_NEW_ENTITY_ID then
       open IO_CURSOR for
-        select 'FALSE' as status, 'Destination entity cannot be the current entity.' as remarks
+        select 'FALSE' as status,
+               'Destination entity cannot be the current entity.' as remarks
           from dual;
       return;
     end if;
 
-    select count(*)
+    select (select count(*) from T_FRPT_REPORT_META where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_KPI_SNAPSHOT where ENG_ID = P_ENG_ID) +
+           (select count(*) from T_FRPT_NPL_SNAPSHOT where ENG_ID = P_ENG_ID) +
+           (select count(*)
+              from T_FRPT_OVERALL_CONCLUSION
+             where ENG_ID = P_ENG_ID) +
+           (select count(*)
+              from T_FRPT_PDF_STATISTICS
+             where ENG_ID = P_ENG_ID) +
+           (select count(*)
+              from T_FRPT_STAFF_SNAPSHOT
+             where ENG_ID = P_ENG_ID)
       into V_REPORT_COUNT
-      from T_FRPT_REPORT_META
-     where ENG_ID = P_ENG_ID;
+      from dual;
 
     if V_STATUS_ID >= 14 or V_REPORT_COUNT > 0 then
       open IO_CURSOR for
@@ -4497,41 +4516,72 @@ create or replace package body PKG_AD is
     end if;
 
     update T_AU_PLAN_ENG
-       set ENTITY_ID = P_NEW_ENTITY_ID, LASTUPDATEDBY = P_PPNO, LASTUPDATEDDATE = sysdate
+       set ENTITY_ID       = P_NEW_ENTITY_ID,
+           LASTUPDATEDBY   = P_PPNO,
+           LASTUPDATEDDATE = sysdate
      where ENG_ID = P_ENG_ID;
     V_PLAN_ENG_ROWS := sql%rowcount;
 
-    update T_AU_OBSERVATION set ENTITY_ID = P_NEW_ENTITY_ID where ENGPLANID = P_ENG_ID;
+    update T_AU_OBSERVATION
+       set ENTITY_ID = P_NEW_ENTITY_ID
+     where ENGPLANID = P_ENG_ID;
     V_OBSERVATION_ROWS := sql%rowcount;
 
-    update AIS_T_AU_OBSERVATION set ENTITY_ID = P_NEW_ENTITY_ID where ENGPLANID = P_ENG_ID;
+    update AIS_T_AU_OBSERVATION
+       set ENTITY_ID = P_NEW_ENTITY_ID
+     where ENGPLANID = P_ENG_ID;
     V_AIS_OBSERVATION_ROWS := sql%rowcount;
 
-    update T_AU_OBSERVATION_ASSIGNEDTO set ENTITY_ID = P_NEW_ENTITY_ID where ENG_ID = P_ENG_ID;
+    update T_AU_OBSERVATION_ASSIGNEDTO
+       set ENTITY_ID = P_NEW_ENTITY_ID
+     where ENG_ID = P_ENG_ID;
     V_OBS_ASSIGNEDTO_ROWS := sql%rowcount;
 
-    update T_AU_AUDIT_TEAM_TASKLIST set ENTITY_ID = P_NEW_ENTITY_ID where ENG_PLAN_ID = P_ENG_ID;
+    update T_AU_AUDIT_TEAM_TASKLIST
+       set ENTITY_ID = P_NEW_ENTITY_ID
+     where ENG_PLAN_ID = P_ENG_ID;
     V_TEAM_TASKLIST_ROWS := sql%rowcount;
 
     if V_PLAN_ENG_ROWS <> 1 then
-      raise_application_error(-20041, 'Engagement shift failed: engagement master row was not updated exactly once.');
+      raise_application_error(-20041,
+                              'Engagement shift failed: engagement master row was not updated exactly once.');
     end if;
 
     insert into T_AU_ENG_ENTITY_SHIFT_HIST
-      (ID, ENG_ID, OLD_ENTITY_ID, NEW_ENTITY_ID, REASON, PPNO, ROLE_ID, SHIFTED_ON,
-       PLAN_ENG_ROWS, OBSERVATION_ROWS, AIS_OBSERVATION_ROWS, OBS_ASSIGNEDTO_ROWS,
+      (ID,
+       ENG_ID,
+       OLD_ENTITY_ID,
+       NEW_ENTITY_ID,
+       REASON,
+       PPNO,
+       ROLE_ID,
+       SHIFTED_ON,
+       PLAN_ENG_ROWS,
+       OBSERVATION_ROWS,
+       AIS_OBSERVATION_ROWS,
+       OBS_ASSIGNEDTO_ROWS,
        TEAM_TASKLIST_ROWS)
     values
-      (SEQ_AU_ENG_ENTITY_SHIFT_HIST.nextval, P_ENG_ID, V_OLD_ENTITY_ID, P_NEW_ENTITY_ID,
-       trim(P_REASON), P_PPNO, P_ROLE_ID, sysdate, V_PLAN_ENG_ROWS, V_OBSERVATION_ROWS,
-       V_AIS_OBSERVATION_ROWS, V_OBS_ASSIGNEDTO_ROWS, V_TEAM_TASKLIST_ROWS);
-
+      (SEQ_AU_ENG_ENTITY_SHIFT_HIST.nextval,
+       P_ENG_ID,
+       V_OLD_ENTITY_ID,
+       P_NEW_ENTITY_ID,
+       trim(P_REASON),
+       P_PPNO,
+       P_ROLE_ID,
+       sysdate,
+       V_PLAN_ENG_ROWS,
+       V_OBSERVATION_ROWS,
+       V_AIS_OBSERVATION_ROWS,
+       V_OBS_ASSIGNEDTO_ROWS,
+       V_TEAM_TASKLIST_ROWS);
+  
     commit;
 
     open IO_CURSOR for
       select 'TRUE' as status,
-             'Engagement ' || P_ENG_ID || ' shifted from Entity ' || V_OLD_ENTITY_ID ||
-             ' to Entity ' || P_NEW_ENTITY_ID || '.' as remarks
+             'Engagement ' || P_ENG_ID || ' shifted from Entity ' ||
+             V_OLD_ENTITY_ID || ' to Entity ' || P_NEW_ENTITY_ID || '.' as remarks
         from dual;
   exception
     when others then
@@ -4602,15 +4652,20 @@ create or replace package body PKG_AD is
       from t_au_observation_status s
      where s.statusid = S_ID;
     update t_au_observation o
-       set o.status = S_ID,
+       set o.status          = S_ID,
            o.issue_rectified = CASE
-                                 WHEN S_ID IN (4, 9) THEN o.issue_rectified
-                                 ELSE 0
+                                 WHEN S_ID IN (4, 9) THEN
+                                  o.issue_rectified
+                                 ELSE
+                                  0
                                END
      where o.id = obs_id;
     -- Reversal invalidates the copied rectification flag as well as the source flag.
-    UPDATE ais_t_au_post_compliance c SET c.issue_rectified = 0
-     WHERE c.ind = 'A' AND c.new_para_id = obs_id AND S_ID NOT IN (4, 9);
+    UPDATE ais_t_au_post_compliance c
+       SET c.issue_rectified = 0
+     WHERE c.ind = 'A'
+       AND c.new_para_id = obs_id
+       AND S_ID NOT IN (4, 9);
     commit;
     if (S_ID = 1) then
       delete from t_au_observation_assignedto o where o.obs_id = O_B;
@@ -9015,7 +9070,7 @@ create or replace package body PKG_AD is
                 'Unrated'
              END AS risk
         FROM AIS_T_AU_POST_COMPLIANCE c
-       WHERE c.entity_id = P_DEPARTMENT_ID
+       WHERE c.entity_id = P_DEPARTMENT_ID and c.para_status = 8
          AND ((V_BUCKET = 'OVER_THREE' AND NVL(c.com_cycle, 0) > 3) OR
              (V_BUCKET = 'ZERO' AND NVL(c.com_cycle, 0) = 0))
          AND (P_DEPARTMENT_ID = P_ENT_ID OR EXISTS
