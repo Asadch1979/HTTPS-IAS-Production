@@ -34,6 +34,8 @@ DECLARE
   v_active VARCHAR2(1);
   v_mapped_active VARCHAR2(1);
   v_rows NUMBER:=0;
+  TYPE expected_map IS TABLE OF PLS_INTEGER INDEX BY VARCHAR2(100);
+  approved expected_map;
   PROCEDURE verify_page(p_id NUMBER,p_path VARCHAR2,p_menu NUMBER DEFAULT 16) IS
   BEGIN
     SELECT COUNT(*) INTO v_count FROM T_MENU_PAGES
@@ -67,6 +69,7 @@ DECLARE
       RAISE_APPLICATION_ERROR(-20913,
         'Existing dependency is DISABLED; review manually: '||p_id||' / '||v_path);
     END IF;
+    approved(TO_CHAR(p_id)||':'||TO_CHAR(v_api_id)):=1;
     v_rows:=v_rows+1;
   END;
   PROCEDURE shared(p_id NUMBER) IS
@@ -145,6 +148,19 @@ BEGIN
   link_get(1000305,'ExecutiveDashboard','GetRoleEntityHeatmap');
   link_get(1000305,'ExecutiveDashboard','GetRoleFollowups');
 
+  -- An existing active dependency outside this exact reviewed list would
+  -- bypass the approval boundary. Reject it; do not silently delete it.
+  FOR unexpected IN (
+    SELECT PAGE_ID,API_ID FROM T_IAS_EXEC_PAGE_API
+     WHERE PAGE_ID IN (1000300,1000301,1000302,1000303,1000304,1000305,1000401)
+       AND IS_ACTIVE='Y'
+  ) LOOP
+    IF NOT approved.EXISTS(TO_CHAR(unexpected.PAGE_ID)||':'||TO_CHAR(unexpected.API_ID)) THEN
+      RAISE_APPLICATION_ERROR(-20914,
+        'Unexpected ACTIVE page/API dependency; review and reconcile: '||
+        unexpected.PAGE_ID||'/'||unexpected.API_ID);
+    END IF;
+  END LOOP;
   COMMIT;
   DBMS_OUTPUT.PUT_LINE('PAGE->API dependencies verified: '||v_rows);
   DBMS_OUTPUT.PUT_LINE('No page assignments, API_MASTER status, role grants or Oracle package data changed.');
