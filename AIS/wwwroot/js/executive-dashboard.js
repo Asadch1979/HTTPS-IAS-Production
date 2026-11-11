@@ -189,6 +189,21 @@
             ['Over 3 Compliance Cycles', 'over3ComplianceCycles', closingQuality]]
             .filter(([, key]) => $('kpis').dataset.kpiKeys.split(',').includes(key))
             .forEach(([label, key, quality]) => {
+                // Full lifecycle stage names in Group/RLM only. TOP labels and
+                // layout remain unchanged.
+                if (['GROUP', 'RLM'].includes(app.dataset.perspective)) {
+                    label = ({
+                        openingOpenParas: 'Opening Open Paras',
+                        issueIdentified: 'Issue Identified During Audit',
+                        issueRectified: 'Issue Rectified During Audit',
+                        paraAdded: 'Para Added at Audit Closure',
+                        parasSettled: 'Paras Settled – Post Compliance',
+                        closingOpenParas: 'Closing Open Paras',
+                        highRiskOpenParas: 'High-Risk Open Paras',
+                        over1YearParas: 'Over 1-Year-old Open Paras',
+                        over3ComplianceCycles: 'Over 3 Compliance Cycles Rejected Paras'
+                    })[key] || label;
+                }
                 const card = el('div', null, 'exec-kpi');
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
                 card.title = quality === 'estimated'
