@@ -217,7 +217,7 @@
             $('critical-prev').disabled = criticalOffset === 0;
             $('critical-next').disabled = criticalOffset + rows.length >= count || !rows.length;
         } else $('critical-note').textContent =
-            `Showing ${number(rows.length)} high-risk audit paras${count > rows.length ? ' (bounded list)' : ''}.`;
+            `Showing ${number(rows.length)} high-risk audit paras${rows.length >= 100 ? ' (first 100; list is capped)' : ''}.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = app.dataset.perspective === 'CCO' ? 8 : 7; tr.append(cell); target.append(tr);
         }
