@@ -25,15 +25,15 @@ observationFilter.Risk="HIGH";observationFilter.Offset=int.MaxValue;
 try { observationFilter.Validate();throw new Exception("Paging overflow accepted"); } catch(ArgumentException) { checks++; }
 var definitions=ExecutiveDashboardViews.ForPerspective("CCO");
 var visible=definitions.Where(v=>v.Id!="reports").ToArray();
-Check(string.Join(",",visible.Select(v=>v.Id))=="overview,critical-observations,org-position,field-office,gm-region,regional-rankings,effectiveness","Seven ordered CCO tabs");
+Check(string.Join(",",visible.Select(v=>v.Id))=="overview,audit-paras,org-position,field-office,gm-region,regional-rankings,effectiveness","Seven ordered CCO tabs");
 Check(string.Join(",",definitions.Single(v=>v.Id=="reports").Reports)=="B,C,D","CCO report allowlist");
 Check(!visible[0].UseLifecycleKpis && !visible[0].Datasets.Contains("GetKpiLifecycle") && new[]{"GetKpiSummary","GetRiskSummary","GetAgingSummary","GetCycleSummary","GetSettlementTrend"}.All(visible[0].Datasets.Contains),"Overview requests only authorized CCO summary/distribution datasets");
-Check(!visible[0].Datasets.Contains("GetCriticalItems") && definitions.Single(v=>v.Id=="critical-observations").Datasets.Contains("GetCriticalItems"),"Critical reader belongs to dedicated tab");
+Check(!visible[0].Datasets.Contains("GetCriticalItems") && definitions.Single(v=>v.Id=="audit-paras").Datasets.Contains("GetCriticalItems") && definitions.Single(v=>v.Id=="audit-paras").Datasets.Contains("GetRiskSummary"),"Audit Para’s uses the approved critical register and risk distribution");
 foreach(var tab in new[]{"org-position"}) Check(definitions.Single(v=>v.Id==tab).Datasets.Length==0,"Pending tabs must not fetch invented data");
 foreach(var role in new[]{"TOP","GROUP","RLM","CIA"}) Check(!ExecutiveDashboardViews.ForPerspective(role).Any(v=>v.Id=="overview"||v.Id=="field-office"),"CCO navigation isolation");
 foreach(var report in new[]{"A","E"}) { try { CcoDashboardPresentation.ResolveLegacy("reports",report); throw new Exception("Unapproved report accepted"); } catch(ArgumentException) { checks++; } }
 var config=new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string,string>{{"Security:CauKey","cco-test-only"},{"SecretKey","cco-test-only-not-a-production-secret"}}).Build();
-foreach(var pair in new[]{("glance","overview"),("position","overview"),("risk","overview"),("aging","overview"),("settlement","effectiveness"),("performance","overview"),("reports","field-office")}) {
+foreach(var pair in new[]{("glance","overview"),("position","overview"),("risk","overview"),("aging","overview"),("settlement","effectiveness"),("performance","overview"),("critical-observations","audit-paras"),("reports","field-office")}) {
  var (context,session,db)=Context(38);
  context.Request.QueryString=new QueryString("?report=B");
  var controller=new ExecutiveOverviewController(db,session,new Permissions(),new Pages(),null,NullLogger<ExecutiveOverviewController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context,RouteData=new Microsoft.AspNetCore.Routing.RouteData()}};
