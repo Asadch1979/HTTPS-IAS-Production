@@ -22,7 +22,7 @@
             <a href="@Url.Action("RLM", "ExecutiveOverview")" aria-current="@(Model.DashboardType == "RLM" ? "page" : null)">Division / GM / Region</a>
         </nav>
     }
-<section class="org exec exec-cia" id="executive-dashboard" data-perspective="CIA" data-view="command"
+<section class="org exec exec-cia" id="executive-dashboard" data-perspective="CIA" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)"
          data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="CIA" aria-label="CIA Audit Command Center">
     <header class="cia-executive-header">
         <div class="dashboard-title cia-executive-title">
@@ -35,14 +35,41 @@
             </nav>
         </div>
     </header>
-    <partial name="_CiaCommandFilters" model="Model" />
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading CIA Command Center…</p>
-    <div id="exec-results" class="exec-view-command">
-        <partial name="_CiaCommandCenter" model="Model" />
-    </div>
-    <noscript><p>Enable JavaScript to load CIA Command Center data.</p></noscript>
+    <nav class="exec-navigation" data-view-navigation aria-label="CIA dashboard views">
+        <a class="org-button" href="@Url.Action("CIA", "ExecutiveOverview", new { view = "command" })"
+           aria-current="@(Model.SelectedView.Id == "command" ? "page" : null)">CIA Command Center</a>
+        <a class="org-button" href="@Url.Action("CIA", "ExecutiveOverview", new { view = "audit-paras" })"
+           aria-current="@(Model.SelectedView.Id == "audit-paras" ? "page" : null)">Audit Para’s</a>
+    </nav>
+    @if (Model.SelectedView.Id == "command")
+    {
+        <partial name="_CiaCommandFilters" model="Model" />
+        <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading CIA Command Center…</p>
+        <div id="exec-results" class="exec-view-command">
+            <partial name="_CiaCommandCenter" model="Model" />
+        </div>
+    }
+    else
+    {
+        <form id="exec-filters" class="exec-filters" method="get" action="@Url.Action("CIA", "ExecutiveOverview")">
+            <input type="hidden" name="view" value="audit-paras" />
+            <button class="org-button" type="submit" id="exec-refresh">Apply</button>
+        </form>
+        <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading audit paras…</p>
+        <div id="exec-results" class="exec-view-audit-paras" hidden>
+            <partial name="_AuditParas" model="Model" />
+        </div>
+    }
+    <noscript><p>Enable JavaScript to load CIA reporting data.</p></noscript>
 </section>
 <partial name="_DashboardExportAssets" />
 @section Scripts {
-    <script src="~/js/cia-command-center.js" asp-append-version="true"></script>
+    @if (Model.SelectedView.Id == "command")
+    {
+        <script src="~/js/cia-command-center.js" asp-append-version="true"></script>
+    }
+    else
+    {
+        <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
+    }
 }
