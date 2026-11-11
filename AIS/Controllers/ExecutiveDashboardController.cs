@@ -260,6 +260,15 @@ namespace AIS.Controllers
                     if (definition == null || (!System.Linq.Enumerable.Contains(definition.Datasets, action) &&
                         !System.Linq.Enumerable.Contains(definition.RoleDatasets, action)))
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
+                    // RLM's embedded Regional Pulse charts are available only to
+                    // an authenticated GM Office root. The same four actions can
+                    // serve other authorized tabs; restrict only RLM/glance.
+                    if (scope.DashboardType == "RLM" && filters.View == "glance" &&
+                        new[] { "GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend" }
+                            .Contains(action, StringComparer.Ordinal) &&
+                        database.GetExecutiveDashboardRoot(scope)?.EntityTypeId != 21)
+                        throw new ExecutiveDashboardAccessException("EntityScope",
+                            "Regional Pulse charts require an authorized GM Office root.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
