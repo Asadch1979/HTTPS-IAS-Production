@@ -1,20 +1,24 @@
-# Entity route separation review
+# Entity workspace correction review (PR #381)
 
-## Changes
-- Entity_Dashboard.cshtml: restored the complete legacy view; removed the redundant Legacy filename.
-- Entity_Workspace.cshtml: preserved the compact four-area view, changing only its data URL to Url.Action(Entity_Workspace).
-- AdministrationPanelController.cs: legacy-only action; retains stepKey validation, authorized model and session revocation check.
-- EntityWorkspace controller partial: independent action and explicit mapped page grant check, including Super Users.
-- EntityReads controller partial: workspace-specific authorization; Oracle adapter, validation, pagination and error handling unchanged.
-- Administration links: permission-gated workspace link, no preview flag.
-- Tests: updated workspace view references and added route separation assertions.
+## Included application corrections
+- AdministrationPanelController.cs: removed workspace link construction and both workspace ViewData assignments; the original dashboard uses only its authorized model and visible steps.
+- Entity_Dashboard.cshtml: removed the extra administration panel; original stepper, eight step definitions, partials and legacy JavaScript are unchanged.
+- AdministrationPanelController.EntityWorkspace.cs: new workspace model permits zero authorized legacy operations; workspace page authorization resolves ID 467 and checks explicit cached grants. Legacy operations still require access to the original dashboard's **effective deployed catalog page ID** plus their own operation grants. No blanket access was added. Optional links use TryResolvePageId, eliminating absent-path warning sources without suppressing real authorization failures. Workspace data permission failures return HTTP 403 JSON; missing authentication/session returns HTTP 401.
+- PageIdResolver.cs: retains the existing code fallback for the old dashboard (970202) and adds the new Entity_Workspace code fallback (467).
+- Program.cs and route-separation.test.cjs: regression checks for route isolation, separate model without dashboard/operation grants, reader denial, and distinct effective original/workspace page registration.
 
-## Preservation evidence
-Git diff against merge 4d979db0 (PR #362) showed no changes to the legacy view or legacy JavaScript before separation. The restored view retains that complete implementation. LoadEntityDashboardStep, its independent permission checks, all business partials, engagement scripts, Oracle adapters and procedures are unchanged. PR #365's compact workspace is preserved with only its reader URL changed.
+## Explicitly excluded from PR #381
+- **AIS/wwwroot/Images/Page ID.xlsx** is unchanged from main, by request.
+- The prior draft of bd16dfa7 edited workbook sheet1.xml: it added workspace 467 and changed the old dashboard's existing Excel entry from 414 to 970202. **Neither workbook edit is included in this PR.**
+- The active PageIdResolver loads Page ID.xlsx before code fallback; existing workbook entries win. Consequently, the unchanged workbook may still map the old dashboard to **414**, not fallback 970202. Test output reports the effective legacy ID rather than incorrectly claiming that the workbook was migrated.
+- Code fallback 467 applies only when the workbook has no conflicting workspace route. Verify the actual deployed workbook and the exact 467 grants/menu registration before activating the new workspace. Do not silently change the workbook or broaden permissions to make it open.
+- Verify the original dashboard retains its intended effective ID and grants under the separately managed page catalog. If a catalog migration to 970202 is required, handle it through a separately approved deployment task.
 
-## Deployment dependency — fail closed
-No approved new page ID or grants were supplied. Register /AdministrationPanel/Entity_Workspace through IAS page management, update the deployed wwwroot/Images/Page ID.xlsx mapping with the approved distinct ID, and explicitly grant intended users/roles through the normal process. Retain dashboard ID 970202. No mapping, grant or menu record is invented by this change. Missing mapping or explicit allowed-view grant denies workspace access even to Super Users. Unscoped readers additionally remain Super-User-only. Legacy operation permissions remain independently enforced by the unchanged loader. Activate a menu entry only after approval and UAT.
+## Verification and release
+- Codex reported a prior .NET build (0 errors, 57 warnings), 23 passing Node tests and C# regression checks on the version **including workbook modifications**. Those results do not establish success after excluding the workbook and changing the catalog-dependent assertion.
+- No authenticated Oracle/browser test, screenshot comparison or two-tab isolation test has been executed in this environment. Run the .NET build, Node tests and C# regression harness again after checkout, then confirm both URLs and all eight legacy operations in staging.
+- No Oracle packages, legacy operation readers, business partials, engagement reversal/shifting APIs, database data or permission grants have been changed.
+- The branch was brought forward from the latest main commit through a content-preserving merge commit, so PR #381 contains only the authorized seven text-file changes and excludes the workbook.
 
-## Validation and outstanding acceptance checks
-Executed: Node frontend regression suite and dotnet run --project tests/entity-workspace/EntityWorkspace.Checks.csproj --no-restore.
-Not executed: authenticated Oracle-backed operations, browser two-tab isolation, visual before/after screenshots, live direct-access/session-revocation matrix, and root/non-root PathBase browser tests. No authenticated UAT session or approved workspace page registration was available. These remain required before acceptance/deployment; no successful live regression or screenshot comparison is claimed.
+## Production permissions
+The new workspace's code expects PAGE_ID 467 with explicit user/role grants. Unscoped Oracle readers are additionally Super User-only. Access to page 467 does not grant legacy operations. The old dashboard's actual page authorization continues to depend on the effective, unchanged deployment catalog; **do not claim PAGE_ID 970202 is effective merely because the code fallback lists it**.

@@ -49,6 +49,10 @@ Check(permittedModel.VisibleSteps.All(s=>s.RequiredPermissionPageId==3),"unrelat
 var linksMethod=typeof(AdministrationPanelController).GetMethod("BuildEntityAdministrationLinks",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
 var links=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(Controller(true,true,1,2),new object[]{new SessionUser{ID=5}});
 Check(links.Count==1 && links[0].StepKey=="AUTHORIZE_AUDITEE_ENTITIES_UPDATE" && links[0].LegacyPath.EndsWith("stepKey=AUTHORIZE_AUDITEE_ENTITIES_UPDATE"),"legacy function directory filters each permission and routes to working host");
+var workspaceModelMethod = typeof(AdministrationPanelController).GetMethod("BuildEntityWorkspaceViewModel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+var independentModel = (AIS.Models.WorkflowDashboard.WorkflowDashboardViewModel)workspaceModelMethod.Invoke(Controller(true,true,467), new object[]{new SessionUser{ID=5}, null});
+Check(independentModel.DashboardKey=="ENTITY_WORKSPACE" && !independentModel.VisibleSteps.Any(), "workspace model exists without dashboard or operation permissions");
+Check(Controller(true,true).Entity_Workspace(data:"search") is ObjectResult denial && denial.StatusCode==403, "workspace AJAX denied with 403 rather than HTML redirect");
 var reached=false;
 var revokedContext=new DefaultHttpContext();
 revokedContext.Request.Path="/AdministrationPanel/LoadEntityDashboardStep";
@@ -59,6 +63,11 @@ Check(!reached && revokedContext.Response.StatusCode==401,"revoked IAS session i
 
 var root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../AIS"));
 var realPages=new PageIdResolver(new TestEnvironment(root),NullLogger<PageIdResolver>.Instance);
+var existingLegacyPageId = realPages.ResolvePageId("/AdministrationPanel/Entity_Dashboard");
+Check(existingLegacyPageId > 0 && existingLegacyPageId != 467,
+    "unchanged active Page ID.xlsx retains the legacy dashboard mapping distinct from workspace 467");
+Console.WriteLine("Effective original dashboard PAGE_ID from unchanged catalog: " + existingLegacyPageId);
+Check(realPages.ResolvePageId("/AdministrationPanel/Entity_Workspace")==467,"workspace registration resolves to approved 467");
 var catalogController=Controller(true,true);
 var resolverField=typeof(AdministrationPanelController).GetField("_pageIdResolver",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
 resolverField.SetValue(catalogController,realPages);
@@ -68,11 +77,11 @@ var expectedStepIds=new[]{217,216,218,41,323,324,225,225};
 Check(actualSteps.Select(s=>s.RequiredPermissionPageId).SequenceEqual(expectedStepIds),"all eight step IDs match effective active/archive configuration");
 foreach(var step in actualSteps){Console.WriteLine($"MAPPING: {step.StepKey} = {step.RequiredPermissionPageId}");Check(step.RequiredPermissionPageId>0,"configured original step "+step.StepKey);}
 foreach(var action in new[]{"entity_heirarchy","manage_entity_type","manage_entity_relations","manage_entity_mapping","audit_comp_management","gm_repo_line_management","entity_gm_reporting_div_management","EntityShiftingHistory"}){var id=realPages.ResolvePageId("/AdministrationPanel/"+action);Console.WriteLine($"MAPPING: {action} = {id}");var expected=action switch {"audit_comp_management"=>265,"EntityShiftingHistory"=>448,_=>0};Check(id==expected,"additional link mapping snapshot "+action);}
-var configuredController=Controller(true,true,970202,217,216,218,41,323,324,225,265,448);
+var configuredController=Controller(true,true,existingLegacyPageId,217,216,218,41,323,324,225,265,448);
 resolverField.SetValue(configuredController,realPages);
 var configuredLinks=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(configuredController,new object[]{new SessionUser{ID=5}});
 Check(configuredLinks.Count==10,"all eight mapped steps and two mapped additional functions visible with permission; six unmapped links excluded");
-var deniedController=Controller(true,true,970202);
+var deniedController=Controller(true,true,existingLegacyPageId);
 resolverField.SetValue(deniedController,realPages);
 Check(((List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(deniedController,new object[]{new SessionUser{ID=5}})).Count==0,"dashboard-only access cannot expose any configured legacy function");
 Check(Controller(true,true,1).GetShiftableEngagements(5) is ForbidResult,"direct shifting reader requires shifting policy");

@@ -302,6 +302,7 @@ namespace AIS.Services
                 ["/MANReport/GeneratePdf"] = 970101,
                 ["/AdministrationPanel/User_Dashboard"] = 970201,
                 ["/AdministrationPanel/Entity_Dashboard"] = 970202,
+                ["/AdministrationPanel/Entity_Workspace"] = 467,
                 ["/Setup/Checklist_Dashboard"] = 970203,
                 ["/Planning/Planning"] = 970204,
                 ["/FAD/Draft_report_Checking"] = 417,
