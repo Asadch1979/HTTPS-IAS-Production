@@ -71,10 +71,11 @@ test('GROUP Risk is High Risk with one KPI and High-only observation list, while
     assert.match(views, /aging\.Sections = new\[\] \{ "aging", "cycle" \}/);
     // No frontend-only High filter; the approved source reader already returns RiskId=1.
     assert.match(source, /RiskId = 1, RiskName = b\.RiskName/);
-    assert.match(critical, /@if \(Model\.DashboardType != "GROUP"\) \{ <label class="exec-risk-filter"/);
+    assert.match(critical, /@if \(isCco\)/);
+    assert.match(critical, /<select id="exec-critical-risk"/);
     assert.match(client, /\$\('critical-risk'\)\?\.value \|\| ''/);
     assert.match(client, /if \(filter\) \{/);
-    assert.match(client, /Showing \$\{number\(rows\.length\)\} high-risk observations/);
+    assert.match(client, /Showing \$\{number\(rows\.length\)\} high-risk audit paras/);
     // Keep CCO multi-risk selection and its paging; other parents retain their dropdown.
     for (const choice of ['HIGH', 'MEDIUM', 'LOW', 'UNRATED', 'ALL'])
         assert.match(critical, new RegExp('<option value="' + choice + '"'));
