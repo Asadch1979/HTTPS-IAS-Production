@@ -232,7 +232,7 @@ namespace AIS.Controllers
                     LogDenial("PagePermission", user, scope.DashboardType);
                     return Error(403, "forbidden", "The executive dashboard page is not authorized or mapped.");
                 }
-                if (!database.HasActiveExecutivePageApi(pageId, Request.Method, Request.Path.Value) ||
+                if (!database.HasActiveExecutivePageApi(pageId, user.UserRoleID, Request.Method, Request.Path.Value) ||
                     (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
                     !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value)))
                 {
