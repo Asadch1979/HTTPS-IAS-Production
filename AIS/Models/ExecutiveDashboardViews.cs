@@ -84,6 +84,14 @@ namespace AIS.Models
                 // Management position is the canonical Group tab; the generic position tab duplicates it.
                 views.RemoveAll(v => v.Id == "position");
                 views.Single(v => v.Id == "reports").Title = "CCM Reports";
+                // GROUP High Risk displays a single high-risk KPI plus the approved High-risk observation register.
+                var highRisk = views.Single(v => v.Id == "risk");
+                highRisk.Title = "High Risk";
+                highRisk.Kpis = new[] { "highRiskParas" };
+                // Critical observations belong on High Risk, not the Aging & Compliance tab.
+                var aging = views.Single(v => v.Id == "aging");
+                aging.Kpis = new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas" };
+                aging.Sections = new[] { "aging", "cycle" };
             }
             if (perspective == "GROUP" || perspective == "RLM")
                 views.Insert(0, View("management", perspective == "GROUP" ? "Audit Para Position" : "ZTBL | Management Audit Dashboard", "_ManagementAudit",
