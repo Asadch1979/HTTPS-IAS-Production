@@ -80,7 +80,7 @@ test('Charts are purely presentation over authorized IAS responses', () => {
     assert.match(role,/GetRoleEntityHeatmap/);
     assert.match(role,/GetRoleUnitComparison/);
     assert.match(role,/GetRoleFollowups/);
-    assert.match(role,/data-role-mode/);
+    assert.match(role,/high\.pct >= 20.*high\.pct >= 10/);
     assert.match(role,/rows\.slice\(\)\.sort/);
 });
 
