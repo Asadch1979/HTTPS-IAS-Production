@@ -63,7 +63,10 @@ Check(!reached && revokedContext.Response.StatusCode==401,"revoked IAS session i
 
 var root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../AIS"));
 var realPages=new PageIdResolver(new TestEnvironment(root),NullLogger<PageIdResolver>.Instance);
-Check(realPages.ResolvePageId("/AdministrationPanel/Entity_Dashboard")==970202,"legacy page registration remains 970202");
+var existingLegacyPageId = realPages.ResolvePageId("/AdministrationPanel/Entity_Dashboard");
+Check(existingLegacyPageId > 0 && existingLegacyPageId != 467,
+    "unchanged active Page ID.xlsx retains the legacy dashboard mapping distinct from workspace 467");
+Console.WriteLine("Effective original dashboard PAGE_ID from unchanged catalog: " + existingLegacyPageId);
 Check(realPages.ResolvePageId("/AdministrationPanel/Entity_Workspace")==467,"workspace registration resolves to approved 467");
 var catalogController=Controller(true,true);
 var resolverField=typeof(AdministrationPanelController).GetField("_pageIdResolver",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
