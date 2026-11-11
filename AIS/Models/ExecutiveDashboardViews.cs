@@ -13,6 +13,7 @@ namespace AIS.Models
         public string[] Kpis { get; set; }
         public string[] Sections { get; set; }
         public bool UseLifecycleKpis { get; set; }
+        public bool EnableGmPulseRoleDatasets { get; set; }
         public string[] Datasets => (Kpis.Length > 0 && (!UseLifecycleKpis || Sections.Contains("critical"))
                 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
             .Concat(UseLifecycleKpis ? new[] { "GetKpiLifecycle" } : Array.Empty<string>())
@@ -23,7 +24,9 @@ namespace AIS.Models
         // Keep them out of Datasets so the existing executive charts are untouched.
         public string[] RoleDatasets => Id == "command" ? new[] { "GetCiaCommandKpis", "GetCiaIssueNature" }
             : Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
-            : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();
+            : Id == "glance" && EnableGmPulseRoleDatasets
+                ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" }
+                : Array.Empty<string>();
         public string[] Reports { get; set; } = Array.Empty<string>();
     }
 
@@ -98,6 +101,9 @@ namespace AIS.Models
                 views.RemoveAll(v => v.Id == "position" || v.Id == "risk");
                 // GM-only Regional Audit Pulse is embedded into RLM At a Glance
                 // after verified root resolution, never exposed as a separate tab.
+                // Admit its existing endpoints at the tab-dataset gate only
+                // for RLM; the endpoint independently enforces GM Office type 21.
+                views.Single(v => v.Id == "glance").EnableGmPulseRoleDatasets = true;
             }
             if (perspective == "CCO") return CcoDashboardPresentation.Definitions(views.Single(v => v.Id == "reports"));
             return views;
