@@ -73,16 +73,15 @@
         if (app.dataset.perspective !== 'GROUP')
         target.append(element('p', 'Top eight units by open-para count; common width scale = largest selected unit. Individual reporting units may contain nested descendants.', 'role-chart-note'));
     }
-    // Every percentage uses the branch's open para denominator, not the
-    // number of rated records. Unrated stays explicit so the mix reconciles.
+    // High/Medium/Low shares always use ALL branch open paras as denominator.
+    // Missing classifications remain in the Oracle data, but are not a visible risk category.
     const share = (count, open) => open > 0 ? Math.max(0, count / open * 100) : 0;
     const riskMix = item => {
         const open = Number(item.openParas || 0);
         return [
             { code: 'high', name: 'High', count: Number(item.highRisk || 0), pct: share(Number(item.highRisk || 0), open) },
             { code: 'medium', name: 'Medium', count: Number(item.mediumRisk || 0), pct: share(Number(item.mediumRisk || 0), open) },
-            { code: 'low', name: 'Low', count: Number(item.lowRisk || 0), pct: share(Number(item.lowRisk || 0), open) },
-            { code: 'unrated', name: 'Unrated', count: Number(item.unrated || 0), pct: share(Number(item.unrated || 0), open) }
+            { code: 'low', name: 'Low', count: Number(item.lowRisk || 0), pct: share(Number(item.lowRisk || 0), open) }
         ];
     };
     function regionHeatmap(rows) {
@@ -125,7 +124,9 @@
                 details.append(line);
             }
             tile.append(details);
-            const counted = mix.reduce((sum, risk) => sum + risk.count, 0);
+            // Reconcile against the non-displayed source count as well, without
+            // treating it as a fourth visible category.
+            const counted = mix.reduce((sum, risk) => sum + risk.count, 0) + Number(item.unrated || 0);
             if (counted !== open)
                 tile.append(element('small', 'Risk classification totals require reconciliation.', 'regional-risk-warning'));
             const dots = element('div', null, 'regional-heat-extras');
@@ -161,7 +162,7 @@
                 }
                 tbody.append(tr);
             }
-            empty(tbody, rows, mode === 'regional' ? 9 : 6);
+            empty(tbody, rows, mode === 'regional' ? 8 : 6);
             if (mode === 'regional') regionHeatmap(rows);
             else {
                 managementBars(rows);
@@ -181,7 +182,9 @@
             for (const item of rows) {
                 const tr = element('tr');
                 cell(tr, `${item.entityName || 'Unknown entity'} · ${item.paraNo || 'Para not numbered'}`, 'role-entity-name');
-                const risk = item.riskName || (item.riskId == null ? 'Unrated' : String(item.riskId));
+                const risk = [1, 2, 3].includes(Number(item.riskId))
+                    ? (item.riskName || ({ 1: 'High', 2: 'Medium', 3: 'Low' })[item.riskId])
+                    : '—';
                 cell(tr,risk,'',item.riskId === 1 ? 'high' : item.riskId === 2 ? 'medium' : '');
                 cell(tr,item.agingDays == null ? 'Unknown' : number.format(item.agingDays));
                 cell(tr,item.comCycle == null ? 'Unknown' : number.format(item.comCycle));
