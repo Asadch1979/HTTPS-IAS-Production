@@ -183,11 +183,12 @@ namespace AIS.Controllers
                      (scope.RoleId == 1 && scope.GroupRootId.HasValue && session.IsSuperUser())) &&
                     (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
                 // Role readers are restricted to their exact authorized view.
-                // Branch Pulse was moved to RLM At a Glance and is GM Office
-                // (entity type 21) only, never a Region/type-5 or a browser root.
-                var isGmPulse = scope.DashboardType == "RLM" && root?.EntityTypeId == 21;
+                // The existing RLM Regional Pulse supports GM Office (21) and Region (5).
+                // Root is derived from the authenticated IAS scope, not the browser.
+                var isRegionalPulse = scope.DashboardType == "RLM" &&
+                    (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
                 var managementView = isManagement && f.View == "management";
-                var gmGlanceView = isGmPulse && f.View == "glance";
+                var gmGlanceView = isRegionalPulse && f.View == "glance";
                 if ((!managementView && !gmGlanceView) ||
                     (requiredPerspective == "management" && !managementView) ||
                     (requiredPerspective == "regional" && !gmGlanceView))
@@ -261,14 +262,14 @@ namespace AIS.Controllers
                         !System.Linq.Enumerable.Contains(definition.RoleDatasets, action)))
                         return Error(400, "invalid_request", "The dataset is not enabled for this dashboard view.");
                     // RLM's embedded Regional Pulse charts are available only to
-                    // an authenticated GM Office root. The same four actions can
+                    // an authenticated GM Office or Region root. The same four actions can
                     // serve other authorized tabs; restrict only RLM/glance.
                     if (scope.DashboardType == "RLM" && filters.View == "glance" &&
                         new[] { "GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend" }
                             .Contains(action, StringComparer.Ordinal) &&
-                        database.GetExecutiveDashboardRoot(scope)?.EntityTypeId != 21)
+                        !new[] { 21, 5 }.Contains(database.GetExecutiveDashboardRoot(scope)?.EntityTypeId ?? -1))
                         throw new ExecutiveDashboardAccessException("EntityScope",
-                            "Regional Pulse charts require an authorized GM Office root.");
+                            "Regional Pulse charts require an authorized GM Office or Region root.");
                 }
                 // Validate the chosen dimensions and cascading hierarchy on the server.
                 if (filters.DimensionId.HasValue || filters.ReportingOfficeId.HasValue)
