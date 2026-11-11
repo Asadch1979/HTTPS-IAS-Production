@@ -214,6 +214,16 @@ namespace AIS.Controllers
                     return RedirectToAction(nameof(RLM), new { view = "glance",
                         startDate = filters.StartDate, endDate = filters.EndDate,
                         groupRootId = scope.GroupRootId });
+                // Retired RLM generic position and GROUP/RLM standalone High-Risk tabs
+                // preserve authenticated scope when redirecting existing bookmarks.
+                if (!auditParaSnap && scope.DashboardType == "RLM" && view == "position")
+                    return RedirectToAction(nameof(RLM), new { view = "glance",
+                        startDate = filters.StartDate, endDate = filters.EndDate,
+                        groupRootId = scope.GroupRootId });
+                if (!auditParaSnap && (scope.DashboardType == "GROUP" || scope.DashboardType == "RLM") && view == "risk")
+                    return RedirectToAction(scope.DashboardType, new { view = "audit-paras",
+                        startDate = filters.StartDate, endDate = filters.EndDate,
+                        groupRootId = scope.GroupRootId });
                 // Legacy Group bookmarks for the duplicate position tab go to the
                 // established management position, preserving the authorized root.
                 if (!auditParaSnap && scope.DashboardType == "GROUP" && view == "position")
