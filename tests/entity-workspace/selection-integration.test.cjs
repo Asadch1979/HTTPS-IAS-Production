@@ -7,7 +7,7 @@ const path = require('node:path');
 const base = path.resolve(__dirname, '../..');
 const bridge = fs.readFileSync(path.join(base, 'AIS/wwwroot/js/entity-workspace-selection.js'), 'utf8');
 const main = fs.readFileSync(path.join(base, 'AIS/wwwroot/js/administration-entity-dashboard.js'), 'utf8');
-const view = fs.readFileSync(path.join(base, 'AIS/Views/AdministrationPanel/Entity_Dashboard.cshtml'), 'utf8');
+const view = fs.readFileSync(path.join(base, 'AIS/Views/AdministrationPanel/Entity_Workspace.cshtml'), 'utf8');
 const addView = fs.readFileSync(path.join(base, 'AIS/Views/AdministrationPanel/DashboardPartials/_EntityUnifiedAddition.cshtml'), 'utf8');
 
 function make(tag) {

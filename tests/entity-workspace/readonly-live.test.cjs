@@ -6,14 +6,14 @@ const base = path.resolve(__dirname, '../..');
 const read = file => fs.readFileSync(path.join(base, file), 'utf8');
 const endpoint = read('AIS/Controllers/AdministrationPanelController.EntityReads.cs');
 const db = read('AIS/DBConnection.EntityManagement.cs');
-const controller = read('AIS/Controllers/AdministrationPanelController.cs');
-const view = read('AIS/Views/AdministrationPanel/Entity_Dashboard.cshtml');
+const controller = read('AIS/Controllers/AdministrationPanelController.EntityWorkspace.cs');
+const view = read('AIS/Views/AdministrationPanel/Entity_Workspace.cshtml');
 const js = read('AIS/wwwroot/js/administration-entity-dashboard.js');
 
-test('Super User and the Entity Dashboard page gate every live reader', () => {
+test('Super User and the explicit workspace grant gate every live reader', () => {
     assert.match(endpoint, /sessionHandler\.IsSuperUser\(\)/);
-    assert.match(endpoint, /HasPageAccess\(user, "\/AdministrationPanel\/Entity_Dashboard"\)/);
-    assert.match(controller, /ReadEntityDashboardData\(user, data, entityId/);
+    assert.match(endpoint, /CanAccessEntityWorkspace\(user\)/);
+    assert.match(controller, /ReadEntityWorkspaceData\(user, data, entityId/);
     assert.match(controller, /IsSessionRevoked\(user\)/);
     assert.match(view, /data-read-enabled/);
     assert.match(js, /root\.dataset\.readEnabled !== 'true'/);
