@@ -248,7 +248,16 @@ namespace AIS.Controllers
                     views.RemoveAll(v => v.Id == "reports");
                 }
                 var root = database.GetExecutiveDashboardRoot(scope);
-                var regional = scope.DashboardType == "RLM" && (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
+                // GM Office (type 21) only. Region (type 5) and higher hierarchies
+                // retain their ordinary RLM view without branch-level Pulse.
+                var gmOfficeSelected = scope.DashboardType == "RLM" && root?.EntityTypeId == 21;
+                if (view == "regional")
+                {
+                    if (!gmOfficeSelected) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
+                    return RedirectToAction(nameof(RLM), new { view = "glance",
+                        startDate = filters.StartDate, endDate = filters.EndDate,
+                        groupRootId = scope.GroupRootId });
+                }
                 // Divisional/Group RLM management eligibility requires an explicitly
                 // approved IAS role ID in addition to posting type and page grant.
                 var allowedManagementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
@@ -260,19 +269,19 @@ namespace AIS.Controllers
                       (superUser && scope.GroupRootId.HasValue)) &&
                      (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
                 if (scope.DashboardType == "RLM") views.RemoveAll(v => v.Id == "management");
-                if ((view == "regional" && !regional) || (view == "management" && !management)) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
-                if (!regional) views.RemoveAll(v => v.Id == "regional");
+                if (view == "management" && !management) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
                 if (!management) views.RemoveAll(v => v.Id == "management");
                 // Preserve explicitly chosen views; only replace the initial default.
                 if (!auditParaSnap && view == "glance" && !Request.Query.ContainsKey("view"))
                 {
                     if (scope.DashboardType == "CIA") view = "command";
-                    else if (scope.DashboardType != "RLM" && regional) view = "regional";
                     else if (scope.DashboardType != "RLM" && management) view = "management";
                 }
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
+                if (gmOfficeSelected && view == "glance")
+                    selectedView.Sections = new[] { "risk", "aging", "cycle", "trend" };
                 var ccoGroupHeads = scope.DashboardType == "CCO" &&
                     view == "effectiveness"
                     ? database.GetCcoGroupHeads(scope)
@@ -337,6 +346,7 @@ namespace AIS.Controllers
                     CcoGroupHeads = ccoGroupHeads,
                     RlmRoots = rlmRoots,
                     NeedsRlmRoot = needsRlmRoot,
+                    ShowRegionalPulse = gmOfficeSelected && view == "glance",
                     Filters = filters,
                     FilterOptions = options,
                     SnapDepartments = snapDepartments,
@@ -346,7 +356,7 @@ namespace AIS.Controllers
                     CiaPeriods = ciaPeriods,
                     SelectedCiaPeriodId = selectedCiaPeriod,
                     IsManagementPerspective = management,
-                    ComparisonEntities = view == "regional" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
+                    ComparisonEntities = gmOfficeSelected && view == "glance" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
                         ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
