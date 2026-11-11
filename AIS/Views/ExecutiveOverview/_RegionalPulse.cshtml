@@ -1,7 +1,7 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 @if (Model.DashboardType == "RLM" && Model.ShowRegionalPulse && Model.SelectedView.Id == "glance")
 {
-    <section class="regional-command" aria-label="Regional Audit Pulse for authorized GM Office">
+    <section class="regional-command" aria-label="Regional Audit Pulse for authorized GM Office or Region">
         <div class="regional-section-label"><h2>Regional Audit Pulse</h2></div>
         @* The nine lifecycle cards and risk/aging/cycle/trend charts are already
            rendered above by _Glance/_Sections. Do not repeat them here. *@
