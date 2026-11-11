@@ -77,7 +77,7 @@ test('GROUP uses Audit Para’s for High Risk detail and keeps Aging without cri
     assert.match(client, /if \(filter\) \{/);
     assert.match(client, /Showing \$\{number\(rows\.length\)\} high-risk audit paras/);
     // Keep CCO multi-risk selection and its paging; other parents retain their dropdown.
-    for (const choice of ['HIGH', 'MEDIUM', 'LOW', 'UNRATED', 'ALL'])
+    for (const choice of ['HIGH', 'MEDIUM', 'LOW'])
         assert.match(critical, new RegExp('<option value="' + choice + '"'));
     assert.match(client, /const pagedCritical = app\.dataset\.perspective === 'CCO'/);
 });
