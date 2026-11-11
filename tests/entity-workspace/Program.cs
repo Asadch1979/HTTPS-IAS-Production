@@ -49,6 +49,10 @@ Check(permittedModel.VisibleSteps.All(s=>s.RequiredPermissionPageId==3),"unrelat
 var linksMethod=typeof(AdministrationPanelController).GetMethod("BuildEntityAdministrationLinks",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
 var links=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(Controller(true,true,1,2),new object[]{new SessionUser{ID=5}});
 Check(links.Count==1 && links[0].StepKey=="AUTHORIZE_AUDITEE_ENTITIES_UPDATE" && links[0].LegacyPath.EndsWith("stepKey=AUTHORIZE_AUDITEE_ENTITIES_UPDATE"),"legacy function directory filters each permission and routes to working host");
+var workspaceModelMethod = typeof(AdministrationPanelController).GetMethod("BuildEntityWorkspaceViewModel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+var independentModel = (AIS.Models.WorkflowDashboard.WorkflowDashboardViewModel)workspaceModelMethod.Invoke(Controller(true,true,467), new object[]{new SessionUser{ID=5}, null});
+Check(independentModel.DashboardKey=="ENTITY_WORKSPACE" && !independentModel.VisibleSteps.Any(), "workspace model exists without dashboard or operation permissions");
+Check(Controller(true,true).Entity_Workspace(data:"search") is ObjectResult denial && denial.StatusCode==403, "workspace AJAX denied with 403 rather than HTML redirect");
 var reached=false;
 var revokedContext=new DefaultHttpContext();
 revokedContext.Request.Path="/AdministrationPanel/LoadEntityDashboardStep";
@@ -59,6 +63,8 @@ Check(!reached && revokedContext.Response.StatusCode==401,"revoked IAS session i
 
 var root=Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"../../../../../AIS"));
 var realPages=new PageIdResolver(new TestEnvironment(root),NullLogger<PageIdResolver>.Instance);
+Check(realPages.ResolvePageId("/AdministrationPanel/Entity_Dashboard")==970202,"legacy page registration remains 970202");
+Check(realPages.ResolvePageId("/AdministrationPanel/Entity_Workspace")==467,"workspace registration resolves to approved 467");
 var catalogController=Controller(true,true);
 var resolverField=typeof(AdministrationPanelController).GetField("_pageIdResolver",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
 resolverField.SetValue(catalogController,realPages);

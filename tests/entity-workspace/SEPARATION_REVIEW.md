@@ -1,20 +1,18 @@
-# Entity route separation review
+# Entity workspace correction review
 
-## Changes
-- Entity_Dashboard.cshtml: restored the complete legacy view; removed the redundant Legacy filename.
-- Entity_Workspace.cshtml: preserved the compact four-area view, changing only its data URL to Url.Action(Entity_Workspace).
-- AdministrationPanelController.cs: legacy-only action; retains stepKey validation, authorized model and session revocation check.
-- EntityWorkspace controller partial: independent action and explicit mapped page grant check, including Super Users.
-- EntityReads controller partial: workspace-specific authorization; Oracle adapter, validation, pagination and error handling unchanged.
-- Administration links: permission-gated workspace link, no preview flag.
-- Tests: updated workspace view references and added route separation assertions.
+## File-by-file corrections
+- AdministrationPanelController.cs: removed workspace link construction and both workspace ViewData assignments; original dashboard uses only its authorized model and visible steps.
+- Entity_Dashboard.cshtml: removed the additional administration panel. Original stepper, eight step definitions, partials and legacy JavaScript remain unchanged.
+- AdministrationPanelController.EntityWorkspace.cs: workspace-specific model permits an empty operation list; page access requires exact resolver ID 467 plus explicit cached grant. Shared legacy operations still require dashboard 970202 and individual operation access, matching the unchanged loader. No additional operation-access mechanism or blanket grant was introduced. Optional links probe TryResolvePageId before construction, eliminating the six absent-path warning sources without suppressing requested-page warnings. AJAX permission denial is JSON HTTP 403; missing authentication/session is HTTP 401.
+- PageIdResolver.cs: added approved workspace 467; retained dashboard 970202.
+- Page ID.xlsx: registered workspace 467 at row 259 after confirming no existing 467 or workspace path. Only sheet1.xml changed; all other ZIP entries preserved, The existing dashboard row A207 contained conflicting PAGE_ID 414, overriding the code fallback; corrected A207 to the required 970202. Other registrations and all role grants are unchanged. Deployment must verify grants for 970202 as well as 467.
+- Program.cs and route-separation.test.cjs: regression checks for legacy independence, separate model with no dashboard/operation grants, AJAX denial, exact real resolver registrations and optional-link probing.
 
-## Preservation evidence
-Git diff against merge 4d979db0 (PR #362) showed no changes to the legacy view or legacy JavaScript before separation. The restored view retains that complete implementation. LoadEntityDashboardStep, its independent permission checks, all business partials, engagement scripts, Oracle adapters and procedures are unchanged. PR #365's compact workspace is preserved with only its reader URL changed.
+## Verification
+.NET build completed: 0 errors, 57 warnings. Node tests: 23 passed. C# regression harness executed successfully, including real page resolver checks against the deployed catalog.
+Original loader, eight operation definitions, business partials, legacy script, engagement reversal/shifting APIs and Oracle adapter are unchanged. This is source-level preservation evidence, not a claim of live operational validation.
 
-## Deployment dependency — fail closed
-No approved new page ID or grants were supplied. Register /AdministrationPanel/Entity_Workspace through IAS page management, update the deployed wwwroot/Images/Page ID.xlsx mapping with the approved distinct ID, and explicitly grant intended users/roles through the normal process. Retain dashboard ID 970202. No mapping, grant or menu record is invented by this change. Missing mapping or explicit allowed-view grant denies workspace access even to Super Users. Unscoped readers additionally remain Super-User-only. Legacy operation permissions remain independently enforced by the unchanged loader. Activate a menu entry only after approval and UAT.
+Authenticated Oracle/browser tests, screenshots and two-tab isolation testing were not executed: no authenticated IAS test environment was provided. Required UAT remains outstanding.
 
-## Validation and outstanding acceptance checks
-Executed: Node frontend regression suite and dotnet run --project tests/entity-workspace/EntityWorkspace.Checks.csproj --no-restore.
-Not executed: authenticated Oracle-backed operations, browser two-tab isolation, visual before/after screenshots, live direct-access/session-revocation matrix, and root/non-root PathBase browser tests. No authenticated UAT session or approved workspace page registration was available. These remain required before acceptance/deployment; no successful live regression or screenshot comparison is claimed.
+## Deployment configuration
+467 is approved and registered; explicit IAS user/role grants and an appropriate menu entry remain deployment administration tasks. No grants or database records were changed. Page 467 alone opens the workspace but does not grant shared legacy operations, which continue to require 970202 and their existing operation permissions. Unscoped Oracle readers still additionally require Super User status. No merge or deployment is authorized.

@@ -116,8 +116,7 @@ namespace AIS.Controllers
             if (sessionHandler.IsSessionRevoked(user)) return RedirectToAction("Index", "Login");
 
             var model = BuildEntityDashboardViewModel(user, stepKey);
-            var administrationLinks = BuildEntityAdministrationLinks(user);
-            if (!model.VisibleSteps.Any() && !administrationLinks.Any())
+            if (!model.VisibleSteps.Any())
                 {
                 return RedirectToAction("Index", "PageNotFound");
                 }
@@ -127,8 +126,6 @@ namespace AIS.Controllers
                 return requestedStepError;
 
             PopulateDashboardChrome();
-            ViewData["EntityAdministrationLinks"] = administrationLinks;
-            ViewData["EntityWorkspaceEnabled"] = CanAccessEntityWorkspace(user);
             return View("~/Views/AdministrationPanel/Entity_Dashboard.cshtml", model);
             }
 
