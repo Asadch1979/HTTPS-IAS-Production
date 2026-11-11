@@ -7,3 +7,16 @@
 .exec-super-switcher a:hover {background:#fff;border-color:#c8d5df}
 .exec-super-switcher a[aria-current=page] {background:#173a52;color:#fff;border-color:#173a52}
 .exec-super-switcher a:focus-visible {outline:3px solid #147d92;outline-offset:2px}
+
+/* Group and Reporting Line lifecycle cards mirror TOP's nine-card 3×3 flow.
+   Other management/regional KPI grids keep their approved layouts. */
+.exec.exec-management .exec-lifecycle-kpis,
+.exec.exec-regional .exec-lifecycle-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1000px) {
+  .exec.exec-management .exec-lifecycle-kpis,
+  .exec.exec-regional .exec-lifecycle-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .exec.exec-management .exec-lifecycle-kpis,
+  .exec.exec-regional .exec-lifecycle-kpis { grid-template-columns: 1fr; }
+}
