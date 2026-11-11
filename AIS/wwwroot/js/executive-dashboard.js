@@ -208,7 +208,8 @@
     const pagedCritical = app.dataset.perspective === 'CCO' && app.dataset.view === 'critical-observations';
     function critical(rows, count) {
         const target = $('critical'); if (!target) return; target.replaceChildren();
-        const selection = $('critical-risk').value;
+        // GROUP has a fixed server-side High-risk register and no Risk selector.
+        const selection = $('critical-risk')?.value || '';
         if (!pagedCritical) rows = rows.filter(row => !selection || row.riskName === selection);
         if (pagedCritical) {
             const from = rows.length ? criticalOffset + 1 : 0;
@@ -216,7 +217,9 @@
             $('critical-note').textContent = `Showing ${number(from)}–${number(to)} of ${number(count)} observations · ${$('critical-risk').selectedOptions[0].textContent}.`;
             $('critical-prev').disabled = criticalOffset === 0;
             $('critical-next').disabled = criticalOffset + rows.length >= count || !rows.length;
-        } else $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
+        } else $('critical-note').textContent = app.dataset.perspective === 'GROUP'
+            ? `Showing ${number(rows.length)} high-risk observations.`
+            : `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = app.dataset.perspective === 'CCO' ? 8 : 7; tr.append(cell); target.append(tr);
         }
@@ -312,9 +315,11 @@
             if (datasets.GetCriticalItems) {
                 criticalRows = pagedCritical ? datasets.GetCriticalItems.rows : datasets.GetCriticalItems;
                 criticalCount = pagedCritical ? datasets.GetCriticalItems.count : datasets.GetKpiSummary.criticalItems;
-                const filter = $('critical-risk'), selected = filter.value;
-                if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
-                if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+                const filter = $('critical-risk'), selected = filter?.value;
+                if (filter) {
+                    if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
+                    if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+                }
                 critical(criticalRows, criticalCount);
             }
             // Share the already-authorized Oracle response with role-specific
