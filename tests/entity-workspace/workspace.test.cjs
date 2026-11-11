@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 const base = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(path.join(base, 'AIS/wwwroot/js/administration-entity-dashboard.js'), 'utf8');
-const view = fs.readFileSync(path.join(base, 'AIS/Views/AdministrationPanel/Entity_Dashboard.cshtml'), 'utf8');
+const view = fs.readFileSync(path.join(base, 'AIS/Views/AdministrationPanel/Entity_Workspace.cshtml'), 'utf8');
 
 function setup() {
     const panels = Array.from({ length: 4 }, (_, i) => ({ hidden: i !== 0 }));

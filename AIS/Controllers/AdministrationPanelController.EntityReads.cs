@@ -14,7 +14,7 @@ namespace AIS.Controllers
         // PKG_IAS_ENTITY_MGMT currently has no entity-scope arguments. Do not
         // allow non-Super-Users until the independently approved scope reader
         // validates the entire search result set BEFORE Oracle pagination.
-        private IActionResult ReadEntityDashboardData(
+        private IActionResult ReadEntityWorkspaceData(
             SessionUser user, string data, int? entityId, int? typeId,
             string query, string status, int offset, int pageSize)
         {
@@ -22,7 +22,7 @@ namespace AIS.Controllers
             Response.Headers["Pragma"] = "no-cache";
 
             if (!sessionHandler.IsSuperUser() ||
-                !HasPageAccess(user, "/AdministrationPanel/Entity_Dashboard"))
+                !CanAccessEntityWorkspace(user))
                 return StatusCode(403, new { error = "forbidden", message = "A separately approved entity-read scope is required for this user." });
 
             data = (data ?? string.Empty).Trim().ToLowerInvariant();

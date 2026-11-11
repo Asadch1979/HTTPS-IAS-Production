@@ -6,5 +6,5 @@
 <div class="card-body"><h2 class="h6">Existing administration functions</h2><p class="small text-muted">Authorized working screens remain available during migration. Each destination retains its own permission checks.</p>
 <div class="d-flex flex-wrap gap-2">
 @foreach (var link in links) { <a class="btn btn-sm btn-outline-secondary" href="@Url.Content("~" + link.LegacyPath)">@link.StepTitle</a> }
-</div><div class="mt-3"><a href="@Url.Action("Entity_Dashboard", "AdministrationPanel")">Working Entity Dashboard</a> · <a href="@Url.Action("Entity_Dashboard", "AdministrationPanel", new { workspacePreview = true })">Preview eight-tab workspace (incomplete)</a></div>
+</div><div class="mt-3"><a href="@Url.Action("Entity_Dashboard", "AdministrationPanel")">Working Entity Dashboard</a> @if (ViewData["EntityWorkspaceEnabled"] is bool enabled && enabled) { <a href="@Url.Action("Entity_Workspace", "AdministrationPanel")">Entity Management Workspace</a> }</div>
 </div></aside>
