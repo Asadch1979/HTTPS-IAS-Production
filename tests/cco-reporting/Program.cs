@@ -41,6 +41,14 @@ foreach(var pair in new[]{("glance","overview"),("position","overview"),("risk",
  Check(result?.ActionName=="CCO" && (string)result.RouteValues["view"]==pair.Item2,"Authorized legacy redirect "+pair.Item1);
  Check((string)result.RouteValues["startDate"]=="2024-01-01" && (string)result.RouteValues["endDate"]=="2024-02-29","Redirect date preservation");
 }
+// A bookmarked Performance URL, including a stale Group Head selector, safely
+// redirects to Compliance Overview rather than reaching a retired API.
+{
+ var (context,session,db)=Context(38);
+ var controller=new ExecutiveOverviewController(db,session,new Permissions(),new Pages(),null,NullLogger<ExecutiveOverviewController>.Instance,config){ControllerContext=new ControllerContext{HttpContext=context,RouteData=new Microsoft.AspNetCore.Routing.RouteData()}};
+ var result=controller.CCO(entityId:112206,view:"performance",filters:Dates()) as RedirectToActionResult;
+ Check(result?.ActionName=="CCO" && (string)result.RouteValues["view"]=="overview" && !result.RouteValues.ContainsKey("entityId"),"Retired Performance bookmark redirects safely without old entity selector");
+}
 foreach(var report in new[]{"B","C","D","A","E"}) foreach(var role in new[]{38,3,5}) {
  var (context,session,db)=Context(role);
  context.Request.Path="/api/ExecutiveReports/GetReport"+report;
