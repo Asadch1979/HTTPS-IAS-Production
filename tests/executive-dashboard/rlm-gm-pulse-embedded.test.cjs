@@ -55,6 +55,11 @@ test('Only RLM glance declares the existing GM Pulse role datasets; TOP and GROU
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const api = read('AIS/Controllers/ExecutiveDashboardController.cs');
     assert.match(views, /public bool EnableGmPulseRoleDatasets \{ get; set; \}/);
+    assert.match(views, /public bool EnableGmPulseChartDatasets \{ get; set; \}/);
+    assert.match(views, /gmGlance.EnableGmPulseChartDatasets = true/);
+    assert.match(views, /"GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend"/);
+    assert.match(api, /scope\.DashboardType == "RLM" && filters\.View == "glance"/);
+    assert.match(api, /database\.GetExecutiveDashboardRoot\(scope\)\?\.EntityTypeId != 21/);
     assert.match(views, /Id == "glance" && EnableGmPulseRoleDatasets/);
     assert.match(views, /views\.Single\(v => v\.Id == "glance"\)\.EnableGmPulseRoleDatasets = true/);
     assert.match(views, /new\[\] \{ "GetRoleEntityHeatmap", "GetRoleFollowups" \}/);
