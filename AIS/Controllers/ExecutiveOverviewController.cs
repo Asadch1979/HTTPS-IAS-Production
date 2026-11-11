@@ -91,6 +91,17 @@ namespace AIS.Controllers
         [HttpGet("CIA")]
         public IActionResult CIA(int? entityId = null, int? groupRootId = null, string view = "command", [FromQuery] ExecutiveDashboardFilterRequest filters = null)
         {
+            // Reuse the existing CIA page/API authorization for the dedicated,
+            // current-state Audit Para’s view. Do not reinterpret CIA audit-period IDs as dates.
+            if (view == "audit-paras")
+            {
+                if (entityId.HasValue || groupRootId.HasValue || !ModelState.IsValid)
+                    return BadRequest("This CIA view does not accept organization selectors.");
+                filters ??= new ExecutiveDashboardFilterRequest();
+                filters.StartDate = null;
+                filters.EndDate = null;
+                return Dashboard("CIA", null, null, "audit-paras", filters);
+            }
             if (view != "command")
             {
                 if (!ModelState.IsValid || groupRootId.HasValue || !AuditParaSnapPolicy.Views.Contains(view))
@@ -197,6 +208,12 @@ namespace AIS.Controllers
                     LogDenial("PagePermission", user, requestedType);
                     return StatusCode(403);
                 }
+                // Retired RLM management layout: redirect old bookmarks to the
+                // dated At a Glance view after session and page authorization.
+                if (!auditParaSnap && scope.DashboardType == "RLM" && view == "management")
+                    return RedirectToAction(nameof(RLM), new { view = "glance",
+                        startDate = filters.StartDate, endDate = filters.EndDate,
+                        groupRootId = scope.GroupRootId });
                 // Legacy Group bookmarks for the duplicate position tab go to the
                 // established management position, preserving the authorized root.
                 if (!auditParaSnap && scope.DashboardType == "GROUP" && view == "position")
@@ -204,7 +221,8 @@ namespace AIS.Controllers
                         startDate = filters.StartDate, endDate = filters.EndDate,
                         groupRootId = scope.GroupRootId });
                 var views = auditParaSnap ? AuditParaSnapPolicy.Definitions() : ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
-                if (!auditParaSnap && requestedType=="CIA") views.RemoveAll(v => v.Id != "command");
+                if (!auditParaSnap && requestedType=="CIA")
+                    views.RemoveAll(v => v.Id != "command" && v.Id != "audit-paras");
                 if (requestedType == "GROUP")
                 {
                     // Six analysis tabs; legacy glance bookmarks open the management scorecard.
@@ -231,6 +249,7 @@ namespace AIS.Controllers
                      (allowedManagementRoles.Contains(scope.RoleId) ||
                       (superUser && scope.GroupRootId.HasValue)) &&
                      (root?.EntityTypeId == 18 || root?.EntityTypeId == 3));
+                if (scope.DashboardType == "RLM") views.RemoveAll(v => v.Id == "management");
                 if ((view == "regional" && !regional) || (view == "management" && !management)) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
                 if (!regional) views.RemoveAll(v => v.Id == "regional");
                 if (!management) views.RemoveAll(v => v.Id == "management");
@@ -238,8 +257,8 @@ namespace AIS.Controllers
                 if (!auditParaSnap && view == "glance" && !Request.Query.ContainsKey("view"))
                 {
                     if (scope.DashboardType == "CIA") view = "command";
-                    else if (regional) view = "regional";
-                    else if (management) view = "management";
+                    else if (scope.DashboardType != "RLM" && regional) view = "regional";
+                    else if (scope.DashboardType != "RLM" && management) view = "management";
                 }
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);

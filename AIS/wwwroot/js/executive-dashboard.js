@@ -122,7 +122,9 @@
     }
     function kpis(data) {
         const target = $('kpis'); if (!target) return; target.replaceChildren();
-        [...(app.dataset.perspective === 'CCO' ? [['Opening Cases', 'openingCases'], ['Para Added', 'paraAdded']] : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
+        [...(['CCO', 'RLM'].includes(app.dataset.perspective)
+            ? [[app.dataset.perspective === 'RLM' ? 'Opening Balance' : 'Opening Cases', 'openingCases'], ['Para Added', 'paraAdded']]
+            : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
             ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
@@ -131,28 +133,25 @@
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
                 settlementMtdRate: 'Selected-Period Settlement Rate', openParas: 'Closing Open Paras' })[key] || label;
             if (app.dataset.perspective === 'CCO' && key === 'totalCases') label = 'Total Cases';
+            if (app.dataset.perspective === 'RLM' && key === 'openParas') label = 'Closing Balance';
             const card = el('div', null, 'exec-kpi');
             const value = data[key];
             card.append(el('span', label), el('strong',
                 value == null ? 'N/A' : number(value) +
                 (['settlementRatio','settlementMtdRate'].includes(key) ? '%' : '')));
+            // The selected dates and evidence quality are already available
+            // through the date controls and underlying approved reporting source.
             if (ciaIssues && ['issueIdentified', 'issueRectified'].includes(key)) {
-                const dates = new FormData($('filters'));
-                card.append(el('small', dates.get('startDate') && dates.get('endDate')
-                    ? 'Selected Date Range' : 'All eligible IAS issue history'));
                 target.append(card);
                 return;
             }
-            if (app.dataset.perspective === 'CCO' && ['openingCases','paraAdded','totalCases'].includes(key)) {
-                const dates = new FormData($('filters'));
-                card.append(el('small', key === 'openingCases'
-                    ? `Position at start of ${dates.get('startDate')} · Historical estimate`
-                    : `Selected period: ${dates.get('startDate')} to ${dates.get('endDate')}`));
+            if (['CCO', 'RLM'].includes(app.dataset.perspective) &&
+                ['openingCases','paraAdded','totalCases'].includes(key)) {
                 target.append(card);
                 return;
             }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
-            if (app.dataset.perspective !== 'GROUP') card.append(el('small', compliance
+            if (!['GROUP', 'RLM', 'CCO'].includes(app.dataset.perspective)) card.append(el('small', compliance
                 ? (['settlementRatio','settlementMtdRate'].includes(key) ? 'Period settled ÷ (opening + period additions)'
                     : ['totalCases','settledTotal','settledMtd'].includes(key) ? 'Selected reporting period' : 'As of End Date')
                 : key === 'settlementMtdRate'
@@ -205,10 +204,11 @@
     }
     let criticalRows = [], criticalCount = 0, criticalOffset = 0;
     const criticalPageSize = 100;
-    const pagedCritical = app.dataset.perspective === 'CCO' && app.dataset.view === 'critical-observations';
+    const pagedCritical = app.dataset.perspective === 'CCO' && app.dataset.view === 'audit-paras';
     function critical(rows, count) {
         const target = $('critical'); if (!target) return; target.replaceChildren();
-        const selection = $('critical-risk').value;
+        // GROUP has a fixed server-side High-risk register and no Risk selector.
+        const selection = $('critical-risk')?.value || '';
         if (!pagedCritical) rows = rows.filter(row => !selection || row.riskName === selection);
         if (pagedCritical) {
             const from = rows.length ? criticalOffset + 1 : 0;
@@ -216,7 +216,8 @@
             $('critical-note').textContent = `Showing ${number(from)}–${number(to)} of ${number(count)} observations · ${$('critical-risk').selectedOptions[0].textContent}.`;
             $('critical-prev').disabled = criticalOffset === 0;
             $('critical-next').disabled = criticalOffset + rows.length >= count || !rows.length;
-        } else $('critical-note').textContent = `Showing ${number(rows.length)} of ${number(count)} critical paras · Risk: High.`;
+        } else $('critical-note').textContent =
+            `Showing ${number(rows.length)} high-risk audit paras${rows.length >= 100 ? ' (first 100; list is capped)' : ''}.`;
         if (!rows.length) {
             const tr = el('tr'), cell = el('td', 'No critical observations in this scope.'); cell.colSpan = app.dataset.perspective === 'CCO' ? 8 : 7; tr.append(cell); target.append(tr);
         }
@@ -311,10 +312,13 @@
             if (datasets.GetSettlementTrend) trend(datasets.GetSettlementTrend);
             if (datasets.GetCriticalItems) {
                 criticalRows = pagedCritical ? datasets.GetCriticalItems.rows : datasets.GetCriticalItems;
-                criticalCount = pagedCritical ? datasets.GetCriticalItems.count : datasets.GetKpiSummary.criticalItems;
-                const filter = $('critical-risk'), selected = filter.value;
-                if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
-                if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+                criticalCount = pagedCritical ? datasets.GetCriticalItems.count
+                    : (datasets.GetKpiSummary?.highRiskParas ?? criticalRows.length);
+                const filter = $('critical-risk'), selected = filter?.value;
+                if (filter) {
+                    if (app.dataset.perspective !== 'CCO') filter.replaceChildren(new Option('All risks', ''), ...[...new Set(criticalRows.map(row => row.riskName).filter(Boolean))].sort().map(name => new Option(name, name)));
+                    if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+                }
                 critical(criticalRows, criticalCount);
             }
             // Share the already-authorized Oracle response with role-specific
@@ -329,12 +333,10 @@
                 ? `${entity} · Audit Para Position for ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Historical opening/closing may be estimated · Updated ${new Date().toLocaleTimeString()}.`
                 : `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
-            if (['CCO', 'RLM'].includes(app.dataset.perspective)) $('status').textContent =
-                `${entity} · Selected period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Balances and distributions as of End Date; historical values may be estimated.`;
-            if (app.dataset.perspective === 'GROUP') {
-                $('status').textContent = '';
-                $('status').hidden = true;
-            }
+            // Keep loading and failure states accessible; avoid repeating
+            // period/scope disclaimers after successful dashboard reads.
+            $('status').textContent = '';
+            $('status').hidden = true;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
@@ -394,12 +396,13 @@
             }
             updateNavigation();
             if (validateDates()) form.requestSubmit();
-            else { $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
+            else { $('status').hidden = false; $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
         });
     }
     for (const id of ['start-date', 'end-date', 'entity']) $(id)?.addEventListener('change', () => {
         activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false');
         if (app.dataset.view !== 'reports') $('results').hidden = true;
+        $('status').hidden = false;
         $('status').textContent = 'Filter selections changed. Choose Apply to load this scope.';
         validateDates(); updateNavigation();
     });

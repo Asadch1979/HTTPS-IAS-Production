@@ -30,7 +30,7 @@
         <div class="cia-command-section-heading">
             <div><span class="cia-command-eyebrow">02 / AUDIT ISSUES BY CATEGORY</span>
                 <h2 id="cia-nature-title">Nature of Issue Identified</h2>
-                <p class="exec-note">Selected IAS audit period · eight displayed categories</p></div>
+</div>
             <p class="cia-command-data-quality" data-cia-mapping-status>IAS classification pending</p>
         </div>
         <p class="cia-section-status" data-cia-nature-status role="status">Waiting for issue classification</p>
@@ -56,20 +56,11 @@
                 <div class="cia-nature-summary-row"><span>Assigned to all IAS categories</span><strong data-cia-mapped>N/A</strong></div>
                 <div class="cia-nature-summary-row"><span>Other classifications (not shown)</span><strong data-cia-hidden>N/A</strong></div>
                 <div class="cia-nature-summary-row"><span>Unmapped / review</span><strong data-cia-unmapped-total>N/A</strong></div>
-                <p>Chart displays eight categories; Accounts and IS Audit remain included in Oracle's ten-category classification totals.</p>
+
             </aside>
         </div>
     </section>
-    <section class="cia-command-secondary">
-        <article class="exec-panel">
-            <h2>Leadership Review Priorities</h2>
-            <p><strong>Reporting delays and conducting teams:</strong> N/A until workflow definitions are verified. Then review the existing authorized engagement/report workflow.</p>
-            <p><strong>Remediation follow-up:</strong> status 2 means awaiting an auditee response; no unsupported remediation due date is inferred.</p>
-        </article>
-        <article class="exec-panel">
-            <h2>Data Quality &amp; Scope</h2>
-            <p>Plan coverage, A1 and issue categories use the selected period. Response, delay and conducting-team measures are current state. Unmapped issues are disclosed.</p>
-            <p data-cia-as-of>Current-state totals and audit period are displayed when data becomes available.</p>
-        </article>
-    </section>
+    @* The as-of metadata is retained for the current CIA data binding but
+       is not repeated as a narrative card beside the selected audit period. *@
+    <p data-cia-as-of class="visually-hidden"></p>
 </section>

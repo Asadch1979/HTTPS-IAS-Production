@@ -342,10 +342,8 @@
             if (!result.data || !Array.isArray(result.data.rows)) throw new Error('The report response is incomplete.');
             if (current !== version) return;
             const cautions = $('report-cautions');
-            // Replace the old six-paragraph cream disclaimer with one quiet,
-            // accurate data note. Estimates must still not appear certified.
-            if (!cco && !group)
-                cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
+            // Keep source-quality flags in the approved data contract; do not
+            // repeat narrative disclaimers on each dashboard report panel.
             let benchmark = null;
             if (selection.value === 'D') {
                 // Read overall benchmark from the same authorized Field Audit source.
@@ -370,10 +368,8 @@
                 pdfUrl: `${root.dataset.apiUrl}GetReport${selection.value}?${query}&format=pdf`
             };
             setExportReady(true);
-            $('status').textContent = group ? '' : cco
-                ? `${displayTitle} loaded · ${number(result.data.rows.length)} records`
-                : `Report ${selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
-            if (group) $('status').hidden = true;
+            $('status').textContent = '';
+            $('status').hidden = true;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             $('status').hidden = false;
@@ -394,7 +390,7 @@
         });
     }
     for (const id of ['start-date','end-date','entity']) $(id)?.addEventListener('change', () => {
-        invalidate(); validDates(); navigation(); $('status').textContent = 'Filters changed. Choose Apply to load this reporting scope.';
+        invalidate(); validDates(); navigation(); $('status').hidden = false; $('status').textContent = 'Filters changed. Choose Apply to load this reporting scope.';
     });
     navigation(); load();
 })();

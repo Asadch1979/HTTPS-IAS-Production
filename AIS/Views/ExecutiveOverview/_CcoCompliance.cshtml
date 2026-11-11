@@ -1,15 +1,11 @@
 @model AIS.Models.ExecutiveDashboardPageModel
-<h2>@Model.SelectedView.Title</h2>
+@if (Model.SelectedView.Id != "audit-paras") { <h2>@Model.SelectedView.Title</h2> }
 @if (Model.SelectedView.Id == "org-position")
 {
     <partial name="_CcoFunctionPosition" model="Model" />
 }
 else
 {
-    @if (Model.SelectedView.Id == "overview")
-    {
-        <p class="exec-note">Opening Cases is the position at the beginning of the selected period; Para Added counts eligible additions during it. Total Cases is their sum. Historical balances remain estimates.</p>
-    }
     <partial name="_Sections" model="Model" />
     @if (Model.SelectedView.Id == "overview")
     {

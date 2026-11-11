@@ -18,6 +18,7 @@ namespace AIS.Models
             "glance" or "position" or "risk" or "aging" => "overview",
             "settlement" => "effectiveness",
             "performance" => "overview",
+            "critical-observations" => "audit-paras",
             "reports" => string.IsNullOrEmpty(report) || report == "B" ? "field-office"
                 : report == "C" ? "gm-region" : report == "D" ? "regional-rankings"
                 : throw new ArgumentException("This report is not available for CCO."),
@@ -34,7 +35,7 @@ namespace AIS.Models
                     Kpis=Array.Empty<string>(), Sections=Array.Empty<string>(), Reports=new[]{ReportForView(id)} };
             return new List<ExecutiveDashboardViewDefinition> {
                 View("overview", "Compliance Overview", new[]{"openingCases","paraAdded","totalCases","settledTotal","openParas","highRiskParas","over1YearParas"}, new[]{"trend","risk","aging","cycle"}),
-                View("critical-observations", "Critical Audit Observations", new[]{"criticalItems"}, new[]{"critical"}),
+                View("audit-paras", "Audit Para’s", Array.Empty<string>(), new[]{"risk","critical"}),
                 View("org-position", "Function Wise Position", Array.Empty<string>(), Array.Empty<string>()),
                 Report("field-office", "Audit Position"),
                 Report("gm-region", "GM / Region Position"),

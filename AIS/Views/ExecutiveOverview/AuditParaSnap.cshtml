@@ -33,7 +33,7 @@
         <a class="org-button" href="@Url.Action("CIA","ExecutiveOverview")">← CIA Command Center</a>
     </header>
     <partial name="_AuditParaSnapFilters" model="Model" />
-    <p class="snap-selected-period" data-snap-period>Selected period: @Model.Filters.StartDate – @Model.Filters.EndDate (inclusive, Pakistan calendar dates)</p>
+    <p class="snap-selected-period visually-hidden" data-snap-period>Selected period: @Model.Filters.StartDate – @Model.Filters.EndDate (inclusive, Pakistan calendar dates)</p>
     <nav class="exec-navigation" data-view-navigation aria-label="Audit Para Snap views">
         @foreach (var view in Model.Views)
         {

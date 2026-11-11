@@ -65,10 +65,6 @@
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
 
-    @if (Model.SelectedView.Id == "overview" || Model.SelectedView.Id == "critical-observations")
-    {
-        <p class="exec-note">Activity is measured over the selected period; balances are as of the End Date. Historical balances are estimates.</p>
-    }
     @if (Model.SelectedView.Id != "org-position")
     {
         <p id="exec-status" class="org-status" role="status" aria-live="polite">@(isReport ? Model.ScopeLabel : pending ? "Organizational data pending staging verification." : "Loading dashboard…")</p>
