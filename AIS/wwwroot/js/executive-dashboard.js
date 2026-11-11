@@ -152,7 +152,7 @@
                 return;
             }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
-            card.append(el('small', compliance
+            if (app.dataset.perspective !== 'GROUP') card.append(el('small', compliance
                 ? (['settlementRatio','settlementMtdRate'].includes(key) ? 'Period settled ÷ (opening + period additions)'
                     : ['totalCases','settledTotal','settledMtd'].includes(key) ? 'Selected reporting period' : 'As of End Date')
                 : key === 'settlementMtdRate'
@@ -263,6 +263,7 @@
         // Compliance applies dates to every dataset; other perspectives retain their contracts.
         query.set('view', app.dataset.view);
         $('results').hidden = true; app.setAttribute('aria-busy', 'true');
+        $('status').hidden = false;
         $('status').textContent = 'Loading authorized dashboard data…';
         $('refresh').disabled = true;
         try {
@@ -328,11 +329,16 @@
                 ? `${entity} · Audit Para Position for ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Historical opening/closing may be estimated · Updated ${new Date().toLocaleTimeString()}.`
                 : `${entity} · KPI period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Charts and critical observations use current-state data, without the selected date range · Updated ${new Date().toLocaleTimeString()}.`;
             if (ciaIssues) $('status').textContent = `${entity} · CIA issue events: ${filterValues.get('startDate') && filterValues.get('endDate') ? `${filterValues.get('startDate')} to ${filterValues.get('endDate')}` : 'all eligible history'} · Other cards/charts show current-state information · Updated ${new Date().toLocaleTimeString()}.`;
-            if (['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective)) $('status').textContent =
+            if (['CCO', 'RLM'].includes(app.dataset.perspective)) $('status').textContent =
                 `${entity} · Selected period: ${filterValues.get('startDate')} to ${filterValues.get('endDate')} · Balances and distributions as of End Date; historical values may be estimated.`;
+            if (app.dataset.perspective === 'GROUP') {
+                $('status').textContent = '';
+                $('status').hidden = true;
+            }
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
             activeRequest.abort();
+            $('status').hidden = false;
             $('status').textContent = `${error.message} Use Apply to retry.`;
         } finally {
             if (current === version) { $('refresh').disabled = false; app.setAttribute('aria-busy', 'false'); }
