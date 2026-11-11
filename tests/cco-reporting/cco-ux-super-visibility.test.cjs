@@ -39,13 +39,12 @@ test('CCO Audit Position and GM/Region reports do not render nested tabs or cram
     assert.match(client, /displayTitle} loaded/);
 });
 
-test('Group Head selector is authoritative, CCO-only and binds to scoped entity queries', () => {
+test('Settlement Effectiveness retains authorized Group Head selection after Performance retirement', () => {
     const page = read('AIS/Views/ExecutiveOverview/CCO.cshtml');
     const controller = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const db = read('AIS/DBConnection.CcoOrganizationReporting.cs');
     const model = read('AIS/Models/ExecutiveDashboardPageModel.cs');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
-    const partial = read('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml');
     assert.match(page, /id="exec-entity" name="entityId"/);
     assert.match(page, /Model\.CcoGroupHeads/);
     assert.match(controller, /database\.GetCcoGroupHeads\(scope\)/);
@@ -53,9 +52,7 @@ test('Group Head selector is authoritative, CCO-only and binds to scoped entity 
     assert.match(db, /ValidateCcoOrganizationContext\(scope\)/);
     assert.match(db, /EntityTypeId == 18 && !n\.HasTypeConflict/);
     assert.match(model, /CcoGroupHeads/);
-    assert.match(db, /GetCcoGroupHeads\(scope\)\.Any/);
-
-    assert.match(js, /!\['performance', 'effectiveness'\]\.includes/);
-    assert.match(partial, /@if \(enabled\)[\s\S]*Search organizations/);
-    assert.match(partial, /GetValue<bool>\("CcoReporting:PerformanceEnabled"\)/);
+    assert.match(js, /url\.searchParams\.get\('view'\) !== 'effectiveness'/);
+    assert.doesNotMatch(page, /cco-organizations\.js|Audit Performance Analysis/);
+    assert.equal(fs.existsSync('AIS/Views/ExecutiveOverview/_CcoOrganizations.cshtml'), false);
 });
