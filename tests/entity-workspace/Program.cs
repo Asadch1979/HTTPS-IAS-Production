@@ -77,11 +77,11 @@ var expectedStepIds=new[]{217,216,218,41,323,324,225,225};
 Check(actualSteps.Select(s=>s.RequiredPermissionPageId).SequenceEqual(expectedStepIds),"all eight step IDs match effective active/archive configuration");
 foreach(var step in actualSteps){Console.WriteLine($"MAPPING: {step.StepKey} = {step.RequiredPermissionPageId}");Check(step.RequiredPermissionPageId>0,"configured original step "+step.StepKey);}
 foreach(var action in new[]{"entity_heirarchy","manage_entity_type","manage_entity_relations","manage_entity_mapping","audit_comp_management","gm_repo_line_management","entity_gm_reporting_div_management","EntityShiftingHistory"}){var id=realPages.ResolvePageId("/AdministrationPanel/"+action);Console.WriteLine($"MAPPING: {action} = {id}");var expected=action switch {"audit_comp_management"=>265,"EntityShiftingHistory"=>448,_=>0};Check(id==expected,"additional link mapping snapshot "+action);}
-var configuredController=Controller(true,true,970202,217,216,218,41,323,324,225,265,448);
+var configuredController=Controller(true,true,existingLegacyPageId,217,216,218,41,323,324,225,265,448);
 resolverField.SetValue(configuredController,realPages);
 var configuredLinks=(List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(configuredController,new object[]{new SessionUser{ID=5}});
 Check(configuredLinks.Count==10,"all eight mapped steps and two mapped additional functions visible with permission; six unmapped links excluded");
-var deniedController=Controller(true,true,970202);
+var deniedController=Controller(true,true,existingLegacyPageId);
 resolverField.SetValue(deniedController,realPages);
 Check(((List<AIS.Models.WorkflowDashboard.WorkflowDashboardStepModel>)linksMethod.Invoke(deniedController,new object[]{new SessionUser{ID=5}})).Count==0,"dashboard-only access cannot expose any configured legacy function");
 Check(Controller(true,true,1).GetShiftableEngagements(5) is ForbidResult,"direct shifting reader requires shifting policy");
