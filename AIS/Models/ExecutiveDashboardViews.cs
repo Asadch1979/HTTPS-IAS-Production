@@ -13,17 +13,25 @@ namespace AIS.Models
         public string[] Kpis { get; set; }
         public string[] Sections { get; set; }
         public bool UseLifecycleKpis { get; set; }
+        public bool EnableGmPulseRoleDatasets { get; set; }
+        public bool EnableGmPulseChartDatasets { get; set; }
         public string[] Datasets => (Kpis.Length > 0 && (!UseLifecycleKpis || Sections.Contains("critical"))
                 ? new[] { "GetKpiSummary" } : Array.Empty<string>())
             .Concat(UseLifecycleKpis ? new[] { "GetKpiLifecycle" } : Array.Empty<string>())
             .Concat(Sections.Select(section => section switch { "risk" => "GetRiskSummary", "aging" => "GetAgingSummary",
                 "cycle" => "GetCycleSummary", "trend" => "GetSettlementTrend", "critical" => "GetCriticalItems",
-                _ => throw new InvalidOperationException("Unknown dashboard section.") })).Distinct().ToArray();
+                _ => throw new InvalidOperationException("Unknown dashboard section.") }))
+            .Concat(EnableGmPulseChartDatasets
+                ? new[] { "GetRiskSummary", "GetAgingSummary", "GetCycleSummary", "GetSettlementTrend" }
+                : Array.Empty<string>())
+            .Distinct().ToArray();
         // Separate endpoints, fetched only by the scoped role-dashboard UI.
         // Keep them out of Datasets so the existing executive charts are untouched.
         public string[] RoleDatasets => Id == "command" ? new[] { "GetCiaCommandKpis", "GetCiaIssueNature" }
             : Id == "management" ? new[] { "GetRoleUnitComparison", "GetRoleFollowups" }
-            : Id == "regional" ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" } : Array.Empty<string>();
+            : Id == "glance" && EnableGmPulseRoleDatasets
+                ? new[] { "GetRoleEntityHeatmap", "GetRoleFollowups" }
+                : Array.Empty<string>();
         public string[] Reports { get; set; } = Array.Empty<string>();
     }
 
@@ -96,8 +104,13 @@ namespace AIS.Models
             {
                 // At a Glance replaces RLM's former five-card and generic Audit Para Position views.
                 views.RemoveAll(v => v.Id == "position" || v.Id == "risk");
-                views.Insert(0, View("regional", "Regional Audit Pulse", "_RegionalPulse", "Current branch risk and follow-up priorities within your reporting descendants.",
-                    new[] { "openParas", "highRiskParas", "over1YearParas", "over3CycleParas" }, new[] { "risk", "aging", "cycle", "trend" }));
+                // GM-only Regional Audit Pulse is embedded into RLM At a Glance
+                // after verified root resolution, never exposed as a separate tab.
+                // Admit its existing endpoints at the tab-dataset gate only
+                // for RLM; the endpoint independently enforces GM Office type 21.
+                var gmGlance = views.Single(v => v.Id == "glance");
+                gmGlance.EnableGmPulseRoleDatasets = true;
+                gmGlance.EnableGmPulseChartDatasets = true;
             }
             if (perspective == "CCO") return CcoDashboardPresentation.Definitions(views.Single(v => v.Id == "reports"));
             return views;

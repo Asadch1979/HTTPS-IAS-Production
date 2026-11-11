@@ -34,7 +34,7 @@
         : value === 'Other Field Offices' ? 'Management Audit Division' : (value || 'Unassigned group');
     const position = [column('Opening balance', 'openingBalance'), column('Paras added', 'parasAdded'), column('Total paras', 'totalParas'),
         column('Settled', 'settledParas'), column('Settlement %', 'settlementPercentage', percent), column('Outstanding', 'outstandingParas'),
-        column('Low risk', 'lowRisk'), column('Medium risk', 'mediumRisk'), column('High risk', 'highRisk'), column('Unrated risk', 'unratedRisk'),
+        column('Low risk', 'lowRisk'), column('Medium risk', 'mediumRisk'), column('High risk', 'highRisk'),
         column('Settled by Compliance', 'settledByCompliance'), column('Settled by Audit', 'settledByAudit'), column('Settled by Unknown', 'settledByUnknown')];
     const rankingColumns = [column('Rank', 'rankPosition'), column('Region', 'itemName', plain), column('Total paras', 'totalParas'),
         column('Settlement %', 'settlementPercentage', percent), column('Outstanding paras', 'outstandingParas')];
@@ -172,11 +172,11 @@
             table(summary, 'Annual field audit summary', [column('Reporting year', 'yearLabel', plain), column('Total paras settled','settledParas'), column('Settlement %','settlementPercentage',percent), column('Paras added','parasAdded'), column('Paras outstanding','outstandingParas')], rows.map(row => ({...row,yearLabel:year(row)})));
             layout.append(summary); target.append(layout);
         } else if (id === 'B' || id === 'C') {
-            const ccoRiskOrder = ['highRisk', 'mediumRisk', 'lowRisk', 'unratedRisk'];
+            const ccoRiskOrder = ['highRisk', 'mediumRisk', 'lowRisk'];
             const dynamicPosition = cco
                 ? [...position.filter(col => !ccoRiskOrder.includes(col.key) && !settlementSources.has(col.key)),
                     ...ccoRiskOrder.map(key => position.find(col => col.key === key))]
-                : position.filter(col => col.key !== 'unratedRisk' || rows.some(row => (Number(row.unratedRisk)||0) !== 0));
+                : position;
             if (id === 'C') {
                 const gmRows = rows.filter(row => kind(row) === 'SUBTOTAL')
                     .map(row => ({...row, itemName: groupLabel(row.groupName), rowKind:'DETAIL'}));

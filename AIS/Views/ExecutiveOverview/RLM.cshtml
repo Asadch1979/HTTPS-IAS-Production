@@ -10,7 +10,7 @@
 @if (Model.ComparisonEntities.Any()) { <link rel="stylesheet" href="~/css/executive-entity-comparison.css" asp-append-version="true" /> }
 @* RLM retains the approved dark Design 3 on ALL analysis tabs. *@
 <link rel="stylesheet" href="~/css/regional-audit-pulse.css" asp-append-version="true" />
-@if (Model.RoleOracleEnabled && Model.SelectedView.Id == "regional") { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
+@if (Model.ShowRegionalPulse) { <link rel="stylesheet" href="~/css/management-role-dashboard.css" asp-append-version="true" /> }
 <link rel="stylesheet" href="~/css/executive-themes.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/executive-dashboard-parents.css" asp-append-version="true" />
     @if (Model.IsSuperUser)
@@ -26,20 +26,9 @@
         </nav>
     }
 <section class="org exec exec-regional" id="executive-dashboard" data-scope-label="@Model.ScopeLabel" data-perspective="@Model.DashboardType" data-role-enabled="@(Model.RoleOracleEnabled ? "true" : "false")" data-view="@Model.SelectedView.Id" data-datasets="@string.Join(",", Model.SelectedView.Datasets)" data-api-url="@Url.Content("~/api/ExecutiveDashboard/")" data-dashboard-type="@(Model.DashboardType == "RLM" || Model.IsSuperUser ? Model.DashboardType : "")" data-group-root-id="@(Model.IsSuperUser ? Model.GroupRootId : null)" aria-label="Reporting Line Management">
-    @if (Model.SelectedView.Id == "regional")
-    {
-    <div class="regional-hero">
-        <div><span class="regional-eyebrow"><span class="regional-live-dot" aria-hidden="true"></span> REGIONAL AUDIT INTELLIGENCE</span>
-            <h1>Regional Audit Pulse</h1>
-            <p>@Model.ScopeLabel</p></div>
-        <div class="regional-hero-meta"><span>RISK &amp; COMPLIANCE</span><strong>Branch oversight</strong>
-</div>
-    </div>
-    }
-    else
-    {
-    <header class="org-header"><div class="dashboard-title exec-title"><h1>Reporting Line Management</h1><p>@Model.ScopeLabel</p></div></header>
-    }
+    <header class="org-header"><div class="dashboard-title exec-title">
+        <h1>Reporting Line Management</h1><p>@Model.ScopeLabel</p>
+    </div></header>
     <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
         @foreach (var view in Model.Views)
         {
@@ -85,7 +74,7 @@
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
 
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading dashboard…</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>
@@ -106,6 +95,6 @@
     {
         <script src="~/js/executive-dashboard.js" asp-append-version="true"></script>
         @if (Model.ComparisonEntities.Any()) { <script src="~/js/executive-entity-comparison.js" asp-append-version="true"></script> }
-        @if (Model.SelectedView.Id == "regional") { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
+        @if (Model.ShowRegionalPulse) { <script src="~/js/executive-role-reporting.js" asp-append-version="true"></script> }
     }
 }

@@ -58,7 +58,7 @@
                 <div class="wb-table"><table><thead><tr><th>Observation ID</th><th>Engagement</th><th>Status</th><th>Risk ID</th></tr></thead><tbody>
                 @foreach (var item in observations.Take(40))
                 {
-                    <tr><td>@item.ObservationId</td><td>@item.EngId</td><td>@(item.ObservationStatusId == 3 ? "Auditor review" : item.ObservationStatusId == 2 ? "Auditee response" : item.ObservationStatusId.ToString())</td><td>@(item.RiskId?.ToString() ?? "Unrated")</td></tr>
+                    <tr><td>@item.ObservationId</td><td>@item.EngId</td><td>@(item.ObservationStatusId == 3 ? "Auditor review" : item.ObservationStatusId == 2 ? "Auditee response" : item.ObservationStatusId.ToString())</td><td>@(item.RiskId is 1 or 2 or 3 ? item.RiskId.ToString() : "—")</td></tr>
                 }
                 </tbody></table></div>
             }

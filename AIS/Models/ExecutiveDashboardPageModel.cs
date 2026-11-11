@@ -17,6 +17,7 @@ namespace AIS.Models
         public bool RoleOracleEnabled { get; set; }
         public bool IsManagementPerspective { get; set; }
         public bool NeedsRlmRoot { get; set; }
+        public bool ShowRegionalPulse { get; set; }
         public List<OrganizationNode> RlmRoots { get; set; } = new();
         public bool IsAuditParaSnap { get; set; }
         public bool AuditParaSnapEnabled { get; set; }
