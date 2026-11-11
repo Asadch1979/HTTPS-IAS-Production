@@ -133,6 +133,7 @@
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
                 settlementMtdRate: 'Selected-Period Settlement Rate', openParas: 'Closing Open Paras' })[key] || label;
             if (app.dataset.perspective === 'CCO' && key === 'totalCases') label = 'Total Cases';
+            if (app.dataset.perspective === 'RLM' && key === 'openParas') label = 'Closing Balance';
             const card = el('div', null, 'exec-kpi');
             const value = data[key];
             card.append(el('span', label), el('strong',
