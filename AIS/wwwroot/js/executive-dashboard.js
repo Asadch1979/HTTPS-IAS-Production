@@ -396,12 +396,13 @@
             }
             updateNavigation();
             if (validateDates()) form.requestSubmit();
-            else { $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
+            else { $('status').hidden = false; $('status').textContent = 'Correct the date range and choose Apply to load authorized filter options.'; form.reportValidity(); }
         });
     }
     for (const id of ['start-date', 'end-date', 'entity']) $(id)?.addEventListener('change', () => {
         activeRequest?.abort(); ++version; $('refresh').disabled = false; app.setAttribute('aria-busy', 'false');
         if (app.dataset.view !== 'reports') $('results').hidden = true;
+        $('status').hidden = false;
         $('status').textContent = 'Filter selections changed. Choose Apply to load this scope.';
         validateDates(); updateNavigation();
     });
