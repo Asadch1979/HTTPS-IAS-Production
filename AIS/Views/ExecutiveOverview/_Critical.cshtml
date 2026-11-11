@@ -8,7 +8,7 @@
 <article class="exec-panel" id="exec-critical-panel" tabindex="-1">
     <h2>@title</h2>
     <p class="exec-note" id="exec-critical-note" aria-live="polite"></p>
-    @* CCO has a separately authorized, server-paged multi-risk reader.
+    @* CCO displays High, Medium and Low from its separately authorized, server-paged reader.
        Other perspectives use the approved High-Risk-only critical reader; a
        Risk selector here would misleadingly imply other risks are available. *@
     @if (isCco)
@@ -19,8 +19,6 @@
                 <option value="HIGH" selected>High Risk</option>
                 <option value="MEDIUM">Medium Risk</option>
                 <option value="LOW">Low Risk</option>
-                <option value="UNRATED">Unrated</option>
-                <option value="ALL">All Risks</option>
             </select>
         </label>
     }
