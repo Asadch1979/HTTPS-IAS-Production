@@ -8,7 +8,9 @@ namespace AIS.Controllers
     {
         // The page ID is resolved from the authenticated controller's fixed
         // page path / dashboard scope. It must NEVER come from query parameters.
-        // Require exact active GET dependency, not a role-only or TOP-anchor grant.
+        // Require exact assigned PAGE_ID -> API_ID dependency, not a role-only
+        // or TOP-anchor grant. The existing mapping has no IS_ACTIVE column;
+        // T_MENU_PAGES.STATUS and T_AU_API_MASTER.IS_ACTIVE are enforced.
         internal bool HasActiveExecutivePageApi(int pageId, int assignedGroupId, string method, string requestPath)
         {
             if (assignedGroupId <= 0 || ((pageId < 1000300 || pageId > 1000305) && pageId != 1000401))
@@ -35,7 +37,7 @@ namespace AIS.Controllers
                     ON assigned.PAGE_ID=d.PAGE_ID AND assigned.GROUP_ID=:group_id
                   JOIN T_AU_API_MASTER m
                     ON m.API_ID=d.API_ID AND m.IS_ACTIVE='Y'
-                 WHERE d.PAGE_ID=:page_id AND d.IS_ACTIVE='Y'
+                 WHERE d.PAGE_ID=:page_id
                    AND UPPER(TRIM(m.HTTP_METHOD))='GET'
                    AND LOWER(TRIM(BOTH '/' FROM m.API_PATH))=LOWER(:api_path)";
             command.Parameters.Add("page_id", OracleDbType.Int32).Value = pageId;

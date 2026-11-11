@@ -1,6 +1,6 @@
 # Executive dashboards: page-bound GET API permissions (production deployment)
 
-**Change scope:** Six approved IAS pages (menu 16), plus the existing RLM page that is already assigned in IAS. **No role-to-API activation is required.** All non-dashboard IAS API authorization remains unchanged.
+**Change scope:** Six approved IAS pages (menu 16), plus the existing RLM page that is already assigned in IAS. **No role-to-API activation is required.** The existing database table already stores PAGE_ID/API_ID pairs; it does not have IS_ACTIVE. All non-dashboard IAS API authorization remains unchanged.
 
 | Page ID | Validated page path | GET API dependencies |
 |---|---|---|
@@ -16,7 +16,7 @@
 
 ## Semantics
 
-- API eligibility = live authenticated IAS session + an **active assigned page** (`T_MENU_PAGES_GROUPMAP`, `T_MENU_PAGES`) + active exact GET dependency (`T_IAS_EXEC_PAGE_API`, `T_AU_API_MASTER`) + existing dashboard-specific perspective, scope, page, filter and dataset checks.
+- API eligibility = live authenticated IAS session + an **active assigned page** (`T_MENU_PAGES_GROUPMAP`, `T_MENU_PAGES`) + an explicit PAGE_ID/API_ID dependency (`T_IAS_EXEC_PAGE_API`) + active exact GET API (`T_AU_API_MASTER`) + existing dashboard-specific perspective, scope, page, filter and dataset checks.
 - `T_AU_API_MASTER.PAGE_ID` remains the single legacy registration anchor for shared URLs. **Do not duplicate API_MASTER routes** to force different `PAGE_ID` values. `T_IAS_EXEC_PAGE_API` is the many-to-many page/API dependency.
 - `PKG_LG.P_GetApiPermissions` loads these dashboard families by the authenticated user's assigned page, **not** `T_AU_ROLE_API_PERMISSION`. It retains the old role-based rules for every *other* IAS API family, including Field Audit.
 - `PKG_AD.P_AddGroupMenuItemsAssignment` and `P_RemoveGroupMenuItemsAssignment` stop activating/revoking role API grants for those seven pages. Page assignment is the entitlement; other IAS page assignment behavior is unchanged.
@@ -28,12 +28,12 @@
 1. Back up `PKG_LG` and `PKG_AD` **both specs and bodies**, and export current `T_MENU_PAGES`, `T_MENU_PAGES_GROUPMAP`, `T_AU_API_MASTER`, `T_AU_ROLE_API_PERMISSION` and existing `T_IAS_EXEC_PAGE_API` (if present).
 2. Confirm exact page IDs, paths, `MENU_ID=16` for the six supplied rows, active status, and **RLM 1000305** separately.
 3. Verify every endpoint in `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` already exists as **one ACTIVE GET row** in `T_AU_API_MASTER`. Do not run historical registration SQL if it would create unexpected roles or alter page IDs. Do not activate an unknown endpoint or bypass a disabled dependency.
-4. Verify `T_IAS_EXEC_PAGE_API` structure (PAGE_ID, API_ID, IS_ACTIVE, unique PAGE_ID/API_ID), Oracle ownership/grants, and current disabled dependencies. The manifest aborts if an expected dependency already exists but is disabled.
+4. Verify the **existing two-column** `T_IAS_EXEC_PAGE_API` structure (`PAGE_ID`, `API_ID`, no `IS_ACTIVE`), its owner, and uniqueness of each pair. Do **not** add, drop or rename any column. A missing mapping is denied. The manifest aborts for duplicate existing pairs, an unexpected mapping, a disabled API in `T_AU_API_MASTER`, or a page that is inactive.
 5. Confirm existing exact API routes under the IAS PathBase (e.g. `/ZTBLAIS`), while storing application-relative `/api/...` routes in Oracle.
 
 ## Deployment order (must not be reversed)
 
-1. Run the **reviewed** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` as the established IAS schema owner. It creates the dependency table if absent; registers only known GET endpoints; preserves existing disabled dependencies; never mutates role grants. It aborts and rolls back data changes on missing, duplicate, inactive, or wrong-page registrations.
+1. Run the **reviewed** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` as the established IAS schema owner. It reuses the existing two-column dependency table, creating it only if absent, and inserts only approved missing pairs. It never alters the table or mutates role grants. It rejects missing/duplicate/inactive master API rows, wrong-page registrations, duplicate pairs and unexpected existing page/API links.
 2. Compile **`AIS/Docs/sql/PKG_LG.sql`** and check `USER_ERRORS`, first. Confirm the existing `p_GetApiPermissions` signature is unchanged. Its new page lookup requires the dependency manifest.
 3. Compile **`AIS/Docs/sql/PKG_AD.sql`**, then check `USER_ERRORS`. Confirm add/remove page assignments work without changing role/API grants.
 4. Build and deploy the application with `DBConnection.ExecutivePageApiPermissions.cs` and all five updated controllers. **Do not deploy the application before the manifest and package compilation.**
@@ -46,7 +46,7 @@
 - A user with only the CCO page cannot invoke TOP-only `GetKpiLifecycle`, CIA Command APIs, Head Audit APIs or Group Report E.
 - A user with only Audit Para Snap cannot inherit CIA, TOP or CCO APIs. Shared API paths must resolve only through the explicitly assigned page mapping.
 - Revoking a page assignment denies its APIs **without waiting for the next login**; an API linked to a *different remaining assigned page* continues to work.
-- An API whose `T_IAS_EXEC_PAGE_API.IS_ACTIVE='N'` or `T_AU_API_MASTER.IS_ACTIVE='N'` must return 403. Unknown/duplicate route-verb registrations must fail the manifest preflight.
+- An API with no matching row in `T_IAS_EXEC_PAGE_API`, or with `T_AU_API_MASTER.IS_ACTIVE='N'`, must return 403. The dependency table has **no status field**. To disable a single page/API mapping requires a separately reviewed removal of that specific mapping; do not alter source data automatically. Unknown/duplicate route-verb registrations must fail the manifest preflight.
 - Super User must still hold the requested page and pass live IAS scope validation; it does not bypass a missing page-to-API dependency.
 - Recheck CCO Function Wise Position, Audit Para’s, CCM Report E, GM/Region Pulse, CIA Command Center, Head Audit monitoring, Audit Para Snap report/PDF export, and existing Group/RLM totals.
 - Test a wrong HTTP verb, query-supplied fake page ID, stale session, wrong reporting root and attempted cross-dashboard calls. All must deny.

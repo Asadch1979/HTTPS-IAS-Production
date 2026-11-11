@@ -529,7 +529,8 @@ create or replace package body PKG_LG is
                                 io_cursor OUT t_cursor) AS
   BEGIN
     -- Executive/Head Audit GET APIs are derived from the ACTIVE assigned
-    -- PAGE_ID -> API_ID dependency manifest. Role API grants alone cannot
+    -- PAGE_ID -> API_ID dependency manifest (two columns, no IS_ACTIVE).
+    -- Role API grants alone cannot
     -- expose an executive endpoint. Other IAS API permission behavior
     -- (including Field Audit assignment logic) remains untouched.
     -- Deploy executive_dashboard_page_api_manifest.sql BEFORE this body.
@@ -590,7 +591,7 @@ create or replace package body PKG_LG is
           FROM T_MENU_PAGES_GROUPMAP assigned
           JOIN T_MENU_PAGES page ON page.ID=assigned.PAGE_ID AND page.STATUS='A'
           JOIN T_IAS_EXEC_PAGE_API dependency
-            ON dependency.PAGE_ID=assigned.PAGE_ID AND dependency.IS_ACTIVE='Y'
+            ON dependency.PAGE_ID=assigned.PAGE_ID
           JOIN T_AU_API_MASTER api
             ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
          WHERE assigned.GROUP_ID=R_ID
@@ -626,7 +627,7 @@ create or replace package body PKG_LG is
           FROM T_MENU_PAGES_GROUPMAP assigned
           JOIN T_MENU_PAGES page ON page.ID=assigned.PAGE_ID AND page.STATUS='A'
           JOIN T_IAS_EXEC_PAGE_API dependency
-            ON dependency.PAGE_ID=assigned.PAGE_ID AND dependency.IS_ACTIVE='Y'
+            ON dependency.PAGE_ID=assigned.PAGE_ID
           JOIN T_AU_API_MASTER api
             ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
          WHERE assigned.GROUP_ID=R_ID

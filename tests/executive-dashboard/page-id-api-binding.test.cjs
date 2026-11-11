@@ -14,16 +14,21 @@ const pages = new Map([
  [1000305,'ExecutiveOverview/RLM']
 ]);
 
-test('Manifest uses exact known PAGE_IDs and fails closed for absent or disabled GET APIs',()=>{
+test('Manifest uses existing two-column table and fails closed for unapproved or inactive-master APIs',()=>{
  const sql=read('AIS/Docs/sql/executive_dashboard_page_api_manifest.sql');
  for(const [id,path] of pages)
    assert.ok(sql.includes(`verify_page(${id},'${path}'`),id+' '+path);
  assert.match(sql,/MENU_ID=p_menu/);
  assert.match(sql,/v_count<>1 OR NVL\(v_active,'N'\)<>'Y'/);
- assert.match(sql,/Existing dependency is DISABLED/);
- assert.match(sql,/Unexpected ACTIVE page\/API dependency/);
+ assert.match(sql,/Existing T_IAS_EXEC_PAGE_API|existing T_IAS_EXEC_PAGE_API/);
+ assert.match(sql,/COLUMN_NAME='IS_ACTIVE'/); // only schema guard, never queried as a dependency flag
+ assert.match(sql,/Status-enabled dependency schema requires separate reviewed migration/);
+ assert.match(sql,/Unexpected page\/API dependency/);
  assert.match(sql,/approved\.EXISTS\(TO_CHAR\(unexpected\.PAGE_ID\)/);
- assert.match(sql,/WHEN NOT MATCHED THEN INSERT \(PAGE_ID,API_ID,IS_ACTIVE\)/);
+ assert.match(sql,/WHEN NOT MATCHED THEN INSERT \(PAGE_ID,API_ID\)/);
+ assert.doesNotMatch(sql,/d\.IS_ACTIVE|dependency\.IS_ACTIVE/);
+ assert.match(sql,/Duplicate existing PAGE_ID\/API_ID dependencies/);
+ assert.match(sql,/m\.IS_ACTIVE AS API_ACTIVE/);
  assert.doesNotMatch(sql,/MERGE INTO T_AU_ROLE_API_PERMISSION|UPDATE T_AU_ROLE_API_PERMISSION|DELETE FROM T_AU_ROLE_API_PERMISSION/);
  assert.match(sql,/link_get\(1000401,'HeadAuditDepartment','ResponseEvidence'\)/);
  assert.match(sql,/link_get\(1000303,'ExecutiveDashboard','GetCiaCommandKpis'\)/);
@@ -44,7 +49,8 @@ test('PKG_LG loads dashboard APIs from assigned active pages, not active role AP
  assert.equal((sql.match(/JOIN T_IAS_EXEC_PAGE_API dependency/g)||[]).length,2);
  assert.equal((sql.match(/JOIN T_MENU_PAGES_GROUPMAP assigned/g)||[]).length,0);
  assert.equal((sql.match(/FROM T_MENU_PAGES_GROUPMAP assigned/g)||[]).length,2);
- assert.equal((sql.match(/dependency.IS_ACTIVE='Y'/g)||[]).length,2);
+ assert.doesNotMatch(sql,/dependency\.IS_ACTIVE/);
+ assert.equal((sql.match(/dependency.PAGE_ID=assigned.PAGE_ID/g)||[]).length,2);
  assert.equal((sql.match(/assigned.GROUP_ID=R_ID/g)||[]).length,2);
  assert.equal((sql.match(/AND NOT \(/g)||[]).length,2);
  for(const root of ['api/executivedashboard/%','api/executivereports/%',
@@ -71,7 +77,8 @@ test('Server-side exact PAGE_ID plus live page assignment is checked independent
  assert.match(helper,/HasActiveExecutivePageApi\(int pageId, int assignedGroupId, string method, string requestPath\)/);
  assert.match(helper,/JOIN T_MENU_PAGES_GROUPMAP assigned/);
  assert.match(helper,/assigned.GROUP_ID=:group_id/);
- assert.match(helper,/d.PAGE_ID=:page_id AND d.IS_ACTIVE='Y'/);
+ assert.match(helper,/d.PAGE_ID=:page_id/);
+ assert.doesNotMatch(helper,/d\.IS_ACTIVE/);
  assert.match(helper,/m.API_ID=d.API_ID AND m.IS_ACTIVE='Y'/);
  assert.match(helper,/UPPER\(TRIM\(m.HTTP_METHOD\)\)='GET'/);
  assert.match(helper,/LOWER\(TRIM\(BOTH '\/' FROM m.API_PATH\)\)=LOWER\(:api_path\)/);
