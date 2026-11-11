@@ -390,7 +390,7 @@
         });
     }
     for (const id of ['start-date','end-date','entity']) $(id)?.addEventListener('change', () => {
-        invalidate(); validDates(); navigation(); $('status').textContent = 'Filters changed. Choose Apply to load this reporting scope.';
+        invalidate(); validDates(); navigation(); $('status').hidden = false; $('status').textContent = 'Filters changed. Choose Apply to load this reporting scope.';
     });
     navigation(); load();
 })();
