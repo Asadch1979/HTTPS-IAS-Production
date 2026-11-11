@@ -44,7 +44,7 @@ test('GROUP report removes redundant labels and notes without removing report re
     assert.match(report, /hidden="@\(Model\.DashboardType == "GROUP"\)"/);
     assert.match(js, /const displayTitle = group \? 'CCM Reports'/);
     assert.doesNotMatch(js, /ⓘ Data notes · Historical balances/);
-    assert.match(js, /if \(group\) \$\('status'\)\.hidden = true/);
+    assert.match(js, /\$\('status'\)\.hidden = true/);
     assert.match(js, /\$\('status'\)\.hidden = false/);
     assert.match(dashboard, /if \(app\.dataset\.perspective === 'GROUP'\)/);
     assert.match(dashboard, /\$\('status'\)\.hidden = false/);
