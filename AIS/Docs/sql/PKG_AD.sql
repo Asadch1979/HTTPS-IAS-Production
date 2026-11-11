@@ -1815,22 +1815,11 @@ create or replace package body PKG_AD is
       -- a new grant. New rows require separate explicit permission approval.
       WHEN NOT MATCHED THEN INSERT(role_id,api_id,is_active,created_by)
         VALUES(v.role_id,v.api_id,'N',NULL);
-    ELSIF PAGEID BETWEEN 1000300 AND 1000305 THEN
-      MERGE INTO T_AU_ROLE_API_PERMISSION p
-      USING
-      (
-        SELECT groupid AS role_id, m.api_id
-          FROM T_IAS_EXEC_PAGE_API d
-          JOIN T_AU_API_MASTER m ON m.API_ID=d.API_ID
-         WHERE d.PAGE_ID=PAGEID
-           AND m.IS_ACTIVE='Y'
-           AND UPPER(TRIM(m.HTTP_METHOD))='GET'
-      ) v
-      ON (p.ROLE_ID=v.role_id AND p.API_ID=v.api_id)
-      WHEN MATCHED THEN UPDATE SET p.IS_ACTIVE='Y'
-      WHEN NOT MATCHED THEN INSERT
-        (ROLE_ID,API_ID,IS_ACTIVE,CREATED_BY)
-        VALUES (v.role_id,v.api_id,'Y',113092);
+    ELSIF (PAGEID BETWEEN 1000300 AND 1000305) OR PAGEID=1000401 THEN
+      -- Assign only the selected PAGE_ID above. Active GET dependencies
+      -- are obtained via T_IAS_EXEC_PAGE_API by PKG_LG for this page.
+      -- Never auto-grant or reactivate a ROLE_ID/API_ID row here.
+      NULL;
     ELSE
       -- Non-executive IAS page assignment unchanged.
       SELECT COUNT(1) INTO v_api_count
@@ -1877,23 +1866,11 @@ create or replace package body PKG_AD is
            JOIN t_groups g ON g.group_id=assigned.group_id
            JOIN T_AU_API_MASTER m ON m.page_id=assigned.page_id
            WHERE g.role_id=v_legacy_role AND m.api_id=permission.api_id);
-    ELSIF PAGEID BETWEEN 1000300 AND 1000305 THEN
-      -- Only revoke endpoints mapped to the removed executive page,
-      -- preserving an API if another ASSIGNED dashboard still uses it.
-      DELETE FROM T_AU_ROLE_API_PERMISSION p
-       WHERE p.ROLE_ID=groupid
-         AND EXISTS (SELECT 1 FROM T_IAS_EXEC_PAGE_API x
-                      WHERE x.PAGE_ID=PAGEID AND x.API_ID=p.API_ID)
-         AND NOT EXISTS
-             (SELECT 1 FROM T_MENU_PAGES_GROUPMAP g
-               JOIN T_IAS_EXEC_PAGE_API x ON x.PAGE_ID=g.PAGE_ID
-              WHERE g.GROUP_ID=groupid AND x.API_ID=p.API_ID)
-         -- Shared dependencies may still be required by an assigned legacy page,
-         -- even when this API is anchored on the page being removed.
-         AND NOT EXISTS (SELECT 1 FROM t_menu_pages_groupmap remaining
-           JOIN t_groups rg ON rg.group_id=remaining.group_id
-           JOIN T_IAS_LEGACY_PAGE_API dependency ON dependency.page_id=remaining.page_id
-           WHERE rg.role_id=p.role_id AND dependency.api_id=p.api_id);
+    ELSIF (PAGEID BETWEEN 1000300 AND 1000305) OR PAGEID=1000401 THEN
+      -- Dashboard/Head Audit API permissions are page-bound. Revoking the
+      -- page removes API eligibility on next permission refresh; do not
+      -- mutate shared role API permissions belonging to other IAS pages.
+      NULL;
     ELSE
       -- Preserve the preexisting permission handling for other IAS pages.
       DELETE FROM T_AU_ROLE_API_PERMISSION p
