@@ -182,13 +182,15 @@ namespace AIS.Controllers
                     (managementRoles.Contains(scope.RoleId) ||
                      (scope.RoleId == 1 && scope.GroupRootId.HasValue && session.IsSuperUser())) &&
                     (root?.EntityTypeId == 3 || root?.EntityTypeId == 18);
-                var isRegional = scope.DashboardType == "RLM" &&
-                    (root?.EntityTypeId == 5 || root?.EntityTypeId == 21);
-                if ((!isManagement && !isRegional) ||
-                    (requiredPerspective == "management" && !isManagement) ||
-                    (requiredPerspective == "regional" && !isRegional) ||
-                    (f.View == "management" && !isManagement) ||
-                    (f.View == "regional" && !isRegional))
+                // Role readers are restricted to their exact authorized view.
+                // Branch Pulse was moved to RLM At a Glance and is GM Office
+                // (entity type 21) only, never a Region/type-5 or a browser root.
+                var isGmPulse = scope.DashboardType == "RLM" && root?.EntityTypeId == 21;
+                var managementView = isManagement && f.View == "management";
+                var gmGlanceView = isGmPulse && f.View == "glance";
+                if ((!managementView && !gmGlanceView) ||
+                    (requiredPerspective == "management" && !managementView) ||
+                    (requiredPerspective == "regional" && !gmGlanceView))
                     throw new ExecutiveDashboardAccessException("RoleMapping", "Role dashboard scope is not authorized.");
                 if (f.DimensionId.HasValue && requiredPerspective != "regional")
                     throw new ArgumentException("This aggregate cursor does not accept a dimension filter.");
