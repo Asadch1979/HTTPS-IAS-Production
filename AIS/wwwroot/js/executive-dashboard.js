@@ -121,7 +121,19 @@
         dataTable(target, ['Month', 'Settled paras', 'High-risk settled'], rows.map(row => [row.settlementMonth, number(row.settledParas), number(row.highRiskSettled)]));
     }
     function kpis(data) {
-        const target = $('kpis'); if (!target) return; target.replaceChildren();
+        const target = $('kpis'); if (!target) return;
+        // Group Audit Para Position and RLM At a Glance reuse the SAME
+        // nine-card renderer as TOP. Their existing authorized GetKpiSummary
+        // response includes its already-queried lifecycle result and quality flags.
+        const nineCardManagement = (app.dataset.perspective === 'GROUP' && app.dataset.view === 'management') ||
+            (app.dataset.perspective === 'RLM' && app.dataset.view === 'glance');
+        if (nineCardManagement) {
+            if (!data?.lifecycle || typeof data.lifecycle !== 'object')
+                throw new Error('Nine-indicator IAS lifecycle data is unavailable for this reporting scope.');
+            lifecycleKpis(data.lifecycle);
+            return;
+        }
+        target.replaceChildren();
         [...(['CCO', 'RLM'].includes(app.dataset.perspective)
             ? [[app.dataset.perspective === 'RLM' ? 'Opening Balance' : 'Opening Cases', 'openingCases'], ['Para Added', 'paraAdded']]
             : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
