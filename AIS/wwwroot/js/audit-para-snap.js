@@ -422,7 +422,7 @@
         }
         renderCritical();
         document.getElementById('exec-critical-note').textContent =
-            'Showing ' + rows.length + ' high-risk audit paras.';
+            'Showing ' + rows.length + ' high-risk audit paras (maximum 100 in this register).';
     }
     document.getElementById('exec-critical-risk')?.addEventListener('change',renderCritical);
     async function load() {
