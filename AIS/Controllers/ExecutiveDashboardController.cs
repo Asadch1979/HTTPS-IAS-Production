@@ -77,9 +77,16 @@ namespace AIS.Controllers
             {
                 var pagingRequested = Request.Query.ContainsKey("risk") || Request.Query.ContainsKey("offset");
                 if (!pagingRequested && risk == null && !offset.HasValue)
-                    return (object)database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f);
-                if (scope.DashboardType != "CCO" || f.View != "critical-observations")
-                    throw new ArgumentException("Risk paging is available in CCO Critical Audit Observations.");
+                {
+                    var rows = database.GetExecutiveCriticalItems(scope, auditPeriod, maxRows, f);
+                    // Existing bounded critical readers are the High-Risk register.
+                    // Fail closed to High Risk for these two explicitly named views.
+                    return (object)((f.View == "risk" || f.View == "audit-paras")
+                        ? rows.Where(row => row.RiskId == 1).ToList()
+                        : rows);
+                }
+                if (scope.DashboardType != "CCO" || f.View != "audit-paras")
+                    throw new ArgumentException("Risk paging is available in CCO Audit Para’s.");
                 foreach (var key in new[] { "risk", "offset", "maxRows" })
                     if (Request.Query.TryGetValue(key, out var values) &&
                         (values.Count != 1 || string.IsNullOrWhiteSpace(values[0])))
