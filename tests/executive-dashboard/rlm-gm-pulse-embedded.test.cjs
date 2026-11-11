@@ -61,7 +61,7 @@ test('Only RLM glance declares the existing GM Pulse role datasets; TOP and GROU
     assert.match(api, /scope\.DashboardType == "RLM" && filters\.View == "glance"/);
     assert.match(api, /database\.GetExecutiveDashboardRoot\(scope\)\?\.EntityTypeId != 21/);
     assert.match(views, /Id == "glance" && EnableGmPulseRoleDatasets/);
-    assert.match(views, /views\.Single\(v => v\.Id == "glance"\)\.EnableGmPulseRoleDatasets = true/);
+    assert.match(views, /gmGlance.EnableGmPulseRoleDatasets = true/);
     assert.match(views, /new\[\] \{ "GetRoleEntityHeatmap", "GetRoleFollowups" \}/);
     assert.match(api, /definition\.RoleDatasets, action/);
     assert.match(api, /requiredPerspective == "regional" && !gmGlanceView/);
