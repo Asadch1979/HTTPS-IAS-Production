@@ -10,7 +10,7 @@ test('GROUP keeps the management view as Audit Para Position and CCM Reports, wi
     assert.match(views, /if \(perspective == "GROUP"\)/);
     assert.match(views, /views\.RemoveAll\(v => v\.Id == "position"\)/);
     assert.match(views, /views\.Single\(v => v\.Id == "reports"\)\.Title = "CCM Reports"/);
-    assert.match(views, /perspective == "GROUP" \? "Audit Para Position" : "ZTBL \| Management Audit Dashboard"/);
+    assert.match(views, /views\.Insert\(0, View\("management", "Audit Para Position"/);
     assert.match(route, /scope\.DashboardType == "GROUP" && view == "position"/);
     assert.match(route, /RedirectToAction\(nameof\(GROUP\), new \{ view = "management"/);
     assert.match(group, /Model\.SelectedView\.Id == "reports"/);
@@ -43,7 +43,7 @@ test('GROUP report removes redundant labels and notes without removing report re
     assert.match(report, /Model\.DashboardType == "GROUP" && Model\.SelectedView\.Reports\.Length == 1/);
     assert.match(report, /hidden="@\(Model\.DashboardType == "GROUP"\)"/);
     assert.match(js, /const displayTitle = group \? 'CCM Reports'/);
-    assert.match(js, /if \(!cco && !group\)/);
+    assert.doesNotMatch(js, /ⓘ Data notes · Historical balances/);
     assert.match(js, /if \(group\) \$\('status'\)\.hidden = true/);
     assert.match(js, /\$\('status'\)\.hidden = false/);
     assert.match(dashboard, /if \(app\.dataset\.perspective === 'GROUP'\)/);
