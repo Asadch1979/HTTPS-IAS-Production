@@ -18,7 +18,10 @@
         }
         else
         {
+        @if (Model.DashboardType != "GROUP")
+        {
             <p class="exec-note">Top reporting units by yesterday’s open para volume (maximum eight bars). Bars share the same maximum for comparison, and are not additive to the portfolio total.</p>
+        }
             <div class="role-comparison-bars" data-management-bars aria-label="Open paras by authorized organizational unit"><p>Loading unit comparisons…</p></div>
         }
         <p role="status" data-role-units-status>Loading authorized unit comparison…</p>
@@ -34,7 +37,10 @@
         <div class="role-panel-heading"><div><span class="role-eyebrow">PRIORITY REGISTER</span>
             <h2>@(regional ? "High-Risk & Aging Follow-ups" : "Outstanding Management Follow-ups")</h2></div>
             <span class="role-panel-chip">Up to 100 open paras</span></div>
+        @if (Model.DashboardType != "GROUP")
+        {
         <p class="exec-note">Ordered by the Oracle priority procedure: high-risk, age and compliance cycles. Status and stage are source codes, not an inferred management decision or overdue-action deadline.</p>
+        }
         <p role="status" data-role-followups-status>Loading authorized follow-ups…</p>
         <div class="exec-role-table" role="region" aria-label="Priority audit follow-ups" tabindex="0">
             <table class="exec-table"><thead><tr>
