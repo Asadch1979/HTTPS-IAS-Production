@@ -22,6 +22,7 @@ namespace AIS.Models
         // The approved nine-indicator lifecycle response, present only in the
         // authorized Group Management / RLM summary. Uses the existing
         // GetKpiSummary API grant, not the TOP-only lifecycle endpoint.
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public ExecutiveKpiLifecycle Lifecycle { get; set; }
         // Populated for authorized CCO, RLM and Group reporting as applicable.
         public long? OpeningCases { get; set; }
