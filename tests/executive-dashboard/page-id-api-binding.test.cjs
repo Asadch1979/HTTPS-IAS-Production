@@ -21,6 +21,8 @@ test('Manifest uses exact known PAGE_IDs and fails closed for absent or disabled
  assert.match(sql,/MENU_ID=p_menu/);
  assert.match(sql,/v_count<>1 OR NVL\(v_active,'N'\)<>'Y'/);
  assert.match(sql,/Existing dependency is DISABLED/);
+ assert.match(sql,/Unexpected ACTIVE page\/API dependency/);
+ assert.match(sql,/approved\.EXISTS\(TO_CHAR\(unexpected\.PAGE_ID\)/);
  assert.match(sql,/WHEN NOT MATCHED THEN INSERT \(PAGE_ID,API_ID,IS_ACTIVE\)/);
  assert.doesNotMatch(sql,/MERGE INTO T_AU_ROLE_API_PERMISSION|UPDATE T_AU_ROLE_API_PERMISSION|DELETE FROM T_AU_ROLE_API_PERMISSION/);
  assert.match(sql,/link_get\(1000401,'HeadAuditDepartment','ResponseEvidence'\)/);
