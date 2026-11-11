@@ -70,8 +70,9 @@ namespace AIS.Controllers
                 if (pageId <= 0 || (superUser ? !permissions.HasViewPermission(user, pageId) :
                     !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(pageId)))
                     return Denied("PagePermission", user, scope.DashboardType);
-                if (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
-                    !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value))
+                if (!database.HasActiveExecutivePageApi(pageId, user.UserRoleID, Request.Method, Request.Path.Value) ||
+                    (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
+                    !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value)))
                     return Denied("ApiPermission", user, scope.DashboardType);
                 var reports = ExecutiveDashboardViews.ForPerspective(scope.DashboardType).Single(v => v.Id == "reports").Reports;
                 if (!reports.Contains(reportId)) return Denied("ReportPermission", user, scope.DashboardType);

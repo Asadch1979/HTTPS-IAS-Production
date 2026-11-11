@@ -48,8 +48,9 @@ namespace AIS.Controllers
                 if (pages.ResolvePageId("/ExecutiveOverview/CCO")!=1000302 ||
                     (super ? !permissions.HasViewPermission(user,1000302) : !session.TryGetAllowedViewIds(out var ids) || !ids.Contains(1000302)))
                     return Error(403,"forbidden","CCO page permission is required.");
-                if (super ? !permissions.HasApiPermissionForPath(user,Request.Method,Request.PathBase.Value,Request.Path.Value) :
-                    !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value))
+                if (!database.HasActiveExecutivePageApi(1000302,user.UserRoleID,Request.Method,Request.Path.Value) ||
+                    (super ? !permissions.HasApiPermissionForPath(user,Request.Method,Request.PathBase.Value,Request.Path.Value) :
+                    !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value)))
                     return Error(403,"forbidden","This exact CCO API permission is required.");
                 filters.Validate();
                 object data;

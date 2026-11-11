@@ -528,7 +528,11 @@ create or replace package body PKG_LG is
                                 R_ID      IN NUMBER,
                                 io_cursor OUT t_cursor) AS
   BEGIN
-  
+    -- Executive/Head Audit GET APIs are derived from the ACTIVE assigned
+    -- PAGE_ID -> API_ID dependency manifest. Role API grants alone cannot
+    -- expose an executive endpoint. Other IAS API permission behavior
+    -- (including Field Audit assignment logic) remains untouched.
+    -- Deploy executive_dashboard_page_api_manifest.sql BEFORE this body.
     -- Field Audit roles only
     IF R_ID IN (10, 27, 18, 28) THEN
     
@@ -573,7 +577,31 @@ create or replace package body PKG_LG is
                                 AND j.status = 'I'
                                 AND tl.isactive = 'Y')
            AND p.IS_ACTIVE = 'Y'
-           AND m.IS_ACTIVE = 'Y';
+           AND m.IS_ACTIVE = 'Y'
+           AND NOT (
+              LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/executivedashboard/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/executivereports/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/ccocompliance/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/auditparasnap/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/headauditdepartment/%'
+          )
+        UNION
+        SELECT DISTINCT api.API_ID,api.API_PATH,api.HTTP_METHOD
+          FROM T_MENU_PAGES_GROUPMAP assigned
+          JOIN T_MENU_PAGES page ON page.ID=assigned.PAGE_ID AND page.STATUS='A'
+          JOIN T_IAS_EXEC_PAGE_API dependency
+            ON dependency.PAGE_ID=assigned.PAGE_ID AND dependency.IS_ACTIVE='Y'
+          JOIN T_AU_API_MASTER api
+            ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
+         WHERE assigned.GROUP_ID=R_ID
+           AND UPPER(TRIM(api.HTTP_METHOD))='GET'
+           AND (
+              LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivedashboard/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivereports/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/ccocompliance/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/auditparasnap/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/headauditdepartment/%'
+           );
     
     ELSE
     
@@ -585,7 +613,31 @@ create or replace package body PKG_LG is
             ON m.API_ID = p.API_ID
          WHERE p.ROLE_ID = R_ID
            AND p.IS_ACTIVE = 'Y'
-           AND m.IS_ACTIVE = 'Y';
+           AND m.IS_ACTIVE = 'Y'
+           AND NOT (
+              LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/executivedashboard/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/executivereports/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/ccocompliance/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/auditparasnap/%'
+           OR LOWER(TRIM(BOTH '/' FROM m.API_PATH)) LIKE 'api/headauditdepartment/%'
+          )
+        UNION
+        SELECT DISTINCT api.API_ID,api.API_PATH,api.HTTP_METHOD
+          FROM T_MENU_PAGES_GROUPMAP assigned
+          JOIN T_MENU_PAGES page ON page.ID=assigned.PAGE_ID AND page.STATUS='A'
+          JOIN T_IAS_EXEC_PAGE_API dependency
+            ON dependency.PAGE_ID=assigned.PAGE_ID AND dependency.IS_ACTIVE='Y'
+          JOIN T_AU_API_MASTER api
+            ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
+         WHERE assigned.GROUP_ID=R_ID
+           AND UPPER(TRIM(api.HTTP_METHOD))='GET'
+           AND (
+              LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivedashboard/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivereports/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/ccocompliance/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/auditparasnap/%'
+           OR LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/headauditdepartment/%'
+           );
     
     END IF;
   

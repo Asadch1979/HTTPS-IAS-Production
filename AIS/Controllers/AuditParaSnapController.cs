@@ -89,8 +89,9 @@ namespace AIS.Controllers
                     (superUser ? !permissions.HasViewPermission(user,pageId) :
                     !session.TryGetAllowedViewIds(out var pages) || !pages.Contains(pageId)))
                     return Error(403,"forbidden","Audit Para Snap page permission is required.");
-                if (superUser ? !permissions.HasApiPermissionForPath(user,Request.Method,Request.PathBase.Value,Request.Path.Value) :
-                    !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value))
+                if (!database.HasActiveExecutivePageApi(pageId,user.UserRoleID,Request.Method,Request.Path.Value) ||
+                    (superUser ? !permissions.HasApiPermissionForPath(user,Request.Method,Request.PathBase.Value,Request.Path.Value) :
+                    !session.HasApiPermissionForPath(Request.Method,Request.PathBase.Value,Request.Path.Value)))
                     return Error(403,"forbidden","The exact Audit Para Snap API grant is required.");
                 AuditParaSnapPolicy.Validate(filters);
                 // Every read (including report PDF) validates the actual
