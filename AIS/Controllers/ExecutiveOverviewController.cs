@@ -197,6 +197,12 @@ namespace AIS.Controllers
                     LogDenial("PagePermission", user, requestedType);
                     return StatusCode(403);
                 }
+                // Legacy Group bookmarks for the duplicate position tab go to the
+                // established management position, preserving the authorized root.
+                if (!auditParaSnap && scope.DashboardType == "GROUP" && view == "position")
+                    return RedirectToAction(nameof(GROUP), new { view = "management",
+                        startDate = filters.StartDate, endDate = filters.EndDate,
+                        groupRootId = scope.GroupRootId });
                 var views = auditParaSnap ? AuditParaSnapPolicy.Definitions() : ExecutiveDashboardViews.ForPerspective(scope.DashboardType);
                 if (!auditParaSnap && requestedType=="CIA") views.RemoveAll(v => v.Id != "command");
                 if (requestedType == "GROUP")

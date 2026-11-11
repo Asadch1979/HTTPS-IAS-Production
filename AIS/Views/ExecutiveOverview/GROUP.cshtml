@@ -32,7 +32,7 @@
                 <p>@Model.ScopeLabel</p></div>
         </div>
         <div class="mgmt-hero-scope"><strong>AUTHORIZED MANAGEMENT SCOPE</strong>
-            <span>@Model.ScopeLabel</span><small>Year-to-date activity · position at yesterday</small></div>
+            <span>@Model.ScopeLabel</span></div>
     </div>
     <nav class="exec-navigation" data-view-navigation aria-label="Dashboard analysis views">
         @foreach (var view in Model.Views)
@@ -74,7 +74,7 @@
         <a class="org-button exec-reset" href="@Url.Action(Model.DashboardType, "ExecutiveOverview", new { view = Model.SelectedView.Id, groupRootId = Model.IsSuperUser ? Model.GroupRootId : null })">Reset</a>
     </form>
 
-    <p id="exec-status" class="org-status" role="status" aria-live="polite">@(Model.SelectedView.Id == "reports" ? Model.ScopeLabel : "Loading dashboard…")</p>
+    <p id="exec-status" class="org-status" role="status" aria-live="polite">Loading dashboard…</p>
     <div id="exec-results" class="exec-view-@Model.SelectedView.Id" hidden="@(Model.SelectedView.Id != "reports")">
         <partial name="@Model.SelectedView.Partial" model="Model" />
     </div>

@@ -70,6 +70,7 @@
             const value = element('strong', number.format(item.openParas || 0));
             row.append(label, track, value); target.append(row);
         }
+        if (app.dataset.perspective !== 'GROUP')
         target.append(element('p', 'Top eight units by open-para count; common width scale = largest selected unit. Individual reporting units may contain nested descendants.', 'role-chart-note'));
     }
     function regionHeatmap(rows) {

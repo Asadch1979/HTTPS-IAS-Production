@@ -94,6 +94,27 @@ namespace AIS.Controllers
                     var bytes = ExecutiveReportsPdfGenerator.Create(reportId, data, environment.WebRootPath);
                     return File(bytes, "application/pdf", $"IAS_Report_{reportId}_{filters.StartDate}_to_{filters.EndDate}.pdf");
                 }
+                // Management settlement-source and reconciliation evidence is Super User only.
+                // Strip restricted columns from the serialized response, not just the DOM.
+                // Keep the approved Report E counts/rates and report-scoping behavior unchanged.
+                if (scope.DashboardType == "GROUP" && reportId == "E" && !superUser)
+                {
+                    var publicRows = data.Rows.Select(row => new
+                    {
+                        row.RowKind, row.GroupId, row.GroupName, row.ItemId, row.ItemCode, row.ItemName,
+                        row.OpeningBalance, row.ParasAdded, row.TotalParas, row.SettledParas,
+                        row.OutstandingParas, row.SettlementPercentage,
+                        row.HighRisk, row.MediumRisk, row.LowRisk, row.UnratedRisk
+                    }).ToList();
+                    var publicData = new
+                    {
+                        data.ReportId, data.DashboardType, data.GroupRootId, data.Filters,
+                        Rows = publicRows
+                    };
+                    return Ok(new { success = true, data = publicData, dateRangeApplied = true,
+                        organizationalDimensionsApplied = true, historicalBalancesEstimated = true,
+                        currentOrganizationMapping = true });
+                }
                 return Ok(new { success = true, data, dateRangeApplied = true, organizationalDimensionsApplied = true,
                     historicalBalancesEstimated = true, currentOrganizationMapping = true, settlementAttributionEstimated = true });
             }

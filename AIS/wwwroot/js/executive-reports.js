@@ -4,6 +4,8 @@
     if (!root) return;
     const app = document.getElementById('executive-dashboard');
     const cco = root.dataset.perspective === 'CCO';
+    const group = root.dataset.perspective === 'GROUP';
+    const verifiedSuperUser = root.dataset.verifiedSuperUser === 'true';
     const snap=app?.classList.contains('exec-snap') === true;
     const settlementSources=new Set(['settledByCompliance','settledByAudit','settledByUnknown']);
     const $ = id => document.getElementById(`exec-${id}`);
@@ -212,7 +214,7 @@
                 table(target, 'Division-wise management audit settlement', [column('Group','groupName',plain), column('Division','itemName',plain), column('Opening balance','openingBalance'), column('Para added','parasAdded'), column('Total','totalParas'), column('Settled','settledParas'), column('Para outstanding','outstandingParas'), column('Settlement %','settlementPercentage', percent)], visibleRows);
             }
         }
-        if (!snap && !cco) {
+        if (!snap && !cco && (!group || verifiedSuperUser)) {
         const sources = node('details', null, 'exec-data'); sources.open = false;
         sources.append(node('summary', 'IAS Settlement Attribution and Reconciliation'));
         table(sources, 'IAS Settlement Attribution and Reconciliation', [
@@ -323,13 +325,14 @@
         if (root.dataset.apiView === 'reports' && root.dataset.perspective === 'CCO') query.set('view', 'reports');
         query.set('dashboardType', root.dataset.perspective);
         if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
-        const displayTitle = root.dataset.perspective === 'CCO' ? selected.dataset.title : `Report ${selection.value} · ${selected.dataset.title}`;
+        const displayTitle = group ? 'CCM Reports' : root.dataset.perspective === 'CCO' ? selected.dataset.title : `Report ${selection.value} · ${selected.dataset.title}`;
         $('report-title').textContent = displayTitle;
         $('report-period').textContent = root.dataset.perspective === 'CCO'
             ? `${date(query.get('startDate'))} – ${date(query.get('endDate'))}`
             : `${date(query.get('startDate'))} – ${date(query.get('endDate'))} · ${$('entity')?.selectedOptions[0]?.textContent || app.dataset.scopeLabel}`;
         $('report-content').replaceChildren(); $('report-cautions').replaceChildren(); $('report-panel').hidden = false;
-        $('status').textContent = `Loading ${root.dataset.perspective === 'CCO' ? displayTitle : 'Report ' + selection.value}…`; app.setAttribute('aria-busy','true');
+        $('status').hidden = false;
+        $('status').textContent = `Loading ${group ? 'CCM Reports' : root.dataset.perspective === 'CCO' ? displayTitle : 'Report ' + selection.value}…`; app.setAttribute('aria-busy','true');
         try {
             const response = await fetch(`${root.dataset.apiUrl}GetReport${selection.value}?${query}`, { signal: request.signal, credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'} });
             if (response.redirected || response.status === 401) throw new Error('Your session has expired. Sign in again to view reports.');
@@ -341,7 +344,7 @@
             const cautions = $('report-cautions');
             // Replace the old six-paragraph cream disclaimer with one quiet,
             // accurate data note. Estimates must still not appear certified.
-            if (root.dataset.perspective !== 'CCO')
+            if (!cco && !group)
                 cautions.append(node('p', 'ⓘ Data notes · Historical balances and settlement attribution are indicative; current organization mapping applies.', 'exec-note'));
             let benchmark = null;
             if (selection.value === 'D') {
@@ -367,11 +370,13 @@
                 pdfUrl: `${root.dataset.apiUrl}GetReport${selection.value}?${query}&format=pdf`
             };
             setExportReady(true);
-            $('status').textContent = root.dataset.perspective === 'CCO'
+            $('status').textContent = group ? '' : cco
                 ? `${displayTitle} loaded · ${number(result.data.rows.length)} records`
                 : `Report ${selection.value} loaded · ${number(result.data.rows.length)} Oracle records · Selected dates and organizational filters applied.`;
+            if (group) $('status').hidden = true;
         } catch (error) {
             if (current !== version || error.name === 'AbortError') return;
+            $('status').hidden = false;
             $('status').textContent = `${error.message} Choose Apply to retry.`;
             $('report-content').append(node('p','Report unavailable for this request.', 'exec-empty'));
         } finally { if (current === version) app.setAttribute('aria-busy','false'); }

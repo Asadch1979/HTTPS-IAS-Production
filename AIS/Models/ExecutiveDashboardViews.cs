@@ -79,8 +79,14 @@ namespace AIS.Models
                 views.Insert(0, View("command", "CIA Audit Command Center", "_CiaCommandCenter",
                     "Plan coverage, delayed reports, A1 observations, pending auditee response, audit teams and ten issue categories.",
                     Array.Empty<string>(), Array.Empty<string>()));
+            if (perspective == "GROUP")
+            {
+                // Management position is the canonical Group tab; the generic position tab duplicates it.
+                views.RemoveAll(v => v.Id == "position");
+                views.Single(v => v.Id == "reports").Title = "CCM Reports";
+            }
             if (perspective == "GROUP" || perspective == "RLM")
-                views.Insert(0, View("management", "ZTBL | Management Audit Dashboard", "_ManagementAudit",
+                views.Insert(0, View("management", perspective == "GROUP" ? "Audit Para Position" : "ZTBL | Management Audit Dashboard", "_ManagementAudit",
                     "Current management para position, subordinate unit comparisons and bounded follow-up priorities.",
                     new[] { "openParas", "highRiskParas", "settledMtd", "over1YearParas" },
                     new[] { "risk", "trend" }));
