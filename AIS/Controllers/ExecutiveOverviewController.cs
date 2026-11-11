@@ -248,12 +248,13 @@ namespace AIS.Controllers
                     views.RemoveAll(v => v.Id == "reports");
                 }
                 var root = database.GetExecutiveDashboardRoot(scope);
-                // GM Office (type 21) only. Region (type 5) and higher hierarchies
-                // retain their ordinary RLM view without branch-level Pulse.
-                var gmOfficeSelected = scope.DashboardType == "RLM" && root?.EntityTypeId == 21;
+                // Preserve the previously approved Regional Pulse eligibility:
+                // GM Office type 21 OR Region type 5, from the verified root only.
+                var regionalPulseSelected = scope.DashboardType == "RLM" &&
+                    (root?.EntityTypeId == 21 || root?.EntityTypeId == 5);
                 if (view == "regional")
                 {
-                    if (!gmOfficeSelected) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
+                    if (!regionalPulseSelected) { LogDenial("EntityScope", user, requestedType); return StatusCode(403); }
                     return RedirectToAction(nameof(RLM), new { view = "glance",
                         startDate = filters.StartDate, endDate = filters.EndDate,
                         groupRootId = scope.GroupRootId });
@@ -280,7 +281,7 @@ namespace AIS.Controllers
                 filters.View = view;
                 var selectedView = views.FirstOrDefault(v => v.Id == view);
                 if (selectedView == null) return BadRequest("Unknown dashboard view.");
-                if (gmOfficeSelected && view == "glance")
+                if (regionalPulseSelected && view == "glance")
                     selectedView.Sections = new[] { "risk", "aging", "cycle", "trend" };
                 var ccoGroupHeads = scope.DashboardType == "CCO" &&
                     view == "effectiveness"
@@ -346,7 +347,7 @@ namespace AIS.Controllers
                     CcoGroupHeads = ccoGroupHeads,
                     RlmRoots = rlmRoots,
                     NeedsRlmRoot = needsRlmRoot,
-                    ShowRegionalPulse = gmOfficeSelected && view == "glance",
+                    ShowRegionalPulse = regionalPulseSelected && view == "glance",
                     Filters = filters,
                     FilterOptions = options,
                     SnapDepartments = snapDepartments,
@@ -356,7 +357,7 @@ namespace AIS.Controllers
                     CiaPeriods = ciaPeriods,
                     SelectedCiaPeriodId = selectedCiaPeriod,
                     IsManagementPerspective = management,
-                    ComparisonEntities = gmOfficeSelected && view == "glance" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
+                    ComparisonEntities = regionalPulseSelected && view == "glance" && !configuration.GetValue<bool>("RoleDashboards:OracleReadEnabled")
                         ? database.GetExecutiveComparisonEntities(scope, filters, options, branches: true) : new(),
                     CanViewOrganization = permissions.HasViewPermission(user, pageIds.ResolvePageId("/Dashboard/entity_wise_obs"))
                 });
