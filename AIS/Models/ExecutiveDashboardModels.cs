@@ -19,7 +19,11 @@ namespace AIS.Models
 
     public sealed class ExecutiveKpiSummary
     {
-        // Populated only by the authorized CCO summary projection.
+        // The approved nine-indicator lifecycle response, present only in the
+        // authorized Group Management / RLM summary. Uses the existing
+        // GetKpiSummary API grant, not the TOP-only lifecycle endpoint.
+        public ExecutiveKpiLifecycle Lifecycle { get; set; }
+        // Populated for authorized CCO, RLM and Group reporting as applicable.
         public long? OpeningCases { get; set; }
         public long? ParaAdded { get; set; }
         public long TotalCases { get; set; }
