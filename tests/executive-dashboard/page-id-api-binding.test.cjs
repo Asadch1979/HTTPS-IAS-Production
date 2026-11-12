@@ -14,17 +14,25 @@ const pages = new Map([
  [1000305,'ExecutiveOverview/RLM']
 ]);
 
-test('Manifest uses existing two-column table and fails closed for unapproved or inactive-master APIs',()=>{
+test('Manifest registers all approved GET APIs, activates inactive records and rejects unapproved dependencies',()=>{
  const sql=read('AIS/Docs/sql/executive_dashboard_page_api_manifest.sql');
  for(const [id,path] of pages)
    assert.ok(sql.includes(`verify_page(${id},'${path}'`),id+' '+path);
  assert.match(sql,/MENU_ID=p_menu/);
- assert.match(sql,/v_count<>1 OR NVL\(v_active,'N'\)<>'Y'/);
+ assert.match(sql,/UPDATE T_AU_API_MASTER/);
+ assert.match(sql,/SET IS_ACTIVE='Y', UPDATED_ON=SYSDATE/);
+ assert.match(sql,/RETURNING API_ID INTO api_id/);
+ assert.match(sql,/routes.COUNT<>37 OR approved.COUNT<>66/);
  assert.match(sql,/Existing T_IAS_EXEC_PAGE_API|existing T_IAS_EXEC_PAGE_API/);
  assert.match(sql,/COLUMN_NAME='IS_ACTIVE'/); // only schema guard, never queried as a dependency flag
  assert.match(sql,/Status-enabled dependency schema requires separate reviewed migration/);
- assert.match(sql,/Unexpected page\/API dependency/);
- assert.match(sql,/approved\.EXISTS\(TO_CHAR\(unexpected\.PAGE_ID\)/);
+ assert.match(sql,/Unapproved existing page\/API dependency/);
+ assert.match(sql,/Unexpected final page\/API link/);
+ assert.match(sql,/approved\.EXISTS\(TO_CHAR\(linked\.PAGE_ID\)/);
+ assert.match(sql,/DELETE FROM T_IAS_EXEC_PAGE_API/);
+ assert.match(sql,/IS_ACTIVE='N'/);
+ assert.match(sql,/\/api\/__retired_exec_duplicate_/);
+ assert.match(sql,/No T_AU_ROLE_API_PERMISSION rows/);
  assert.match(sql,/WHEN NOT MATCHED THEN INSERT \(PAGE_ID,API_ID\)/);
  assert.doesNotMatch(sql,/d\.IS_ACTIVE|dependency\.IS_ACTIVE/);
  assert.match(sql,/Duplicate existing PAGE_ID\/API_ID dependencies/);
@@ -38,6 +46,29 @@ test('Manifest uses existing two-column table and fails closed for unapproved or
  assert.match(sql,/reports\(1000301,'E'\)/);
  assert.match(sql,/reports\(1000302,'BCD'\)/);
  assert.match(sql,/reports\(1000303,'ABCDE'\)/);
+});
+
+test('Manifest lists and verifies every controller action used in the seven dashboards',()=>{
+ const sql=read('AIS/Docs/sql/executive_dashboard_page_api_manifest.sql');
+ const source={
+  ExecutiveDashboard:['GetKpiLifecycle','GetKpiSummary','GetRiskSummary','GetAgingSummary','GetCycleSummary','GetSettlementTrend','GetCriticalItems','GetRoleUnitComparison','GetRoleFollowups','GetRoleEntityHeatmap','GetCiaCommandKpis','GetCiaIssueNature'],
+  ExecutiveReports:['GetReportA','GetReportB','GetReportC','GetReportD','GetReportE'],
+  AuditParaSnap:['GetKpis','GetDistribution','GetCriticalItems','GetPerformance','GetParaText','GetReportA','GetReportB','GetReportC','GetReportD','GetReportE'],
+  CcoCompliance:['GetFunctionPosition','GetOrgFilters','GetOrgPosition','GetOrgSettlement','GetOrgExceptions'],
+  HeadAuditDepartment:['Engagements','Work','Evidence','Report','ResponseEvidence']
+ };
+ for(const [controller,actions] of Object.entries(source)){
+   const cs=read('AIS/Controllers/'+controller+'Controller.cs');
+   for(const action of actions){
+     assert.match(cs,new RegExp('public IActionResult '+action+'\\\\s*\\\\('),controller+'/'+action);
+     assert.ok(sql.includes("'"+controller+"','"+action+"'") || (
+         controller==='ExecutiveReports' && sql.includes("'ABCDE'")) ||
+         (controller==='AuditParaSnap' && action.startsWith('GetReport') && sql.includes("'GetReport"+action.slice(-1)+"'"))
+        ,controller+'/'+action+' missing registration');
+   }
+ }
+ assert.match(sql,/routes.COUNT<>37 OR approved.COUNT<>66/);
+ assert.match(sql,/page links='\\|\\|approved.COUNT/);
 });
 
 test('PKG_LG loads dashboard APIs from assigned active pages, not active role API grants',()=>{
