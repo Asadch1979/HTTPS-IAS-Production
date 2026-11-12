@@ -60,7 +60,7 @@ test('Manifest lists and verifies every controller action used in the seven dash
  for(const [controller,actions] of Object.entries(source)){
    const cs=read('AIS/Controllers/'+controller+'Controller.cs');
    for(const action of actions){
-     assert.match(cs,new RegExp('public IActionResult '+action+'\\\\s*\\\\('),controller+'/'+action);
+     assert.ok(cs.includes('public IActionResult '+action+'('),controller+'/'+action+' missing action');
      assert.ok(sql.includes("'"+controller+"','"+action+"'") || (
          controller==='ExecutiveReports' && sql.includes("'ABCDE'")) ||
          (controller==='AuditParaSnap' && action.startsWith('GetReport') && sql.includes("'GetReport"+action.slice(-1)+"'"))
@@ -68,7 +68,7 @@ test('Manifest lists and verifies every controller action used in the seven dash
    }
  }
  assert.match(sql,/routes.COUNT<>37 OR approved.COUNT<>66/);
- assert.match(sql,/page links='\\|\\|approved.COUNT/);
+ assert.ok(sql.includes("page links='||approved.COUNT"));
 });
 
 test('PKG_LG loads dashboard APIs from assigned active pages, not active role API grants',()=>{
