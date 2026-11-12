@@ -57,6 +57,7 @@ namespace AIS.Controllers
                 return Error(401, "unauthenticated", "An active authenticated IAS session is required.");
             if (!ModelState.IsValid || groupRootId <= 0 || dashboardType?.Length > 20 || filters == null)
                 return Error(400, "invalid_request", "Provide valid report parameters and dates.");
+            var authorizationStage = "ResolveExecutiveDashboardScope";
             try
             {
                 var scope = database.ResolveExecutiveDashboardScope(dashboardType, groupRootId);
@@ -77,6 +78,7 @@ namespace AIS.Controllers
                 var reports = ExecutiveDashboardViews.ForPerspective(scope.DashboardType).Single(v => v.Id == "reports").Reports;
                 if (!reports.Contains(reportId)) return Denied("ReportPermission", user, scope.DashboardType);
                 // A separate immutable root is retained for GROUP; filters only narrow it.
+                authorizationStage = "NarrowExecutiveDashboardScope";
                 database.NarrowExecutiveDashboardScope(scope, filters.EntityId);
                 // Reuse the existing GET report route and its page/API/portfolio permissions for PDF.
                 // Do not create an unregistered export endpoint or bypass the current scope.
@@ -84,6 +86,7 @@ namespace AIS.Controllers
                 if (!string.IsNullOrEmpty(format) && !superUser) return Denied("ExportPermission", user, scope.DashboardType);
                 if (!string.IsNullOrEmpty(format) && !string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
                     return Error(400, "invalid_format", "Only PDF export is supported.");
+                authorizationStage = "ReadExecutiveReport";
                 var data = query(scope, filters);
                 // CCO exception records require verified Super User entitlement.
                 // Filter the response itself; hiding table rows in JS is not security.
@@ -120,10 +123,23 @@ namespace AIS.Controllers
                     historicalBalancesEstimated = true, currentOrganizationMapping = true, settlementAttributionEstimated = true });
             }
             catch (UnauthenticatedException) { return Error(401, "unauthenticated", "The IAS session is no longer valid."); }
-            catch (UnauthorizedAccessException exception) { return Denied((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, dashboardType); }
+            catch (UnauthorizedAccessException exception)
+            {
+                logger.LogWarning("Executive report authorization rejected; source Application; stage {Stage}; reason {Reason}; user {UserId}; role {RoleId}; authenticated root {RootId}; root override supplied {HasRootOverride}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
+                    authorizationStage, (exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping",
+                    user.ID, user.UserRoleID, user.UserEntityID, groupRootId.HasValue,
+                    filters.EntityId, filters.ReportingOfficeId, HttpContext.TraceIdentifier);
+                return Denied((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, dashboardType);
+            }
             catch (ArgumentException) { return Error(400, "invalid_request", "Provide ordered ISO dates and valid report filters."); }
             catch (OracleException exception) when (exception.Number == 20801) { return Error(400, "invalid_request", "Invalid report parameters."); }
-            catch (OracleException exception) when (exception.Number == 20802) { return Denied("EntityScope", user, dashboardType); }
+            catch (OracleException exception) when (exception.Number == 20802)
+            {
+                logger.LogWarning("Executive report authorization rejected; source Oracle; code ORA-20802; stage {Stage}; report {ReportId}; user {UserId}; role {RoleId}; authenticated root {RootId}; selected root {SelectedRootId}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
+                    authorizationStage, reportId, user.ID, user.UserRoleID, user.UserEntityID,
+                    groupRootId, filters.EntityId, filters.ReportingOfficeId, HttpContext.TraceIdentifier);
+                return Denied("EntityScope", user, dashboardType);
+            }
             catch (OracleException exception) when (exception.Number == 20803)
             {
                 logger.LogWarning(exception, "Executive report historical evidence unavailable for user {UserId}.", user.ID);

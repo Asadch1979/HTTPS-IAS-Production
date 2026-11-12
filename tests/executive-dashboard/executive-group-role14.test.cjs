@@ -4,11 +4,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const db = fs.readFileSync('AIS/DBConnection.ExecutiveDashboard.cs','utf8');
 const sql = fs.readFileSync('AIS/Docs/sql/executive_dashboard_permissions.sql','utf8');
-test('Role 14 resolves GROUP before optional configuration with restricted assigned root',()=>{
- const block=db.slice(db.indexOf('if (user.UserRoleID == 14)'),db.indexOf('var mappings = _configuration'));
+test('Roles 4 and 14 resolve GROUP before optional configuration with restricted assigned root',()=>{
+ const block=db.slice(db.indexOf('if (user.UserRoleID == 4 || user.UserRoleID == 14)'),db.indexOf('var mappings = _configuration'));
  assert.match(block,/requested != null && requested != "GROUP"/);
  assert.match(block,/groupRootId.HasValue \|\| user.UserEntityID.GetValueOrDefault\(\) <= 0/);
- assert.match(block,/RequireExecutiveGroupRoot\(user.UserEntityID.Value\)/);
+ assert.match(block,/RequireExecutivePosting\(user.UserEntityID.Value, user.UserRoleID == 4 \? 18 : 3\)/);
  assert.match(block,/new ExecutiveDashboardScope\(user, "GROUP", "\/ExecutiveOverview\/GROUP",\s*user.UserEntityID, user.UserEntityID\)/);
  assert.match(db,/n.EntityTypeId == 18 && !n.HasTypeConflict/);
 });
