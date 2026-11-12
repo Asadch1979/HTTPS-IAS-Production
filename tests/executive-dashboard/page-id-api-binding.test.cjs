@@ -33,6 +33,8 @@ test('Manifest registers all approved GET APIs, activates inactive records and r
  assert.match(sql,/IS_ACTIVE='N'/);
  assert.match(sql,/\/api\/__retired_exec_duplicate_/);
  assert.match(sql,/No T_AU_ROLE_API_PERMISSION rows/);
+ assert.match(sql,/WHERE API_ID=v_canonical_api_id/);
+ assert.doesNotMatch(sql,/WHERE API_ID=api_id/); // Prevent SQL column-name shadowing and accidental mass activation
  assert.match(sql,/WHEN NOT MATCHED THEN INSERT \(PAGE_ID,API_ID\)/);
  assert.doesNotMatch(sql,/d\.IS_ACTIVE|dependency\.IS_ACTIVE/);
  assert.match(sql,/Duplicate existing PAGE_ID\/API_ID dependencies/);
