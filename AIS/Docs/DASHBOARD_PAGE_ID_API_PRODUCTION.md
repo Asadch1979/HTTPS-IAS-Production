@@ -27,13 +27,13 @@
 
 1. Back up `PKG_LG` and `PKG_AD` **both specs and bodies**, and export current `T_MENU_PAGES`, `T_MENU_PAGES_GROUPMAP`, `T_AU_API_MASTER`, `T_AU_ROLE_API_PERMISSION` and existing `T_IAS_EXEC_PAGE_API` (if present).
 2. Confirm exact page IDs, paths, `MENU_ID=16` for the six supplied rows, active status, and **RLM 1000305** separately.
-3. Verify every endpoint in `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` already exists as **one ACTIVE GET row** in `T_AU_API_MASTER`. Do not run historical registration SQL if it would create unexpected roles or alter page IDs. Do not activate an unknown endpoint or bypass a disabled dependency.
-4. Verify the **existing two-column** `T_IAS_EXEC_PAGE_API` structure (`PAGE_ID`, `API_ID`, no `IS_ACTIVE`), its owner, and uniqueness of each pair. Do **not** add, drop or rename any column. A missing mapping is denied. The manifest aborts for duplicate existing pairs, an unexpected mapping, a disabled API in `T_AU_API_MASTER`, or a page that is inactive.
+3. Review the exact 37-controller-GET route allowlist in `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` against application controllers. The consolidated script explicitly **inserts missing approved GET records, activates existing inactive approved GET records, and retires duplicate approved URL records** (retaining their API_ID and role-permission history). Do not run separate legacy registration scripts that can reintroduce duplicates or role grants.
+4. Verify the existing **two-column** `T_IAS_EXEC_PAGE_API` structure (`PAGE_ID`, `API_ID`, no `IS_ACTIVE`), ownership and unique pair constraint. The manifest reconciles **66 approved PAGE_ID/API_ID dependencies**; it rejects unexpected page bindings and duplicate pairs. No database schema or role grant modifications are part of this DML run.
 5. Confirm existing exact API routes under the IAS PathBase (e.g. `/ZTBLAIS`), while storing application-relative `/api/...` routes in Oracle.
 
 ## Deployment order (must not be reversed)
 
-1. Run the **reviewed** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` as the established IAS schema owner. It reuses the existing two-column dependency table, creating it only if absent, and inserts only approved missing pairs. It never alters the table or mutates role grants. It rejects missing/duplicate/inactive master API rows, wrong-page registrations, duplicate pairs and unexpected existing page/API links.
+1. Run the **single consolidated** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` via SQL Developer **F5** under the IAS schema owner. For its 37 approved routes only, it inserts missing GET API masters, activates existing inactive ones, safely archives duplicate URL registrations while preserving their API_ID/role history, and MERGEs the 66 approved page links. It fails and rolls back on unapproved page mappings or archive-name collisions. Do not run the earlier individual GetReportE/CCO registration fixes afterwards.
 2. Compile **`AIS/Docs/sql/PKG_LG.sql`** and check `USER_ERRORS`, first. Confirm the existing `p_GetApiPermissions` signature is unchanged. Its new page lookup requires the dependency manifest.
 3. Compile **`AIS/Docs/sql/PKG_AD.sql`**, then check `USER_ERRORS`. Confirm add/remove page assignments work without changing role/API grants.
 4. Build and deploy the application with `DBConnection.ExecutivePageApiPermissions.cs` and all five updated controllers. **Do not deploy the application before the manifest and package compilation.**
@@ -46,7 +46,7 @@
 - A user with only the CCO page cannot invoke TOP-only `GetKpiLifecycle`, CIA Command APIs, Head Audit APIs or Group Report E.
 - A user with only Audit Para Snap cannot inherit CIA, TOP or CCO APIs. Shared API paths must resolve only through the explicitly assigned page mapping.
 - Revoking a page assignment denies its APIs **without waiting for the next login**; an API linked to a *different remaining assigned page* continues to work.
-- An API with no matching row in `T_IAS_EXEC_PAGE_API`, or with `T_AU_API_MASTER.IS_ACTIVE='N'`, must return 403. The dependency table has **no status field**. To disable a single page/API mapping requires a separately reviewed removal of that specific mapping; do not alter source data automatically. Unknown/duplicate route-verb registrations must fail the manifest preflight.
+- An API with no matching row in `T_IAS_EXEC_PAGE_API`, or with `T_AU_API_MASTER.IS_ACTIVE='N'`, must return 403. The dependency table has **no status field**. Because activation of the 37 approved routes is an explicit deployment request, verify activation decisions before executing the script. Existing unrelated inactive routes remain unchanged. Unexpected mappings must fail the script; duplicate approved URL registrations are archived as inactive non-routable records without deletion.
 - Super User must still hold the requested page and pass live IAS scope validation; it does not bypass a missing page-to-API dependency.
 - Recheck CCO Function Wise Position, Audit Para’s, CCM Report E, GM/Region Pulse, CIA Command Center, Head Audit monitoring, Audit Para Snap report/PDF export, and existing Group/RLM totals.
 - Test a wrong HTTP verb, query-supplied fake page ID, stale session, wrong reporting root and attempted cross-dashboard calls. All must deny.
@@ -56,4 +56,4 @@
 
 Revert the application code and restore the backed-up `PKG_LG`/`PKG_AD` bodies together if acceptance fails; retain the dependency table as inert metadata or reconcile it through a separate reviewed DBA change. **Never DROP the table or delete role grants as an automatic rollback.** Preserve the exported baseline to compare all page/API assignments and role decisions. Recheck that `PKG_EXEC_DASHBOARD.sql` and report packages remain unchanged.
 
-**Current status:** source-only PR. Oracle compile, test-suite execution, IIS deployment and live IAS UAT were not performed by ChatGPT. Production activation requires those checks.
+**Current status:** source-only PR. Oracle execution, compilation, IIS deployment and authenticated user testing have not been performed by ChatGPT. Back up API master and PAGE_ID mapping tables before F5. Run package validation and UAT after applying this script.
