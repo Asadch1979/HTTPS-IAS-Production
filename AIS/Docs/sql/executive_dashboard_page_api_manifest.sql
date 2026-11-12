@@ -68,7 +68,7 @@ DECLARE
   route_key        VARCHAR2(300);
   mapping_key      VARCHAR2(400);
   route_record     t_route_record;
-  api_id           NUMBER;
+  v_canonical_api_id           NUMBER;
   found_count      NUMBER;
   collision_count  NUMBER;
   mappings_added   NUMBER := 0;
@@ -237,13 +237,13 @@ BEGIN
          route_record.controller_name,
          '/api/'||route_record.controller_name||'/'||route_record.action_name,
          'GET','Y',SYSDATE)
-      RETURNING API_ID INTO api_id;
+      RETURNING API_ID INTO v_canonical_api_id;
       new_apis:=new_apis+1;
-      DBMS_OUTPUT.PUT_LINE('INSERT  '||route_key||'  API_ID='||api_id);
+      DBMS_OUTPUT.PUT_LINE('INSERT  '||route_key||'  API_ID='||v_canonical_api_id);
     ELSE
       -- Prefer an already ACTIVE record; otherwise retain the oldest API_ID.
       -- This preserves 2428 over the historical 2487 GetReportE duplicate.
-      SELECT API_ID INTO api_id FROM (
+      SELECT API_ID INTO v_canonical_api_id FROM (
         SELECT API_ID
           FROM T_AU_API_MASTER
          WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH)))=route_key
@@ -253,14 +253,14 @@ BEGIN
 
       UPDATE T_AU_API_MASTER
          SET IS_ACTIVE='Y', UPDATED_ON=SYSDATE
-       WHERE API_ID=api_id AND NVL(IS_ACTIVE,'N')<>'Y';
+       WHERE API_ID=v_canonical_api_id AND NVL(IS_ACTIVE,'N')<>'Y';
       IF SQL%ROWCOUNT>0 THEN
         activated_apis:=activated_apis+1;
-        DBMS_OUTPUT.PUT_LINE('ACTIVATE '||route_key||'  API_ID='||api_id);
+        DBMS_OUTPUT.PUT_LINE('ACTIVATE '||route_key||'  API_ID='||v_canonical_api_id);
       END IF;
     END IF;
 
-    canonical_ids(route_key):=api_id;
+    canonical_ids(route_key):=v_canonical_api_id;
 
     -- Reconcile duplicates WITHOUT deleting API_MASTER or role history.
     -- Any approved PAGE_ID dependency on a duplicate is migrated to the
@@ -269,7 +269,7 @@ BEGIN
       SELECT API_ID FROM T_AU_API_MASTER
        WHERE LOWER(TRIM(BOTH '/' FROM TRIM(API_PATH)))=route_key
          AND UPPER(TRIM(HTTP_METHOD))='GET'
-         AND API_ID<>api_id
+         AND API_ID<>v_canonical_api_id
        ORDER BY API_ID
     ) LOOP
       FOR old_link IN (
@@ -283,7 +283,7 @@ BEGIN
         END IF;
 
         MERGE INTO T_IAS_EXEC_PAGE_API target
-        USING (SELECT old_link.PAGE_ID PAGE_ID,api_id API_ID FROM dual) src
+        USING (SELECT old_link.PAGE_ID PAGE_ID,v_canonical_api_id API_ID FROM dual) src
            ON (target.PAGE_ID=src.PAGE_ID AND target.API_ID=src.API_ID)
         WHEN NOT MATCHED THEN INSERT (PAGE_ID,API_ID)
           VALUES(src.PAGE_ID,src.API_ID);
@@ -311,7 +311,7 @@ BEGIN
       retired_apis:=retired_apis+1;
       DBMS_OUTPUT.PUT_LINE('RETIRE '||route_key||
         '  duplicate='||duplicate_api.API_ID||
-        '  retained='||api_id);
+        '  retained='||v_canonical_api_id);
     END LOOP;
 
     SELECT COUNT(*) INTO found_count FROM T_AU_API_MASTER
@@ -332,11 +332,11 @@ BEGIN
     key_sep:=INSTR(mapping_key,'|');
     selected_page:=TO_NUMBER(SUBSTR(mapping_key,1,key_sep-1));
     selected_route:=SUBSTR(mapping_key,key_sep+1);
-    api_id:=canonical_ids(selected_route);
+    v_canonical_api_id:=canonical_ids(selected_route);
 
     MERGE INTO T_IAS_EXEC_PAGE_API target
     USING (SELECT selected_page PAGE_ID,
-                  api_id API_ID FROM dual) src
+                  v_canonical_api_id API_ID FROM dual) src
        ON (target.PAGE_ID=src.PAGE_ID AND target.API_ID=src.API_ID)
     WHEN NOT MATCHED THEN INSERT (PAGE_ID,API_ID)
       VALUES(src.PAGE_ID,src.API_ID);
