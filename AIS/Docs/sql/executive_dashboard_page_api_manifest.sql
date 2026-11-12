@@ -332,10 +332,11 @@ BEGIN
     key_sep:=INSTR(mapping_key,'|');
     selected_page:=TO_NUMBER(SUBSTR(mapping_key,1,key_sep-1));
     selected_route:=SUBSTR(mapping_key,key_sep+1);
+    api_id:=canonical_ids(selected_route);
 
     MERGE INTO T_IAS_EXEC_PAGE_API target
     USING (SELECT selected_page PAGE_ID,
-                  canonical_ids(selected_route) API_ID FROM dual) src
+                  api_id API_ID FROM dual) src
        ON (target.PAGE_ID=src.PAGE_ID AND target.API_ID=src.API_ID)
     WHEN NOT MATCHED THEN INSERT (PAGE_ID,API_ID)
       VALUES(src.PAGE_ID,src.API_ID);
