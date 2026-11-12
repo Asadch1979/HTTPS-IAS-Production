@@ -21,7 +21,7 @@ test('Manifest registers all approved GET APIs, activates inactive records and r
  assert.match(sql,/MENU_ID=p_menu/);
  assert.match(sql,/UPDATE T_AU_API_MASTER/);
  assert.match(sql,/SET IS_ACTIVE='Y', UPDATED_ON=SYSDATE/);
- assert.match(sql,/RETURNING API_ID INTO api_id/);
+ assert.match(sql,/RETURNING API_ID INTO v_canonical_api_id/);
  assert.match(sql,/routes.COUNT<>37 OR approved.COUNT<>66/);
  assert.match(sql,/Existing T_IAS_EXEC_PAGE_API|existing T_IAS_EXEC_PAGE_API/);
  assert.match(sql,/COLUMN_NAME='IS_ACTIVE'/); // only schema guard, never queried as a dependency flag
