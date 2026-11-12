@@ -51,9 +51,9 @@ namespace AIS.Controllers
             if (user.UserRoleID == 1)
                 return session.IsSuperUser() ? RedirectToAction(nameof(TOP)) : StatusCode(403);
 
-            if (user.UserRoleID == 14) return RedirectToAction(nameof(GROUP));
+            if ((user.UserRoleID == 4 || user.UserRoleID == 14)) return RedirectToAction(nameof(GROUP));
             if (user.UserRoleID == 3) return RedirectToAction(nameof(CIA));
-            if (user.UserRoleID == 38) return RedirectToAction(nameof(CCO));
+            if ((user.UserRoleID == 38 || user.UserRoleID == 41)) return RedirectToAction(nameof(CCO));
 
             // TOP/GROUP users must have one explicit, verified role-to-page
             // mapping. Do not select a bank-wide view based on entity posting.
@@ -264,7 +264,7 @@ namespace AIS.Controllers
                 var allowedManagementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
                     .Get<int[]>() ?? Array.Empty<int>();
                 var management = (scope.DashboardType == "GROUP" &&
-                    (root?.EntityTypeId == 18 || (superUser && !scope.GroupRootId.HasValue))) ||
+                    (root?.EntityTypeId == 18 || root?.EntityTypeId == 3 || (superUser && !scope.GroupRootId.HasValue))) ||
                     (scope.DashboardType == "RLM" &&
                      (allowedManagementRoles.Contains(scope.RoleId) ||
                       (superUser && scope.GroupRootId.HasValue)) &&

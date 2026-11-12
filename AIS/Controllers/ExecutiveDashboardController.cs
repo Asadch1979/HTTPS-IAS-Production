@@ -177,7 +177,7 @@ namespace AIS.Controllers
                 var root = database.GetExecutiveDashboardRoot(scope);
                 var managementRoles = configuration.GetSection("RoleDashboards:ManagementRlmRoleIds")
                     .Get<int[]>() ?? Array.Empty<int>();
-                var isManagement = scope.DashboardType == "GROUP" && root?.EntityTypeId == 18 ||
+                var isManagement = scope.DashboardType == "GROUP" && (root?.EntityTypeId == 18 || root?.EntityTypeId == 3) ||
                     scope.DashboardType == "RLM" &&
                     (managementRoles.Contains(scope.RoleId) ||
                      (scope.RoleId == 1 && scope.GroupRootId.HasValue && session.IsSuperUser())) &&
@@ -232,7 +232,7 @@ namespace AIS.Controllers
                     LogDenial("PagePermission", user, scope.DashboardType);
                     return Error(403, "forbidden", "The executive dashboard page is not authorized or mapped.");
                 }
-                if (!database.HasActiveExecutivePageApi(pageId, user.UserRoleID, Request.Method, Request.Path.Value) ||
+                if (!database.HasActiveExecutivePageApi(pageId, user.UserGroupID, Request.Method, Request.Path.Value) ||
                     (superUser ? !permissions.HasApiPermissionForPath(user, Request.Method, Request.PathBase.Value, Request.Path.Value) :
                     !session.HasApiPermissionForPath(Request.Method, Request.PathBase.Value, Request.Path.Value)))
                 {

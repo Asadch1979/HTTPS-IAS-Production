@@ -127,7 +127,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_REPORTS AS
         INTO n
         FROM v_exec_entity_scope s
        WHERE s.entity_id = P_SCOPE_ROOT_ID
-         AND s.business_group_id = P_SCOPE_ROOT_ID;
+         AND EXISTS
+              (SELECT 1 FROM t_auditee_entities_maping m
+                WHERE m.entity_id = s.entity_id AND NVL(m.status, 'Y') = 'Y'
+                GROUP BY m.entity_id
+                HAVING COUNT(DISTINCT m.c_type_id) = 1
+                   AND (MAX(m.c_type_id) = 3 OR
+                        (MAX(m.c_type_id) = 18 AND s.business_group_id = P_SCOPE_ROOT_ID)));
       IF n <> 1 THEN
         RAISE_APPLICATION_ERROR(-20802, 'Invalid GROUP scope');
       END IF;

@@ -26,7 +26,7 @@ namespace AIS.Controllers
             }
             var user = ValidateExecutiveDashboardSession(scope);
             if (scope.PermissionPagePath != "/ExecutiveOverview/CCO" ||
-                (user.UserRoleID != 38 && !(user.UserRoleID == 1 && CreateSessionHandler().IsSuperUser())))
+                ((user.UserRoleID != 38 && user.UserRoleID != 41) && !(user.UserRoleID == 1 && CreateSessionHandler().IsSuperUser())))
                 throw new UnauthorizedAccessException();
             ComplianceDashboardPolicy.Validate(filters);
         }
