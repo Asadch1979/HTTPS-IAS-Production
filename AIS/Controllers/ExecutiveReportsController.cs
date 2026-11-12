@@ -125,9 +125,9 @@ namespace AIS.Controllers
             catch (UnauthenticatedException) { return Error(401, "unauthenticated", "The IAS session is no longer valid."); }
             catch (UnauthorizedAccessException exception)
             {
-                logger.LogWarning("Executive report authorization rejected; source Application; stage {Stage}; reason {Reason}; user {UserId}; role {RoleId}; authenticated root {RootId}; root override supplied {HasRootOverride}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
+                logger.LogWarning("Executive report authorization rejected; source Application; stage {Stage}; reason {Reason}; user {UserId}; context assignment {UserContextAssignmentId}; role {RoleId}; authenticated root {RootId}; root override supplied {HasRootOverride}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
                     authorizationStage, (exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping",
-                    user.ID, user.UserRoleID, user.UserEntityID, groupRootId.HasValue,
+                    user.ID, user.UserContextAssignmentId, user.UserRoleID, user.UserEntityID, groupRootId.HasValue,
                     filters.EntityId, filters.ReportingOfficeId, HttpContext.TraceIdentifier);
                 return Denied((exception as ExecutiveDashboardAccessException)?.Reason ?? "RoleMapping", user, dashboardType);
             }
@@ -135,8 +135,8 @@ namespace AIS.Controllers
             catch (OracleException exception) when (exception.Number == 20801) { return Error(400, "invalid_request", "Invalid report parameters."); }
             catch (OracleException exception) when (exception.Number == 20802)
             {
-                logger.LogWarning("Executive report authorization rejected; source Oracle; code ORA-20802; stage {Stage}; report {ReportId}; user {UserId}; role {RoleId}; authenticated root {RootId}; selected root {SelectedRootId}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
-                    authorizationStage, reportId, user.ID, user.UserRoleID, user.UserEntityID,
+                logger.LogWarning("Executive report authorization rejected; source Oracle; code ORA-20802; stage {Stage}; report {ReportId}; user {UserId}; context assignment {UserContextAssignmentId}; role {RoleId}; authenticated root {RootId}; selected root {SelectedRootId}; entity filter {EntityId}; reporting office {ReportingOfficeId}; trace {TraceId}.",
+                    authorizationStage, reportId, user.ID, user.UserContextAssignmentId, user.UserRoleID, user.UserEntityID,
                     groupRootId, filters.EntityId, filters.ReportingOfficeId, HttpContext.TraceIdentifier);
                 return Denied("EntityScope", user, dashboardType);
             }
@@ -159,8 +159,8 @@ namespace AIS.Controllers
 
         private IActionResult Denied(string reason, SessionUser user, string perspective)
         {
-            logger.LogWarning("Executive report denied: {Reason}; user {UserId}, role {RoleId}, perspective {Perspective}, route {Route}.",
-                reason, user.ID, user.UserRoleID, perspective, Request.Path.Value);
+            logger.LogWarning("Executive report denied: {Reason}; user {UserId}, context assignment {UserContextAssignmentId}, role {RoleId}, perspective {Perspective}, route {Route}.",
+                reason, user.ID, user.UserContextAssignmentId, user.UserRoleID, perspective, Request.Path.Value);
             return Error(403, "forbidden", "The report or selected scope is not authorized.");
         }
         private IActionResult Error(int status, string code, string message) => StatusCode(status, new { success = false, error = code, message });

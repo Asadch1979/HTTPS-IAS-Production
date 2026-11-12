@@ -38,16 +38,19 @@ requests sent groupRootId, which the resolver rejects. Confirm that deployment
 and refreshed JavaScript first; do not assume it explains subsequent denials.
 
 New internal logs distinguish Application from Oracle / ORA-20802 and record
-the stage, authenticated root, filters and trace identifier. These details are
+the stage, actual user ID, UserContextAssignmentId, authenticated root, filters and trace identifier. These details are
 not added to the HTTP response. The existing generic 403 remains unchanged.
 
 ## Deployment / diagnostics
 
 Deploy the controller logging change with the prior report-client fix.
 No Oracle package or view replacement is required by this commit.
-Run group_report_e_scope_diagnostics.sql manually with the authenticated
-session root and role plus exact request filters (NULL if absent). It is
-read-only. Missing, duplicate or conflicting mappings require investigation,
+Run group_report_e_scope_diagnostics.sql manually with trusted SessionUser.ID as authenticated_user_id and
+SessionUser.UserContextAssignmentId as user_context_id, plus exact request
+filters (NULL if absent). The script verifies assignment ownership, active
+status and effective dates before deriving ROLE_ID, GROUP_ID and ENTITY_ID.
+USER_CONTEXT_ID is never substituted for USER_ID. Missing Group IDs are
+rejected rather than inferred from Role ID. It is read-only. Missing, duplicate or conflicting mappings require investigation,
 not automatic approval. Compare deployed source before proposing a data repair.
 
 Three outdated regression checks were updated: role 4/14 posting validation,

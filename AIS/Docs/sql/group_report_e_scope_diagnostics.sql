@@ -1,8 +1,63 @@
--- Read-only GROUP Report E preflight. Run in the IAS application schema.
--- Bind :root_id to the AUTHENTICATED UserEntityID from the affected session,
--- :role_id to its verified role, :entity_id / :office_id to request filters
--- (NULL when absent). Do not use an arbitrary browser root or infer it from role.
--- No DML, package execution, grant changes or mapping repairs occur here.
+-- Read-only GROUP Report E preflight. Run as a whole SQL Developer F5 /
+-- SQL*Plus script in the IAS application schema, with input binds initialized:
+-- :user_context_id = authenticated SessionUser.UserContextAssignmentId;
+-- :authenticated_user_id = authenticated SessionUser.ID (actual USER_ID);
+-- :entity_id / :office_id = exact request filters, NULL when absent.
+-- Obtain both identity inputs from trusted server session/log evidence, not
+-- browser values. A DBA script cannot independently authenticate a web session.
+-- USER_CONTEXT_ID identifies an assignment, NEVER the user who owns it.
+-- Role, group and root below are output binds, not caller-supplied scope.
+-- No DML, package execution, commits, grant changes or mapping repairs.
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+VARIABLE root_id NUMBER;
+VARIABLE role_id NUMBER;
+VARIABLE group_id NUMBER;
+
+DECLARE
+  v_count NUMBER;
+BEGIN
+  :root_id := NULL;
+  :role_id := NULL;
+  :group_id := NULL;
+  IF :user_context_id IS NULL OR :user_context_id <= 0 OR
+     :user_context_id <> TRUNC(:user_context_id) OR
+     :authenticated_user_id IS NULL OR :authenticated_user_id <= 0 OR
+     :authenticated_user_id <> TRUNC(:authenticated_user_id) THEN
+    RAISE_APPLICATION_ERROR(-20930,'Trusted user and context identifiers are required.');
+  END IF;
+  -- Reject duplicate context identifiers instead of selecting an arbitrary row.
+  SELECT COUNT(*) INTO v_count FROM T_USER_CONTEXT_ASSIGNMENT a
+   WHERE a.USER_CONTEXT_ID=:user_context_id;
+  IF v_count<>1 THEN
+    RAISE_APPLICATION_ERROR(-20931,'Missing or duplicate context assignment.');
+  END IF;
+  -- Match ownership against USER_ID, independently of USER_CONTEXT_ID.
+  -- Effective-date semantics match PKG_USER_CONTEXT.P_OPEN_CONTEXT_CURSOR.
+  SELECT a.ROLE_ID,a.GROUP_ID,a.ENTITY_ID
+    INTO :role_id,:group_id,:root_id
+    FROM T_USER_CONTEXT_ASSIGNMENT a
+   WHERE a.USER_CONTEXT_ID=:user_context_id
+     AND a.USER_ID=:authenticated_user_id
+     AND a.IS_ACTIVE='Y'
+     AND (a.EFFECTIVE_FROM IS NULL OR a.EFFECTIVE_FROM<=TRUNC(SYSDATE))
+     AND (a.EFFECTIVE_TO IS NULL OR a.EFFECTIVE_TO>=TRUNC(SYSDATE));
+  -- Do not synthesize a missing Group ID from Role ID.
+  IF :role_id IS NULL OR :role_id<=0 OR :role_id<>TRUNC(:role_id) OR
+     :group_id IS NULL OR :group_id<=0 OR :group_id<>TRUNC(:group_id) OR
+     :root_id IS NULL OR :root_id<=0 OR :root_id<>TRUNC(:root_id) THEN
+    RAISE_APPLICATION_ERROR(-20932,'Assignment has missing or invalid scope identifiers.');
+  END IF;
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    :role_id := NULL; :group_id := NULL; :root_id := NULL;
+    RAISE_APPLICATION_ERROR(-20933,'Assignment is not owned by the authenticated user or is inactive/not effective.');
+  WHEN OTHERS THEN
+    :role_id := NULL; :group_id := NULL; :root_id := NULL;
+    RAISE;
+END;
+/
+SELECT :authenticated_user_id USER_ID,:user_context_id USER_CONTEXT_ID,
+       :role_id ROLE_ID,:group_id GROUP_ID,:root_id ENTITY_ID FROM dual;
 
 -- Missing/duplicate/conflicting active mappings, including null type values.
 SELECT :root_id root_id, :role_id role_id, COUNT(m.entity_id) active_rows,
