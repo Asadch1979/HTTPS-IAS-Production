@@ -324,7 +324,9 @@
         const query = new URLSearchParams(new FormData(form)); query.delete('report');
         if (root.dataset.apiView === 'reports' && root.dataset.perspective === 'CCO') query.set('view', 'reports');
         query.set('dashboardType', root.dataset.perspective);
-        if (root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
+        // Ordinary users must let the server derive the root from their authenticated posting.
+        query.delete('groupRootId');
+        if (verifiedSuperUser && root.dataset.groupRoot) query.set('groupRootId', root.dataset.groupRoot);
         const displayTitle = group ? 'CCM Reports' : root.dataset.perspective === 'CCO' ? selected.dataset.title : `Report ${selection.value} · ${selected.dataset.title}`;
         $('report-title').textContent = displayTitle;
         $('report-period').textContent = root.dataset.perspective === 'CCO'
