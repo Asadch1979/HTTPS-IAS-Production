@@ -31,14 +31,21 @@
 4. Verify the existing **two-column** `T_IAS_EXEC_PAGE_API` structure (`PAGE_ID`, `API_ID`, no `IS_ACTIVE`), ownership and unique pair constraint. The manifest reconciles **66 approved PAGE_ID/API_ID dependencies**; it rejects unexpected page bindings and duplicate pairs. No database schema or role grant modifications are part of this DML run.
 5. Confirm existing exact API routes under the IAS PathBase (e.g. `/ZTBLAIS`), while storing application-relative `/api/...` routes in Oracle.
 
+## Required PAGE_ID check-constraint migration
+
+Production currently enforces `CK_IAS_EXEC_PAGE_POS: PAGE_ID BETWEEN 1000300 AND 1000305`. This rejects the separately approved Head Audit Monitoring page `1000401` with `ORA-02290`.
+
+Before the main manifest, run `AIS/Docs/sql/executive_dashboard_page_constraint_1000401.sql` as the owning schema. It validates the existing definition and page IDs, then replaces the CHECK condition with `(PAGE_ID BETWEEN 1000300 AND 1000305) OR PAGE_ID=1000401`. It is idempotent for the reviewed old/new expressions and fails for any other constraint definition. Back up the original DDL and execute in a DBA-controlled change window: **Oracle DDL implicitly commits**, and failure between DROP and ADD requires immediate restoration of the original constraint. Confirm `STATUS=ENABLED` and `VALIDATED` before running the manifest.
+
 ## Deployment order (must not be reversed)
 
-1. Run the **single consolidated** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` via SQL Developer **F5** under the IAS schema owner. For its 37 approved routes only, it inserts missing GET API masters, activates existing inactive ones, safely archives duplicate URL registrations while preserving their API_ID/role history, and MERGEs the 66 approved page links. It fails and rolls back on unapproved page mappings or archive-name collisions. Do not run the earlier individual GetReportE/CCO registration fixes afterwards.
-2. Compile **`AIS/Docs/sql/PKG_LG.sql`** and check `USER_ERRORS`, first. Confirm the existing `p_GetApiPermissions` signature is unchanged. Its new page lookup requires the dependency manifest.
-3. Compile **`AIS/Docs/sql/PKG_AD.sql`**, then check `USER_ERRORS`. Confirm add/remove page assignments work without changing role/API grants.
-4. Build and deploy the application with `DBConnection.ExecutivePageApiPermissions.cs` and all five updated controllers. **Do not deploy the application before the manifest and package compilation.**
-5. Restart IIS; require existing dashboard users to log out and log back in to refresh stored API permissions.
-6. Verify exact action/API and page access using real authenticated Super User, CIA, CCO, Group Head, RLM GM/Region, and Head Audit sessions. Confirm authorized data values, dashboards, exports, and compliance records match predeployment positions.
+1. First run and verify `AIS/Docs/sql/executive_dashboard_page_constraint_1000401.sql` as the schema owner. This is a separate DDL migration, not part of the API registration transaction.
+2. Run the **single consolidated** `AIS/Docs/sql/executive_dashboard_page_api_manifest.sql` via SQL Developer **F5** under the IAS schema owner. For its 37 approved routes only, it inserts missing GET API masters, activates existing inactive ones, safely archives duplicate URL registrations while preserving their API_ID/role history, and MERGEs the 66 approved page links. It fails and rolls back on unapproved page mappings or archive-name collisions. Do not run the earlier individual GetReportE/CCO registration fixes afterwards.
+3. Compile **`AIS/Docs/sql/PKG_LG.sql`** and check `USER_ERRORS`, first. Confirm the existing `p_GetApiPermissions` signature is unchanged. Its new page lookup requires the dependency manifest.
+4. Compile **`AIS/Docs/sql/PKG_AD.sql`**, then check `USER_ERRORS`. Confirm add/remove page assignments work without changing role/API grants.
+5. Build and deploy the application with `DBConnection.ExecutivePageApiPermissions.cs` and all five updated controllers. **Do not deploy the application before the manifest and package compilation.**
+6. Restart IIS; require existing dashboard users to log out and log back in to refresh stored API permissions.
+7. Verify exact action/API and page access using real authenticated Super User, CIA, CCO, Group Head, RLM GM/Region, and Head Audit sessions. Confirm authorized data values, dashboards, exports, and compliance records match predeployment positions.
 
 ## Required fail-closed tests
 
