@@ -261,8 +261,11 @@
                 : 'IAS Para Added On is missing; source-date review required.';
             tr.append(age, el('td', row.daysSinceLastMovement == null ? 'No movement' : number(row.daysSinceLastMovement)));
             const cell = el('td'), details = el('details');
-            details.append(el('summary', `Observation ${row.comId}`), el('p', row.gistOfParas || 'Observation text is unavailable.'));
-            cell.append(details); tr.append(cell); target.append(tr);
+            const gist = typeof row.gistOfParas === 'string' ? row.gistOfParas.trim() : '';
+            if (gist.length > 180) {
+                details.append(el('summary', gist.slice(0, 180) + '…'), el('p', gist));
+                cell.append(details);
+            } else cell.append(el('span', gist || 'Para gist unavailable.')); tr.append(cell); target.append(tr);
         });
     }
     let activeRequest, version = 0;
