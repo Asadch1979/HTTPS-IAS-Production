@@ -41,16 +41,58 @@
         rows.forEach(row => { const tr = el('tr'); row.forEach(value => tr.append(el('td', value))); body.append(tr); });
         table.append(head, body); details.append(table); target.append(details);
     }
+    // The split buckets cover only ages strictly greater than 730 days.
+    function overTwoYears(rows) {
+        if (!Array.isArray(rows)) return null;
+        const codes = rows.some(row => row.bucketCode === '2_3_YEARS')
+            ? ['2_3_YEARS', 'OVER_3_YEARS'] : ['6', '5'];
+        const buckets = codes.map(code => rows.filter(row => row.bucketCode === code));
+        return buckets.every(matches => matches.length === 1 &&
+            matches[0].qualityCode !== 'N' && Number.isSafeInteger(matches[0].paraCount) && matches[0].paraCount >= 0)
+            ? buckets.reduce((sum, matches) => sum + matches[0].paraCount, 0) : null;
+    }
     function bars(id, rows) {
         const target = $(id); if (!target) return; target.replaceChildren();
         // Report age bucket thresholds in days, consistent with AGING_DAYS.
         // The Oracle bucket codes retain their original boundary calculations.
         const ageLabel = row => id !== 'aging' ? row.bucketName
-            : row.bucketCode === '1_3_YEARS' ? '366–1,095 days'
+            : row.bucketCode === '1_2_YEARS' ? '366–730 days'
+            : row.bucketCode === '2_3_YEARS' ? '731–1,095 days'
             : row.bucketCode === 'OVER_3_YEARS' ? 'Over 1,095 days'
             : row.bucketName;
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
-        if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
+        if (id === 'aging') {
+            target.append(el('p', 'Total Outstanding Paras: ' + number(total)));
+            const unknown = rows.filter(row => /unknown/i.test(row.bucketCode + ' ' + row.bucketName));
+            const missing = unknown.reduce((sum, row) => sum + row.paraCount, 0);
+            if (missing) target.append(el('small', number(missing) + ' paras have unknown or invalid aging dates; included in total.', 'exec-note'));
+            rows = rows.filter(row => !unknown.includes(row));
+            const count = codes => rows.filter(row => codes.includes(row.bucketCode)).reduce((sum,row)=>sum+row.paraCount,0);
+            if ($('kpis')?.dataset.kpiKeys.split(',').includes('over2YearParas')) {
+                target.append(el('p', 'Outstanding Para 1 Year old: ' + number(count(['4','6','5','1_2_YEARS','2_3_YEARS','OVER_3_YEARS']))));
+            } else {
+                // CCO Overview embeds Aging Analysis alongside its ten executive KPIs.
+                const agingCards = el('div', null, 'exec-kpis');
+                const overTwo = overTwoYears(rows);
+                const oneYearCode = rows.some(row => row.bucketCode === '1_2_YEARS') ? '1_2_YEARS' : '4';
+                const oneYear = rows.filter(row => row.bucketCode === oneYearCode);
+                const overOne = overTwo != null && oneYear.length === 1 &&
+                    oneYear[0].qualityCode !== 'N' && Number.isSafeInteger(oneYear[0].paraCount) && oneYear[0].paraCount >= 0
+                    ? oneYear[0].paraCount + overTwo : null;
+                [['Outstanding Para 1 Year old', overOne], ['Outstanding Para more than 2 Year old', overTwo]].forEach(([label, value]) => {
+                    const card = el('div', null, 'exec-kpi');
+                    card.append(el('span', label), el('strong', value == null ? 'N/A' : number(value)));
+                    agingCards.append(card);
+                });
+                target.append(agingCards);
+            }
+        }
+        const knownTotal = rows.reduce((sum, row) => sum + row.paraCount, 0);
+        if (id === 'aging' && total === 0)
+            target.append(el('p', 'No outstanding paras in this scope.', 'exec-empty'));
+        else if (id === 'aging' && total > 0 && knownTotal === 0)
+            target.append(el('p', 'Outstanding paras exist, but their aging cannot be determined from the available dates.', 'exec-empty'));
+        else if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
             const maximum = Math.max(...rows.map(row => row.paraCount));
             const graphic = chart(`${id === 'aging' ? 'Aging' : 'Compliance cycle'} distribution of open observations`);
@@ -126,7 +168,9 @@
         // nine-card renderer as TOP. Their existing authorized GetKpiSummary
         // response includes its already-queried lifecycle result and quality flags.
         const nineCardManagement = (app.dataset.perspective === 'GROUP' && app.dataset.view === 'management') ||
-            (app.dataset.perspective === 'RLM' && app.dataset.view === 'glance');
+            (app.dataset.perspective === 'RLM' && app.dataset.view === 'glance') ||
+            (app.dataset.perspective === 'GROUP' && app.dataset.view === 'glance') ||
+            (app.dataset.perspective === 'CCO' && app.dataset.view === 'overview');
         if (nineCardManagement) {
             if (!data?.lifecycle || typeof data.lifecycle !== 'object')
                 throw new Error('Nine-indicator IAS lifecycle data is unavailable for this reporting scope.');
@@ -139,7 +183,7 @@
             : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
-            ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
+            ['Over 3 Cycles', 'over3CycleParas'], ['Outstanding Para 1 Year old', 'over1YearParas'], ['Outstanding Para more than 2 Year old', 'over2YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const compliance = ['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective);
             if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
@@ -162,6 +206,11 @@
                 target.append(card);
                 return;
             }
+            if (key === 'over2YearParas') {
+                card.append(el('small', 'Same portfolio and cutoff as Aging Analysis'));
+                target.append(card);
+                return;
+            }
             const denominator = ['totalCases', 'openParas', 'settledTotal'].includes(key) ? data.totalCases : key === 'settledMtd' ? data.settledTotal : data.openParas;
             if (!['GROUP', 'RLM', 'CCO'].includes(app.dataset.perspective)) card.append(el('small', compliance
                 ? (['settlementRatio','settlementMtdRate'].includes(key) ? 'Period settled ÷ (opening + period additions)'
@@ -178,32 +227,20 @@
         const closingQuality = data.closingAsofVerified ? 'verified' : data.closingEstimated ? 'estimated' : 'unavailable';
         const startLabel = prettyDate($('start-date')?.value);
         const endLabel = prettyDate($('end-date')?.value);
-        [['Opening Open Paras', 'openingOpenParas', openingQuality],
-            ['Issue Identified', 'issueIdentified', 'period'],
-            ['Issue Rectified', 'issueRectified', 'period'],
-            ['Para Added', 'paraAdded', 'period'],
-            ['Paras Settled', 'parasSettled', 'period'],
-            ['Closing Open Paras', 'closingOpenParas', closingQuality],
-            ['High-Risk Open Paras', 'highRiskOpenParas', closingQuality],
-            ['Over 1 Year', 'over1YearParas', closingQuality],
+        [['Opening Paras', 'openingOpenParas', openingQuality],
+            ['Observation Raised by Audit', 'issueIdentified', 'period'],
+            ['On Spot Rectification', 'issueRectified', 'period'],
+            ['Para Added in Final Report', 'paraAdded', 'period'],
+            ['Net Para for Compliance', 'netParaForCompliance', openingQuality],
+            ['Post Compliance Settlement', 'parasSettled', 'period'],
+            ['Outstanding Para', 'closingOpenParas', closingQuality],
+            ['High Risk', 'highRiskOpenParas', closingQuality],
+            ['Medium Risk', 'mediumRiskOpenParas', closingQuality],
+            ['Low Risk', 'lowRiskOpenParas', closingQuality],
+            ['Outstanding Para 1 Year old', 'over1YearParas', closingQuality],
             ['Over 3 Compliance Cycles', 'over3ComplianceCycles', closingQuality]]
             .filter(([, key]) => $('kpis').dataset.kpiKeys.split(',').includes(key))
             .forEach(([label, key, quality]) => {
-                // Full lifecycle stage names in Group/RLM only. TOP labels and
-                // layout remain unchanged.
-                if (['GROUP', 'RLM'].includes(app.dataset.perspective)) {
-                    label = ({
-                        openingOpenParas: 'Opening Open Paras',
-                        issueIdentified: 'Issue Identified During Audit',
-                        issueRectified: 'Issue Rectified During Audit',
-                        paraAdded: 'Para Added at Audit Closure',
-                        parasSettled: 'Paras Settled – Post Compliance',
-                        closingOpenParas: 'Closing Open Paras',
-                        highRiskOpenParas: 'High-Risk Open Paras',
-                        over1YearParas: 'Over 1-Year-old Open Paras',
-                        over3ComplianceCycles: 'Over 3 Compliance Cycles Rejected Paras'
-                    })[key] || label;
-                }
                 const card = el('div', null, 'exec-kpi');
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
                 card.title = quality === 'estimated'
@@ -222,8 +259,8 @@
                 // Opening is a baseline, not its own 100% KPI. Rectification and
                 // identification may involve different issue cohorts in this interval.
                 if (key !== 'openingOpenParas' && key !== 'issueRectified') {
-                    const base = ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? data.closingOpenParas : data.openingOpenParas;
-                    card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
+                    const base = ['highRiskOpenParas', 'mediumRiskOpenParas', 'lowRiskOpenParas'].includes(key) ? data.closingOpenParas : data.openingOpenParas;
+                    card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${['highRiskOpenParas', 'mediumRiskOpenParas', 'lowRiskOpenParas'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
                 }
                 cards.append(card);
             });
@@ -250,7 +287,7 @@
         }
         rows.forEach(row => {
             const tr = el('tr');
-            if (app.dataset.perspective === 'CCO') tr.append(el('td', row.reportingOfficeName || 'Unmapped reporting office'));
+            if (app.dataset.perspective === 'CCO') tr.append(el('td', row.reportingOfficeName || (row.reportingOfficeQuality === 'CONFLICTING' ? 'Conflicting reporting office mapping — correction required' : 'Reporting office unavailable — correction required')));
             [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
                 row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
             const age = el('td', row.agingDays == null ? 'N/A' : `${number(row.agingDays)} days`);
@@ -261,8 +298,11 @@
                 : 'IAS Para Added On is missing; source-date review required.';
             tr.append(age, el('td', row.daysSinceLastMovement == null ? 'No movement' : number(row.daysSinceLastMovement)));
             const cell = el('td'), details = el('details');
-            details.append(el('summary', `Observation ${row.comId}`), el('p', row.gistOfParas || 'Observation text is unavailable.'));
-            cell.append(details); tr.append(cell); target.append(tr);
+            const gist = typeof row.gistOfParas === 'string' ? row.gistOfParas.trim() : '';
+            if (gist.length > 180) {
+                details.append(el('summary', gist.slice(0, 180) + '…'), el('p', gist));
+                cell.append(details);
+            } else cell.append(el('span', gist || 'Para gist unavailable.')); tr.append(cell); target.append(tr);
         });
     }
     let activeRequest, version = 0;
@@ -332,7 +372,7 @@
             if (current !== version) return;
             const datasets = Object.fromEntries(data);
             if (lifecycle && datasets.GetKpiLifecycle) lifecycleKpis(datasets.GetKpiLifecycle);
-            else if (datasets.GetKpiSummary) kpis(datasets.GetKpiSummary);
+            else if (datasets.GetKpiSummary) kpis({ ...datasets.GetKpiSummary, over2YearParas: overTwoYears(datasets.GetAgingSummary) });
             if (datasets.GetRiskSummary) risk(datasets.GetRiskSummary);
             if (datasets.GetAgingSummary) bars('aging', datasets.GetAgingSummary);
             if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);

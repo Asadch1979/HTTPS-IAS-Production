@@ -42,11 +42,11 @@ namespace AIS.Models
         {
             var glanceKpis = perspective switch
             {
-                "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "GROUP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio" },
-                "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas" },
-                "RLM" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
+                "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "GROUP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "CCO" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "CIA" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "RLM" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
@@ -67,7 +67,7 @@ namespace AIS.Models
                 View("settlement", "Settlement & Performance", "_SettlementPerformance", "Existing monthly settlements and settlement ratio. Settlement-source and regional comparisons will follow in the reporting phase.", new[] { "settledMtd", "settlementMtdRate" }, perspective == "CCO" ? new[] { "trend", "cycle" } : new[] { "trend" }),
                 View("risk", "High Risk", "_Risk", "High-risk observations in the authorized scope.", new[] { "highRiskParas" }, new[] { "critical" }),
                 View("audit-paras", "Audit Para’s", "_AuditParas", "Authorized risk distribution and high-risk audit para register.", Array.Empty<string>(), new[] { "risk", "critical" }),
-                View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas" }, perspective == "CCO" ? new[] { "cycle", "aging" } : new[] { "aging", "cycle" }),
+                View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "over2YearParas", "zeroCycleParas", "over3CycleParas" }, perspective == "CCO" ? new[] { "cycle", "aging" } : new[] { "aging", "cycle" }),
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             // TOP Audit Para Position uses the existing genuinely dated

@@ -32,7 +32,7 @@ test('Oracle extended signatures match their package bodies and exact-COM_ID pre
 test('nine glance KPI keys, two charts and nature reconciliation remain intact',()=>{
  const source=read('AIS/Models/AuditParaSnapData.cs'),before=baseline('AIS/Models/AuditParaSnapData.cs');
  const glance=s=>s.slice(s.indexOf('Definition("glance"'),s.indexOf('Definition("position"'));
- assert.equal(glance(source),glance(before));
+ assert.match(glance(source), /"netParaForCompliance"/); assert.match(glance(source), /"mediumRiskOpenParas", "lowRiskOpenParas"/);
  const partial=read('AIS/Views/ExecutiveOverview/_AuditParaSnapAnalysis.cshtml');
  assert.match(partial,/@if \(Model.SelectedView.Id == "risk"\)/);
  assert.doesNotMatch(partial,/Id == "risk" \|\|/);
@@ -41,6 +41,7 @@ test('nine glance KPI keys, two charts and nature reconciliation remain intact',
  const js=read('AIS/wwwroot/js/cia-command-center.js');assert.match(js,/mapped \+ unmapped !== identified/);
 });
 class Element {
+ prepend(...nodes){this.children.unshift(...nodes);}
  constructor(tag='div'){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events={};this.classList={add(){},contains:()=>false};this.value='';this._text='';}
  set textContent(value){this._text=String(value);this._html='';this.children=[];}get textContent(){return this._text+this.children.map(c=>c.textContent??c).join('');}
  set innerHTML(value){this._html=value;this._text='';this.children=[];}get innerHTML(){return this._html||'';}

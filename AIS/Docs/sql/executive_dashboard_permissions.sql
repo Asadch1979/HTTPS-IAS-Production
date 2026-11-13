@@ -17,7 +17,7 @@
 -- is their legacy registration anchor, NOT permission to access TOP. MVC
 -- checks authenticated perspective/page and the independent API role grant.
 --
--- Verified fixed IAS role/group IDs: 1 Super User, 3 CIA, 38 CCO.
+-- Role IDs are independent of group IDs; resolve page grants from active T_GROUPS.
 -- Configure optional roles only after checking real IAS roles/group IDs and
 -- ExecutiveDashboard:RoleMappings / RoleDashboards:ManagementRlmRoleIds.
 -- Do NOT guess Group, Top, GM, Regional or Division role IDs.
@@ -27,8 +27,8 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK;
 SET SERVEROUTPUT ON;
 DECLARE
   V_TOP_ROLE NUMBER := NULL;                -- verified TOP role/group, optional
-  V_GROUP_ROLE NUMBER := 14;              -- verified IAS GROUP HEAD role
-  V_RLM_REGIONAL_ROLES SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
+  V_GROUP_ROLE NUMBER := 14;              -- verified IAS Division role
+  V_RLM_REGIONAL_ROLES SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST(24,39);
   V_RLM_MANAGEMENT_ROLES SYS.ODCINUMBERLIST := SYS.ODCINUMBERLIST();
   V_NEW_API_ACTIVE CHAR(1) := 'N';
   V_NEW_GRANT_ACTIVE CHAR(1) := 'N';
@@ -69,6 +69,24 @@ DECLARE
          WHERE GROUP_ID=P_GROUP_ID AND PAGE_ID=P_PAGE_ID);
   END;
 
+  PROCEDURE GRANT_ROLE_PAGE(P_PAGE_ID NUMBER, P_ROLE_ID NUMBER) IS
+    V_COUNT NUMBER;
+  BEGIN
+    IF P_ROLE_ID IS NULL THEN RETURN; END IF;
+    SELECT COUNT(*) INTO V_COUNT FROM T_GROUPS WHERE ROLE_ID=P_ROLE_ID AND STATUS='Y';
+    IF V_COUNT=0 THEN
+      RAISE_APPLICATION_ERROR(-20081,'Missing active IAS group for role '||P_ROLE_ID);
+    END IF;
+    FOR g IN (SELECT DISTINCT GROUP_ID FROM T_GROUPS WHERE ROLE_ID=P_ROLE_ID AND STATUS='Y') LOOP
+      SELECT COUNT(DISTINCT ROLE_ID) INTO V_COUNT FROM T_GROUPS
+       WHERE GROUP_ID=g.GROUP_ID AND STATUS='Y';
+      IF g.GROUP_ID IS NULL OR g.GROUP_ID<=0 OR V_COUNT<>1 THEN
+        RAISE_APPLICATION_ERROR(-20081,'Conflicting IAS role/group mapping');
+      END IF;
+      GRANT_PAGE(P_PAGE_ID,g.GROUP_ID);
+    END LOOP;
+  END;
+
   PROCEDURE REGISTER_PAGE(
       P_PAGE_ID NUMBER,P_SUFFIX VARCHAR2,P_NAME VARCHAR2,
       P_ROLE_ID NUMBER DEFAULT NULL) IS
@@ -103,8 +121,8 @@ DECLARE
          'A',0,V_KEY,'/'||V_PATH);
     END IF;
     -- Existing status/visibility/name/URL are not rewritten by re-registration.
-    GRANT_PAGE(P_PAGE_ID,1);
-    GRANT_PAGE(P_PAGE_ID,P_ROLE_ID);
+    GRANT_ROLE_PAGE(P_PAGE_ID,1);
+    GRANT_ROLE_PAGE(P_PAGE_ID,P_ROLE_ID);
     DBMS_OUTPUT.PUT_LINE('Validated page: '||V_PATH||' ['||P_PAGE_ID||']');
   END;
 
@@ -242,18 +260,20 @@ BEGIN
   REGISTER_PAGE(1000300,'TOP','Top Management Dashboard',V_TOP_ROLE);
   REGISTER_PAGE(1000301,'GROUP','ZTBL | Management Audit Dashboard',V_GROUP_ROLE);
   REGISTER_PAGE(1000302,'CCO','Chief Compliance Officer Dashboard',38);
+  GRANT_ROLE_PAGE(1000301,4);
+  GRANT_ROLE_PAGE(1000302,41);
   REGISTER_PAGE(1000303,'CIA','CIA Audit Command Center',3);
   REGISTER_PAGE(1000304,'AuditParaSnap','ZTBL | Audit Para Snap',3);
   REGISTER_PAGE(1000305,'RLM','Division / GM / Regional Audit Dashboard');
 
   -- Role-eligible RLM accounts receive the new RLM page, not the
   -- independent Organization Structure page.
-  GRANT_PAGE(1000305,1);
+  GRANT_ROLE_PAGE(1000305,1);
   FOR i IN 1..V_RLM_REGIONAL_ROLES.COUNT LOOP
-    GRANT_PAGE(1000305,V_RLM_REGIONAL_ROLES(i));
+    GRANT_ROLE_PAGE(1000305,V_RLM_REGIONAL_ROLES(i));
   END LOOP;
   FOR i IN 1..V_RLM_MANAGEMENT_ROLES.COUNT LOOP
-    GRANT_PAGE(1000305,V_RLM_MANAGEMENT_ROLES(i));
+    GRANT_ROLE_PAGE(1000305,V_RLM_MANAGEMENT_ROLES(i));
   END LOOP;
 
   -- Common read-only data endpoints (one URL, multiple verified scopes).

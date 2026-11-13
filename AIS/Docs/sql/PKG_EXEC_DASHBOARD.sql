@@ -181,8 +181,10 @@ SELECT
             THEN '91-180 DAYS'
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 365
             THEN '181-365 DAYS'
+        WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 730
+            THEN '1-2 YEARS'
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
-            THEN '1-3 YEARS'
+            THEN '2-3 YEARS'
         ELSE 'OVER 3 YEARS'
     END AS aging_bucket,
 
@@ -704,7 +706,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
           FROM dual
 
         UNION ALL
-        SELECT '1_3_YEARS', '1-3 YEARS', 4
+        SELECT '1_2_YEARS', '1-2 YEARS', 4
+          FROM dual
+        UNION ALL
+        SELECT '2_3_YEARS', '2-3 YEARS', 4.5
           FROM dual
 
         UNION ALL
@@ -1247,6 +1252,40 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
              AND k.risk_id = 1
             THEN 1 ELSE 0 END), 0)
         END AS high_risk_open_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN CASE WHEN k.risk_id = 2 THEN k.current_open ELSE 0 END ELSE 0 END), 0)
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+             AND k.risk_id = 2
+            THEN 1 ELSE 0 END), 0)
+        END AS medium_risk_open_paras,
+
+        CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
+          NVL(SUM(CASE WHEN k.record_type = 'PARA'
+                        THEN CASE WHEN k.risk_id = 3 THEN k.current_open ELSE 0 END ELSE 0 END), 0)
+        ELSE
+          NVL(SUM(CASE
+            WHEN k.record_type = 'PARA'
+             AND k.para_added_on < V_TO_EXCLUSIVE
+             AND (k.source_ind <> 'A'
+                  OR k.report_concluded_on IS NULL
+                  OR k.report_concluded_on < V_TO_EXCLUSIVE)
+             AND (k.para_status = 8
+                  OR (k.para_status = 9
+                      AND k.para_settled_on >= V_TO_EXCLUSIVE))
+             AND k.risk_id = 3
+            THEN 1 ELSE 0 END), 0)
+        END AS low_risk_open_paras,
 
         CASE WHEN V_TODAY_SNAPSHOT = 1 THEN
           NVL(SUM(CASE WHEN k.record_type = 'PARA'
@@ -1967,7 +2006,8 @@ END P_GET_CIA_EXEC_KPIS;
         UNION ALL SELECT 'aging','1','0-90 days',1 FROM dual
         UNION ALL SELECT 'aging','2','91-180 days',2 FROM dual
         UNION ALL SELECT 'aging','3','181-365 days',3 FROM dual
-        UNION ALL SELECT 'aging','4','1-3 years',4 FROM dual
+        UNION ALL SELECT 'aging','4','366-730 days',4 FROM dual
+        UNION ALL SELECT 'aging','6','731-1095 days',4.5 FROM dual
         UNION ALL SELECT 'aging','5','Over 3 years',5 FROM dual
         UNION ALL SELECT 'aging','0','Unknown date',6 FROM dual
         UNION ALL SELECT 'cycle','0','Zero cycles',1 FROM dual
@@ -1986,9 +2026,9 @@ END P_GET_CIA_EXEC_KPIS;
         UNION ALL SELECT 'exposure', risk_id, 'cycles' FROM scoped WHERE snap_open=1 AND risk_id=1 AND snap_cycle>3
         UNION ALL
         SELECT 'aging', risk_id,
-               CASE WHEN snap_age IS NULL THEN '0' WHEN snap_age <= 90 THEN '1'
+               CASE WHEN snap_age IS NULL OR snap_age < 0 THEN '0' WHEN snap_age <= 90 THEN '1'
                     WHEN snap_age <= 180 THEN '2' WHEN snap_age <= 365 THEN '3'
-                    WHEN snap_age <= 1095 THEN '4' ELSE '5' END
+                    WHEN snap_age <= 730 THEN '4' WHEN snap_age <= 1095 THEN '6' ELSE '5' END
           FROM scoped WHERE snap_open = 1
         UNION ALL
         SELECT 'cycle', risk_id,
@@ -2162,9 +2202,25 @@ END P_GET_CIA_EXEC_KPIS;
                 OR P_ENTITY_ID IN
                    (k.reporting_1,k.reporting_2,k.reporting_3,k.reporting_4,k.reporting_5,k.reporting_6))
       ),
+      office_mapping AS
+      (
+        SELECT h.entity_id,
+          CASE WHEN COUNT(DISTINCT h.reporting_1)=1 AND COUNT(h.reporting_1)=COUNT(*) THEN MAX(h.reporting_1) END office_id,
+          CASE WHEN COUNT(DISTINCT h.reporting_1)>1 THEN 'CONFLICTING'
+               WHEN COUNT(h.reporting_1)<>COUNT(*) THEN 'MISSING' ELSE 'VERIFIED' END quality
+        FROM V_IAS_ENTITY_REPORTING_IDS h GROUP BY h.entity_id
+      ),
+      office_names AS
+      (
+        SELECT entity_id, COUNT(DISTINCT name) name_count, CASE WHEN COUNT(DISTINCT name)=1 THEN MAX(name) END name
+        FROM t_auditee_entities GROUP BY entity_id
+      ),
       candidates AS
       (
-        SELECT k.com_id, k.entity_id, e.name AS entity_name, p.audit_period, k.para_added_on,
+        SELECT k.com_id, k.entity_id, e.name AS entity_name,
+               CASE WHEN ro.name IS NOT NULL THEN om.office_id END reporting_office_id,
+               ro.name reporting_office_name,
+               CASE WHEN om.quality = 'CONFLICTING' OR ro.name_count > 1 THEN 'CONFLICTING' WHEN ro.name IS NULL THEN 'MISSING' ELSE 'VERIFIED' END reporting_office_quality, p.audit_period, k.para_added_on,
                p.para_no, SUBSTR(p.gist_of_paras,1,1000) AS gist_of_paras,
                CASE k.risk_id WHEN 1 THEN 'High' WHEN 2 THEN 'Medium'
                               WHEN 3 THEN 'Low' ELSE 'Unrated' END risk_name,
@@ -2177,6 +2233,8 @@ END P_GET_CIA_EXEC_KPIS;
                ROW_NUMBER() OVER(PARTITION BY k.com_id
                    ORDER BY k.snap_age DESC NULLS LAST, k.entity_id, k.risk_id, p.audit_period, p.para_no) com_rank
           FROM scoped k
+          LEFT JOIN office_mapping om ON om.entity_id = k.entity_id
+          LEFT JOIN office_names ro ON ro.entity_id = om.office_id
           LEFT JOIN t_auditee_entities e ON e.entity_id = k.entity_id
           LEFT JOIN ais_t_au_post_compliance p ON p.com_id = k.com_id
          WHERE k.snap_open = 1
@@ -2195,7 +2253,8 @@ END P_GET_CIA_EXEC_KPIS;
       SELECT p.com_id, p.entity_id, p.entity_name, p.para_no, p.gist_of_paras,
              p.risk_name, p.aging_days, p.com_cycle,
              CASE WHEN V_TODAY = 1 THEN 'Y' ELSE 'E' END quality_code,
-             p.days_since_movement, p.audit_period, p.para_added_on, c.match_count
+             p.days_since_movement, p.audit_period, p.para_added_on, c.match_count,
+             p.reporting_office_id, p.reporting_office_name, p.reporting_office_quality
         FROM (SELECT COUNT(*) match_count FROM ranked) c
         LEFT JOIN ranked p ON p.rn > P_CCO_OFFSET AND p.rn <= P_CCO_OFFSET + P_MAX_ROWS
        WHERE p.rn IS NOT NULL OR P_CCO_RISK IS NOT NULL

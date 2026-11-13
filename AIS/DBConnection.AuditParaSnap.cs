@@ -163,6 +163,7 @@ namespace AIS.Controllers
                 if (r.IsDBNull(r.GetOrdinal("COM_ID"))) return null;
                 var row = ReadSnapCritical(r);
                 return new ExecutiveCriticalItem {
+                    ReportingOfficeId = row.ReportingOfficeId, ReportingOfficeName = row.ReportingOfficeName, ReportingOfficeQuality = row.ReportingOfficeQuality,
                     ComId = row.ComId, EntityId = row.EntityId, EntityName = row.EntityName,
                     ParaNo = row.ParaNo, GistOfParas = row.GistOfParas,
                     RiskId = row.RiskName switch { "High" => 1, "Medium" => 2, "Low" => 3, _ => 0 },
@@ -179,6 +180,7 @@ namespace AIS.Controllers
 
         private AuditParaSnapCritical ReadSnapCritical(OracleDataReader r) => new AuditParaSnapCritical
             {
+                ReportingOfficeId=OrgNumber(r,"REPORTING_OFFICE_ID"), ReportingOfficeName=ExecutiveText(r,"REPORTING_OFFICE_NAME"), ReportingOfficeQuality=ExecutiveText(r,"REPORTING_OFFICE_QUALITY"),
                 ComId=ExecutiveCount(r,"COM_ID"),EntityId=OrgNumber(r,"ENTITY_ID"),EntityName=ExecutiveText(r,"ENTITY_NAME"),
                 ParaNo=ExecutiveText(r,"PARA_NO"),GistOfParas=ExecutiveText(r,"GIST_OF_PARAS"),
                 RiskName=ExecutiveText(r,"RISK_NAME"),AgingDays=OrgNumber(r,"AGING_DAYS"),

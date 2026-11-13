@@ -26,7 +26,7 @@ namespace AIS.Controllers
             }
             var user = ValidateExecutiveDashboardSession(scope);
             if (scope.PermissionPagePath != "/ExecutiveOverview/CCO" ||
-                (user.UserRoleID != 38 && !(user.UserRoleID == 1 && CreateSessionHandler().IsSuperUser())))
+                ((user.UserRoleID != 38 && user.UserRoleID != 41) && !(user.UserRoleID == 1 && CreateSessionHandler().IsSuperUser())))
                 throw new UnauthorizedAccessException();
             ComplianceDashboardPolicy.Validate(filters);
         }
@@ -50,7 +50,7 @@ namespace AIS.Controllers
                 // Same lifecycle cursor and nine indicators used by TOP, without
                 // introducing an additional API or bypassing the Group/RLM scope.
                 // Original source quality flags remain intact (estimates are not verified).
-                Lifecycle = ManagementDashboardPeriod.Applies(scope.DashboardType) ? k : null,
+                Lifecycle = k,
                 OpeningCases = scope.DashboardType == "CCO" || scope.DashboardType == "RLM" ? opening : (long?)null,
                 ParaAdded = scope.DashboardType == "CCO" || scope.DashboardType == "RLM" ? added : (long?)null,
                 TotalCases = total, OpenParas = Required(k.ClosingOpenParas),

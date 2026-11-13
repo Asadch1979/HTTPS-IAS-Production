@@ -11,7 +11,7 @@ namespace AIS.Controllers
         {
             var user=ValidateExecutiveDashboardSession(scope);
             if (scope.DashboardType!="CCO" || scope.PermissionPagePath!="/ExecutiveOverview/CCO" || scope.GroupRootId.HasValue ||
-                (user.UserRoleID!=38 && !(user.UserRoleID==1 && CreateSessionHandler().IsSuperUser())))
+                ((user.UserRoleID != 38 && user.UserRoleID != 41) && !(user.UserRoleID==1 && CreateSessionHandler().IsSuperUser())))
                 throw new UnauthorizedAccessException();
         }
         // Group Head selector: read the existing IAS entity hierarchy only after

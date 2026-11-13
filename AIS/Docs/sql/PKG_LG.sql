@@ -59,6 +59,7 @@
   Procedure p_GetApiPermissions(ENT_ID    in number,
                                 P_NO      in number,
                                 R_ID      in number,
+                                G_ID      IN NUMBER,
                                 io_cursor OUT t_cursor);
 
   PROCEDURE P_GET_ENG_PAGE_PERMISSIONS_BY_PPNO(P_PP_NO   IN NUMBER,
@@ -526,6 +527,7 @@ create or replace package body PKG_LG is
   PROCEDURE p_GetApiPermissions(ENT_ID    IN NUMBER,
                                 P_NO      IN NUMBER,
                                 R_ID      IN NUMBER,
+                                G_ID      IN NUMBER,
                                 io_cursor OUT t_cursor) AS
   BEGIN
     -- Executive/Head Audit GET APIs are derived from the ACTIVE assigned
@@ -594,7 +596,7 @@ create or replace package body PKG_LG is
             ON dependency.PAGE_ID=assigned.PAGE_ID
           JOIN T_AU_API_MASTER api
             ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
-         WHERE assigned.GROUP_ID=R_ID
+         WHERE assigned.GROUP_ID=G_ID
            AND UPPER(TRIM(api.HTTP_METHOD))='GET'
            AND (
               LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivedashboard/%'
@@ -630,7 +632,7 @@ create or replace package body PKG_LG is
             ON dependency.PAGE_ID=assigned.PAGE_ID
           JOIN T_AU_API_MASTER api
             ON api.API_ID=dependency.API_ID AND api.IS_ACTIVE='Y'
-         WHERE assigned.GROUP_ID=R_ID
+         WHERE assigned.GROUP_ID=G_ID
            AND UPPER(TRIM(api.HTTP_METHOD))='GET'
            AND (
               LOWER(TRIM(BOTH '/' FROM api.API_PATH)) LIKE 'api/executivedashboard/%'

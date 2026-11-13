@@ -34,13 +34,13 @@ namespace AIS.Models
                 => new ExecutiveDashboardViewDefinition { Id=id, Title=title, Partial="_Reports",
                     Kpis=Array.Empty<string>(), Sections=Array.Empty<string>(), Reports=new[]{ReportForView(id)} };
             return new List<ExecutiveDashboardViewDefinition> {
-                View("overview", "Compliance Overview", new[]{"openingCases","paraAdded","totalCases","settledTotal","openParas","highRiskParas","over1YearParas"}, new[]{"trend","risk","aging","cycle"}),
+                View("overview", "Compliance Overview", new[]{"openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas"}, new[]{"trend","risk","aging","cycle"}),
                 View("audit-paras", "Audit Para’s", Array.Empty<string>(), new[]{"risk","critical"}),
                 View("org-position", "Function Wise Position", Array.Empty<string>(), Array.Empty<string>()),
                 Report("field-office", "Audit Position"),
                 Report("gm-region", "GM / Region Position"),
                 Report("regional-rankings", "Regional Rankings"),
-                View("effectiveness", "Settlement Effectiveness", new[]{"settledMtd","settlementMtdRate","zeroCycleParas","over3CycleParas","over1YearParas"}, new[]{"trend","cycle","aging"}),
+                View("effectiveness", "Settlement Effectiveness", new[]{"settledMtd","settlementMtdRate","zeroCycleParas","over3CycleParas","over1YearParas","over2YearParas"}, new[]{"trend","cycle","aging"}),
                 reports
             };
         }

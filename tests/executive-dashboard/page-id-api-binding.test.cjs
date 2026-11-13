@@ -84,7 +84,7 @@ test('PKG_LG loads dashboard APIs from assigned active pages, not active role AP
  assert.equal((sql.match(/FROM T_MENU_PAGES_GROUPMAP assigned/g)||[]).length,2);
  assert.doesNotMatch(sql,/dependency\.IS_ACTIVE/);
  assert.equal((sql.match(/dependency.PAGE_ID=assigned.PAGE_ID/g)||[]).length,2);
- assert.equal((sql.match(/assigned.GROUP_ID=R_ID/g)||[]).length,2);
+ assert.equal((sql.match(/assigned.GROUP_ID=G_ID/g)||[]).length,2);
  assert.equal((sql.match(/AND NOT \(/g)||[]).length,2);
  for(const root of ['api/executivedashboard/%','api/executivereports/%',
                      'api/ccocompliance/%','api/auditparasnap/%','api/headauditdepartment/%'])
@@ -118,11 +118,11 @@ test('Server-side exact PAGE_ID plus live page assignment is checked independent
  assert.match(helper,/normalized.StartsWith\("api\/", StringComparison.OrdinalIgnoreCase\)/);
  assert.doesNotMatch(helper,/Role_API_PERMISSION|ROLE_API_PERMISSION/);
  const controllerBindings=[
-  ['AIS/Controllers/ExecutiveDashboardController.cs', 'pageId, user.UserRoleID'],
-  ['AIS/Controllers/ExecutiveReportsController.cs', 'pageId, user.UserRoleID'],
-  ['AIS/Controllers/CcoComplianceController.cs', '1000302,user.UserRoleID'],
-  ['AIS/Controllers/AuditParaSnapController.cs', 'pageId,user.UserRoleID'],
-  ['AIS/Controllers/HeadAuditDepartmentController.cs', 'HeadAuditMonitoringPolicy.PageId, user.UserRoleID']
+  ['AIS/Controllers/ExecutiveDashboardController.cs', 'pageId, user.UserGroupID'],
+  ['AIS/Controllers/ExecutiveReportsController.cs', 'pageId, user.UserGroupID'],
+  ['AIS/Controllers/CcoComplianceController.cs', '1000302,user.UserGroupID'],
+  ['AIS/Controllers/AuditParaSnapController.cs', 'pageId,user.UserGroupID'],
+  ['AIS/Controllers/HeadAuditDepartmentController.cs', 'HeadAuditMonitoringPolicy.PageId, user.UserGroupID']
  ];
  for(const [file,args] of controllerBindings) {
    const src=read(file);

@@ -842,7 +842,7 @@ namespace AIS.Controllers
                 AssignmentId = assignmentId,
                 UserId = GetOptionalInt(reader, "USERID") ?? 0,
                 PPNumber = GetAuthString(reader, "PPNO"),
-                GroupId = GetOptionalInt(reader, "GROUP_ID") ?? roleId,
+                GroupId = GetOptionalInt(reader, "GROUP_ID") ?? 0,
                 RoleId = roleId,
                 RoleName = GetAuthString(reader, "GROUP_NAME"),
                 EntityId = entityId,
@@ -1501,6 +1501,7 @@ namespace AIS.Controllers
                 cmd.Parameters.Add("ENT_ID", OracleDbType.Int32).Value = user.UserEntityID;
                 cmd.Parameters.Add("P_NO", OracleDbType.Int32).Value = user.PPNumber;
                 cmd.Parameters.Add("R_ID", OracleDbType.Int32).Value = user.UserRoleID;
+                cmd.Parameters.Add("G_ID", OracleDbType.Int32).Value = user.UserGroupID;
                 cmd.Parameters.Add("io_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
                 using (OracleDataReader rdr = cmd.ExecuteReader())

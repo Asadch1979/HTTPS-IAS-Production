@@ -3,7 +3,8 @@
     // Style the Group/RLM nine-card scorecards like TOP, without changing the
     // TOP-only GetKpiLifecycle API contract or marking these views as TOP.
     var managementNine = (Model.DashboardType == "GROUP" && Model.SelectedView.Id == "management") ||
-        (Model.DashboardType == "RLM" && Model.SelectedView.Id == "glance");
+        (Model.DashboardType == "RLM" && Model.SelectedView.Id == "glance") ||
+        (Model.DashboardType == "CCO" && Model.SelectedView.Id == "overview");
 }
 <div id="exec-kpis" class="exec-kpis @(Model.SelectedView.UseLifecycleKpis || managementNine ? "exec-lifecycle-kpis" : "")" aria-label="Key performance indicators" data-lifecycle="@(Model.SelectedView.UseLifecycleKpis ? "true" : "false")" data-cia-issues="@(Model.DashboardType == "CIA" && Model.SelectedView.Id == "glance" ? "true" : "false")" data-kpi-keys="@string.Join(",", Model.SelectedView.Kpis)"></div>
 @if (Model.SelectedView.Sections.Contains("critical"))

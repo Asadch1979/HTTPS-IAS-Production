@@ -121,10 +121,12 @@
         }
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             const key = card.dataset.snapCard;
-            const opening = key === 'openingOpenParas';
+            // This card is populated by the existing dated aging distribution.
+            if (key === 'over2YearParas') continue;
+            const opening = ['openingOpenParas','netParaForCompliance'].includes(key);
             const periodRate = key === 'periodSettlementRate';
             const position = opening || periodRate ||
-                ['closingOpenParas','highRiskOpenParas','over1YearParas','over3ComplianceCycles'].includes(key);
+                ['closingOpenParas','highRiskOpenParas','mediumRiskOpenParas','lowRiskOpenParas','over1YearParas','over3ComplianceCycles'].includes(key);
             const verified = opening ? data.historicalOpeningVerified === true : data.closingAsofVerified === true;
             const estimated = opening ? data.openingEstimated === true : data.closingEstimated === true;
             const available = !position || verified || estimated;
@@ -270,12 +272,14 @@
             if (!target) continue;
             // Unrated is retained in Oracle for data-quality diagnostics,
             // but the visible distribution is explicitly for rated risks.
-            const subset = rows.filter(row => row.dataset === name &&
+            let subset = rows.filter(row => row.dataset === name &&
                 !(name === 'risk' && (row.bucketCode === '0' || row.bucketName === 'Unrated')) &&
                 // A diagnostic Unknown bucket remains in Oracle for actual null/
                 // negative master values, but hide it when its count is zero.
                 !(name === 'cycle' && row.bucketCode === '9' && row.paraCount === 0));
             if (!subset.length) throw new Error('Missing ' + name + ' analysis.');
+            const allAging = name === 'aging' ? subset : [];
+            if (name === 'aging') subset = subset.filter(row => row.bucketCode !== '0');
             if (name === 'trend') {
                 target.replaceChildren(renderMonthlyTrend(subset));
                 continue;
@@ -286,7 +290,7 @@
             const closing=agingPosition?.closingOpenParas;
             const comparable=aging && (agingPosition?.closingAsofVerified || agingPosition?.closingEstimated) && closing>0 &&
                 subset.every(row=>row.qualityCode!=='N' && Number.isSafeInteger(row.paraCount)) &&
-                subset.reduce((sum,row)=>sum+row.paraCount,0)===closing;
+                (name === 'aging' ? allAging : subset).reduce((sum,row)=>sum+row.paraCount,0)===closing;
             header.append(element('th','Category'),element('th','Paras'));
             if(aging)header.append(element('th','% of closing outstanding · estimated'));
             for (const th of header.children) th.scope = 'col';
@@ -319,6 +323,24 @@
             const caption = element('summary','View chart data');
             details.append(caption,table);
             target.replaceChildren(bars,details);
+            if (name === 'aging') {
+                const sum = list => list.reduce((n,row)=>n+row.paraCount,0);
+                target.prepend(element('p','Total Outstanding Paras: '+number(sum(allAging))));
+                target.append(element('p','Outstanding Para 1 Year old: '+number(sum(subset.filter(r=>['4','6','5'].includes(r.bucketCode))))));
+                const overTwoCard = app.querySelector('[data-snap-card="over2YearParas"]');
+                if (overTwoCard) {
+                    const buckets = ['6','5'].map(code => allAging.filter(row => row.bucketCode === code));
+                    const available = buckets.every(matches => matches.length === 1 &&
+                        ['Y','E'].includes(matches[0].qualityCode) &&
+                        Number.isSafeInteger(matches[0].paraCount) && matches[0].paraCount >= 0);
+                    overTwoCard.querySelector('[data-snap-kpi]').textContent = available
+                        ? number(buckets.reduce((total, matches) => total + matches[0].paraCount, 0)) : 'N/A';
+                    overTwoCard.querySelector('[data-snap-kpi-note]').textContent = available
+                        ? 'Same portfolio and cutoff as Aging Analysis' : 'N/A · Aging data unavailable';
+                }
+                const unknown = sum(allAging.filter(r=>r.bucketCode==='0'));
+                if(unknown) target.append(element('small',number(unknown)+' paras have unknown or invalid aging dates; included in total.','exec-note'));
+            }
             if (name === 'cycle')
                 target.append(element('p','Compliance cycles are current IAS master counts for the selected portfolio. They are not historical as-of cycle values.','exec-note'));
         }

@@ -3,18 +3,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 
-test('RLM uses Top-style nine-indicator lifecycle At a Glance without standalone position or High Risk', () => {
+test('RLM uses Top-style ten-indicator lifecycle At a Glance without standalone position or High Risk', () => {
     const views = read('AIS/Models/ExecutiveDashboardViews.cs');
     const reader = read('AIS/DBConnection.ComplianceDashboard.cs');
     const client = read('AIS/wwwroot/js/executive-dashboard.js');
     const route = read('AIS/Controllers/ExecutiveOverviewController.cs');
     const rlm = read('AIS/Views/ExecutiveOverview/RLM.cshtml');
-    assert.match(views, /"RLM" => new\[\] \{ "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" \}/);
+    assert.match(views, /"RLM" => new\[\] \{ "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" \}/);
     assert.match(views, /perspective == "RLM" \? Array\.Empty<string>\(\)/);
     assert.match(views, /views\.RemoveAll\(v => v\.Id == "position" \|\| v\.Id == "risk"\)/);
     assert.match(route, /scope\.DashboardType == "RLM" && view == "position"/);
     assert.match(route, /scope\.DashboardType == "RLM" && view == "management"/);
-    assert.match(reader, /Lifecycle = ManagementDashboardPeriod\.Applies\(scope\.DashboardType\) \? k : null/);
+    assert.match(reader, /Lifecycle = k/);
     assert.match(client, /lifecycleKpis\(data\.lifecycle\)/);
     assert.doesNotMatch(rlm, /Model\.SelectedView\.Id == "management"/);
 });

@@ -41,8 +41,9 @@ namespace AIS.Controllers
                         groupRootId, groupRootId);
                 }
                 if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0 ||
-                    !GetOrganizationNodes(user.UserEntityID).Any(n => n.EntityId == user.UserEntityID && !n.HasTypeConflict && n.EntityTypeId.HasValue))
+                    (user.UserRoleID != 39 && user.UserRoleID != 24))
                     throw new ExecutiveDashboardAccessException("EntityScope", "Reporting Line Management requires the authenticated entity.");
+                RequireExecutivePosting(user.UserEntityID.Value, user.UserRoleID == 39 ? 21 : 5);
                 return new ExecutiveDashboardScope(user, "RLM", "/ExecutiveOverview/RLM", user.UserEntityID);
             }
             if (user.UserRoleID == 1 && session.IsSuperUser())
@@ -67,7 +68,7 @@ namespace AIS.Controllers
             // CIA and CCO have verified, fixed IAS role IDs. Resolve the perspective
             // from the authenticated session, not from environment-specific appsettings.
             // The MVC page and each API still require their normal database-backed grants.
-            if (user.UserRoleID == 3 || user.UserRoleID == 38)
+            if (user.UserRoleID == 3 || user.UserRoleID == 38 || user.UserRoleID == 41)
             {
                 var verifiedType = user.UserRoleID == 3 ? "CIA" : "CCO";
                 if (requested != null && requested != verifiedType)
@@ -79,13 +80,13 @@ namespace AIS.Controllers
             }
 
             // Verified IAS GROUP HEAD role; configuration cannot elevate it to TOP.
-            if (user.UserRoleID == 14)
+            if (user.UserRoleID == 4 || user.UserRoleID == 14)
             {
                 if (requested != null && requested != "GROUP")
                     throw new ExecutiveDashboardAccessException("RoleMapping", "GROUP HEAD requires the GROUP perspective.");
                 if (groupRootId.HasValue || user.UserEntityID.GetValueOrDefault() <= 0)
                     throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires the assigned entity without a root override.");
-                RequireExecutiveGroupRoot(user.UserEntityID.Value);
+                RequireExecutivePosting(user.UserEntityID.Value, user.UserRoleID == 4 ? 18 : 3);
                 return new ExecutiveDashboardScope(user, "GROUP", "/ExecutiveOverview/GROUP",
                     user.UserEntityID, user.UserEntityID);
             }
@@ -97,7 +98,7 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("RoleMapping", "A unique verified executive role mapping is required.");
             var mapping = matches[0];
             var type = mapping.DashboardType?.Trim().ToUpperInvariant();
-            if (!IsExecutiveDashboardType(type))
+            if (!IsExecutiveDashboardType(type) || type == "GROUP" || type == "CCO")
                 throw new ExecutiveDashboardAccessException("RoleMapping", "The executive role mapping is not supported.");
             if (requested != null && requested != type)
                 throw new ExecutiveDashboardAccessException("RoleMapping", "The requested perspective does not match the authenticated IAS role.");
@@ -111,8 +112,8 @@ namespace AIS.Controllers
                 throw new ExecutiveDashboardAccessException("EntityScope", "GROUP requires an active entity and restricted scope.");
             if (type != "GROUP" && !mapping.AllowBankWide)
                 throw new ExecutiveDashboardAccessException("RoleMapping", "Bank-wide access requires explicit configuration approval.");
-            if ((type == "CIA" && mapping.RoleId != 3) || (type == "CCO" && mapping.RoleId != 38) ||
-                (type != "CIA" && mapping.RoleId == 3) || (type != "CCO" && mapping.RoleId == 38))
+            if ((type == "CIA" && mapping.RoleId != 3) || (type == "CCO" && mapping.RoleId != 38 && mapping.RoleId != 41) ||
+                (type != "CIA" && mapping.RoleId == 3) || (type != "CCO" && (mapping.RoleId == 38 || mapping.RoleId == 41)))
                 throw new ExecutiveDashboardAccessException("RoleMapping", "The verified IAS role does not match the dashboard type.");
             if (type == "GROUP") RequireExecutiveGroupRoot(user.UserEntityID.Value);
             return new ExecutiveDashboardScope(user, type, mapping.PagePath.Trim(), type == "GROUP" ? user.UserEntityID : null,
@@ -145,6 +146,13 @@ namespace AIS.Controllers
             return GetOrganizationNodes(rootId).Where(n => !n.HasTypeConflict && allowed.Contains(n.EntityId) &&
                 (branches ? n.EntityTypeId == 6 || n.EntityTypeId == 28 : n.ParentEntityId == rootId))
                 .OrderBy(n => n.EntityName).ToList();
+        }
+
+        private void RequireExecutivePosting(int rootId, int entityType)
+        {
+            var roots = GetOrganizationNodes(rootId).Where(n => n.EntityId == rootId).ToList();
+            if (roots.Count != 1 || roots[0].HasTypeConflict || roots[0].EntityTypeId != entityType)
+                throw new ExecutiveDashboardAccessException("EntityScope", "The authenticated role and posting type are incompatible.");
         }
 
         private void RequireExecutiveGroupRoot(int rootId)
@@ -207,7 +215,7 @@ namespace AIS.Controllers
                 return new List<OrganizationNode>();
             var nodes = GetOrganizationNodes(scope.DashboardType == "GROUP" ||
                 scope.DashboardType == "RLM" ? root : null);
-            return scope.DashboardType != "GROUP" && scope.DashboardType != "RLM" ? nodes : nodes.Where(n => (scope.DashboardType != "RLM" || !n.HasTypeConflict) &&
+            return scope.DashboardType != "GROUP" && scope.DashboardType != "RLM" ? nodes : nodes.Where(n => !n.HasTypeConflict &&
                 (n.EntityId == root || n.Reporting1 == root || n.Reporting2 == root ||
                  n.Reporting3 == root || n.Reporting4 == root || n.Reporting5 == root || n.Reporting6 == root)).ToList();
         }
@@ -441,6 +449,8 @@ namespace AIS.Controllers
                         ParasSettled = ExecutiveNullableCount(reader, "PARAS_SETTLED"),
                         ClosingOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "CLOSING_OPEN_PARAS") : null,
                         HighRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "HIGH_RISK_OPEN_PARAS") : null,
+                        MediumRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "MEDIUM_RISK_OPEN_PARAS") : null,
+                        LowRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "LOW_RISK_OPEN_PARAS") : null,
                         Over1YearParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_1_YEAR_PARAS") : null,
                         Over3ComplianceCycles = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_3_COMPLIANCE_CYCLES") : null,
                         HistoricalOpeningVerified = openingVerified,
