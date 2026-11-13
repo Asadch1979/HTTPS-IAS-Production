@@ -121,12 +121,10 @@
         }
         for (const card of app.querySelectorAll('[data-snap-card]')) {
             const key = card.dataset.snapCard;
-            // This card is populated by the existing dated aging distribution.
-            if (key === 'over2YearParas') continue;
             const opening = ['openingOpenParas','netParaForCompliance'].includes(key);
             const periodRate = key === 'periodSettlementRate';
             const position = opening || periodRate ||
-                ['closingOpenParas','highRiskOpenParas','mediumRiskOpenParas','lowRiskOpenParas','over1YearParas','over3ComplianceCycles'].includes(key);
+                ['closingOpenParas','highRiskOpenParas','mediumRiskOpenParas','lowRiskOpenParas'].includes(key);
             const verified = opening ? data.historicalOpeningVerified === true : data.closingAsofVerified === true;
             const estimated = opening ? data.openingEstimated === true : data.closingEstimated === true;
             const available = !position || verified || estimated;
@@ -149,14 +147,11 @@
                 value == null ? 'N/A' : number(value) + (periodRate ? '%' : '');
             card.title = periodRate
                 ? 'Selected-period settlements ÷ (estimated opening open paras + paras added in selected period). N/A if unavailable or inconsistent.'
-                : key === 'over3ComplianceCycles'
-                ? 'Current COM_CYCLE values from IAS master records for the selected as-of portfolio; not historical cycle counts.'
                 : position && estimated
                 ? 'As-of value reconstructed from the latest available IAS records; historical status changes may not be complete.'
                 : position && verified ? 'Current IAS position.' : 'IAS event dates within the selected range.';
             card.querySelector('[data-snap-kpi-note]').textContent =
                 value == null ? 'N/A · No reliable history' :
-                key === 'over3ComplianceCycles' ? 'Current cycles · selected portfolio' :
                 position ? 'As of selected date' : 'Within selected dates';
         }
     }
@@ -325,21 +320,8 @@
             target.replaceChildren(bars,details);
             if (name === 'aging') {
                 const sum = list => list.reduce((n,row)=>n+row.paraCount,0);
-                target.prepend(element('p','Total Outstanding Paras: '+number(sum(allAging))));
-                target.append(element('p','Outstanding Para 1 Year old: '+number(sum(subset.filter(r=>['4','6','5'].includes(r.bucketCode))))));
-                const overTwoCard = app.querySelector('[data-snap-card="over2YearParas"]');
-                if (overTwoCard) {
-                    const buckets = ['6','5'].map(code => allAging.filter(row => row.bucketCode === code));
-                    const available = buckets.every(matches => matches.length === 1 &&
-                        ['Y','E'].includes(matches[0].qualityCode) &&
-                        Number.isSafeInteger(matches[0].paraCount) && matches[0].paraCount >= 0);
-                    overTwoCard.querySelector('[data-snap-kpi]').textContent = available
-                        ? number(buckets.reduce((total, matches) => total + matches[0].paraCount, 0)) : 'N/A';
-                    overTwoCard.querySelector('[data-snap-kpi-note]').textContent = available
-                        ? 'Same portfolio and cutoff as Aging Analysis' : 'N/A · Aging data unavailable';
-                }
                 const unknown = sum(allAging.filter(r=>r.bucketCode==='0'));
-                if(unknown) target.append(element('small',number(unknown)+' paras have unknown or invalid aging dates; included in total.','exec-note'));
+                if(unknown) target.append(element('small',number(unknown)+' paras have unknown or invalid aging dates; excluded from the displayed age categories.','exec-note'));
             }
             if (name === 'cycle')
                 target.append(element('p','Compliance cycles are current IAS master counts for the selected portfolio. They are not historical as-of cycle values.','exec-note'));
@@ -453,7 +435,8 @@
         app.setAttribute('aria-busy','true');
         status.textContent = 'Loading all selected-period results…';
         const tasks = [];
-        if (app.querySelector('[data-snap-card]')) tasks.push(['GetKpis',renderKpis]);
+        // Aging chart percentages still reconcile against the existing closing portfolio.
+        if (app.dataset.view === 'aging' || app.querySelector('[data-snap-card]')) tasks.push(['GetKpis',renderKpis]);
         if (['risk','aging','cycle','trend'].some(name => document.getElementById('exec-' + name)))
             tasks.push(['GetDistribution',renderDistribution]);
         if (document.getElementById('snap-performance')) tasks.push(['GetPerformance',renderPerformance]);

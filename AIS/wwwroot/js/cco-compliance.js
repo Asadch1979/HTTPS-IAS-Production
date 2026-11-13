@@ -7,8 +7,7 @@
         const data = event.detail.datasets.GetKpiSummary;
         if (!data) return;
         target.replaceChildren();
-        [['Zero-cycle observations', 'zeroCycleParas'], ['Over three cycles (current master)', 'over3CycleParas'],
-         ['Settlement rate', 'settlementMtdRate']].forEach(([label, key]) => {
+        [['Settlement rate', 'settlementMtdRate']].forEach(([label, key]) => {
             const card = document.createElement('div'); card.className = 'exec-kpi';
             const title = document.createElement('span'); title.textContent = label;
             const value = document.createElement('strong');
