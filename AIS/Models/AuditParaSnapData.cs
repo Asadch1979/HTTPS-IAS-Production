@@ -53,7 +53,7 @@ namespace AIS.Models
                     new[]{"parasSettled","periodSettlementRate"},Array.Empty<string>()),
                 Definition("risk","Audit Para’s",new[]{"highRiskOpenParas"},new[]{"risk"}),
                 Definition("aging","Aging & Compliance",
-                    new[]{"over1YearParas","over3ComplianceCycles"},new[]{"aging","cycle"}),
+                    new[]{"over1YearParas", "over2YearParas","over3ComplianceCycles"},new[]{"aging","cycle"}),
                 new() { Id="reports", Title="Reports", Partial="_Reports", Kpis=Array.Empty<string>(),
                     Sections=Array.Empty<string>(), Reports=new[]{"A","B","C","D","E"} }
             };

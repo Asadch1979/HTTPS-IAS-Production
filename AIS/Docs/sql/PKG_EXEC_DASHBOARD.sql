@@ -184,7 +184,7 @@ SELECT
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 730
             THEN '1-2 YEARS'
         WHEN TRUNC(NVL(CASE WHEN c.para_status = 9 THEN c.setteled_on END, SYSDATE)) - TRUNC(c.para_added_on) <= 1095
-            THEN '1-3 YEARS'
+            THEN '2-3 YEARS'
         ELSE 'OVER 3 YEARS'
     END AS aging_bucket,
 
@@ -709,7 +709,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_EXEC_DASHBOARD AS
         SELECT '1_2_YEARS', '1-2 YEARS', 4
           FROM dual
         UNION ALL
-        SELECT '2_3_YEARS', '1-3 YEARS', 4.5
+        SELECT '2_3_YEARS', '2-3 YEARS', 4.5
           FROM dual
 
         UNION ALL

@@ -41,6 +41,16 @@
         rows.forEach(row => { const tr = el('tr'); row.forEach(value => tr.append(el('td', value))); body.append(tr); });
         table.append(head, body); details.append(table); target.append(details);
     }
+    // The split buckets cover only ages strictly greater than 730 days.
+    function overTwoYears(rows) {
+        if (!Array.isArray(rows)) return null;
+        const codes = rows.some(row => row.bucketCode === '2_3_YEARS')
+            ? ['2_3_YEARS', 'OVER_3_YEARS'] : ['6', '5'];
+        const buckets = codes.map(code => rows.filter(row => row.bucketCode === code));
+        return buckets.every(matches => matches.length === 1 &&
+            matches[0].qualityCode !== 'N' && Number.isSafeInteger(matches[0].paraCount) && matches[0].paraCount >= 0)
+            ? buckets.reduce((sum, matches) => sum + matches[0].paraCount, 0) : null;
+    }
     function bars(id, rows) {
         const target = $(id); if (!target) return; target.replaceChildren();
         // Report age bucket thresholds in days, consistent with AGING_DAYS.
@@ -58,10 +68,31 @@
             if (missing) target.append(el('small', number(missing) + ' paras have unknown or invalid aging dates; included in total.', 'exec-note'));
             rows = rows.filter(row => !unknown.includes(row));
             const count = codes => rows.filter(row => codes.includes(row.bucketCode)).reduce((sum,row)=>sum+row.paraCount,0);
-            target.append(el('p', 'Outstanding Para 1 Year old: ' + number(count(['4','6','5','1_2_YEARS','2_3_YEARS','OVER_3_YEARS']))));
-            target.append(el('p', 'Outstanding Para more than 2 Year old: ' + number(count(['6','5','2_3_YEARS','OVER_3_YEARS']))));
+            if ($('kpis')?.dataset.kpiKeys.split(',').includes('over2YearParas')) {
+                target.append(el('p', 'Outstanding Para 1 Year old: ' + number(count(['4','6','5','1_2_YEARS','2_3_YEARS','OVER_3_YEARS']))));
+            } else {
+                // CCO Overview embeds Aging Analysis alongside its ten executive KPIs.
+                const agingCards = el('div', null, 'exec-kpis');
+                const overTwo = overTwoYears(rows);
+                const oneYearCode = rows.some(row => row.bucketCode === '1_2_YEARS') ? '1_2_YEARS' : '4';
+                const oneYear = rows.filter(row => row.bucketCode === oneYearCode);
+                const overOne = overTwo != null && oneYear.length === 1 &&
+                    oneYear[0].qualityCode !== 'N' && Number.isSafeInteger(oneYear[0].paraCount) && oneYear[0].paraCount >= 0
+                    ? oneYear[0].paraCount + overTwo : null;
+                [['Outstanding Para 1 Year old', overOne], ['Outstanding Para more than 2 Year old', overTwo]].forEach(([label, value]) => {
+                    const card = el('div', null, 'exec-kpi');
+                    card.append(el('span', label), el('strong', value == null ? 'N/A' : number(value)));
+                    agingCards.append(card);
+                });
+                target.append(agingCards);
+            }
         }
-        if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
+        const knownTotal = rows.reduce((sum, row) => sum + row.paraCount, 0);
+        if (id === 'aging' && total === 0)
+            target.append(el('p', 'No outstanding paras in this scope.', 'exec-empty'));
+        else if (id === 'aging' && total > 0 && knownTotal === 0)
+            target.append(el('p', 'Outstanding paras exist, but their aging cannot be determined from the available dates.', 'exec-empty'));
+        else if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
             const maximum = Math.max(...rows.map(row => row.paraCount));
             const graphic = chart(`${id === 'aging' ? 'Aging' : 'Compliance cycle'} distribution of open observations`);
@@ -152,7 +183,7 @@
             : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
-            ['Over 3 Cycles', 'over3CycleParas'], ['Outstanding Para 1 Year old', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
+            ['Over 3 Cycles', 'over3CycleParas'], ['Outstanding Para 1 Year old', 'over1YearParas'], ['Outstanding Para more than 2 Year old', 'over2YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const compliance = ['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective);
             if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
@@ -172,6 +203,11 @@
             }
             if (['CCO', 'RLM'].includes(app.dataset.perspective) &&
                 ['openingCases','paraAdded','totalCases'].includes(key)) {
+                target.append(card);
+                return;
+            }
+            if (key === 'over2YearParas') {
+                card.append(el('small', 'Same portfolio and cutoff as Aging Analysis'));
                 target.append(card);
                 return;
             }
@@ -336,7 +372,7 @@
             if (current !== version) return;
             const datasets = Object.fromEntries(data);
             if (lifecycle && datasets.GetKpiLifecycle) lifecycleKpis(datasets.GetKpiLifecycle);
-            else if (datasets.GetKpiSummary) kpis(datasets.GetKpiSummary);
+            else if (datasets.GetKpiSummary) kpis({ ...datasets.GetKpiSummary, over2YearParas: overTwoYears(datasets.GetAgingSummary) });
             if (datasets.GetRiskSummary) risk(datasets.GetRiskSummary);
             if (datasets.GetAgingSummary) bars('aging', datasets.GetAgingSummary);
             if (datasets.GetCycleSummary) bars('cycle', datasets.GetCycleSummary);

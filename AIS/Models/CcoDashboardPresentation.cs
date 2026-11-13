@@ -40,7 +40,7 @@ namespace AIS.Models
                 Report("field-office", "Audit Position"),
                 Report("gm-region", "GM / Region Position"),
                 Report("regional-rankings", "Regional Rankings"),
-                View("effectiveness", "Settlement Effectiveness", new[]{"settledMtd","settlementMtdRate","zeroCycleParas","over3CycleParas","over1YearParas"}, new[]{"trend","cycle","aging"}),
+                View("effectiveness", "Settlement Effectiveness", new[]{"settledMtd","settlementMtdRate","zeroCycleParas","over3CycleParas","over1YearParas","over2YearParas"}, new[]{"trend","cycle","aging"}),
                 reports
             };
         }

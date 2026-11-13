@@ -67,7 +67,7 @@ namespace AIS.Models
                 View("settlement", "Settlement & Performance", "_SettlementPerformance", "Existing monthly settlements and settlement ratio. Settlement-source and regional comparisons will follow in the reporting phase.", new[] { "settledMtd", "settlementMtdRate" }, perspective == "CCO" ? new[] { "trend", "cycle" } : new[] { "trend" }),
                 View("risk", "High Risk", "_Risk", "High-risk observations in the authorized scope.", new[] { "highRiskParas" }, new[] { "critical" }),
                 View("audit-paras", "Audit Para’s", "_AuditParas", "Authorized risk distribution and high-risk audit para register.", Array.Empty<string>(), new[] { "risk", "critical" }),
-                View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "zeroCycleParas", "over3CycleParas" }, perspective == "CCO" ? new[] { "cycle", "aging" } : new[] { "aging", "cycle" }),
+                View("aging", "Aging & Compliance", "_AgingCompliance", "Age and compliance cycles of open observations.", new[] { "over1YearParas", "over2YearParas", "zeroCycleParas", "over3CycleParas" }, perspective == "CCO" ? new[] { "cycle", "aging" } : new[] { "aging", "cycle" }),
                 new ExecutiveDashboardViewDefinition { Id = "reports", Title = "Reports", Partial = "_Reports", Description = "Formal reports relevant to this perspective, within the same authorized scope.", Kpis = Array.Empty<string>(), Sections = Array.Empty<string>(), Reports = reports }
             };
             // TOP Audit Para Position uses the existing genuinely dated
