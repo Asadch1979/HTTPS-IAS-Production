@@ -34,7 +34,7 @@ namespace AIS.Models
                 => new ExecutiveDashboardViewDefinition { Id=id, Title=title, Partial="_Reports",
                     Kpis=Array.Empty<string>(), Sections=Array.Empty<string>(), Reports=new[]{ReportForView(id)} };
             return new List<ExecutiveDashboardViewDefinition> {
-                View("overview", "Compliance Overview", new[]{"openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas"}, new[]{"trend","risk","aging","cycle"}),
+                View("overview", "Compliance Overview", new[]{"openingOpenParas", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas"}, new[]{"trend","risk","aging","cycle"}),
                 View("audit-paras", "Audit Para’s", Array.Empty<string>(), new[]{"risk","critical"}),
                 View("org-position", "Function Wise Position", Array.Empty<string>(), Array.Empty<string>()),
                 Report("field-office", "Audit Position"),
