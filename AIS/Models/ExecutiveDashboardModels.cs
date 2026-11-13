@@ -8,6 +8,9 @@ namespace AIS.Models
         public long? ParaAdded { get; set; }
         public long? ParasSettled { get; set; }
         public long? ClosingOpenParas { get; set; }
+        public long? NetParaForCompliance => OpeningOpenParas + ParaAdded;
+        public long? MediumRiskOpenParas { get; set; }
+        public long? LowRiskOpenParas { get; set; }
         public long? HighRiskOpenParas { get; set; }
         public long? Over1YearParas { get; set; }
         public long? Over3ComplianceCycles { get; set; }
@@ -77,6 +80,9 @@ namespace AIS.Models
     }
     public sealed class ExecutiveCriticalItem
     {
+        public int? ReportingOfficeId { get; set; }
+        public string ReportingOfficeName { get; set; }
+        public string ReportingOfficeQuality { get; set; }
         public long ComId { get; set; }
         public int? EntityId { get; set; }
         public string EntityName { get; set; }

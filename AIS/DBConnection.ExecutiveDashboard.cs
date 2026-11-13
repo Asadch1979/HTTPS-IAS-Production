@@ -449,6 +449,8 @@ namespace AIS.Controllers
                         ParasSettled = ExecutiveNullableCount(reader, "PARAS_SETTLED"),
                         ClosingOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "CLOSING_OPEN_PARAS") : null,
                         HighRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "HIGH_RISK_OPEN_PARAS") : null,
+                        MediumRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "MEDIUM_RISK_OPEN_PARAS") : null,
+                        LowRiskOpenParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "LOW_RISK_OPEN_PARAS") : null,
                         Over1YearParas = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_1_YEAR_PARAS") : null,
                         Over3ComplianceCycles = closingVerified || closingEstimated ? ExecutiveNullableCount(reader, "OVER_3_COMPLIANCE_CYCLES") : null,
                         HistoricalOpeningVerified = openingVerified,

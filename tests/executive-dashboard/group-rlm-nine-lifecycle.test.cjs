@@ -6,12 +6,12 @@ const read = path => fs.readFileSync(path, 'utf8');
 
 const nineKeys = [
     'openingOpenParas', 'issueIdentified', 'issueRectified',
-    'paraAdded', 'parasSettled', 'closingOpenParas',
-    'highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'
+    'paraAdded', 'netParaForCompliance', 'parasSettled', 'closingOpenParas',
+    'highRiskOpenParas', 'mediumRiskOpenParas', 'lowRiskOpenParas'
 ];
 const keysText = 'new[] { ' + nineKeys.map(key => '"' + key + '"').join(', ') + ' }';
 
-test('TOP, GROUP management and RLM glance use the same exact nine lifecycle keys in order', () => {
+test('TOP, GROUP management and RLM glance use the same exact ten lifecycle keys in order', () => {
     const source = read('AIS/Models/ExecutiveDashboardViews.cs');
     assert.match(source, /"TOP" => new\[\] \{ "openingOpenParas"/);
     assert.ok(source.includes('"GROUP" => ' + keysText));
@@ -30,7 +30,7 @@ test('GROUP and RLM reuse existing page/API-scoped KPI summary and one approved 
     const sqlPolicy = read('AIS/Models/ManagementDashboardPeriod.cs');
     assert.match(reader, /var k = ReadExecutiveKpiLifecycle\(scope, filters\)/);
     assert.equal((reader.match(/ReadExecutiveKpiLifecycle\(scope, filters\)/g) || []).length, 1);
-    assert.match(reader, /Lifecycle = ManagementDashboardPeriod\.Applies\(scope\.DashboardType\) \? k : null/);
+    assert.match(reader, /Lifecycle = k/);
     assert.match(model, /public ExecutiveKpiLifecycle Lifecycle \{ get; set; \}/);
     assert.match(api, /HasApiPermissionForPath/);
     assert.match(api, /HasViewPermission/);
@@ -40,7 +40,7 @@ test('GROUP and RLM reuse existing page/API-scoped KPI summary and one approved 
     assert.match(sqlPolicy, /EndDate = period.End/);
 });
 
-test('GROUP and RLM match TOP nine-card grid without requesting TOP-only lifecycle API', () => {
+test('GROUP and RLM match TOP ten-card grid without requesting TOP-only lifecycle API', () => {
     const partial = read('AIS/Views/ExecutiveOverview/_Sections.cshtml');
     const css = read('AIS/wwwroot/css/executive-dashboard-parents.css');
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
@@ -60,16 +60,15 @@ test('GROUP and RLM match TOP nine-card grid without requesting TOP-only lifecyc
     assert.doesNotMatch(group, /data-mgmt-ring/);
 });
 
-test('Nine stage labels are specific to GROUP/RLM and source quality flags remain visible', () => {
+test('Ten stage labels are shared across perspectives and source quality flags remain visible', () => {
     const js = read('AIS/wwwroot/js/executive-dashboard.js');
     const requested = [
-        'Opening Open Paras','Issue Identified During Audit','Issue Rectified During Audit',
-        'Para Added at Audit Closure','Paras Settled – Post Compliance',
-        'Closing Open Paras','High-Risk Open Paras','Over 1-Year-old Open Paras',
-        'Over 3 Compliance Cycles Rejected Paras'
+        'Opening Paras','Observation Raised by Audit','On Spot Rectification',
+        'Para Added in Final Report','Post Compliance Settlement',
+        'Outstanding Para','High Risk','Medium Risk',
+        'Low Risk'
     ];
     for (const label of requested) assert.ok(js.includes(label), label);
-    assert.match(js, /if \(\['GROUP', 'RLM'\]\.includes\(app\.dataset\.perspective\)\)/);
     assert.match(js, /data\.historicalOpeningVerified/);
     assert.match(js, /data\.openingEstimated/);
     assert.match(js, /data\.closingAsofVerified/);

@@ -44,8 +44,7 @@ namespace AIS.Models
             => new()
             {
                 Definition("glance","At a Glance",
-                    new[]{"openingOpenParas","issueIdentified","issueRectified","paraAdded","parasSettled",
-                        "closingOpenParas","highRiskOpenParas","over1YearParas","over3ComplianceCycles"},
+                    new[]{"openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas"},
                     new[]{"trend","risk"}),
                 Definition("position","Audit Performance Analysis",
                     Array.Empty<string>(),
@@ -78,6 +77,9 @@ namespace AIS.Models
     }
     public sealed class AuditParaSnapCritical
     {
+        public int? ReportingOfficeId { get; set; }
+        public string ReportingOfficeName { get; set; }
+        public string ReportingOfficeQuality { get; set; }
         public long ComId { get; set; }
         public int? EntityId { get; set; }
         public string EntityName { get; set; }

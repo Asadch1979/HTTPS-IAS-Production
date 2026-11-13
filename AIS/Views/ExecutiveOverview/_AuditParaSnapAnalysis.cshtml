@@ -1,15 +1,18 @@
 @model AIS.Models.ExecutiveDashboardPageModel
 @{
     var cards=new[] {
-        new { Key="openingOpenParas", Label="Opening Balance" },
-        new { Key="issueIdentified", Label="Issue Identified" },
-        new { Key="issueRectified", Label="Issue Rectified" },
-        new { Key="paraAdded", Label="Para Added" },
-        new { Key="parasSettled", Label="Paras Settled" },
+        new { Key="openingOpenParas", Label="Opening Paras" },
+        new { Key="issueIdentified", Label="Observation Raised by Audit" },
+        new { Key="issueRectified", Label="On Spot Rectification" },
+        new { Key="paraAdded", Label="Para Added in Final Report" },
+        new { Key="netParaForCompliance", Label="Net Para for Compliance" },
+        new { Key="parasSettled", Label="Post Compliance Settlement" },
         new { Key="periodSettlementRate", Label="Settlement Rate · Selected Period" },
-        new { Key="closingOpenParas", Label="Closing Balance" },
-        new { Key="highRiskOpenParas", Label="High-Risk Open" },
-        new { Key="over1YearParas", Label="Over One Year" },
+        new { Key="closingOpenParas", Label="Outstanding Para" },
+        new { Key="highRiskOpenParas", Label="High Risk" },
+        new { Key="mediumRiskOpenParas", Label="Medium Risk" },
+        new { Key="lowRiskOpenParas", Label="Low Risk" },
+        new { Key="over1YearParas", Label="Outstanding Para 1 Year old" },
         new { Key="over3ComplianceCycles", Label="Over Three Compliance Cycles" }
     };
 }

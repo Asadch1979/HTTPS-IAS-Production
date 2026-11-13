@@ -46,10 +46,21 @@
         // Report age bucket thresholds in days, consistent with AGING_DAYS.
         // The Oracle bucket codes retain their original boundary calculations.
         const ageLabel = row => id !== 'aging' ? row.bucketName
-            : row.bucketCode === '1_3_YEARS' ? '366–1,095 days'
+            : row.bucketCode === '1_2_YEARS' ? '366–730 days'
+            : row.bucketCode === '2_3_YEARS' ? '731–1,095 days'
             : row.bucketCode === 'OVER_3_YEARS' ? 'Over 1,095 days'
             : row.bucketName;
         const total = rows.reduce((sum, row) => sum + row.paraCount, 0);
+        if (id === 'aging') {
+            target.append(el('p', 'Total Outstanding Paras: ' + number(total)));
+            const unknown = rows.filter(row => /unknown/i.test(row.bucketCode + ' ' + row.bucketName));
+            const missing = unknown.reduce((sum, row) => sum + row.paraCount, 0);
+            if (missing) target.append(el('small', number(missing) + ' paras have unknown or invalid aging dates; included in total.', 'exec-note'));
+            rows = rows.filter(row => !unknown.includes(row));
+            const count = codes => rows.filter(row => codes.includes(row.bucketCode)).reduce((sum,row)=>sum+row.paraCount,0);
+            target.append(el('p', 'Outstanding Para 1 Year old: ' + number(count(['4','6','5','1_2_YEARS','2_3_YEARS','OVER_3_YEARS']))));
+            target.append(el('p', 'Outstanding Para more than 2 Year old: ' + number(count(['6','5','2_3_YEARS','OVER_3_YEARS']))));
+        }
         if (!rows.length || !total) target.append(el('p', 'No open observations in this scope.', 'exec-empty'));
         else {
             const maximum = Math.max(...rows.map(row => row.paraCount));
@@ -126,7 +137,9 @@
         // nine-card renderer as TOP. Their existing authorized GetKpiSummary
         // response includes its already-queried lifecycle result and quality flags.
         const nineCardManagement = (app.dataset.perspective === 'GROUP' && app.dataset.view === 'management') ||
-            (app.dataset.perspective === 'RLM' && app.dataset.view === 'glance');
+            (app.dataset.perspective === 'RLM' && app.dataset.view === 'glance') ||
+            (app.dataset.perspective === 'GROUP' && app.dataset.view === 'glance') ||
+            (app.dataset.perspective === 'CCO' && app.dataset.view === 'overview');
         if (nineCardManagement) {
             if (!data?.lifecycle || typeof data.lifecycle !== 'object')
                 throw new Error('Nine-indicator IAS lifecycle data is unavailable for this reporting scope.');
@@ -139,7 +152,7 @@
             : []), ['Total Cases', 'totalCases'], ['Settled Total', 'settledTotal'], ['Open Paras', 'openParas'], ['High Risk', 'highRiskParas'],
             ['Issue Identified', 'issueIdentified'], ['Issue Rectified', 'issueRectified'], ['Settled Month-to-Date', 'settledMtd'],
             ['Overall Settlement Ratio', 'settlementRatio'], ['MTD Settlement Rate', 'settlementMtdRate'], ['Critical Items', 'criticalItems'], ['Zero Cycle', 'zeroCycleParas'],
-            ['Over 3 Cycles', 'over3CycleParas'], ['Over 1 Year', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
+            ['Over 3 Cycles', 'over3CycleParas'], ['Outstanding Para 1 Year old', 'over1YearParas']].filter(([, key]) => target.dataset.kpiKeys.split(',').includes(key)).forEach(([label, key]) => {
             const compliance = ['CCO', 'GROUP', 'RLM'].includes(app.dataset.perspective);
             if (compliance) label = ({ totalCases: 'Opening Balance + Para Added', settledTotal: 'Settled in Period',
                 settledMtd: 'Settled in Period', settlementRatio: 'Selected-Period Settlement Ratio',
@@ -178,32 +191,20 @@
         const closingQuality = data.closingAsofVerified ? 'verified' : data.closingEstimated ? 'estimated' : 'unavailable';
         const startLabel = prettyDate($('start-date')?.value);
         const endLabel = prettyDate($('end-date')?.value);
-        [['Opening Open Paras', 'openingOpenParas', openingQuality],
-            ['Issue Identified', 'issueIdentified', 'period'],
-            ['Issue Rectified', 'issueRectified', 'period'],
-            ['Para Added', 'paraAdded', 'period'],
-            ['Paras Settled', 'parasSettled', 'period'],
-            ['Closing Open Paras', 'closingOpenParas', closingQuality],
-            ['High-Risk Open Paras', 'highRiskOpenParas', closingQuality],
-            ['Over 1 Year', 'over1YearParas', closingQuality],
+        [['Opening Paras', 'openingOpenParas', openingQuality],
+            ['Observation Raised by Audit', 'issueIdentified', 'period'],
+            ['On Spot Rectification', 'issueRectified', 'period'],
+            ['Para Added in Final Report', 'paraAdded', 'period'],
+            ['Net Para for Compliance', 'netParaForCompliance', openingQuality],
+            ['Post Compliance Settlement', 'parasSettled', 'period'],
+            ['Outstanding Para', 'closingOpenParas', closingQuality],
+            ['High Risk', 'highRiskOpenParas', closingQuality],
+            ['Medium Risk', 'mediumRiskOpenParas', closingQuality],
+            ['Low Risk', 'lowRiskOpenParas', closingQuality],
+            ['Outstanding Para 1 Year old', 'over1YearParas', closingQuality],
             ['Over 3 Compliance Cycles', 'over3ComplianceCycles', closingQuality]]
             .filter(([, key]) => $('kpis').dataset.kpiKeys.split(',').includes(key))
             .forEach(([label, key, quality]) => {
-                // Full lifecycle stage names in Group/RLM only. TOP labels and
-                // layout remain unchanged.
-                if (['GROUP', 'RLM'].includes(app.dataset.perspective)) {
-                    label = ({
-                        openingOpenParas: 'Opening Open Paras',
-                        issueIdentified: 'Issue Identified During Audit',
-                        issueRectified: 'Issue Rectified During Audit',
-                        paraAdded: 'Para Added at Audit Closure',
-                        parasSettled: 'Paras Settled – Post Compliance',
-                        closingOpenParas: 'Closing Open Paras',
-                        highRiskOpenParas: 'High-Risk Open Paras',
-                        over1YearParas: 'Over 1-Year-old Open Paras',
-                        over3ComplianceCycles: 'Over 3 Compliance Cycles Rejected Paras'
-                    })[key] || label;
-                }
                 const card = el('div', null, 'exec-kpi');
                 const available = quality !== 'unavailable' && data[key] !== null && data[key] !== undefined;
                 card.title = quality === 'estimated'
@@ -222,8 +223,8 @@
                 // Opening is a baseline, not its own 100% KPI. Rectification and
                 // identification may involve different issue cohorts in this interval.
                 if (key !== 'openingOpenParas' && key !== 'issueRectified') {
-                    const base = ['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? data.closingOpenParas : data.openingOpenParas;
-                    card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${['highRiskOpenParas', 'over1YearParas', 'over3ComplianceCycles'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
+                    const base = ['highRiskOpenParas', 'mediumRiskOpenParas', 'lowRiskOpenParas'].includes(key) ? data.closingOpenParas : data.openingOpenParas;
+                    card.append(el('small', available && base > 0 ? `${(data[key] / base * 100).toFixed(1)}% of ${['highRiskOpenParas', 'mediumRiskOpenParas', 'lowRiskOpenParas'].includes(key) ? 'closing open paras' : 'opening open paras'}` : 'Comparison unavailable'));
                 }
                 cards.append(card);
             });
@@ -250,7 +251,7 @@
         }
         rows.forEach(row => {
             const tr = el('tr');
-            if (app.dataset.perspective === 'CCO') tr.append(el('td', row.reportingOfficeName || 'Unmapped reporting office'));
+            if (app.dataset.perspective === 'CCO') tr.append(el('td', row.reportingOfficeName || (row.reportingOfficeQuality === 'CONFLICTING' ? 'Conflicting reporting office mapping — correction required' : 'Reporting office unavailable — correction required')));
             [row.entityName, `${row.auditPeriod ?? 'N/A'} / ${row.paraNo ?? 'N/A'}`, row.riskName,
                 row.comCycle].forEach(value => tr.append(el('td', value ?? 'N/A')));
             const age = el('td', row.agingDays == null ? 'N/A' : `${number(row.agingDays)} days`);

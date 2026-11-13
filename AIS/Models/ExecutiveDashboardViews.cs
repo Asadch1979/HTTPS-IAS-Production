@@ -42,11 +42,11 @@ namespace AIS.Models
         {
             var glanceKpis = perspective switch
             {
-                "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "GROUP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
-                "CCO" => new[] { "openParas", "zeroCycleParas", "over3CycleParas", "over1YearParas", "settlementRatio" },
-                "CIA" => new[] { "openParas", "highRiskParas", "issueIdentified", "issueRectified", "settledMtd", "settlementRatio", "over1YearParas" },
-                "RLM" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "parasSettled", "closingOpenParas", "highRiskOpenParas", "over1YearParas", "over3ComplianceCycles" },
+                "TOP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "GROUP" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "CCO" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "CIA" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
+                "RLM" => new[] { "openingOpenParas", "issueIdentified", "issueRectified", "paraAdded", "netParaForCompliance", "parasSettled", "closingOpenParas", "highRiskOpenParas", "mediumRiskOpenParas", "lowRiskOpenParas" },
                 _ => throw new ArgumentException("Unknown executive perspective.", nameof(perspective))
             };
             var priority = perspective == "CCO" ? "cycle" : perspective == "GROUP" ? "aging" : "risk";
