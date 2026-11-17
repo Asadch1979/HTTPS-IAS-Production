@@ -267,13 +267,14 @@ LEFT JOIN t_auditee_entities bg
 LEFT JOIN t_auditee_entities ab
        ON ab.entity_id = c.audited_by
 
-LEFT JOIN (
-    SELECT com_id,
-           MAX(comment_on) AS last_movement_date
-    FROM ais_t_au_post_compliance_history
-    GROUP BY com_id
+-- Correlate history with each para instead of grouping the entire
+-- history table before the authorized caller's filters can be applied.
+-- MAX preserves the LAST_MOVEMENT_DATE semantics and one row per para.
+OUTER APPLY (
+    SELECT MAX(hh.comment_on) AS last_movement_date
+    FROM ais_t_au_post_compliance_history hh
+    WHERE hh.com_id = c.com_id
 ) h
-       ON h.com_id = c.com_id
 
 -- The executive/role dashboards report POST-REPORT paras, not issues
 -- rectified during audit finalization. The source flag is 0 by default,
