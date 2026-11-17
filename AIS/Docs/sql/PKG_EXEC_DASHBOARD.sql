@@ -2060,9 +2060,9 @@ END P_GET_CIA_EXEC_KPIS;
       ) WHERE ROWNUM <= P_MAX_ROWS;
   END P_GET_ROLE_ENTITY_HEATMAP;
 
-  -- Compare direct children of the server-authorized reporting root.
-  -- Scope and period filters are applied before reading compliance history.
-  -- Root-level paras retain the root as their reporting unit.
+  -- Group/Division unit comparison uses a narrow, para-only source.
+  -- The API must resolve the authenticated root before calling this cursor.
+  -- Keep the approved hierarchy, open/settled dates and cycle definitions.
   PROCEDURE P_GET_ROLE_UNIT_COMPARISON(
     P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
     P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
@@ -2073,45 +2073,44 @@ END P_GET_CIA_EXEC_KPIS;
       WITH reporting_clock AS (
         SELECT TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) cutoff FROM dual
       ), scoped AS (
-        -- Keep exactly the existing lifecycle and base-view eligibility.
-        -- Only authorized reporting descendants can reach history_asof.
-        SELECT b.com_id, k.risk_id, k.com_cycle,
-               k.para_settled_on AS setteled_on, d.cutoff,
-               d.cutoff - 1 - TRUNC(k.para_added_on) AS aging_days,
-               CASE WHEN k.para_added_on < d.cutoff
-                     AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
-                          OR k.report_concluded_on < d.cutoff)
-                     AND (k.para_status = 8 OR
-                          (k.para_status = 9 AND k.para_settled_on >= d.cutoff))
+        -- V_EXEC_ROLE_UNIT_SOURCE already applies the identical A/O/C
+        -- para eligibility as the lifecycle + para-base join. Filter
+        -- the authorized root and period BEFORE looking up cycle history.
+        SELECT p.com_id, p.risk_id, p.com_cycle,
+               CASE WHEN p.para_status = 9 THEN p.setteled_on END AS setteled_on,
+               d.cutoff,
+               d.cutoff - 1 - TRUNC(p.para_added_on) AS aging_days,
+               CASE WHEN p.para_added_on < d.cutoff
+                     AND (p.para_status = 8 OR
+                          (p.para_status = 9 AND p.setteled_on >= d.cutoff))
                     THEN 1 ELSE 0 END AS is_open,
-               CASE WHEN k.para_settled_on >= TRUNC(d.cutoff,'YYYY')
-                         AND k.para_settled_on < d.cutoff
+               CASE WHEN p.para_status = 9
+                         AND p.setteled_on >= TRUNC(d.cutoff,'YYYY')
+                         AND p.setteled_on < d.cutoff
                     THEN 1 ELSE 0 END AS is_settled,
                CASE
-                 WHEN b.entity_id = P_ROOT_ENTITY_ID THEN b.entity_id
-                 WHEN b.reporting_1 = P_ROOT_ENTITY_ID THEN b.entity_id
-                 WHEN b.reporting_2 = P_ROOT_ENTITY_ID THEN b.reporting_1
-                 WHEN b.reporting_3 = P_ROOT_ENTITY_ID THEN b.reporting_2
-                 WHEN b.reporting_4 = P_ROOT_ENTITY_ID THEN b.reporting_3
-                 WHEN b.reporting_5 = P_ROOT_ENTITY_ID THEN b.reporting_4
-                 WHEN b.reporting_6 = P_ROOT_ENTITY_ID THEN b.reporting_5
+                 WHEN p.entity_id = P_ROOT_ENTITY_ID THEN p.entity_id
+                 WHEN p.reporting_1 = P_ROOT_ENTITY_ID THEN p.entity_id
+                 WHEN p.reporting_2 = P_ROOT_ENTITY_ID THEN p.reporting_1
+                 WHEN p.reporting_3 = P_ROOT_ENTITY_ID THEN p.reporting_2
+                 WHEN p.reporting_4 = P_ROOT_ENTITY_ID THEN p.reporting_3
+                 WHEN p.reporting_5 = P_ROOT_ENTITY_ID THEN p.reporting_4
+                 WHEN p.reporting_6 = P_ROOT_ENTITY_ID THEN p.reporting_5
                END AS unit_id
-          FROM V_EXEC_KPI_LIFECYCLE k
-          JOIN V_EXEC_PARA_BASE b ON b.com_id = k.com_id
+          FROM V_EXEC_ROLE_UNIT_SOURCE p
          CROSS JOIN reporting_clock d
-         WHERE k.record_type = 'PARA'
-           AND d.cutoff > TRUNC(d.cutoff,'YYYY')
-           AND (P_AUDIT_PERIOD IS NULL OR b.audit_period = P_AUDIT_PERIOD)
-           AND (b.entity_id = P_ROOT_ENTITY_ID
-                OR P_ROOT_ENTITY_ID IN (b.reporting_1,b.reporting_2,b.reporting_3,
-                                        b.reporting_4,b.reporting_5,b.reporting_6))
+         WHERE d.cutoff > TRUNC(d.cutoff,'YYYY')
+           AND (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
+           AND (p.entity_id = P_ROOT_ENTITY_ID
+                OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
+                                        p.reporting_4,p.reporting_5,p.reporting_6))
       ), open_para_keys AS (
-        -- Cycle history affects only open-para metrics. DISTINCT prevents
-        -- duplicate history rows if a source ever yields duplicate keys.
         SELECT DISTINCT s.com_id
           FROM scoped s
          WHERE s.is_open = 1
       ), history_asof AS (
+        -- Exact same latest non-null as-of-cycle rule as before. Do not
+        -- replace it with the current COM_CYCLE or change its cutoff.
         SELECT h.com_id,
                MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
                  CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
