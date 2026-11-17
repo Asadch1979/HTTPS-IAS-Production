@@ -284,3 +284,48 @@ OUTER APPLY (
 WHERE CASE WHEN c.ind = 'A' AND NVL(c.issue_rectified, 0) = 1
            THEN 0 ELSE 1 END = 1;
 /
+
+-- Management Audit unit comparison: lightweight para-only reporting source.
+-- This ordinary view is NOT materialized and contains no client-supplied root.
+-- P_GET_ROLE_UNIT_COMPARISON must still enforce the authenticated root.
+--
+-- Membership is deliberately equivalent to V_EXEC_ENTITY_SCOPE's base
+-- hierarchy: V_IAS_ENTITY_REPORTING_IDS with at least one active mapping
+-- row. Division/GM/Group lookups and post-compliance history are unnecessary
+-- for the three authorized organizational comparison rows.
+--
+-- Eligibility equals V_EXEC_KPI_LIFECYCLE PARA rows joined to
+-- V_EXEC_PARA_BASE: only A/O/C, excluding A copies rectified before
+-- audit finalization. The lifecycle REPORT_CONCLUDED_ON is currently NULL.
+CREATE OR REPLACE VIEW V_EXEC_ROLE_UNIT_SOURCE AS
+SELECT
+    c.com_id,
+    c.entity_id,
+    c.audit_period,
+    c.risk AS risk_id,
+    c.para_status,
+    c.com_cycle,
+    c.para_added_on,
+    c.setteled_on,
+    h.reporting_1,
+    h.reporting_2,
+    h.reporting_3,
+    h.reporting_4,
+    h.reporting_5,
+    h.reporting_6
+FROM ais_t_au_post_compliance c
+LEFT JOIN (
+    SELECT r.entity_id,
+           r.reporting_1, r.reporting_2, r.reporting_3,
+           r.reporting_4, r.reporting_5, r.reporting_6
+    FROM V_IAS_ENTITY_REPORTING_IDS r
+    WHERE EXISTS (
+        SELECT 1
+          FROM t_auditee_entities_maping m
+         WHERE m.entity_id = r.entity_id
+           AND NVL(m.status, 'Y') = 'Y'
+    )
+) h ON h.entity_id = c.entity_id
+WHERE c.ind IN ('A', 'O', 'C')
+  AND (c.ind <> 'A' OR NVL(c.issue_rectified, 0) <> 1);
+/
