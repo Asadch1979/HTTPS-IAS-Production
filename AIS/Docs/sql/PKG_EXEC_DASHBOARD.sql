@@ -2060,8 +2060,9 @@ END P_GET_CIA_EXEC_KPIS;
       ) WHERE ROWNUM <= P_MAX_ROWS;
   END P_GET_ROLE_ENTITY_HEATMAP;
 
-  -- Compare direct children of selected org root. A record directly
-  -- against the root is retained in its own group.
+  -- Compare direct children of the server-authorized reporting root.
+  -- Scope and period filters are applied before reading compliance history.
+  -- Root-level paras retain the root as their reporting unit.
   PROCEDURE P_GET_ROLE_UNIT_COMPARISON(
     P_DASHBOARD_TYPE IN VARCHAR2, P_ROOT_ENTITY_ID IN NUMBER,
     P_AUDIT_PERIOD IN VARCHAR2 DEFAULT NULL,
@@ -2071,59 +2072,71 @@ END P_GET_CIA_EXEC_KPIS;
     OPEN IO_CURSOR FOR
       WITH reporting_clock AS (
         SELECT TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE)) cutoff FROM dual
-      ), history_asof AS (
-        SELECT h.com_id,MAX(h.comment_on) last_movement_date,
-          MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
-            CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
-            CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST) recorded_cycle
-        FROM ais_t_au_post_compliance_history h CROSS JOIN reporting_clock d
-        WHERE h.comment_on<d.cutoff GROUP BY h.com_id
-      ), management_position AS (
-        -- Same historical-open rule as P_GET_SNAP_DISTRIBUTION. Opening stock
-        -- is retained; activity covers Jan 1 through yesterday, never today.
-        SELECT b.com_id,b.para_no,b.audit_period,b.gist_of_paras,b.entity_id,b.entity_name,
-          b.entity_type_id,b.division_id,b.division_name,b.business_group_id,b.business_group_name,
-          k.risk_id,b.risk_name,b.reporting_1,b.reporting_2,b.reporting_3,b.reporting_4,b.reporting_5,b.reporting_6,
-          CASE WHEN k.para_added_on<d.cutoff AND
-            (k.source_ind<>'A' OR k.report_concluded_on IS NULL OR k.report_concluded_on<d.cutoff)
-            AND (k.para_status=8 OR (k.para_status=9 AND k.para_settled_on>=d.cutoff)) THEN 1 ELSE 0 END is_open,
-          CASE WHEN k.para_settled_on>=TRUNC(d.cutoff,'YYYY')
-            AND k.para_settled_on<d.cutoff THEN 1 ELSE 0 END is_settled,
-          k.para_settled_on setteled_on,k.para_added_on,d.cutoff-1-TRUNC(k.para_added_on) aging_days,
-          COALESCE(h.recorded_cycle,CASE WHEN k.com_cycle=0 THEN 0 END) com_cycle,
-          h.last_movement_date,d.cutoff-1-TRUNC(h.last_movement_date) days_since_last_movement,
-          CAST(NULL AS NUMBER) para_status,CAST(NULL AS NUMBER) com_status,CAST(NULL AS NUMBER) com_stage
-        FROM V_EXEC_KPI_LIFECYCLE k JOIN V_EXEC_PARA_BASE b ON b.com_id=k.com_id
-        CROSS JOIN reporting_clock d LEFT JOIN history_asof h ON h.com_id=k.com_id
-        WHERE k.record_type='PARA' AND d.cutoff>TRUNC(d.cutoff,'YYYY')
       ), scoped AS (
-        SELECT p.*,
+        -- Keep exactly the existing lifecycle and base-view eligibility.
+        -- Only authorized reporting descendants can reach history_asof.
+        SELECT b.com_id, k.risk_id, k.com_cycle,
+               k.para_settled_on AS setteled_on, d.cutoff,
+               d.cutoff - 1 - TRUNC(k.para_added_on) AS aging_days,
+               CASE WHEN k.para_added_on < d.cutoff
+                     AND (k.source_ind <> 'A' OR k.report_concluded_on IS NULL
+                          OR k.report_concluded_on < d.cutoff)
+                     AND (k.para_status = 8 OR
+                          (k.para_status = 9 AND k.para_settled_on >= d.cutoff))
+                    THEN 1 ELSE 0 END AS is_open,
+               CASE WHEN k.para_settled_on >= TRUNC(d.cutoff,'YYYY')
+                         AND k.para_settled_on < d.cutoff
+                    THEN 1 ELSE 0 END AS is_settled,
                CASE
-                 WHEN p.entity_id = P_ROOT_ENTITY_ID THEN p.entity_id
-                 WHEN p.reporting_1 = P_ROOT_ENTITY_ID THEN p.entity_id
-                 WHEN p.reporting_2 = P_ROOT_ENTITY_ID THEN p.reporting_1
-                 WHEN p.reporting_3 = P_ROOT_ENTITY_ID THEN p.reporting_2
-                 WHEN p.reporting_4 = P_ROOT_ENTITY_ID THEN p.reporting_3
-                 WHEN p.reporting_5 = P_ROOT_ENTITY_ID THEN p.reporting_4
-                 WHEN p.reporting_6 = P_ROOT_ENTITY_ID THEN p.reporting_5
+                 WHEN b.entity_id = P_ROOT_ENTITY_ID THEN b.entity_id
+                 WHEN b.reporting_1 = P_ROOT_ENTITY_ID THEN b.entity_id
+                 WHEN b.reporting_2 = P_ROOT_ENTITY_ID THEN b.reporting_1
+                 WHEN b.reporting_3 = P_ROOT_ENTITY_ID THEN b.reporting_2
+                 WHEN b.reporting_4 = P_ROOT_ENTITY_ID THEN b.reporting_3
+                 WHEN b.reporting_5 = P_ROOT_ENTITY_ID THEN b.reporting_4
+                 WHEN b.reporting_6 = P_ROOT_ENTITY_ID THEN b.reporting_5
                END AS unit_id
-          FROM management_position p
-         WHERE (P_AUDIT_PERIOD IS NULL OR p.audit_period = P_AUDIT_PERIOD)
-           AND (p.entity_id = P_ROOT_ENTITY_ID
-                OR P_ROOT_ENTITY_ID IN (p.reporting_1,p.reporting_2,p.reporting_3,
-                                        p.reporting_4,p.reporting_5,p.reporting_6))
+          FROM V_EXEC_KPI_LIFECYCLE k
+          JOIN V_EXEC_PARA_BASE b ON b.com_id = k.com_id
+         CROSS JOIN reporting_clock d
+         WHERE k.record_type = 'PARA'
+           AND d.cutoff > TRUNC(d.cutoff,'YYYY')
+           AND (P_AUDIT_PERIOD IS NULL OR b.audit_period = P_AUDIT_PERIOD)
+           AND (b.entity_id = P_ROOT_ENTITY_ID
+                OR P_ROOT_ENTITY_ID IN (b.reporting_1,b.reporting_2,b.reporting_3,
+                                        b.reporting_4,b.reporting_5,b.reporting_6))
+      ), open_para_keys AS (
+        -- Cycle history affects only open-para metrics. DISTINCT prevents
+        -- duplicate history rows if a source ever yields duplicate keys.
+        SELECT DISTINCT s.com_id
+          FROM scoped s
+         WHERE s.is_open = 1
+      ), history_asof AS (
+        SELECT h.com_id,
+               MAX(h.com_cycle) KEEP (DENSE_RANK LAST ORDER BY
+                 CASE WHEN h.com_cycle IS NOT NULL THEN h.comment_on END NULLS FIRST,
+                 CASE WHEN h.com_cycle IS NOT NULL THEN h.hist_id END NULLS FIRST) AS recorded_cycle
+          FROM open_para_keys ids
+          JOIN ais_t_au_post_compliance_history h ON h.com_id = ids.com_id
+         CROSS JOIN reporting_clock d
+         WHERE h.comment_on < d.cutoff
+         GROUP BY h.com_id
       )
       SELECT s.unit_id, MAX(u.name) AS unit_name,
              SUM(CASE WHEN s.is_open = 1 THEN 1 ELSE 0 END) AS open_paras,
              SUM(CASE WHEN s.is_open = 1 AND s.risk_id = 1 THEN 1 ELSE 0 END) AS high_risk_open,
              SUM(CASE WHEN s.is_open = 1 AND s.aging_days > 365 THEN 1 ELSE 0 END) AS aged_over_365,
-             SUM(CASE WHEN s.is_open = 1 AND s.com_cycle > 3 THEN 1 ELSE 0 END) AS over_3_cycles,
+             SUM(CASE WHEN s.is_open = 1
+                       AND COALESCE(h.recorded_cycle,
+                                    CASE WHEN s.com_cycle = 0 THEN 0 END) > 3
+                      THEN 1 ELSE 0 END) AS over_3_cycles,
              SUM(CASE WHEN s.is_settled = 1 THEN 1 ELSE 0 END) AS settled_total,
              SUM(CASE WHEN s.is_settled = 1
-                       AND s.setteled_on >= TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE),'YYYY')
-                       AND s.setteled_on < TRUNC(CAST(SYSTIMESTAMP AT TIME ZONE 'Asia/Karachi' AS DATE))
+                       AND s.setteled_on >= TRUNC(s.cutoff,'YYYY')
+                       AND s.setteled_on < s.cutoff
                       THEN 1 ELSE 0 END) AS settled_mtd
         FROM scoped s
+        LEFT JOIN history_asof h ON h.com_id = s.com_id
         LEFT JOIN t_auditee_entities u ON u.entity_id = s.unit_id
        WHERE s.unit_id IS NOT NULL
        GROUP BY s.unit_id
