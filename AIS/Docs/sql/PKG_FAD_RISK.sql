@@ -122,6 +122,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
              DISPLAY_ORDER = NVL(p_display_order, 0),
              IS_ACTIVE     = NVL(p_is_active, 'Y')
        WHERE KPI_MAIN_ID = p_kpi_main_id;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Main KPI not found for update.');
+      END IF;
     END IF;
   
     COMMIT;
@@ -200,7 +203,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                   ', ' || v_active_col || '=:6'
                  ELSE
                   ''
-               END || ' WHERE KPI_SUB_ID=:7';
+               END || ' WHERE KPI_SUB_ID=' ||
+               CASE WHEN v_active_col IS NOT NULL THEN ':7' ELSE ':6' END;
     
       IF v_active_col IS NOT NULL THEN
         EXECUTE IMMEDIATE v_sql
@@ -208,6 +212,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
       ELSE
         EXECUTE IMMEDIATE v_sql
           USING p_kpi_main_id, UPPER(TRIM(p_code)), TRIM(p_name), NVL(p_weightage, 0), NVL(p_display_order, 0), p_kpi_sub_id;
+      END IF;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Sub KPI not found for update.');
       END IF;
     END IF;
   
@@ -256,6 +263,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
              DISPLAY_ORDER = NVL(p_display_order, 0),
              IS_ACTIVE     = NVL(p_is_active, 'Y')
        WHERE PROCESS_ID = p_process_id;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Process not found for update.');
+      END IF;
     END IF;
   
     COMMIT;
@@ -299,6 +309,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
              GRAVITY_ID       = p_gravity_id,
              IS_ACTIVE        = NVL(p_is_active, 'Y')
        WHERE SUB_PROCESS_ID = p_sub_process_id;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Sub Process not found for update.');
+      END IF;
     END IF;
   
     COMMIT;
@@ -314,6 +327,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                             p_commit      IN CHAR DEFAULT 'Y') IS
     v_id NUMBER;
   BEGIN
+    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
+      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure commit option.');
+    END IF;
     IF p_annexure_id IS NULL OR p_annexure_id = 0 THEN
       v_id := SEQ_RISK_FAD_ANNEXURE.NEXTVAL;
     
@@ -329,6 +345,9 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
              ANNEXURE_NAME = TRIM(p_name),
              IS_ACTIVE     = NVL(p_is_active, 'Y')
        WHERE ANNEXURE_ID = p_annexure_id;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Annexure not found for update.');
+      END IF;
     END IF;
   
     IF p_commit = 'Y' THEN COMMIT; END IF;
@@ -342,6 +361,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                  p_is_active      IN CHAR,
                                  p_commit         IN CHAR DEFAULT 'Y') IS
   BEGIN
+    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
+      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure mapping commit option.');
+    END IF;
+    -- An INSERT still requires the target schema to generate MAP_ID through
+    -- an approved identity, default, or trigger; check in 00_preflight.sql.
+    -- Do not invent a sequence or generate MAP_ID with MAX+1.
     MERGE INTO T_RISK_FAD_SUBPROC_ANNEX m
     USING (SELECT p_sub_process_id AS sub_process_id,
                   p_annexure_id    AS annexure_id
@@ -401,8 +426,10 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
     v_sql := 'SELECT KPI_SUB_ID,
                    KPI_MAIN_ID,
                    ' || v_code_col || ' AS KPI_CODE,
+                   ' || v_code_col || ' AS KPI_SUB_CODE,
                    ' || v_name_col ||
              ' AS KPI_NAME,
+                   ' || v_name_col || ' AS KPI_SUB_NAME,
                    WEIGHTAGE,
                    DISPLAY_ORDER' || CASE
                WHEN v_active_col IS NOT NULL THEN
@@ -442,15 +469,17 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                               o_cursor     OUT t_cursor) IS
   BEGIN
     OPEN o_cursor FOR
-      SELECT SUB_PROCESS_ID,
-             PROCESS_ID,
-             SUB_PROCESS_CODE,
-             SUB_PROCESS_NAME,
-             GRAVITY_ID,
-             IS_ACTIVE
-        FROM T_RISK_FAD_SUB_PROCESS
-       WHERE PROCESS_ID = p_process_id
-       ORDER BY SUB_PROCESS_ID;
+      SELECT s.SUB_PROCESS_ID,
+             s.PROCESS_ID,
+             s.SUB_PROCESS_CODE,
+             s.SUB_PROCESS_NAME,
+             s.GRAVITY_ID,
+             g.GRAVITY_NAME,
+             s.IS_ACTIVE
+        FROM T_RISK_FAD_SUB_PROCESS s
+        LEFT JOIN T_RISK_FAD_GRAVITY g ON g.GRAVITY_ID = s.GRAVITY_ID
+       WHERE s.PROCESS_ID = p_process_id
+       ORDER BY s.SUB_PROCESS_ID;
   END P_GET_SUB_PROCESS;
 
   /* ============================================================
@@ -472,7 +501,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   BEGIN
     OPEN o_cursor FOR
       SELECT m.SUB_PROCESS_ID, a.ANNEXURE_ID, a.ANNEXURE_CODE,
-             a.ANNEXURE_NAME, a.IS_ACTIVE, m.IS_ACTIVE AS MAP_IS_ACTIVE
+             a.ANNEXURE_NAME, m.IS_ACTIVE AS IS_ACTIVE,
+             m.IS_ACTIVE AS MAP_IS_ACTIVE, a.IS_ACTIVE AS ANNEXURE_IS_ACTIVE
         FROM T_RISK_FAD_SUBPROC_ANNEX m
         JOIN T_RISK_FAD_ANNEXURE a ON a.ANNEXURE_ID = m.ANNEXURE_ID
        WHERE m.SUB_PROCESS_ID = p_sub_process_id
