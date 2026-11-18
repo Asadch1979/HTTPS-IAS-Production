@@ -33,11 +33,13 @@
   PROCEDURE P_SAVE_ANNEXURE(p_annexure_id IN OUT NUMBER,
                             p_code        IN VARCHAR2,
                             p_name        IN VARCHAR2,
-                            p_is_active   IN CHAR);
+                            p_is_active   IN CHAR,
+                            p_commit      IN CHAR DEFAULT 'Y');
 
   PROCEDURE P_SAVE_SUBPROC_ANNEX(p_sub_process_id IN NUMBER,
                                  p_annexure_id    IN NUMBER,
-                                 p_is_active      IN CHAR);
+                                 p_is_active      IN CHAR,
+                                 p_commit         IN CHAR DEFAULT 'Y');
 
   PROCEDURE P_GET_KPI_MAIN(o_cursor OUT t_cursor);
   PROCEDURE P_GET_KPI_SUB(p_kpi_main_id IN NUMBER, o_cursor OUT t_cursor);
@@ -50,6 +52,7 @@
   PROCEDURE P_GET_GRAVITY(o_cursor OUT t_cursor);
 
 END PKG_FAD_RISK;
+/
 
 CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
 
@@ -136,9 +139,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                            p_is_active     IN CHAR) IS
     v_id         NUMBER;
     v_name_col   VARCHAR2(30);
+    v_code_col   VARCHAR2(30);
     v_active_col VARCHAR2(30);
     v_sql        CLOB;
   BEGIN
+    v_code_col := F_PICK_COL('T_RISK_FAD_KPI_SUB', 'KPI_SUB_CODE', 'KPI_CODE', NULL, NULL);
+    IF v_code_col IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20001, 'Sub KPI code column not found.');
+    END IF;
     v_name_col := F_PICK_COL('T_RISK_FAD_KPI_SUB',
                              'KPI_NAME',
                              'KPI_SUB_NAME',
@@ -162,7 +170,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
     IF p_kpi_sub_id IS NULL OR p_kpi_sub_id = 0 THEN
       v_id := SEQ_RISK_FAD_KPI_SUB.NEXTVAL;
     
-      v_sql := 'INSERT INTO T_RISK_FAD_KPI_SUB (KPI_SUB_ID, KPI_MAIN_ID, KPI_CODE, ' ||
+      v_sql := 'INSERT INTO T_RISK_FAD_KPI_SUB (KPI_SUB_ID, KPI_MAIN_ID, ' || v_code_col || ', ' ||
                v_name_col || ', WEIGHTAGE, DISPLAY_ORDER' || CASE
                  WHEN v_active_col IS NOT NULL THEN
                   ', ' || v_active_col
@@ -186,7 +194,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
       p_kpi_sub_id := v_id;
     
     ELSE
-      v_sql := 'UPDATE T_RISK_FAD_KPI_SUB SET KPI_MAIN_ID=:1, KPI_CODE=:2, ' ||
+      v_sql := 'UPDATE T_RISK_FAD_KPI_SUB SET KPI_MAIN_ID=:1, ' || v_code_col || '=:2, ' ||
                v_name_col || '=:3, WEIGHTAGE=:4, DISPLAY_ORDER=:5' || CASE
                  WHEN v_active_col IS NOT NULL THEN
                   ', ' || v_active_col || '=:6'
@@ -302,7 +310,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   PROCEDURE P_SAVE_ANNEXURE(p_annexure_id IN OUT NUMBER,
                             p_code        IN VARCHAR2,
                             p_name        IN VARCHAR2,
-                            p_is_active   IN CHAR) IS
+                            p_is_active   IN CHAR,
+                            p_commit      IN CHAR DEFAULT 'Y') IS
     v_id NUMBER;
   BEGIN
     IF p_annexure_id IS NULL OR p_annexure_id = 0 THEN
@@ -322,7 +331,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
        WHERE ANNEXURE_ID = p_annexure_id;
     END IF;
   
-    COMMIT;
+    IF p_commit = 'Y' THEN COMMIT; END IF;
   END P_SAVE_ANNEXURE;
 
   /* ============================================================
@@ -330,7 +339,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   ============================================================ */
   PROCEDURE P_SAVE_SUBPROC_ANNEX(p_sub_process_id IN NUMBER,
                                  p_annexure_id    IN NUMBER,
-                                 p_is_active      IN CHAR) IS
+                                 p_is_active      IN CHAR,
+                                 p_commit         IN CHAR DEFAULT 'Y') IS
   BEGIN
     MERGE INTO T_RISK_FAD_SUBPROC_ANNEX m
     USING (SELECT p_sub_process_id AS sub_process_id,
@@ -345,7 +355,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
       VALUES
         (p_sub_process_id, p_annexure_id, NVL(p_is_active, 'Y'));
   
-    COMMIT;
+    IF p_commit = 'Y' THEN COMMIT; END IF;
   END P_SAVE_SUBPROC_ANNEX;
 
   /* ============================================================
@@ -364,9 +374,14 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   ============================================================ */
   PROCEDURE P_GET_KPI_SUB(p_kpi_main_id IN NUMBER, o_cursor OUT t_cursor) IS
     v_name_col   VARCHAR2(30);
+    v_code_col   VARCHAR2(30);
     v_active_col VARCHAR2(30);
     v_sql        CLOB;
   BEGIN
+    v_code_col := F_PICK_COL('T_RISK_FAD_KPI_SUB', 'KPI_SUB_CODE', 'KPI_CODE', NULL, NULL);
+    IF v_code_col IS NULL THEN
+      RAISE_APPLICATION_ERROR(-20002, 'Sub KPI code column not found.');
+    END IF;
     v_name_col := F_PICK_COL('T_RISK_FAD_KPI_SUB',
                              'KPI_NAME',
                              'KPI_SUB_NAME',
@@ -385,7 +400,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   
     v_sql := 'SELECT KPI_SUB_ID,
                    KPI_MAIN_ID,
-                   KPI_CODE,
+                   ' || v_code_col || ' AS KPI_CODE,
                    ' || v_name_col ||
              ' AS KPI_NAME,
                    WEIGHTAGE,
@@ -456,10 +471,12 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                 o_cursor         OUT t_cursor) IS
   BEGIN
     OPEN o_cursor FOR
-      SELECT SUB_PROCESS_ID, ANNEXURE_ID, IS_ACTIVE
-        FROM T_RISK_FAD_SUBPROC_ANNEX
-       WHERE SUB_PROCESS_ID = p_sub_process_id
-       ORDER BY ANNEXURE_ID;
+      SELECT m.SUB_PROCESS_ID, a.ANNEXURE_ID, a.ANNEXURE_CODE,
+             a.ANNEXURE_NAME, a.IS_ACTIVE, m.IS_ACTIVE AS MAP_IS_ACTIVE
+        FROM T_RISK_FAD_SUBPROC_ANNEX m
+        JOIN T_RISK_FAD_ANNEXURE a ON a.ANNEXURE_ID = m.ANNEXURE_ID
+       WHERE m.SUB_PROCESS_ID = p_sub_process_id
+       ORDER BY a.ANNEXURE_CODE, a.ANNEXURE_ID;
   END P_GET_SUBPROC_ANNEX;
 
   /* ============================================================
@@ -477,16 +494,18 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   
     v_sql := 'SELECT GRAVITY_ID,
                    GRAVITY_NAME,
-                   DISPLAY_ORDER' || CASE
+                   GRAVITY_SCORE,
+                   GRAVITY_ID AS DISPLAY_ORDER' || CASE
                WHEN v_active_col IS NOT NULL THEN
                 ', ' || v_active_col || ' AS IS_ACTIVE'
                ELSE
                 ', ''Y'' AS IS_ACTIVE'
              END || '  FROM T_RISK_FAD_GRAVITY
-              ORDER BY DISPLAY_ORDER, GRAVITY_ID';
+              ORDER BY GRAVITY_ID';
   
     OPEN o_cursor FOR v_sql;
   END P_GET_GRAVITY;
 
 END PKG_FAD_RISK;
+/
 

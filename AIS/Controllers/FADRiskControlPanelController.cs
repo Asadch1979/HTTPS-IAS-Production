@@ -268,8 +268,7 @@ namespace AIS.Controllers
             var db = CreateDbConnection();
             int id = annexureId ?? 0;
 
-            db.P_SAVE_ANNEXURE(ref id, code, name, isActive);
-            db.P_SAVE_SUBPROC_ANNEX(subProcessId, id, "Y");
+            db.SaveFadAnnexureMapping(ref id, subProcessId, code, name, isActive);
 
             return Json(new { success = true, annexureId = id });
             }

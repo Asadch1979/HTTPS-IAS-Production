@@ -1,0 +1,3367 @@
+{
+  "sha256": "72b6759adbe065c7bedb526c3a3f0b5725ab05012a51ce505fa063798b4fc8f7",
+  "sheets": {
+    "Final Rating": {
+      "C3": {
+        "value": "Audit Risk Rating - Branch"
+      },
+      "D3": {
+        "value": "Branch Nam - Code"
+      },
+      "F3": {
+        "value": "Head Sulemanki - 20283",
+        "formula": "'Rating Matrix'!D3"
+      },
+      "H3": {
+        "value": "Final Rating"
+      },
+      "I3": {
+        "value": "High",
+        "formula": "I51"
+      },
+      "D4": {
+        "value": "Previous Audit Rating"
+      },
+      "F4": {
+        "value": "High",
+        "formula": "'Rating Matrix'!D6"
+      },
+      "H4": {
+        "value": "Parameter"
+      },
+      "I4": {
+        "value": "Value"
+      },
+      "C5": {
+        "value": "Internal Audit Department"
+      },
+      "D5": {
+        "value": "Audit Review Period"
+      },
+      "F5": {
+        "value": "Feb 2025 to Jan 2026",
+        "formula": "'Rating Matrix'!D4"
+      },
+      "H5": {
+        "value": "Portfolio"
+      },
+      "I5": {
+        "value": "358.54",
+        "formula": "'Rating Matrix'!I4"
+      },
+      "C6": {
+        "value": "Field Audit Division"
+      },
+      "D6": {
+        "value": "Audit Visit Date"
+      },
+      "F6": {
+        "value": "46059",
+        "formula": "'Rating Matrix'!D5"
+      },
+      "H6": {
+        "value": "Branch Size"
+      },
+      "I6": {
+        "value": "Medium",
+        "formula": "'Rating Matrix'!I5"
+      },
+      "B9": {
+        "value": "Work Packages/ Procedure/ Process"
+      },
+      "D9": {
+        "value": "Weightage"
+      },
+      "E9": {
+        "value": "Weighted Average"
+      },
+      "F9": {
+        "value": "Risk Based Marks"
+      },
+      "G9": {
+        "value": "Weighted Average Marks"
+      },
+      "H9": {
+        "value": "Minimum Formula "
+      },
+      "I9": {
+        "value": "Process/ Composite Rating "
+      },
+      "B11": {
+        "value": "Business - Portfolio Management"
+      },
+      "C11": {
+        "value": "Lending and Credit Administration"
+      },
+      "C12": {
+        "value": "Pre Sanctioning i.e. Loan Case Documentation, Review, Authorization, Sanction etc."
+      },
+      "D12": {
+        "value": "6"
+      },
+      "E12": {
+        "value": "0.272727272727273",
+        "formula": "+D12/D17"
+      },
+      "F12": {
+        "value": "0",
+        "formula": "'Rating Matrix'!J11"
+      },
+      "G12": {
+        "value": "0",
+        "formula": "F12*E12"
+      },
+      "H12": {
+        "value": "0",
+        "formula": "MIN(D12,F12*E12)"
+      },
+      "I12": {
+        "value": "Low",
+        "formula": "IF(H12<(0.25*D12),\"Low\",IF(H12<=(0.5*D12),\"Medium\",\"High\"))"
+      },
+      "C13": {
+        "value": "Post Sanctioning i.e. Collateral/ Security Documentation, Mortgage, Hypothecation, Lien Marking and Repayment Schedule Delivery."
+      },
+      "D13": {
+        "value": "6"
+      },
+      "E13": {
+        "value": "0.272727272727273",
+        "formula": "+D13/D17"
+      },
+      "F13": {
+        "value": "27",
+        "formula": "'Rating Matrix'!J15"
+      },
+      "G13": {
+        "value": "7.36363636363636",
+        "formula": "F13*E13"
+      },
+      "H13": {
+        "value": "6",
+        "formula": null
+      },
+      "I13": {
+        "value": "High",
+        "formula": null
+      },
+      "C14": {
+        "value": "Utilization/ Monitoring/ Loan Adjustment Lending."
+      },
+      "D14": {
+        "value": "3"
+      },
+      "E14": {
+        "value": "0.136363636363636",
+        "formula": "+D14/D17"
+      },
+      "F14": {
+        "value": "0",
+        "formula": "'Rating Matrix'!J18"
+      },
+      "G14": {
+        "value": "0",
+        "formula": null
+      },
+      "H14": {
+        "value": "0",
+        "formula": null
+      },
+      "I14": {
+        "value": "Low",
+        "formula": null
+      },
+      "C15": {
+        "value": "MCO Receipts Issuance/ Documentation/ Reconciliation, Sales Staff Tour Program, Vehicle Management etc."
+      },
+      "D15": {
+        "value": "3"
+      },
+      "E15": {
+        "value": "0.136363636363636",
+        "formula": "+D15/D17"
+      },
+      "F15": {
+        "value": "0",
+        "formula": "'Rating Matrix'!J20"
+      },
+      "G15": {
+        "value": "0",
+        "formula": null
+      },
+      "H15": {
+        "value": "0",
+        "formula": null
+      },
+      "I15": {
+        "value": "Low",
+        "formula": null
+      },
+      "C16": {
+        "value": "Misuse of Credit Powers/Wrong Lending Approval/Over Finance/ Loan to Defaulters."
+      },
+      "D16": {
+        "value": "4"
+      },
+      "E16": {
+        "value": "0.181818181818182",
+        "formula": "+D16/D17"
+      },
+      "F16": {
+        "value": "0",
+        "formula": "'Rating Matrix'!J21"
+      },
+      "G16": {
+        "value": "0",
+        "formula": null
+      },
+      "H16": {
+        "value": "0",
+        "formula": null
+      },
+      "I16": {
+        "value": "Low",
+        "formula": null
+      },
+      "C17": {
+        "value": "Totals - Lending and Credit Administration"
+      },
+      "D17": {
+        "value": "22",
+        "formula": "SUM(D12:D16)"
+      },
+      "E17": {
+        "value": "1",
+        "formula": "SUM(E12:E16)"
+      },
+      "F17": {
+        "value": "27",
+        "formula": "SUM(F12:F16)"
+      },
+      "G17": {
+        "value": "7.36363636363636",
+        "formula": "SUM(G12:G16)"
+      },
+      "H17": {
+        "value": "6",
+        "formula": "SUM(H12:H16)"
+      },
+      "I17": {
+        "value": "Medium",
+        "formula": null
+      },
+      "C19": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C20": {
+        "value": "Redemption of Land in Alive Loan Cases, Defective and Missing Security/ Collaterals Documents."
+      },
+      "D20": {
+        "value": "6"
+      },
+      "E20": {
+        "value": "0.5",
+        "formula": "+D20/D22"
+      },
+      "F20": {
+        "value": "5",
+        "formula": "'Rating Matrix'!J26"
+      },
+      "G20": {
+        "value": "2.5",
+        "formula": "F20*E20"
+      },
+      "H20": {
+        "value": "2.5",
+        "formula": "MIN(D20,F20*E20)"
+      },
+      "I20": {
+        "value": "Medium",
+        "formula": "IF(H20<(0.25*D20),\"Low\",IF(H20<=(0.5*D20),\"Medium\",\"High\"))"
+      },
+      "C21": {
+        "value": "Time Barred Loan Cases & Loan Disbursed/ Processed on Unpossessed Land, Zero/ Artificial & Stuck up Recovery Cases, Prudent Recovery Practices, Demand, Legal & eCIB Notices. Normal Issues in NPL/ SAM Loans. Legal Case Management. Pending Installments."
+      },
+      "D21": {
+        "value": "6"
+      },
+      "E21": {
+        "value": "0.5",
+        "formula": "+D21/D22"
+      },
+      "F21": {
+        "value": "2",
+        "formula": "'Rating Matrix'!J27"
+      },
+      "G21": {
+        "value": "1",
+        "formula": "F21*E21"
+      },
+      "H21": {
+        "value": "1",
+        "formula": "MIN(D21,F21*E21)"
+      },
+      "I21": {
+        "value": "Low",
+        "formula": "IF(H21<(0.25*D21),\"Low\",IF(H21<=(0.5*D21),\"Medium\",\"High\"))"
+      },
+      "C22": {
+        "value": "Totals - Collection, Recovery & Default Management"
+      },
+      "D22": {
+        "value": "12",
+        "formula": "SUM(D20:D21)"
+      },
+      "E22": {
+        "value": "1",
+        "formula": "SUM(E20:E21)"
+      },
+      "F22": {
+        "value": "7",
+        "formula": "SUM(F20:F21)"
+      },
+      "G22": {
+        "value": "3.5",
+        "formula": "SUM(G20:G21)"
+      },
+      "H22": {
+        "value": "3.5",
+        "formula": "SUM(H20:H21)"
+      },
+      "I22": {
+        "value": "Medium",
+        "formula": "IF(H22<(0.25*D22),\"Low\",IF(H22<=(0.5*D22),\"Medium\",\"High\"))"
+      },
+      "B24": {
+        "value": "Business - Achievement"
+      },
+      "C24": {
+        "value": "Targets vs Achievements"
+      },
+      "C25": {
+        "value": "Impact of Non Performing Loans during Audit Review Period."
+      },
+      "D25": {
+        "value": "5"
+      },
+      "E25": {
+        "value": "0.25",
+        "formula": "+D25/D30"
+      },
+      "F25": {
+        "value": "74.5282207489697",
+        "formula": "'Rating Matrix'!J33"
+      },
+      "G25": {
+        "value": "18.6320551872424",
+        "formula": "F25*E25"
+      },
+      "H25": {
+        "value": "5",
+        "formula": "MIN(D25,F25*E25)"
+      },
+      "I25": {
+        "value": "High",
+        "formula": "IF(H25<(0.25*D25),\"Low\",IF(H25<=(0.5*D25),\"Medium\",\"High\"))"
+      },
+      "C26": {
+        "value": "Impact of SAM Loans during Audit Review Period."
+      },
+      "D26": {
+        "value": "5"
+      },
+      "E26": {
+        "value": "0.25",
+        "formula": "D26/D30"
+      },
+      "F26": {
+        "value": "26.2201279030629",
+        "formula": "'Rating Matrix'!J34"
+      },
+      "G26": {
+        "value": "6.55503197576573",
+        "formula": "F26*E26"
+      },
+      "H26": {
+        "value": "5",
+        "formula": "MIN(D26,F26*E26)"
+      },
+      "I26": {
+        "value": "High",
+        "formula": null
+      },
+      "C27": {
+        "value": "Deposit/ Liability Target Shortfall."
+      },
+      "D27": {
+        "value": "2"
+      },
+      "E27": {
+        "value": "0.1",
+        "formula": "D27/D30"
+      },
+      "F27": {
+        "value": "0.432900432900439",
+        "formula": "'Rating Matrix'!J37"
+      },
+      "G27": {
+        "value": "0.0432900432900439",
+        "formula": "F27*E27"
+      },
+      "H27": {
+        "value": "0.0432900432900439",
+        "formula": "MIN(D27,F27*E27)"
+      },
+      "I27": {
+        "value": "Low",
+        "formula": null
+      },
+      "C28": {
+        "value": "Disbursement Target Shortfall."
+      },
+      "D28": {
+        "value": "3"
+      },
+      "E28": {
+        "value": "0.15",
+        "formula": "D28/D30"
+      },
+      "F28": {
+        "value": "40.7371900826446",
+        "formula": "'Rating Matrix'!J38"
+      },
+      "G28": {
+        "value": "6.11057851239669",
+        "formula": null
+      },
+      "H28": {
+        "value": "3",
+        "formula": null
+      },
+      "I28": {
+        "value": "High",
+        "formula": null
+      },
+      "C29": {
+        "value": "Recovery Target Shortfall i.e. Zero Recovery/ Low Pace of Recovery etc."
+      },
+      "D29": {
+        "value": "5"
+      },
+      "E29": {
+        "value": "0.25",
+        "formula": "D29/D30"
+      },
+      "F29": {
+        "value": "55.2871971892517",
+        "formula": "'Rating Matrix'!J39"
+      },
+      "G29": {
+        "value": "13.8217992973129",
+        "formula": null
+      },
+      "H29": {
+        "value": "5",
+        "formula": null
+      },
+      "I29": {
+        "value": "High",
+        "formula": null
+      },
+      "C30": {
+        "value": "Totals - Achievements"
+      },
+      "D30": {
+        "value": "20",
+        "formula": "SUM(D25:D29)"
+      },
+      "E30": {
+        "value": "1",
+        "formula": "SUM(E25:E29)"
+      },
+      "F30": {
+        "value": "96.4572877047968",
+        "formula": "SUM(F27:F29)"
+      },
+      "G30": {
+        "value": "19.9756678529997",
+        "formula": "SUM(G27:G29)"
+      },
+      "H30": {
+        "value": "18.04329004329",
+        "formula": "SUM(H25:H29)"
+      },
+      "I30": {
+        "value": "High",
+        "formula": null
+      },
+      "B32": {
+        "value": "Totals Lending/ Recovery/ Achievements"
+      },
+      "D32": {
+        "value": "54",
+        "formula": "SUM(D30,D22,D17)"
+      },
+      "E32": {
+        "value": "-"
+      },
+      "F32": {
+        "value": "130.457287704797",
+        "formula": "SUM(F30,F22,F17)"
+      },
+      "G32": {
+        "value": "30.839304216636",
+        "formula": "SUM(G30,G22,G17)"
+      },
+      "H32": {
+        "value": "27.54329004329",
+        "formula": "SUM(H30,H22,H17)"
+      },
+      "I32": {
+        "value": "High",
+        "formula": "IF(H32<(0.25*D32),\"Low\",IF(H32<=(0.5*D32),\"Medium\",\"High\"))"
+      },
+      "B34": {
+        "value": "Operations - General Banking Operations & Branch Management "
+      },
+      "C34": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "C35": {
+        "value": "Security & Surveillance, Alarm, Vault & Locker Operation, ATM Machine and Security Stationary, Security Stationary Management, Record Keeping, Issuance, Balancing etc."
+      },
+      "D35": {
+        "value": "5"
+      },
+      "E35": {
+        "value": "0.138888888888889",
+        "formula": "D35/D46"
+      },
+      "F35": {
+        "value": "0",
+        "formula": "'Rating Matrix'!J42"
+      },
+      "G35": {
+        "value": "0",
+        "formula": "F35*E35"
+      },
+      "H35": {
+        "value": "0",
+        "formula": "MIN(D35,F35*E35)"
+      },
+      "I35": {
+        "value": "Low",
+        "formula": "IF(H35<(0.25*D35),\"Low\",IF(H35<=(0.5*D35),\"Medium\",\"High\"))"
+      },
+      "C36": {
+        "value": "Cash with Banker Limits, Insurance of Cash in Hand/ Teller/ MCO,  Cash Operations and Documentation Issues. "
+      },
+      "D36": {
+        "value": "5"
+      },
+      "E36": {
+        "value": "0.138888888888889",
+        "formula": "D36/D46"
+      },
+      "F36": {
+        "value": "156",
+        "formula": "'Rating Matrix'!J45"
+      },
+      "G36": {
+        "value": "21.6666666666667",
+        "formula": null
+      },
+      "H36": {
+        "value": "5",
+        "formula": "MIN(D36,F36*E36)"
+      },
+      "I36": {
+        "value": "High",
+        "formula": "IF(H36<(0.25*D36),\"Low\",IF(H36<=(0.5*D36),\"Medium\",\"High\"))"
+      },
+      "C37": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C38": {
+        "value": "Unclaimed Accounts, KYC/ CDD, PEP, Proscribe/ Designated Persons/ Entities. Statement of Account Delivery and Dormancy Notices, Biometric Verification of Customers, Customer Profile in CDMS, Account Opening/ Operations & Dormancy Violations, CDD & EDD Issues, Issues Related to Zakat Exemption, Deduction, Refund, Hajj Applications, TDR's/CDR's/Pay Order/Banker Cheque etc."
+      },
+      "D38": {
+        "value": "6"
+      },
+      "E38": {
+        "value": "0.166666666666667",
+        "formula": "D38/D46"
+      },
+      "F38": {
+        "value": "405",
+        "formula": "'Rating Matrix'!J47"
+      },
+      "G38": {
+        "value": "67.5",
+        "formula": "F38*E38"
+      },
+      "H38": {
+        "value": "6",
+        "formula": "MIN(D38,F38*E38)"
+      },
+      "I38": {
+        "value": "High",
+        "formula": "IF(H38<(0.25*D38),\"Low\",IF(H38<=(0.5*D38),\"Medium\",\"High\"))"
+      },
+      "C39": {
+        "value": "Cheque Book/ ATM/ Debit Cards"
+      },
+      "C40": {
+        "value": "Request, Delivery, Stop Payment and Shredding of Cheque Book/ ATM/ Debit Cards."
+      },
+      "D40": {
+        "value": "3"
+      },
+      "E40": {
+        "value": "0.0833333333333333",
+        "formula": "D40/D46"
+      },
+      "F40": {
+        "value": "3",
+        "formula": "'Rating Matrix'!J51"
+      },
+      "G40": {
+        "value": "0.25",
+        "formula": "F40*E40"
+      },
+      "H40": {
+        "value": "0.25",
+        "formula": "MIN(D40,F40*E40)"
+      },
+      "I40": {
+        "value": "Low",
+        "formula": "IF(H40<(0.25*D40),\"Low\",IF(H40<=(0.5*D40),\"Medium\",\"High\"))"
+      },
+      "C41": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C42": {
+        "value": "CTR/ STR Reporting Issues, Tax Deduction and Irregular Transaction Pattern in Staff Accounts, Payment Against Defective/ Stale etc. Cheques, Bank Charges/ Tax Deduction, Petrol/ Vehicle Repair Bills & inward/ Outward Clearing Issues, Prize Bond, Cash Receipt/ CC Voucher Acknowledgment, Payment of Expenses on Defective Bill/ Without Supporting, Budgetary Limit Breach. "
+      },
+      "D42": {
+        "value": "10"
+      },
+      "E42": {
+        "value": "0.277777777777778",
+        "formula": "D42/D46"
+      },
+      "F42": {
+        "value": "10",
+        "formula": "'Rating Matrix'!J53"
+      },
+      "G42": {
+        "value": "2.77777777777778",
+        "formula": "F42*E42"
+      },
+      "H42": {
+        "value": "2.77777777777778",
+        "formula": "MIN(D42,F42*E42)"
+      },
+      "I42": {
+        "value": "Medium",
+        "formula": "IF(H42<(0.25*D42),\"Low\",IF(H42<=(0.5*D42),\"Medium\",\"High\"))"
+      },
+      "C43": {
+        "value": "Branch General Controls and HR "
+      },
+      "C44": {
+        "value": "Markup and Other Charges, Tax Remission to Ho, Sundry/ Suspense Account Settlement, Service Quality, Bank Land Physical Possession, General and IT Controls, Bank Staff Attendance/ Details, Fixed Assets, Non Provision of record to Audit team etc."
+      },
+      "D44": {
+        "value": "7"
+      },
+      "E44": {
+        "value": "0.194444444444444",
+        "formula": "D44/D46"
+      },
+      "F44": {
+        "value": "187",
+        "formula": "'Rating Matrix'!J57"
+      },
+      "G44": {
+        "value": "36.3611111111111",
+        "formula": "F44*E44"
+      },
+      "H44": {
+        "value": "7",
+        "formula": "MIN(D44,F44*E44)"
+      },
+      "I44": {
+        "value": "High",
+        "formula": "IF(H44<(0.25*D44),\"Low\",IF(H44<=(0.5*D44),\"Medium\",\"High\"))"
+      },
+      "B46": {
+        "value": "Totals Operations"
+      },
+      "D46": {
+        "value": "36",
+        "formula": "SUM(D35:D44)"
+      },
+      "E46": {
+        "value": "1",
+        "formula": "SUM(E35:E44)"
+      },
+      "F46": {
+        "value": "761",
+        "formula": "SUM(F35:F44)"
+      },
+      "G46": {
+        "value": "128.555555555556",
+        "formula": "SUM(G35:G44)"
+      },
+      "H46": {
+        "value": "21.0277777777778",
+        "formula": "SUM(H35:H44)"
+      },
+      "I46": {
+        "value": "High",
+        "formula": "IF(H46<(0.25*D46),\"Low\",IF(H46<=(0.5*D46),\"Medium\",\"High\"))"
+      },
+      "B48": {
+        "value": "Fraud & Forgery, Embezzlement, Impersonation, Parallel Banking."
+      },
+      "D48": {
+        "value": "0",
+        "formula": "IF('Rating Matrix'!I62>=1,1,0)"
+      },
+      "B49": {
+        "value": "Branch Profitability"
+      },
+      "D49": {
+        "value": "10"
+      },
+      "E49": {
+        "value": "1"
+      },
+      "F49": {
+        "value": "5",
+        "formula": "'Rating Matrix'!J64"
+      },
+      "G49": {
+        "value": "5",
+        "formula": "+F49*E49"
+      },
+      "H49": {
+        "value": "5",
+        "formula": "MIN(D49,F49*E49)"
+      },
+      "I49": {
+        "value": "Medium",
+        "formula": "IF(H49<(0.25*D49),\"Low\",IF(H49<=(0.5*D49),\"Medium\",\"High\"))"
+      },
+      "B51": {
+        "value": "Final Audit Rating"
+      },
+      "D51": {
+        "value": "100",
+        "formula": "D49+D46+D32"
+      },
+      "E51": {
+        "value": "-"
+      },
+      "F51": {
+        "value": "896.457287704797",
+        "formula": "F49+F46+F32"
+      },
+      "G51": {
+        "value": "164.394859772192",
+        "formula": "G49+G46+G32"
+      },
+      "H51": {
+        "value": "53.5710678210678",
+        "formula": "H49+H46+H32"
+      },
+      "I51": {
+        "value": "High",
+        "formula": "IF(I6=\"Large\",IF(H51<20,IF(OR(D48>0),\"High\",\"Low\"),IF(H51<60,IF(OR(D48>0),\"High\",\"Medium\"),\"High\")),IF(I6=\"Medium\",IF(H51<15,IF(OR(D48>0),\"High\",\"Low\"),IF(H51<50,IF(OR(D48>0),\"High\",\"Medium\"),\"High\")),IF(I6=\"Small\",IF(H51<10,IF(OR(D48>0),\"High\",\"Low\"),IF(H51<40,IF(OR(D48>0),\"High\",\"Medium\"),\"High\")),\"Invalid Size\")))"
+      },
+      "B53": {
+        "value": "BRANCH SIZE & RATING CRITERIA"
+      },
+      "B54": {
+        "value": "Portfolio"
+      },
+      "C54": {
+        "value": "Branch Size"
+      },
+      "D54": {
+        "value": "Low Risk"
+      },
+      "E54": {
+        "value": "Medium Risk"
+      },
+      "F54": {
+        "value": "High Risk"
+      },
+      "B55": {
+        "value": "Up to 300Mn."
+      },
+      "C55": {
+        "value": "Small"
+      },
+      "D55": {
+        "value": "Up to 10"
+      },
+      "E55": {
+        "value": "11 to 40"
+      },
+      "F55": {
+        "value": ">40"
+      },
+      "B56": {
+        "value": "Rs. 301Mn to Rs.699Mn"
+      },
+      "C56": {
+        "value": "Medium"
+      },
+      "D56": {
+        "value": "Up to 15"
+      },
+      "E56": {
+        "value": "16-50"
+      },
+      "F56": {
+        "value": ">50"
+      },
+      "B57": {
+        "value": "700 Mn and Above"
+      },
+      "C57": {
+        "value": "Large"
+      },
+      "D57": {
+        "value": "Up to 20"
+      },
+      "E57": {
+        "value": "21-60"
+      },
+      "F57": {
+        "value": ">60"
+      },
+      "D58": {
+        "value": "A"
+      },
+      "E58": {
+        "value": "B"
+      },
+      "F58": {
+        "value": "C"
+      },
+      "B60": {
+        "value": "Risk Rating Performed By"
+      },
+      "D60": {
+        "value": "Risk Rating Reviewed  By"
+      },
+      "B61": {
+        "value": "Mr. Salman Fawad",
+        "formula": "'Rating Matrix'!B67"
+      },
+      "D61": {
+        "value": "Mr. Muhammad Awais",
+        "formula": "'Rating Matrix'!F67"
+      },
+      "B63": {
+        "value": "Date"
+      },
+      "D63": {
+        "value": "Date"
+      },
+      "B64": {
+        "value": "46070",
+        "formula": "'Rating Matrix'!B70"
+      },
+      "D64": {
+        "value": "46070",
+        "formula": "'Rating Matrix'!F70"
+      }
+    },
+    "Rating Matrix": {
+      "C1": {
+        "value": "#REF!",
+        "formula": "15%*'Final Rating'!#REF!"
+      },
+      "C2": {
+        "value": "Audit Risk Rating Matrix"
+      },
+      "C3": {
+        "value": "Branch Nam - Code"
+      },
+      "D3": {
+        "value": "Head Sulemanki - 20283"
+      },
+      "F3": {
+        "value": "Audit Zone"
+      },
+      "G3": {
+        "value": "Faisalabad"
+      },
+      "H3": {
+        "value": "Parameter"
+      },
+      "I3": {
+        "value": "Value"
+      },
+      "C4": {
+        "value": "Audit Review Period"
+      },
+      "D4": {
+        "value": "Feb 2025 to Jan 2026"
+      },
+      "F4": {
+        "value": "Region Name"
+      },
+      "G4": {
+        "value": "Okara"
+      },
+      "H4": {
+        "value": "Portfolio"
+      },
+      "I4": {
+        "value": "358.54"
+      },
+      "C5": {
+        "value": "Audit Visit Date"
+      },
+      "D5": {
+        "value": "46059"
+      },
+      "F5": {
+        "value": "Team Lead"
+      },
+      "G5": {
+        "value": "Salman Fawad"
+      },
+      "H5": {
+        "value": "Branch Size"
+      },
+      "I5": {
+        "value": "Medium"
+      },
+      "C6": {
+        "value": "Previous Audit Rating"
+      },
+      "D6": {
+        "value": "High"
+      },
+      "F6": {
+        "value": "Team Member"
+      },
+      "G6": {
+        "value": "Ali Haider"
+      },
+      "C7": {
+        "value": "#REF!",
+        "formula": "50%*'Final Rating'!#REF!"
+      },
+      "B8": {
+        "value": "Work Packages/ Procedure/ Process"
+      },
+      "H8": {
+        "value": "Gravity \n(Routine, Procedure, Serious)"
+      },
+      "I8": {
+        "value": "Number of Instances"
+      },
+      "J8": {
+        "value": "Total Marks"
+      },
+      "I9": {
+        "value": "Low"
+      },
+      "B10": {
+        "value": "Portfolio Management\n (Lending/ Credit Administration/ Recovery/ Collection & Default Management)"
+      },
+      "C10": {
+        "value": "Lending and Credit Administration"
+      },
+      "C11": {
+        "value": "Pre Sanctioning i.e. Already Mortgaged Land, eCIB missing, Wrong Feeding of MCL in System. (A-5, A-15,  BO7)"
+      },
+      "H11": {
+        "value": "5"
+      },
+      "I11": {
+        "value": "0"
+      },
+      "J11": {
+        "value": "0",
+        "formula": "((H11*I11)+(H12*I12)+(H13*I13)+(H14*I14))"
+      },
+      "C12": {
+        "value": "Pre Sanctioning i.e. Incomplete Loan Documentation, NDC missing, Old Record, Area Under Preemption etc. (D-5, I-5, I-6, CO14, CO20, BO6)"
+      },
+      "H12": {
+        "value": "3"
+      },
+      "I12": {
+        "value": "0"
+      },
+      "C13": {
+        "value": "Pre Sanctioning i.e. Passbook not Revalidated, Debt to Equity, Charge not Confirmed. (A-17, A-22, A-23,)"
+      },
+      "H13": {
+        "value": "3"
+      },
+      "I13": {
+        "value": "0"
+      },
+      "C14": {
+        "value": "Pre Sanctioning i.e. Photographs not obtained from borrower/depositor. (D-4)"
+      },
+      "H14": {
+        "value": "2"
+      },
+      "I14": {
+        "value": "0"
+      },
+      "C15": {
+        "value": "Post Sanctioning i.e. Collateral/ Security Documentation, Tractor Insurance and Repayment Schedule Delivery. (A-19, BO24, CO5)"
+      },
+      "H15": {
+        "value": "4"
+      },
+      "I15": {
+        "value": "0"
+      },
+      "J15": {
+        "value": "27",
+        "formula": "((H15*I15)+(H16*I16)+(H17*I17))"
+      },
+      "C16": {
+        "value": "Post Sanctioning i.e. Tractor Registration, Crop Insurance & Record Digitalization etc. . (A-21, I-12, GO4, GO12)"
+      },
+      "H16": {
+        "value": "3"
+      },
+      "I16": {
+        "value": "9"
+      },
+      "C17": {
+        "value": "Post Sanctioning i.e. Dispatch of Sanction Letter to Borrower. (CO10)"
+      },
+      "H17": {
+        "value": "1"
+      },
+      "I17": {
+        "value": "0"
+      },
+      "C18": {
+        "value": "New Loan Disbursed to Adjust Old Loan of Close Relative/  Loan Adjustment Through Illegal Redemption. (A-16)"
+      },
+      "H18": {
+        "value": "5"
+      },
+      "I18": {
+        "value": "0"
+      },
+      "J18": {
+        "value": "0",
+        "formula": "((H18*I18)+(H19*I19))"
+      },
+      "C19": {
+        "value": "Loan Declared Misutilized During Spot Verification/ Utilization not Checked by Branch. (A-13, A-18)"
+      },
+      "H19": {
+        "value": "3"
+      },
+      "I19": {
+        "value": "0"
+      },
+      "C20": {
+        "value": "Safe Files/ Vouchers/MCO Receipt Books Misplaced/ Found Missing (A-4)"
+      },
+      "H20": {
+        "value": "5"
+      },
+      "I20": {
+        "value": "0"
+      },
+      "J20": {
+        "value": "0",
+        "formula": "((H20*I20))"
+      },
+      "C21": {
+        "value": "Loan Granted/ Disbursed More Than Charged Created/ MCL/ Applied/ Approved Limit. (A-9, A-11, CO18)"
+      },
+      "H21": {
+        "value": "5"
+      },
+      "I21": {
+        "value": "0"
+      },
+      "J21": {
+        "value": "0",
+        "formula": "((H21*I21)+(H22*I22)+(H23*I23))"
+      },
+      "C22": {
+        "value": "Over Financing, Lending to Defaulters, Family Lending & Exceeding Financial Powers/ Limits. (A-8, A-10, A-12, A-20)"
+      },
+      "H22": {
+        "value": "3"
+      },
+      "I22": {
+        "value": "0"
+      },
+      "C23": {
+        "value": "Additional Area for Financing Included Without Evidence. Wrong Payment of Crop Insurance Premium. (I-7, I-13)"
+      },
+      "H23": {
+        "value": "3"
+      },
+      "I23": {
+        "value": "0"
+      },
+      "C25": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C26": {
+        "value": "Redemption of Land in Alive Loan Case, Defective and Missing Security/ Collaterals Documents. (A-2, A-3, A-6)"
+      },
+      "H26": {
+        "value": "5"
+      },
+      "I26": {
+        "value": "1"
+      },
+      "J26": {
+        "value": "5",
+        "formula": "+H26*I26"
+      },
+      "C27": {
+        "value": "Time Barred Loan Cases & Loan Disbursed/ Processed on Unpossessed Land . (CO7, CO17)"
+      },
+      "H27": {
+        "value": "4"
+      },
+      "I27": {
+        "value": "0"
+      },
+      "J27": {
+        "value": "2",
+        "formula": "((H27*I27)+(H28*I28)+(H29*I29)+(H30*I30))"
+      },
+      "C28": {
+        "value": "Notices before referring 90 days default to E-CIB not sent to customers (CO11) "
+      },
+      "H28": {
+        "value": "4"
+      },
+      "I28": {
+        "value": "0"
+      },
+      "C29": {
+        "value": "Zero/ Artificial & Stuck up Recovery Cases, Prudent Recovery Practices. (A-14, CO1, CO2, CO8, CO13, CO16, CO19)"
+      },
+      "H29": {
+        "value": "3"
+      },
+      "I29": {
+        "value": "0"
+      },
+      "C30": {
+        "value": "Demand, Legal & eCIB Notices. Normal Issues in NPL/ SAM Loans. Legal Case Management. Pending Installments. (CO12, CO15)"
+      },
+      "H30": {
+        "value": "2"
+      },
+      "I30": {
+        "value": "1"
+      },
+      "B32": {
+        "value": "Business Achievement"
+      },
+      "C32": {
+        "value": "Targets vs Achievements"
+      },
+      "G32": {
+        "value": "Opening Balance"
+      },
+      "H32": {
+        "value": "Closing Balance"
+      },
+      "I32": {
+        "value": "Achieved Marks"
+      },
+      "J32": {
+        "value": "Total Marks"
+      },
+      "C33": {
+        "value": "Impact of Non Performing Loans during Audit Review Period."
+      },
+      "G33": {
+        "value": "279.05"
+      },
+      "H33": {
+        "value": "487.021"
+      },
+      "I33": {
+        "value": "74.5282207489697",
+        "formula": "((H33-G33)/G33)*100"
+      },
+      "J33": {
+        "value": "74.5282207489697",
+        "formula": "IF(I33>=0,I33,0)"
+      },
+      "C34": {
+        "value": "Impact of SAM (Chargesd Off) Loans during Audit Review Period. "
+      },
+      "G34": {
+        "value": "118.84"
+      },
+      "H34": {
+        "value": "150"
+      },
+      "I34": {
+        "value": "26.2201279030629",
+        "formula": "((H34-G34)/G34)*100"
+      },
+      "J34": {
+        "value": "26.2201279030629",
+        "formula": "IF(I34>=0,I34,0)"
+      },
+      "G36": {
+        "value": "Target"
+      },
+      "H36": {
+        "value": "Achievement"
+      },
+      "I36": {
+        "value": "Achieved Marks"
+      },
+      "J36": {
+        "value": "Total Marks"
+      },
+      "C37": {
+        "value": "Deposit/ Liability Target Shortfall. "
+      },
+      "G37": {
+        "value": "23.1"
+      },
+      "H37": {
+        "value": "23"
+      },
+      "I37": {
+        "value": "-0.432900432900439",
+        "formula": "(H37-G37)/G37*100"
+      },
+      "J37": {
+        "value": "0.432900432900439",
+        "formula": "IF(I37>=0,0,(I37*-1))"
+      },
+      "C38": {
+        "value": "Disbursement Target Shortfall. "
+      },
+      "G38": {
+        "value": "605"
+      },
+      "H38": {
+        "value": "358.54"
+      },
+      "I38": {
+        "value": "-40.7371900826446",
+        "formula": "(H38-G38)/G38*100"
+      },
+      "J38": {
+        "value": "40.7371900826446",
+        "formula": "IF(I38>=0,0,(I38*-1))"
+      },
+      "C39": {
+        "value": "Recovery Target Shortfall i.e. Zero Recovery/ Low Pace of Recovery etc."
+      },
+      "G39": {
+        "value": "812.595"
+      },
+      "H39": {
+        "value": "363.334"
+      },
+      "I39": {
+        "value": "-55.2871971892517",
+        "formula": "(H39-G39)/G39*100"
+      },
+      "J39": {
+        "value": "55.2871971892517",
+        "formula": "IF(I39>=0,0,(I39*-1))"
+      },
+      "B41": {
+        "value": "General Banking Operations & Management (Security & Cash Operations, Account Opening, Cheque Book/ Debit Card Management, Receipt/ Payment Operations & General Controls)"
+      },
+      "C41": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "H41": {
+        "value": "Gravity \n(Routine, Procedure, Serious)"
+      },
+      "I41": {
+        "value": "Number of Observations"
+      },
+      "J41": {
+        "value": "Total Marks"
+      },
+      "C42": {
+        "value": "Instances related to CCTV monitoring and data backup. (BO36)"
+      },
+      "H42": {
+        "value": "4"
+      },
+      "I42": {
+        "value": "0"
+      },
+      "J42": {
+        "value": "0",
+        "formula": "((H42*I42)+(H43*I43))+(H44*I44)"
+      },
+      "C43": {
+        "value": "Security & Surveillance, Alarm, Vault & Locker Operation, ATM Machine and Security Stationary. (BO25,BO32, GO7)"
+      },
+      "H43": {
+        "value": "3"
+      },
+      "I43": {
+        "value": "0"
+      },
+      "C44": {
+        "value": "Security Stationary Management, Record Keeping, Issuance, Balancing etc. (GO2)"
+      },
+      "H44": {
+        "value": "2"
+      },
+      "I44": {
+        "value": "0"
+      },
+      "C45": {
+        "value": "Cash with Banker Limits, Insurance of Cash in Hand/ Teller/ MCO,  Cash Operations and Documentation Issues. (D-8, D-9, BO30, B026)"
+      },
+      "H45": {
+        "value": "3"
+      },
+      "I45": {
+        "value": "52"
+      },
+      "J45": {
+        "value": "156",
+        "formula": "+H45*I45"
+      },
+      "C46": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C47": {
+        "value": "Unclaimed Accounts, KYC/ CDD/ODD, PEP, Proscribe/ Designated Persons/ Entities. Statement of Account Delivery and Dormancy Notices & Dormancy Violations,. (D-1, BO22, BO27, BO28, BO29,  BO4, BO11)"
+      },
+      "H47": {
+        "value": "4"
+      },
+      "I47": {
+        "value": "0"
+      },
+      "J47": {
+        "value": "405",
+        "formula": "((H47*I47)+(H48*I48))+(H49*I49)"
+      },
+      "C48": {
+        "value": "Biometric Verification of Customers, Customer Profile in CDMS, Account Opening/ Operations, Issues Related to Zakat Exemption, Deduction, Refund, Hajj Scheme incomplete documentaion, application etc.   (BO1, BO3, BO5,  BO31, CO6, BO17, BO37, BO38)"
+      },
+      "H48": {
+        "value": "3"
+      },
+      "I48": {
+        "value": "135"
+      },
+      "C49": {
+        "value": "Instances of non-adherence to bank instructions were observed in Term Deposit Receipt (TDR) operations, including issuance, encashment (pre/post-maturity), rollover, profit payment, and WHT deduction/exemption. Similar lapses were noted in the issuance, payment, and cancellation of Bankers Cheques/CDRs, indicating non-compliance with relevant SOPs. (BO35)"
+      },
+      "H49": {
+        "value": "3"
+      },
+      "I49": {
+        "value": "0"
+      },
+      "C50": {
+        "value": "Cheque Book/ ATM/ Debit Cards"
+      },
+      "C51": {
+        "value": "Request, Delivery, Stop Payment and Shredding of Cheque Book/ ATM/ Debit Cards. (BO14, BO18)"
+      },
+      "H51": {
+        "value": "3"
+      },
+      "I51": {
+        "value": "1"
+      },
+      "J51": {
+        "value": "3",
+        "formula": "+H51*I51"
+      },
+      "C52": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C53": {
+        "value": "CTR/ STR Reporting Issues, Tax Deduction and Irregular Transaction Pattern in Staff Accounts. (D-11, BO16, BO21) "
+      },
+      "H53": {
+        "value": "5"
+      },
+      "I53": {
+        "value": "0"
+      },
+      "J53": {
+        "value": "10",
+        "formula": "((H53*I53)+(H54*I54)+(H55*I55))"
+      },
+      "C54": {
+        "value": "Payment Against Defective/ Stale etc. Cheques, Bank Charges/ Tax Deduction, Petrol/ Vehicle Repair Bills & inward/ Outward Clearing Issues, Prize Bond, Payment of Expenses on Defective Bill/ Without Supporting. (D-6, BO10, BO20, BO33, GO11, I-2)"
+      },
+      "H54": {
+        "value": "3"
+      },
+      "I54": {
+        "value": "0"
+      },
+      "C55": {
+        "value": "Cash Receipt/ CC Voucher Acknowledgment,  Budgetary Limit Breach. (D-7, BO2)"
+      },
+      "H55": {
+        "value": "2"
+      },
+      "I55": {
+        "value": "5"
+      },
+      "C56": {
+        "value": "Branch General Controls "
+      },
+      "C57": {
+        "value": "Excess/ Less Deduction of Markup, Legal and Other Charges, Banker Account not Reconciled, Pending Suspense/ Sundry Account Entries, Excess/ Less Payment/ Recovery from Staff, Password Sharing,Causing Loss to Bank, Non Provision of record to Audit team during Audit execution.  (A-7, D-2, D-3, D-10, I-1, I-3, BO23, GO13, GO16)"
+      },
+      "H57": {
+        "value": "4"
+      },
+      "I57": {
+        "value": "9"
+      },
+      "J57": {
+        "value": "187",
+        "formula": "((H57*I57)+(H58*I58)+(H59*I59)+(H60*I60))"
+      },
+      "C58": {
+        "value": "Unauthorized Use of Bank Vehicle & Incomplete Vehicle Log Book/ Tracker Report, General/ IT Related Issues,(I-10, GO9, GO15)"
+      },
+      "H58": {
+        "value": "3"
+      },
+      "I58": {
+        "value": "7"
+      },
+      "C59": {
+        "value": "Fair Treatment of Consumers, Key Facts Statement, GL Entries, Withholding Tax Remission to Ho, Inspection Reports, Dead Stock/ Fixed Assets, Vehicle Insurance and Unclaimed Deposit Related Issues. (BO8, , BO12, BO19, BO34, CO3, GO3, GO5, GO6)"
+      },
+      "H59": {
+        "value": "3"
+      },
+      "I59": {
+        "value": "36"
+      },
+      "C60": {
+        "value": "Physical Possession of Bank Land not Taken by Branch, Prescribed Registers Missing, Old Record Preservation/ Destruction,  Revenue Staff Signatures, Bank Staff Attendance/ Details. (BO13, CO9, GO1, ,GO8,  GO10, GO14, I-8, I-9, I-11 )"
+      },
+      "H60": {
+        "value": "2"
+      },
+      "I60": {
+        "value": "11"
+      },
+      "B62": {
+        "value": "Fraud & Forgery, Embezzlement, Impersonation, Parallel Banking etc. (A-1, I-4)"
+      },
+      "H62": {
+        "value": "5"
+      },
+      "I62": {
+        "value": "0"
+      },
+      "J62": {
+        "value": "0",
+        "formula": "+H62*I62"
+      },
+      "I63": {
+        "value": "Profit/ (Loss) Amount (Rs.)"
+      },
+      "J63": {
+        "value": "Total Marks"
+      },
+      "B64": {
+        "value": "Branch Profitability/ Operating Self Sufficiency"
+      },
+      "I64": {
+        "value": "-22.69"
+      },
+      "J64": {
+        "value": "5",
+        "formula": "IF(I64<-50000,\"10\",IF(I64<=0,\"5\",IF(I64<=500000,\"3\",\"0\")))"
+      },
+      "B66": {
+        "value": "Risk Rating Performed By"
+      },
+      "F66": {
+        "value": "Risk Rating Reviewed  By"
+      },
+      "B67": {
+        "value": "Mr. Salman Fawad"
+      },
+      "F67": {
+        "value": "Mr. Muhammad Awais"
+      },
+      "B69": {
+        "value": "Date"
+      },
+      "F69": {
+        "value": "Date"
+      },
+      "B70": {
+        "value": "46070"
+      },
+      "F70": {
+        "value": "46070"
+      },
+      "B73": {
+        "value": "Risk "
+      },
+      "C73": {
+        "value": "Gravity/ Risk Weight"
+      },
+      "E73": {
+        "value": "Area"
+      },
+      "F73": {
+        "value": "Marks Criteria"
+      },
+      "B74": {
+        "value": "Routine"
+      },
+      "C74": {
+        "value": "1"
+      },
+      "B75": {
+        "value": "Procedural"
+      },
+      "C75": {
+        "value": "2"
+      },
+      "E75": {
+        "value": "Deposit/ Liability Target "
+      },
+      "F75": {
+        "value": "If target is achieved i.e. variance > or = zero than zero marks are assigned. In case of shortfall i.e. variance < zero, marks equal to percent value are assigned. "
+      },
+      "B76": {
+        "value": "Significant Procedural"
+      },
+      "C76": {
+        "value": "3"
+      },
+      "E76": {
+        "value": "Disbursement Target "
+      },
+      "B77": {
+        "value": "Gross"
+      },
+      "C77": {
+        "value": "4"
+      },
+      "E77": {
+        "value": "Recovery Target Shortfall "
+      },
+      "B78": {
+        "value": "Grave"
+      },
+      "C78": {
+        "value": "5"
+      },
+      "E78": {
+        "value": "Branch Profitability/ Operating Self Sufficiency"
+      },
+      "F78": {
+        "value": "If profit is <-50K then 10 marks, if <= zero then 5 marks, if <=500K then  marks 3 marks, if>500K then Zero Marks."
+      }
+    },
+    "Annexure": {
+      "B1": {
+        "value": "Package/ Process"
+      },
+      "C1": {
+        "value": "Annex"
+      },
+      "D1": {
+        "value": "Violation of Bank's Standing Instructions"
+      },
+      "E1": {
+        "value": "Risk"
+      },
+      "F1": {
+        "value": "Risk Rating Procedures/ Process"
+      },
+      "G1": {
+        "value": "Process #"
+      },
+      "B2": {
+        "value": "Lending and Credit Administration"
+      },
+      "C2": {
+        "value": "A-5"
+      },
+      "D2": {
+        "value": "Instances where loans were granted against the security of land which was already mortgaged with other branches of ZTBL and any other Banks."
+      },
+      "E2": {
+        "value": "HIGH"
+      },
+      "F2": {
+        "value": "Pre Sanctioning i.e. Already Mortgaged Land, eCIB missing, Wrong Feeding of MCL in System. (A-5, A-15,  BO7)"
+      },
+      "G2": {
+        "value": "1"
+      },
+      "C3": {
+        "value": "A-15"
+      },
+      "D3": {
+        "value": "Instances where e-CIB report from SBP was not obtained in the loan case."
+      },
+      "E3": {
+        "value": "HIGH"
+      },
+      "G3": {
+        "value": "1"
+      },
+      "C4": {
+        "value": "BO7"
+      },
+      "D4": {
+        "value": "Wrong Feeding of MCL/land details in CBAS"
+      },
+      "E4": {
+        "value": "HIGH"
+      },
+      "G4": {
+        "value": "1"
+      },
+      "C5": {
+        "value": "D-5"
+      },
+      "D5": {
+        "value": "Instances where Signature of borrowers put on loan/account documents differ from signatures available on CNIC/Agri. Pass Book/Cheques and RTI/LTI of borrowers not obtained on loan/account documents"
+      },
+      "E5": {
+        "value": "MEDIUM"
+      },
+      "F5": {
+        "value": "Pre Sanctioning i.e. Incomplete Loan Documentation, NDC missing, Old Record, Area Under Preemption, Passbook not Revalidated, Debt to Equity, Charge not Confirmed. etc. (D-5, I-5, I-6, CO14, CO20, BO6, A-17, A-22, A-23)"
+      },
+      "G5": {
+        "value": "1"
+      },
+      "C6": {
+        "value": "I-5"
+      },
+      "D6": {
+        "value": "Instances where loan was granted against incomplete documentation."
+      },
+      "E6": {
+        "value": "MEDIUM"
+      },
+      "G6": {
+        "value": "1"
+      },
+      "C7": {
+        "value": "I-6"
+      },
+      "D7": {
+        "value": "Instances where NDCs were not arranged from other ZTBL branches concerned before sanctioning loans "
+      },
+      "E7": {
+        "value": "MEDIUM"
+      },
+      "G7": {
+        "value": "1"
+      },
+      "C8": {
+        "value": "CO14"
+      },
+      "D8": {
+        "value": "Acceptance of old record in lieu of computerized record"
+      },
+      "E8": {
+        "value": "MEDIUM"
+      },
+      "G8": {
+        "value": "1"
+      },
+      "C9": {
+        "value": "CO20"
+      },
+      "D9": {
+        "value": "security area in pre-emption period/ under litigation observed"
+      },
+      "E9": {
+        "value": "MEDIUM"
+      },
+      "G9": {
+        "value": "1"
+      },
+      "C10": {
+        "value": "BO6"
+      },
+      "D10": {
+        "value": "Wrong Feeding of Borrower Profile / Missing Data  in CBAS"
+      },
+      "E10": {
+        "value": "MEDIUM"
+      },
+      "G10": {
+        "value": "1"
+      },
+      "C11": {
+        "value": "A-17"
+      },
+      "D11": {
+        "value": "Instances where loans were granted without revalidation of Passbook."
+      },
+      "E11": {
+        "value": "MEDIUM"
+      },
+      "F11": {
+        "value": "Instances where loans were granted without revalidation of Passbook. INSTANCES WHERE LOANS DISBURSED WITHOUT MAINTAING DEBT EQUITY RATIO AS PER SCHEMES/INSTRUCTIONS. Instances where charge created in favor of Bank was not confirmed by the Bank staff (A-17, A-22, A23)"
+      },
+      "G11": {
+        "value": "1"
+      },
+      "C12": {
+        "value": "A-22"
+      },
+      "D12": {
+        "value": "INSTANCES WHERE LOANS DISBURSED WITHOUT MAINTAING DEBT EQUITY RATIO AS PER SCHEMES/INSTRUCTIONS."
+      },
+      "E12": {
+        "value": "MEDIUM"
+      },
+      "G12": {
+        "value": "1"
+      },
+      "C13": {
+        "value": "A-23"
+      },
+      "D13": {
+        "value": "Instances where charge created in favor of Bank was not confirmed by the Bank staff "
+      },
+      "E13": {
+        "value": "MEDIUM"
+      },
+      "G13": {
+        "value": "1"
+      },
+      "C14": {
+        "value": "D-4"
+      },
+      "D14": {
+        "value": "Instances where copies of  Photographs were not obtained from the borrower/ depositor"
+      },
+      "E14": {
+        "value": "LOW"
+      },
+      "F14": {
+        "value": "Pre Sanctioning i.e. Photographs not obtained from borrower/depositor. (D-4)"
+      },
+      "G14": {
+        "value": "1"
+      },
+      "C15": {
+        "value": "A-19"
+      },
+      "D15": {
+        "value": "Payment & Amortization/Recovery Schedule was not provided  to the borrowers."
+      },
+      "E15": {
+        "value": "HIGH"
+      },
+      "F15": {
+        "value": "Post Sanctioning i.e. Collateral/ Security Documentation, Tractor Insurance and Repayment Schedule Delivery. (A-19, BO24, CO5)"
+      },
+      "G15": {
+        "value": "2"
+      },
+      "C16": {
+        "value": "BO24"
+      },
+      "D16": {
+        "value": "The Bank did not dispatch half yearly statement showing outstanding position of principal and markup to the customers in violation of Para 3(viii) of BPRD Circular No. 12 of 2007 read with BPRD Circular Letter No. 33 of 2008."
+      },
+      "E16": {
+        "value": "HIGH"
+      },
+      "G16": {
+        "value": "2"
+      },
+      "C17": {
+        "value": "CO5"
+      },
+      "D17": {
+        "value": "Instance where the tractor financed by the bank are not insured as per instruction"
+      },
+      "E17": {
+        "value": "HIGH"
+      },
+      "G17": {
+        "value": "2"
+      },
+      "C18": {
+        "value": "A-21"
+      },
+      "D18": {
+        "value": "Instances where Registration of tractors in joint name of Bank was not arranged"
+      },
+      "E18": {
+        "value": "MEDIUM"
+      },
+      "F18": {
+        "value": "Post Sanctioning i.e. Tractor Registration, Crop Insurance & Record Digitalization etc. . (A-21, I-12, GO4, GO12)"
+      },
+      "G18": {
+        "value": "2"
+      },
+      "C19": {
+        "value": "I-12"
+      },
+      "D19": {
+        "value": "Instances where insurance of crops not arranged by the branch "
+      },
+      "E19": {
+        "value": "MEDIUM"
+      },
+      "G19": {
+        "value": "2"
+      },
+      "C20": {
+        "value": "GO4"
+      },
+      "D20": {
+        "value": "Issues in (Scanning of loan DOCS) – Digitalization of banks record"
+      },
+      "E20": {
+        "value": "MEDIUM"
+      },
+      "G20": {
+        "value": "2"
+      },
+      "C21": {
+        "value": "GO12"
+      },
+      "D21": {
+        "value": "Non shifting of loan safe files from branch to CAD hub"
+      },
+      "E21": {
+        "value": "MEDIUM"
+      },
+      "G21": {
+        "value": "2"
+      },
+      "C22": {
+        "value": "CO10"
+      },
+      "D22": {
+        "value": "Sanction letter not sent through registered post"
+      },
+      "E22": {
+        "value": "LOW"
+      },
+      "F22": {
+        "value": "Post Sanctioning i.e. Dispatch of Sanction Letter to Borrower. (CO10)"
+      },
+      "G22": {
+        "value": "2"
+      },
+      "C23": {
+        "value": "A-16"
+      },
+      "D23": {
+        "value": "Instances where adjustment lending was made "
+      },
+      "E23": {
+        "value": "HIGH"
+      },
+      "F23": {
+        "value": "New Loan Disbursed to Adjust Old Loan of Close Relative/  Loan Adjustment Through Illegal Redemption. (A-16)"
+      },
+      "G23": {
+        "value": "3"
+      },
+      "C24": {
+        "value": "A-13"
+      },
+      "D24": {
+        "value": "Instances where Loans were declared mis utilized during spot verification by Audit Teams "
+      },
+      "E24": {
+        "value": "MEDIUM"
+      },
+      "F24": {
+        "value": "Loan Declared Misutilized During Spot Verification/ Utilization not Checked by Branch. (A-13, A-18)"
+      },
+      "G24": {
+        "value": "3"
+      },
+      "C25": {
+        "value": "A-18"
+      },
+      "D25": {
+        "value": "Instances where Utilization of Loans was not checked by Concerned Officials as per instructions."
+      },
+      "E25": {
+        "value": "MEDIUM"
+      },
+      "G25": {
+        "value": "3"
+      },
+      "C26": {
+        "value": "A-4"
+      },
+      "D26": {
+        "value": "Instances where safe files/vouchers/MCO receipt books were found missing"
+      },
+      "E26": {
+        "value": "HIGH"
+      },
+      "F26": {
+        "value": "Safe Files/ Vouchers/MCO Receipt Books Misplaced/ Found Missing (A-4)"
+      },
+      "G26": {
+        "value": "4"
+      },
+      "C27": {
+        "value": "A-9"
+      },
+      "D27": {
+        "value": "Instances where loans were granted in excess of charge created."
+      },
+      "E27": {
+        "value": "HIGH"
+      },
+      "F27": {
+        "value": "Loan Granted/ Disbursed More Than Charged Created/ MCL/ Applied/ Approved Limit. (A-9, A-11, CO18)"
+      },
+      "G27": {
+        "value": "5"
+      },
+      "C28": {
+        "value": "A-11"
+      },
+      "D28": {
+        "value": "Instances where loans were granted in excess of maximum credit limit."
+      },
+      "E28": {
+        "value": "HIGH"
+      },
+      "G28": {
+        "value": "5"
+      },
+      "C29": {
+        "value": "CO18"
+      },
+      "D29": {
+        "value": "Loan disbursed more than sanctioned/Applied amount as per loan case file"
+      },
+      "E29": {
+        "value": "HIGH"
+      },
+      "G29": {
+        "value": "5"
+      },
+      "C30": {
+        "value": "A-8"
+      },
+      "D30": {
+        "value": "Instances where over financing was made"
+      },
+      "E30": {
+        "value": "MEDIUM"
+      },
+      "F30": {
+        "value": "Over Financing, Lending to Defaulters, Family Lending & Exceeding Financial Powers/ Limits. (A-8, A-10, A-12, A-20)"
+      },
+      "G30": {
+        "value": "5"
+      },
+      "C31": {
+        "value": "A-10"
+      },
+      "D31": {
+        "value": "Instances where loan was granted to defaulter."
+      },
+      "E31": {
+        "value": "MEDIUM"
+      },
+      "G31": {
+        "value": "5"
+      },
+      "C32": {
+        "value": "A-12"
+      },
+      "D32": {
+        "value": "Instances where family lending was observed"
+      },
+      "E32": {
+        "value": "MEDIUM"
+      },
+      "G32": {
+        "value": "5"
+      },
+      "C33": {
+        "value": "A-20"
+      },
+      "D33": {
+        "value": "Instances where loan/financial sanctioning powers were exceeded "
+      },
+      "E33": {
+        "value": "MEDIUM"
+      },
+      "G33": {
+        "value": "5"
+      },
+      "C34": {
+        "value": "I-7"
+      },
+      "D34": {
+        "value": "Instances where Additional Development Area was included for financing of loan without documentary evidence"
+      },
+      "E34": {
+        "value": "LOW"
+      },
+      "F34": {
+        "value": "Additional Area for Financing Included Without Evidence. Wrong Payment of Crop Insurance Premium. (I-7, I-13)"
+      },
+      "G34": {
+        "value": "5"
+      },
+      "C35": {
+        "value": "I-13"
+      },
+      "D35": {
+        "value": "Instances where Bank’s standing instruction regarding payment of premium on crop loan insurance scheme were violated."
+      },
+      "E35": {
+        "value": "LOW"
+      },
+      "G35": {
+        "value": "5"
+      },
+      "B36": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C36": {
+        "value": "A-2"
+      },
+      "D36": {
+        "value": "Instances where security area of land redeemed in alive loan cases."
+      },
+      "E36": {
+        "value": "HIGH"
+      },
+      "F36": {
+        "value": "Redemption of Land in Alive Loan Case, Defective and Missing Security/ Collaterals Documents. (A-2, A-3, A-6)"
+      },
+      "G36": {
+        "value": "6"
+      },
+      "B37": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C37": {
+        "value": "A-3"
+      },
+      "D37": {
+        "value": "Instances where Title Documents/Agri Pass Book in loan cases were missing in records."
+      },
+      "E37": {
+        "value": "HIGH"
+      },
+      "G37": {
+        "value": "6"
+      },
+      "B38": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C38": {
+        "value": "A-6"
+      },
+      "D38": {
+        "value": "Instances where defective security was identified/Security area not intact with ZTBL/Security area reduced."
+      },
+      "E38": {
+        "value": "HIGH"
+      },
+      "G38": {
+        "value": "6"
+      },
+      "B39": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C39": {
+        "value": "CO7"
+      },
+      "D39": {
+        "value": "Time barred loan cases"
+      },
+      "E39": {
+        "value": "HIGH"
+      },
+      "F39": {
+        "value": "Time Barred Loan Cases & Loan Disbursed/ Processed on Unpossessed Land . (CO7, CO17)"
+      },
+      "G39": {
+        "value": "7"
+      },
+      "B40": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C40": {
+        "value": "CO17"
+      },
+      "D40": {
+        "value": "Loan on unpossessed land"
+      },
+      "E40": {
+        "value": "HIGH"
+      },
+      "G40": {
+        "value": "7"
+      },
+      "C41": {
+        "value": "CO11"
+      },
+      "D41": {
+        "value": "Notices before referring 90 days default to E-CIB not sent to customers"
+      },
+      "E41": {
+        "value": "HIGH"
+      },
+      "F41": {
+        "value": " Notices before referring 90 days default to E-CIB not sent to customers (CO11)"
+      },
+      "G41": {
+        "value": "7"
+      },
+      "B42": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C42": {
+        "value": "A-14"
+      },
+      "D42": {
+        "value": "Instances where loan cases with zero recovery since inception were detected"
+      },
+      "E42": {
+        "value": "MEDIUM"
+      },
+      "F42": {
+        "value": "Zero/ Artificial & Stuck up Recovery Cases, Prudent Recovery Practices, Embezzlement/ Misuse of Recovery, Demand, Normal Issues in NPL/ SAM Loans. (A-14, CO13, CO16, CO19, CO1, CO2, CO8)"
+      },
+      "G42": {
+        "value": "7"
+      },
+      "B43": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C43": {
+        "value": "CO13"
+      },
+      "D43": {
+        "value": "Prudent recovery operation/procedure."
+      },
+      "E43": {
+        "value": "MEDIUM"
+      },
+      "G43": {
+        "value": "7"
+      },
+      "B44": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C44": {
+        "value": "CO16"
+      },
+      "D44": {
+        "value": "Artificially decreasing zero recovery accounts by making small, token payments in cases where there is no realistic chance of recovery."
+      },
+      "E44": {
+        "value": "MEDIUM"
+      },
+      "G44": {
+        "value": "7"
+      },
+      "B45": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C45": {
+        "value": "CO19"
+      },
+      "D45": {
+        "value": "Instance where loans were Stuck up for recovery since long"
+      },
+      "E45": {
+        "value": "MEDIUM"
+      },
+      "G45": {
+        "value": "7"
+      },
+      "B46": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C46": {
+        "value": "CO1"
+      },
+      "D46": {
+        "value": "Demand & Legal notices to SAM defaulters by bank’s legal advisor"
+      },
+      "E46": {
+        "value": "MEDIUM"
+      },
+      "G46": {
+        "value": "7"
+      },
+      "B47": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C47": {
+        "value": "CO2"
+      },
+      "D47": {
+        "value": "Normal issue identified in Checking of classified advances/NPLS"
+      },
+      "E47": {
+        "value": "MEDIUM"
+      },
+      "G47": {
+        "value": "7"
+      },
+      "B48": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C48": {
+        "value": "CO8"
+      },
+      "D48": {
+        "value": "Normal issue identified in verification of revenue record of SAM portfolio cases"
+      },
+      "E48": {
+        "value": "MEDIUM"
+      },
+      "G48": {
+        "value": "7"
+      },
+      "B49": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C49": {
+        "value": "CO12"
+      },
+      "D49": {
+        "value": "Legal Cases Management  /  Litigation Cases not entered in LCMS"
+      },
+      "E49": {
+        "value": "LOW"
+      },
+      "F49": {
+        "value": "Legal Case Management. Pending Installments (CO12, CO15)"
+      },
+      "G49": {
+        "value": "7"
+      },
+      "B50": {
+        "value": "Collection, Recovery & Default Management"
+      },
+      "C50": {
+        "value": "CO15"
+      },
+      "D50": {
+        "value": "Non recovery of 2-3 instalments in development loans"
+      },
+      "E50": {
+        "value": "LOW"
+      },
+      "G50": {
+        "value": "7"
+      },
+      "C51": {
+        "value": "BO36"
+      },
+      "D51": {
+        "value": "Instances related to CCTV monitoring and data backup."
+      },
+      "E51": {
+        "value": "HIGH"
+      },
+      "F51": {
+        "value": "Instances related to CCTV monitoring and data backup. (BO36)"
+      },
+      "G51": {
+        "value": "8"
+      },
+      "C52": {
+        "value": "BO25"
+      },
+      "D52": {
+        "value": "Instances where the bank's instructions regarding renting out lockers and deducting locker rent on the applicable due date were not followed. (Where Lockers Facility Available)"
+      },
+      "E52": {
+        "value": "MEDIUM"
+      },
+      "F52": {
+        "value": "CCTV monitoring and data backup, ATM Operations, Security & surveillance management, balancing of printed stationary.  (BO25,BO32, GO7)"
+      },
+      "G52": {
+        "value": "8"
+      },
+      "C53": {
+        "value": "BO32"
+      },
+      "D53": {
+        "value": "Issue in ATM Operations"
+      },
+      "E53": {
+        "value": "MEDIUM"
+      },
+      "G53": {
+        "value": "8"
+      },
+      "C54": {
+        "value": "GO7"
+      },
+      "D54": {
+        "value": "Security & surveillance management of the branch."
+      },
+      "E54": {
+        "value": "MEDIUM"
+      },
+      "G54": {
+        "value": "8"
+      },
+      "B55": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "C55": {
+        "value": "D-8"
+      },
+      "D55": {
+        "value": "Instances where Cash with Banker/safe kept excess than the prescribed Limit and insurance not arranged on same date."
+      },
+      "E55": {
+        "value": "MEDIUM"
+      },
+      "F55": {
+        "value": "Cash with Banker Limits, Insurance of Cash in Hand/ Teller/ MCO,  Cash Operations and Documentation Issues. (D-8, D-9, BO30, BO-26)"
+      },
+      "G55": {
+        "value": "8"
+      },
+      "B56": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "C56": {
+        "value": "D-9"
+      },
+      "D56": {
+        "value": "Instances where MCO/Teller carried un-insured cash in excess of prescribed limits"
+      },
+      "E56": {
+        "value": "MEDIUM"
+      },
+      "G56": {
+        "value": "8"
+      },
+      "C57": {
+        "value": "BO30"
+      },
+      "D57": {
+        "value": "Issue in Cash Operations"
+      },
+      "E57": {
+        "value": "MEDIUM"
+      },
+      "G57": {
+        "value": "8"
+      },
+      "B58": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "C58": {
+        "value": "BO26"
+      },
+      "D58": {
+        "value": "Instances where the allocated balance limits for banker accounts were not adhered to. Funds were parked in current accounts instead of savings accounts and excess balances were not transferred to Head Office as required."
+      },
+      "E58": {
+        "value": "MEDIUM"
+      },
+      "G58": {
+        "value": "8"
+      },
+      "B59": {
+        "value": "Branch & Vault Security and Cash Operations"
+      },
+      "C59": {
+        "value": "GO2"
+      },
+      "D59": {
+        "value": "Non balancing of printed stationary"
+      },
+      "E59": {
+        "value": "LOW"
+      },
+      "F59": {
+        "value": "Security Stationary Management, Record Keeping, Issuance, Balancing etc. (GO2)"
+      },
+      "G59": {
+        "value": "8"
+      },
+      "B60": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C60": {
+        "value": "D-1"
+      },
+      "D60": {
+        "value": "Instances where un-claimed deposit for more than 10 years were not transferred to Head Office for onward surrender to SBP"
+      },
+      "E60": {
+        "value": "HIGH"
+      },
+      "F60": {
+        "value": "Unclaimed Accounts, KYC/ CDD/ODD PEP, Proscribe/ Designated Persons/ Entities. Statement of Account Delivery and Dormancy Notices,  Dormancy Violations. (D-1, BO22, BO27, BO28, BO29, BO4, BO11)"
+      },
+      "G60": {
+        "value": "9"
+      },
+      "B61": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C61": {
+        "value": "BO22"
+      },
+      "D61": {
+        "value": "issues related to AML/CFT/Banking to PEP/blocked/proscribed persons/entities"
+      },
+      "E61": {
+        "value": "HIGH"
+      },
+      "G61": {
+        "value": "9"
+      },
+      "B62": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C62": {
+        "value": "BO27"
+      },
+      "D62": {
+        "value": "CNICs expired during the course of customer's relationship and copy of renewed CNIC was not obtained in violation of Note 4 of Annexure-1 of R-1 of revised AML/CFT regulations for Banks/DFIS read with BPRD Circular Letter No. 06 of 2014."
+      },
+      "E62": {
+        "value": "HIGH"
+      },
+      "G62": {
+        "value": "9"
+      },
+      "B63": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C63": {
+        "value": "BO28"
+      },
+      "D63": {
+        "value": "The Bank did not dispatch Statement of Accounts to account holders or dispatched it with delay in violation of BPRD Circular No. 02 of 2010."
+      },
+      "E63": {
+        "value": "HIGH"
+      },
+      "G63": {
+        "value": "9"
+      },
+      "B64": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C64": {
+        "value": "BO29"
+      },
+      "D64": {
+        "value": "Bank did not send intimation to customers prior to its making dormancy in system."
+      },
+      "E64": {
+        "value": "HIGH"
+      },
+      "G64": {
+        "value": "9"
+      },
+      "C65": {
+        "value": "BO4"
+      },
+      "D65": {
+        "value": "Violation related to dormant A/c"
+      },
+      "E65": {
+        "value": "HIGH"
+      },
+      "G65": {
+        "value": "9"
+      },
+      "C66": {
+        "value": "BO11"
+      },
+      "D66": {
+        "value": "Non execution of on going due diligence and enhance due diligence of the customer"
+      },
+      "E66": {
+        "value": "HIGH"
+      },
+      "G66": {
+        "value": "9"
+      },
+      "B67": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C67": {
+        "value": "BO1"
+      },
+      "D67": {
+        "value": "Instances where customers are still not verified through BMVS"
+      },
+      "E67": {
+        "value": "MEDIUM"
+      },
+      "F67": {
+        "value": "Biometric Verification of Customers, Customer Profile in CDMS, Account Opening/ Operations, Issues Related to Zakat Exemption, Deduction, Refund, Hajj Scheme incomplete documentaion, application etc (BO1, BO3, BO5, BO31, CO6, BO17, BO37, BO38)"
+      },
+      "G67": {
+        "value": "9"
+      },
+      "B68": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C68": {
+        "value": "BO3"
+      },
+      "D68": {
+        "value": "Deposit operations -  incomplete customer profile / depositor name on CDMS / where customer profiles with null values are available in CMDS"
+      },
+      "E68": {
+        "value": "MEDIUM"
+      },
+      "G68": {
+        "value": "9"
+      },
+      "B69": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C69": {
+        "value": "BO5"
+      },
+      "D69": {
+        "value": "Violation  in account opening form"
+      },
+      "E69": {
+        "value": "MEDIUM"
+      },
+      "G69": {
+        "value": "9"
+      },
+      "B70": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C70": {
+        "value": "BO31"
+      },
+      "D70": {
+        "value": "Issue in Account Operations"
+      },
+      "E70": {
+        "value": "MEDIUM"
+      },
+      "G70": {
+        "value": "9"
+      },
+      "B71": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C71": {
+        "value": "CO6"
+      },
+      "D71": {
+        "value": "Information of borrower/customer mismatch with CNIC & Loan/Account documents"
+      },
+      "E71": {
+        "value": "MEDIUM"
+      },
+      "G71": {
+        "value": "9"
+      },
+      "C72": {
+        "value": "BO17"
+      },
+      "D72": {
+        "value": "Issue related to deduction of zakat "
+      },
+      "E72": {
+        "value": "MEDIUM"
+      },
+      "G72": {
+        "value": "9"
+      },
+      "C73": {
+        "value": "BO37"
+      },
+      "D73": {
+        "value": "Instances of non-compliance with MORA and SBP instructions on Hajj Schemes were noted, including incomplete application formalities, delayed data entry on the MORA website, missing or incomplete documents (passports, medical certificates, photos, vaccination certificates, affidavits), missed deadlines, and failure to collect applicable dues as per guidelines."
+      },
+      "E73": {
+        "value": "MEDIUM"
+      },
+      "G73": {
+        "value": "9"
+      },
+      "B74": {
+        "value": "Account Opening, Maintenance & Closing "
+      },
+      "C74": {
+        "value": "BO38"
+      },
+      "D74": {
+        "value": "Instances where the bank's instructions related to Home Remittance transactions were not followed, particularly in areas such as conducting due diligence of customers and obtaining the minimum required documents (e.g., copy of CNIC, name screening, biometric verification), adherence to the turnaround time (TAT) for processing transactions, ID management, and the handling of customer queries and complaints."
+      },
+      "E74": {
+        "value": "MEDIUM"
+      },
+      "G74": {
+        "value": "9"
+      },
+      "C75": {
+        "value": "BO35"
+      },
+      "D75": {
+        "value": "Instances of non-adherence to bank instructions were observed in Term Deposit Receipt (TDR) operations, including issuance, encashment (pre/post-maturity), rollover, profit payment, and WHT deduction/exemption. Similar lapses were noted in the issuance, payment, and cancellation of Bankers Cheques/CDRs, indicating non-compliance with relevant SOPs. "
+      },
+      "E75": {
+        "value": "MEDIUM"
+      },
+      "F75": {
+        "value": "Term Deposit Receipt (TDR) operations, including issuance, encashment (pre/post-maturity), rollover, profit payment (BO35)"
+      },
+      "G75": {
+        "value": "9"
+      },
+      "B76": {
+        "value": "Cheque Book/ ATM/ Debit Cards"
+      },
+      "C76": {
+        "value": "BO14"
+      },
+      "D76": {
+        "value": "Issue related to personalized cheque books (PCB)"
+      },
+      "E76": {
+        "value": "MEDIUM"
+      },
+      "F76": {
+        "value": "Request, Delivery, Stop Payment and Shredding of Cheque Book/ ATM/ Debit Cards. (BO14, BO18)"
+      },
+      "G76": {
+        "value": "10"
+      },
+      "B77": {
+        "value": "Cheque Book/ ATM/ Debit Cards"
+      },
+      "C77": {
+        "value": "BO18"
+      },
+      "D77": {
+        "value": "Issue related to Stop payment"
+      },
+      "E77": {
+        "value": "MEDIUM"
+      },
+      "G77": {
+        "value": "10"
+      },
+      "B78": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C78": {
+        "value": "D-11"
+      },
+      "D78": {
+        "value": "Instances where Branch failed to deduct withholding Tax/Sales tax/Income Tax as per prescribed limit"
+      },
+      "E78": {
+        "value": "HIGH"
+      },
+      "F78": {
+        "value": "CTR/ STR Reporting Issues, Tax Deduction and Irregular Transaction Pattern in Staff Accounts. (D-11, BO16, BO21) "
+      },
+      "G78": {
+        "value": "11"
+      },
+      "B79": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C79": {
+        "value": "BO16"
+      },
+      "D79": {
+        "value": "Non Reporting of STRs/CTRs "
+      },
+      "E79": {
+        "value": "HIGH"
+      },
+      "G79": {
+        "value": "11"
+      },
+      "B80": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C80": {
+        "value": "BO21"
+      },
+      "D80": {
+        "value": "Irregular transaction in deposit A/c of employee not matching with income pattern/without source of fund."
+      },
+      "E80": {
+        "value": "HIGH"
+      },
+      "G80": {
+        "value": "11"
+      },
+      "B81": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C81": {
+        "value": "D-6"
+      },
+      "D81": {
+        "value": "Instances where payment on the basis of defective/stale or post dated cheques/unsigned cheques/vouchers/banker cheque was made"
+      },
+      "E81": {
+        "value": "MEDIUM"
+      },
+      "F81": {
+        "value": "Payment Against Defective/ Stale etc. Cheques, Bank Charges/ Tax Deduction, Petrol/ Vehicle Repair Bills & inward/ Outward Clearing Issues, Prize Bond, Payment of Expenses on Defective Bill/ Without Supporting. (D-6, BO10, BO20, BO33, GO11, I-2)"
+      },
+      "G81": {
+        "value": "11"
+      },
+      "B82": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C82": {
+        "value": "BO20"
+      },
+      "D82": {
+        "value": "Withholding tax/Other charges deducted by the banker"
+      },
+      "E82": {
+        "value": "MEDIUM"
+      },
+      "G82": {
+        "value": "11"
+      },
+      "B83": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C83": {
+        "value": "BO33"
+      },
+      "D83": {
+        "value": "Issue in Clearing."
+      },
+      "E83": {
+        "value": "MEDIUM"
+      },
+      "G83": {
+        "value": "11"
+      },
+      "B84": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C84": {
+        "value": "GO11"
+      },
+      "D84": {
+        "value": "Issue in payment of petrol & repair bills of banks official vehicles."
+      },
+      "E84": {
+        "value": "MEDIUM"
+      },
+      "G84": {
+        "value": "11"
+      },
+      "B85": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C85": {
+        "value": "BO10"
+      },
+      "D85": {
+        "value": "Irregularities related to Prize bonds"
+      },
+      "E85": {
+        "value": "MEDIUM"
+      },
+      "G85": {
+        "value": "11"
+      },
+      "C86": {
+        "value": "I-2"
+      },
+      "D86": {
+        "value": "Instances where Payment of different expenses made against defective bills/without supporting documents"
+      },
+      "E86": {
+        "value": "MEDIUM"
+      },
+      "G86": {
+        "value": "11"
+      },
+      "B87": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C87": {
+        "value": "D-7"
+      },
+      "D87": {
+        "value": "Instances where Cash receipts ( Debit/Credit Cash Voucher) were not got acknowledged by the Depositors/payees"
+      },
+      "E87": {
+        "value": "LOW"
+      },
+      "F87": {
+        "value": "Cash Receipt/ CC Voucher Acknowledgment,  Budgetary Limit Breach. (D-7, BO2)"
+      },
+      "G87": {
+        "value": "11"
+      },
+      "B88": {
+        "value": "Payment/ Receipt Operations"
+      },
+      "C88": {
+        "value": "BO2"
+      },
+      "D88": {
+        "value": "INSTANCES WHERE EXPENSES MADE EXCESS AGAINST RELEASED BUDGET OR EXPENSE MADE WITHOUT RELEASE OF BUDGET"
+      },
+      "E88": {
+        "value": "LOW"
+      },
+      "G88": {
+        "value": "11"
+      },
+      "B89": {
+        "value": "Branch General Controls"
+      },
+      "C89": {
+        "value": "A-7"
+      },
+      "D89": {
+        "value": "Instances where Revenue Charges/Mark up/Legal Charges/L.A Fee/E-CIB and Postal Charges on loans either less/excess charged or not obtained."
+      },
+      "E89": {
+        "value": "HIGH"
+      },
+      "F89": {
+        "value": "Excess/ Less Deduction of Markup, Legal and Other Charges, Banker Account not Reconciled, Pending Suspense/ Sundry Account Entries, Excess/ Less Payment/ Recovery from Staff, Password Sharing, Causing Financial Loss to Bank, Non Provision of record to Audit team during Audit execution. (A-7, D-2, D-3, D-10, I-1, I-3, BO23, GO13, GO-16)"
+      },
+      "G89": {
+        "value": "12"
+      },
+      "B90": {
+        "value": "Branch General Controls"
+      },
+      "C90": {
+        "value": "D-2"
+      },
+      "D90": {
+        "value": "Instances where Banker Accounts were not reconciled"
+      },
+      "E90": {
+        "value": "HIGH"
+      },
+      "G90": {
+        "value": "12"
+      },
+      "B91": {
+        "value": "Branch General Controls"
+      },
+      "C91": {
+        "value": "D-3"
+      },
+      "D91": {
+        "value": "Instances where entries were lying pending for adjustment in Sundry Deposit/Suspense Account"
+      },
+      "E91": {
+        "value": "HIGH"
+      },
+      "G91": {
+        "value": "12"
+      },
+      "C92": {
+        "value": "D-10"
+      },
+      "D92": {
+        "value": "Instances where deviation from Bank’s rules were committed and causing Financial loss to the Bank"
+      },
+      "E92": {
+        "value": "HIGH"
+      },
+      "G92": {
+        "value": "12"
+      },
+      "B93": {
+        "value": "Branch General Controls"
+      },
+      "C93": {
+        "value": "I-1"
+      },
+      "D93": {
+        "value": "Instances where excess/Irregular amount were paid to the employees in different head of expenses and not recovered up to completion of audit"
+      },
+      "E93": {
+        "value": "HIGH"
+      },
+      "G93": {
+        "value": "12"
+      },
+      "B94": {
+        "value": "Branch General Controls"
+      },
+      "C94": {
+        "value": "I-3"
+      },
+      "D94": {
+        "value": "Instances where non balancing of accounts of branches were detected "
+      },
+      "E94": {
+        "value": "HIGH"
+      },
+      "G94": {
+        "value": "12"
+      },
+      "B95": {
+        "value": "Branch General Controls"
+      },
+      "C95": {
+        "value": "BO23 "
+      },
+      "D95": {
+        "value": "Instances where bank charges less/excess charged or not obtained as per schedule of charges."
+      },
+      "E95": {
+        "value": "HIGH"
+      },
+      "G95": {
+        "value": "12"
+      },
+      "C96": {
+        "value": "GO13"
+      },
+      "D96": {
+        "value": "Password sharing was observed"
+      },
+      "E96": {
+        "value": "HIGH"
+      },
+      "G96": {
+        "value": "12"
+      },
+      "B97": {
+        "value": "Branch General Controls"
+      },
+      "C97": {
+        "value": "GO16"
+      },
+      "D97": {
+        "value": "Scope Limitation/ Non Provision of record to Audit team during Audit execution."
+      },
+      "E97": {
+        "value": "HIGH"
+      },
+      "G97": {
+        "value": "12"
+      },
+      "B98": {
+        "value": "Branch General Controls"
+      },
+      "C98": {
+        "value": "I-10"
+      },
+      "D98": {
+        "value": "Instances where Bank vehicles were used without approval of tour programme "
+      },
+      "E98": {
+        "value": "MEDIUM"
+      },
+      "F98": {
+        "value": "Unauthorized Use of Bank Vehicle & Incomplete Vehicle Log Book/ Tracker Report, General/ IT Related Issues. (I-10, GO9, GO15)"
+      },
+      "G98": {
+        "value": "12"
+      },
+      "C99": {
+        "value": "GO9"
+      },
+      "D99": {
+        "value": "General IT control & Branch automation."
+      },
+      "E99": {
+        "value": "MEDIUM"
+      },
+      "G99": {
+        "value": "12"
+      },
+      "B100": {
+        "value": "Branch General Controls"
+      },
+      "C100": {
+        "value": "GO15"
+      },
+      "D100": {
+        "value": "Instances where official vehicle used against incomplete log book/tracker report"
+      },
+      "E100": {
+        "value": "MEDIUM"
+      },
+      "G100": {
+        "value": "12"
+      },
+      "B101": {
+        "value": "Branch General Controls"
+      },
+      "C101": {
+        "value": "BO8"
+      },
+      "D101": {
+        "value": "Fair treatment of consumers (FTC) - Key facts statement for products/ schemes to be signed of by customers at the time of disbursement is missing"
+      },
+      "E101": {
+        "value": "MEDIUM"
+      },
+      "F101": {
+        "value": "Fair Treatment of Consumers, Key Facts Statement, GL Entries, Withholding Tax Remission to Ho, Inspection Reports, Dead Stock/ Fixed Assets, Vehicle Insurance and Unclaimed Deposit Related Issues. (BO8, , BO12, BO19, BO34, CO3, GO3, GO5, GO6)"
+      },
+      "G101": {
+        "value": "12"
+      },
+      "B102": {
+        "value": "Branch General Controls"
+      },
+      "C102": {
+        "value": "BO12"
+      },
+      "D102": {
+        "value": "Booking Under Wrong /Irrelevant GL Head"
+      },
+      "E102": {
+        "value": "MEDIUM"
+      },
+      "G102": {
+        "value": "12"
+      },
+      "B103": {
+        "value": "Branch General Controls"
+      },
+      "C103": {
+        "value": "BO19"
+      },
+      "D103": {
+        "value": "Withholding tax not timely remitted to HO"
+      },
+      "E103": {
+        "value": "MEDIUM"
+      },
+      "G103": {
+        "value": "12"
+      },
+      "B104": {
+        "value": "Branch General Controls"
+      },
+      "C104": {
+        "value": "BO34"
+      },
+      "D104": {
+        "value": "INSTANCES WHERE UNCLAIMED DEPOSIT PARKED IN GL 3686 AND NOT RECONCILED TILL AUDIT DATE."
+      },
+      "E104": {
+        "value": "MEDIUM"
+      },
+      "G104": {
+        "value": "12"
+      },
+      "C105": {
+        "value": "CO3"
+      },
+      "D105": {
+        "value": "Issues in Post dated cheques for recovery"
+      },
+      "E105": {
+        "value": "MEDIUM"
+      },
+      "G105": {
+        "value": "12"
+      },
+      "C106": {
+        "value": "GO3"
+      },
+      "D106": {
+        "value": "Quarterly inspection report missing"
+      },
+      "E106": {
+        "value": "MEDIUM"
+      },
+      "G106": {
+        "value": "12"
+      },
+      "B107": {
+        "value": "Branch General Controls"
+      },
+      "C107": {
+        "value": "GO5"
+      },
+      "D107": {
+        "value": "Physical verification of Dead stock/ fixed assets"
+      },
+      "E107": {
+        "value": "MEDIUM"
+      },
+      "G107": {
+        "value": "12"
+      },
+      "C108": {
+        "value": "GO6"
+      },
+      "D108": {
+        "value": "3rd party insurance of official vehicles not arranged"
+      },
+      "E108": {
+        "value": "MEDIUM"
+      },
+      "G108": {
+        "value": "12"
+      },
+      "B109": {
+        "value": "Branch General Controls"
+      },
+      "C109": {
+        "value": "BO13"
+      },
+      "D109": {
+        "value": "Non updating of salary account in CPMS At head office."
+      },
+      "E109": {
+        "value": "LOW"
+      },
+      "F109": {
+        "value": "Physical Possession of Bank Land not Taken by Branch, Prescribed Registers Missing, Old Record Preservation/ Destruction,  Revenue Staff Signatures, Bank Staff Attendance/ Details. (BO13, CO9, GO1, ,GO8,  GO10, GO14, I-8, I-9, I-11)"
+      },
+      "G109": {
+        "value": "12"
+      },
+      "C110": {
+        "value": "CO9"
+      },
+      "D110": {
+        "value": "Non maintenance of signature of revenue staff"
+      },
+      "E110": {
+        "value": "LOW"
+      },
+      "G110": {
+        "value": "12"
+      },
+      "C111": {
+        "value": "GO1"
+      },
+      "D111": {
+        "value": "General irregularities/Weak areas/Audit observation/internal control lapse"
+      },
+      "E111": {
+        "value": "LOW"
+      },
+      "G111": {
+        "value": "12"
+      },
+      "C112": {
+        "value": "GO8"
+      },
+      "D112": {
+        "value": "Checking of personnel record of employees (ZTBL & KSSL)"
+      },
+      "E112": {
+        "value": "LOW"
+      },
+      "G112": {
+        "value": "12"
+      },
+      "C113": {
+        "value": "GO10"
+      },
+      "D113": {
+        "value": "Building lease agreement expired."
+      },
+      "E113": {
+        "value": "LOW"
+      },
+      "G113": {
+        "value": "12"
+      },
+      "C114": {
+        "value": "GO14"
+      },
+      "D114": {
+        "value": "ISSUES IN ATTENDACE OF EMPLOYEES WITH FACIAL ATTENDACE DEVICE DATA"
+      },
+      "E114": {
+        "value": "LOW"
+      },
+      "G114": {
+        "value": "12"
+      },
+      "C115": {
+        "value": "I-8"
+      },
+      "D115": {
+        "value": "Instances where physical possession of landed properties disposed off through auction and purchases by Bank not taken by branches"
+      },
+      "E115": {
+        "value": "LOW"
+      },
+      "G115": {
+        "value": "12"
+      },
+      "B116": {
+        "value": "Branch General Controls"
+      },
+      "C116": {
+        "value": "I-9"
+      },
+      "D116": {
+        "value": "Instances where Prescribed Registers were not maintained properly "
+      },
+      "E116": {
+        "value": "LOW"
+      },
+      "G116": {
+        "value": "12"
+      },
+      "B117": {
+        "value": "Branch General Controls"
+      },
+      "C117": {
+        "value": "I-11"
+      },
+      "D117": {
+        "value": "Instances where Bank’s Instructions regarding preservation and destruction of old record were not followed "
+      },
+      "E117": {
+        "value": "LOW"
+      },
+      "G117": {
+        "value": "12"
+      },
+      "B118": {
+        "value": "Fraud & Forgery, Embezzlement, Impersonation etc."
+      },
+      "C118": {
+        "value": "A-1"
+      },
+      "D118": {
+        "value": "Instances where embezzlement of funds/Impersonation/Fraud & Forgery was observed."
+      },
+      "E118": {
+        "value": "HIGH"
+      },
+      "F118": {
+        "value": "Fraud & Forgery, Embezzlement, Impersonation, Parallel Banking etc. (A-1, I-4)"
+      },
+      "G118": {
+        "value": "13"
+      },
+      "B119": {
+        "value": "Fraud & Forgery, Embezzlement, Impersonation, Parallel Banking."
+      },
+      "C119": {
+        "value": "I-4"
+      },
+      "D119": {
+        "value": "Instances where Parallel Banking was observed."
+      },
+      "E119": {
+        "value": "HIGH"
+      },
+      "G119": {
+        "value": "13"
+      },
+      "B120": {
+        "value": "Business - Achievement"
+      },
+      "C120": {
+        "value": "BO9"
+      },
+      "D120": {
+        "value": "Operational activities (Target vs Achievement/ Deposit / Financial viability)."
+      },
+      "E120": {
+        "value": "MEDIUM"
+      },
+      "F120": {
+        "value": "Deposit/ Liability Target Shortfall."
+      },
+      "G120": {
+        "value": "14"
+      },
+      "B121": {
+        "value": "Business - Achievement"
+      },
+      "C121": {
+        "value": "BO15"
+      },
+      "D121": {
+        "value": "instance where Zero Disbursement was observed during audit period."
+      },
+      "E121": {
+        "value": "MEDIUM"
+      },
+      "F121": {
+        "value": "Disbursement Target Shortfall."
+      },
+      "G121": {
+        "value": "14"
+      },
+      "B122": {
+        "value": "Business - Achievement"
+      },
+      "C122": {
+        "value": "CO4"
+      },
+      "D122": {
+        "value": "SAM loan recovery performance analysis."
+      },
+      "E122": {
+        "value": "MEDIUM"
+      },
+      "F122": {
+        "value": "Impact of SAM Loans during Audit Review Period."
+      },
+      "G122": {
+        "value": "14"
+      }
+    }
+  }
+}
