@@ -11,6 +11,12 @@ signatures={
  'P_TRANSITION':ctx+',p_eng NUMBER,p_id NUMBER,p_revision NUMBER,p_action VARCHAR2,p_remarks VARCHAR2',
 }
 body=(folder/'assessment-body.sql.inc').read_text(encoding='utf-8')
+# Refuse to overwrite the deployed-source artifact if the template loses gates.
+for safeguard in ['s.user_context_id=p_context','p_operation IS NULL OR p_operation NOT IN',
+ 'a.entity_id<>v_entity',"v_status NOT BETWEEN 10 AND 13",
+ "IF p_action IN ('SUBMIT','APPROVE') THEN require_complete(p_id)",
+ 'validate_evidence(a.eng_id,office','expected<>127','a.rating IS NULL']:
+ if safeguard not in body: raise ValueError('Missing assessment safeguard: '+safeguard)
 for name,sig in signatures.items(): body=body.replace('@'+name+'@',f'PROCEDURE {name}({sig})')
 body=body.replace('@CTX@',ctx).replace('@ARGS@',args)
 text='-- SOURCE ONLY. Oracle 19c+. No commits: caller owns the transaction.\nCREATE OR REPLACE PACKAGE PKG_FAD_RISK_ASSESS AS\n'

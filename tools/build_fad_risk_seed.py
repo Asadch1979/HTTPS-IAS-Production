@@ -45,3 +45,21 @@ END;
 /''')
 (out.parent/'11_immutability.sql').write_text('\n'.join(locks)+'\n',encoding='utf-8')
 print('Generated 121 Annexures and immutable snapshot guards.')
+checks=['-- Generated exact workbook contract for calculator V1.',
+ 'CREATE OR REPLACE PROCEDURE P_CHECK_FAD_RISK_V1(v NUMBER) AUTHID DEFINER IS n NUMBER; BEGIN']
+for table,count in [('PROCESS',20),('ANNEX',121),('SUBPROCESS',sum(len(p['matrix_rows']) for p in cfg['processes']))]:
+ checks += [f"SELECT COUNT(*) INTO n FROM T_FAD_RISK_{table} WHERE version_id=v;",
+ f"IF n<>{count} THEN RAISE_APPLICATION_ERROR(-20040,'Incomplete {table} configuration.'); END IF;"]
+for p in cfg['processes']:
+ checks += [f"SELECT COUNT(*) INTO n FROM T_FAD_RISK_PROCESS WHERE version_id=v AND process_code={q(p['id'])} AND main_kpi={q(p['main_kpi'])} AND sub_kpi={q(p['sub_kpi'])} AND weight={p['weight']} AND denominator={p['normalization_total']};",
+ "IF n<>1 THEN RAISE_APPLICATION_ERROR(-20040,'Incorrect process distribution.'); END IF;"]
+ for r in p['matrix_rows']:
+  criterion='movement' if r in (33,34) else 'shortfall' if r in (37,38,39) else 'profit' if r==64 else 'fraud_override' if r==62 else 'instances'
+  gravity=matrix[f'H{r}']['value'] if criterion in ('instances','fraud_override') else None
+  checks += [f"SELECT COUNT(*) INTO n FROM T_FAD_RISK_SUBPROCESS WHERE version_id=v AND sub_code='RM{r}' AND process_code={q(p['id'])} AND criterion={q(criterion)} AND gravity " + ('IS NULL;' if gravity is None else '='+gravity+';'),
+   "IF n<>1 THEN RAISE_APPLICATION_ERROR(-20040,'Incorrect sub-process mapping.'); END IF;"]
+for a in cfg['annexures']:
+ checks += [f"SELECT COUNT(*) INTO n FROM T_FAD_RISK_ANNEX WHERE version_id=v AND code={q(a['code'])} AND sub_code={q(a['sub_process_id'])} AND risk_level={q(a['risk_level'])} AND description={q(a['description'])};",
+ "IF n<>1 THEN RAISE_APPLICATION_ERROR(-20040,'Incorrect Annexure mapping.'); END IF;"]
+checks += ['END;','/']
+(out.parent/'24_exact_configuration.sql').write_text('\n'.join(checks)+'\n',encoding='utf-8')

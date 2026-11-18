@@ -1,5 +1,19 @@
 # FAD Risk Register implementation review
 
+## Follow-up review of 21e89f0
+
+Restored the session's selected user_context_id binding and explicit operation allowlist lost when generation overwrote e604ec18. All package corrections now live in assessment-body.sql.inc; regenerate with build_fad_risk_package.py. The generator refuses to overwrite the artifact when critical safeguard expressions are absent. Source regression tests and byte-for-byte regeneration tests protect these checks, but do not prove Oracle runtime authorization.
+
+SAVE and SUBMIT lock the engagement before the assessment, recheck audit-office ownership and auditee entity, and enforce statuses 10–13. Both SUBMIT and APPROVE require exactly 127 correctly mapped detail entries, valid stored financial/count inputs and evidence, 20 correctly mapped/capped results, a matching total and a valid stored rating. Rolled-back saves restore the original output ID.
+
+Financial evidence may now use `WP:<evidence_link_id>` with no observation ID. This identifies the existing IAS T_WP_EVIDENCE_LINK source, joined through T_WP_HEADER to the authorized engagement and auditee entity. Optional V2 tables are accessed with bound dynamic SQL; missing sources fail rather than bypass validation. Plain numeric evidence IDs still require their matching observation ID. Arbitrary URLs/paths and unknown source prefixes are rejected. Evidence ownership is rechecked at submission/approval. No evidence download or upload endpoint is introduced.
+
+Install 24_exact_configuration.sql before 25_publication.sql. Publication checks exact V1 process identities, parent hierarchy, individual weights/denominators, sub-process criteria/gravity and all 121 Annexure mappings/descriptions. Different scoring configurations require a reviewed validator/calculator version; matching totals alone is insufficient.
+
+Publication now requires SESSION_USER membership in T_FAD_RISK_PUBLISH_ADMIN, empty by default. DBA deployment must use a dedicated database principal distinct from the application account, provision only that principal, and grant it only the required procedure execution. Do not grant application DML on the allowlist or configuration tables, EXECUTE on publication, or broad ANY privileges. Schema owners/DBAs inherently control their own objects. Actual installed grants and separation of database accounts remain UNVERIFIED; the source cannot establish that production administration is restricted.
+
+Local validation: 11 Python tests pass, including reconciliation, deterministic generation and source-level unauthorized-context, closed-engagement, incomplete-assessment, evidence-ownership and invalid-publication guards. Oracle compilation and behavioral denial/transaction/concurrency tests remain required in staging. No production migrations were run; PageKeyPermissionGuard, IAS permission assignments and unrelated workflows were untouched.
+
 Status: Phase 1 corrections. **Not deployment ready.** Master controller/DBConnection and JavaScript repairs are implemented. Schema, seed, immutability, assessment/workflow package, publication procedure and Oracle tests exist as uninstalled SQL drafts. Assessment HTTP/DBConnection integration, screen and permission registration remain outstanding. No production migrations were executed.
 
 ## Correction verification (2026-11-18)

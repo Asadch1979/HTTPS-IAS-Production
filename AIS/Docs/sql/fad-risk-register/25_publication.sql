@@ -1,8 +1,15 @@
 -- Administrative deployment operation only. Do not grant to application roles.
+-- Explicit dedicated deployment principals only. Empty by default, fail closed.
+-- Never populate with the application's database account; no application DML grants.
+CREATE TABLE T_FAD_RISK_PUBLISH_ADMIN (database_user VARCHAR2(128) PRIMARY KEY);
 CREATE OR REPLACE PROCEDURE P_PUBLISH_FAD_RISK(p_version NUMBER) AUTHID DEFINER IS
  s VARCHAR2(12); n NUMBER; w NUMBER;
 BEGIN
+ SELECT COUNT(*) INTO n FROM T_FAD_RISK_PUBLISH_ADMIN
+  WHERE database_user=SYS_CONTEXT('USERENV','SESSION_USER');
+ IF n<>1 THEN RAISE_APPLICATION_ERROR(-20043,'Dedicated publication administrator required.'); END IF;
  SELECT state INTO s FROM t_fad_risk_version WHERE version_id=p_version FOR UPDATE;
+ P_CHECK_FAD_RISK_V1(p_version);
  IF s<>'DRAFT' THEN RAISE_APPLICATION_ERROR(-20045,'Only draft configurations may be published.'); END IF;
  SELECT COUNT(*) INTO n FROM t_fad_risk_annex WHERE version_id=p_version;
  IF n<>121 THEN RAISE_APPLICATION_ERROR(-20040,'Exactly 121 Annexures required.'); END IF;
