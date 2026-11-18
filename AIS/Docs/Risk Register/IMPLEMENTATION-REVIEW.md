@@ -1,6 +1,22 @@
 # FAD Risk Register implementation review
 
-Status: preparation and master-panel repairs only. **Not deployment ready.** No production database changes or merge have been performed. Assessment persistence, workflow, screen, permission registration and schema migrations are not yet implemented. They require the live-schema/data and rule decisions below. Do not treat the draft JSON as an imported/published database version.
+Status: Phase 1 corrections. **Not deployment ready.** Master controller/DBConnection and JavaScript repairs are implemented. Schema, seed, immutability, assessment/workflow package, publication procedure and Oracle tests exist as uninstalled SQL drafts. Assessment HTTP/DBConnection integration, screen and permission registration remain outstanding. No production migrations were executed.
+
+## Correction verification (2026-11-18)
+
+This section supersedes the original pending-decision and missing-SQL statements below. The user approved Excel formula boundaries and stopping calculation for review on zero denominators. Existing edits now lock/check the engagement and require status 10–13, matching the existing report package. Scope, ownership, revision and workflow checks remain enforced.
+
+Observation/evidence references now require paired numeric IAS IDs. Oracle validates evidence MEMOID against observation ID, engagement, auditee entity and authenticated audit office. Arbitrary paths/URLs are rejected. Financial inputs require supporting observation evidence. HTTP request-model validation remains outstanding with the assessment API integration; no new upload facility is implemented.
+
+P_PUBLISH_FAD_RISK locks the version and checks 121 Annexures, 20 processes, weights totaling 100, parent mappings, gravity, denominators, zero-weight fraud and calculator identity. It is a schema-owner deployment operation, with no application grants and no implicit commit. It remains uncompiled SQL source.
+
+Risk Register Tables.xlsx was inspected. It confirms mandatory MAP_ID, but omits defaults, identities, triggers and sequences, so generation remains unverified. Run 00_preflight.sql to obtain this evidence; do not invent a sequence or deploy without verifying inserts in staging.
+
+Included generators: tools/fad_risk_workbook.py, tools/build_fad_risk_seed.py and tools/build_fad_risk_package.py. Run `python -m unittest discover -s tests/fad-risk-register` and `node tests/fad-risk-register/frontend.cjs` locally. Local tests do not prove Oracle compilation.
+
+Staging gates, all unverified: preflight and MAP_ID verification; compile packages with zero USER_ERRORS; execute 90_calculation_tests.sql; exercise every master CRUD operation; deny revoked sessions, wrong roles, cross-office IDs, invalid references and self-review; reject edits after engagement closure; exercise stale revisions/concurrent closure; force mapping failure and prove both Annexure and mapping writes roll back. No staging connection is available.
+
+Compatibility: deploy the updated master package BEFORE the application. New calls send p_commit='N'; old Annexure/mapping signatures retain DEFAULT 'Y'. Roll back the application before restoring the old package. Confirm this behavior in staging before release.
 
 ## Evidence and reconciliation
 

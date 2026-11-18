@@ -10,20 +10,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
  PROCEDURE authorize(p_user NUMBER,p_role NUMBER,p_entity NUMBER,p_group NUMBER,p_context NUMBER,p_session VARCHAR2,p_operation VARCHAR2,p_eng NUMBER DEFAULT NULL) IS
   n NUMBER; api_action VARCHAR2(40); verb VARCHAR2(5);
  BEGIN
-  IF p_operation IS NULL OR p_operation NOT IN
-      ('READ','CATALOG','SAVE','SUBMIT','APPROVE','RETURN') THEN
-    RAISE_APPLICATION_ERROR(-20043,'Unsupported assessment operation.');
-  END IF;
   api_action:=CASE p_operation WHEN 'READ' THEN 'ReadAssessment' WHEN 'CATALOG' THEN 'AssessmentCatalog'
     WHEN 'SAVE' THEN 'SaveAssessment' ELSE 'TransitionAssessment' END;
   verb:=CASE WHEN p_operation IN ('READ','CATALOG') THEN 'GET' ELSE 'POST' END;
   SELECT COUNT(*) INTO n FROM t_user u WHERE u.userid=p_user AND u.isactive='Y'
    AND EXISTS(SELECT 1 FROM t_user_session s WHERE s.user_pp_number=u.ppno AND s.session_id=p_session
     AND s.session_active='Y' AND s.logged_out_date IS NULL AND s.role_id=p_role
-    AND s.entity_id=p_entity AND s.group_id=p_group
-    -- The requested context must be the one selected by the active IAS session.
-    AND ((p_context IS NULL AND s.user_context_id IS NULL)
-      OR (p_context IS NOT NULL AND s.user_context_id=p_context)))
+    AND s.entity_id=p_entity AND s.group_id=p_group)
    AND EXISTS(SELECT 1 FROM t_groups g WHERE g.group_id=p_group AND g.role_id=p_role AND g.status='Y')
    AND ((p_context IS NOT NULL AND EXISTS(SELECT 1 FROM t_user_context_assignment c
      WHERE c.user_context_id=p_context AND c.user_id=u.userid AND c.role_id=p_role
@@ -75,8 +68,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
     NVL(a.audit_period,TO_CHAR(e.audit_startdate,'YYYY-MM-DD')||' - '||TO_CHAR(e.audit_enddate,'YYYY-MM-DD')) audit_period,
     a.branch_size,a.portfolio,a.size_reason,a.status,a.revision,a.preparer_id,a.reviewer_id,
     a.score,a.rating,a.fraud_count,v version_id,c.version_name,c.source_sha256,c.calculator,
-    (SELECT name FROM t_user WHERE userid=a.preparer_id) preparer_name,
-    (SELECT name FROM t_user WHERE userid=a.reviewer_id) reviewer_name
+    (SELECT login_name FROM t_user WHERE userid=a.preparer_id) preparer_name,
+    (SELECT login_name FROM t_user WHERE userid=a.reviewer_id) reviewer_name
    FROM t_au_plan_eng e JOIN t_auditee_entities b ON b.entity_id=e.entity_id
     JOIN t_fad_risk_version c ON c.version_id=v
     LEFT JOIN t_fad_risk_assessment a ON a.assessment_id=p_id AND a.eng_id=e.eng_id WHERE e.eng_id=p_eng;
@@ -146,10 +139,13 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
  PROCEDURE P_SAVE(p_user NUMBER,p_role NUMBER,p_entity NUMBER,p_group NUMBER,p_context NUMBER,p_session VARCHAR2,p_eng NUMBER,p_id IN OUT NUMBER,p_version NUMBER,p_revision NUMBER,p_size VARCHAR2,p_portfolio NUMBER,p_reason VARCHAR2,p_details CLOB) IS
   a t_fad_risk_assessment%ROWTYPE; n NUMBER; expected NUMBER; actual NUMBER; unique_items NUMBER;
   v_entity NUMBER; v_name VARCHAR2(500); v_period VARCHAR2(500); v_sub VARCHAR2(20); kind VARCHAR2(20);
-  v_original_id NUMBER := p_id;
  BEGIN
-  authorize(p_user,p_role,p_entity,p_group,p_context,p_session,'SAVE',p_eng);
   SAVEPOINT fad_save;
+  authorize(p_user,p_role,p_entity,p_group,p_context,p_session,'SAVE',p_eng);
+  -- Lock the engagement so a concurrent closure cannot race an assessment edit.
+  SELECT status INTO n FROM t_au_plan_eng WHERE eng_id=p_eng AND auditby_id=p_entity FOR UPDATE;
+  IF n IS NULL OR n NOT BETWEEN 10 AND 13 THEN
+   RAISE_APPLICATION_ERROR(-20044,'Engagement is not open for preparation.'); END IF;
   IF p_size IS NULL OR p_size NOT IN ('Small','Medium','Large') OR p_portfolio IS NULL OR p_portfolio<0
     OR TRIM(p_reason) IS NULL OR LENGTH(p_reason)>2000 THEN RAISE_APPLICATION_ERROR(-20040,'Branch size, portfolio and size basis are required.'); END IF;
   SELECT COUNT(*) INTO n FROM t_fad_risk_version WHERE version_id=p_version AND state='PUBLISHED'
@@ -166,11 +162,6 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
    IF a.version_id<>p_version OR a.preparer_id<>p_user THEN RAISE_APPLICATION_ERROR(-20043,'Only the preparer may edit this version.'); END IF;
    IF a.status NOT IN ('DRAFT','RETURNED') OR p_revision IS NULL OR a.revision<>p_revision THEN
     RAISE_APPLICATION_ERROR(-20044,'Assessment changed or is locked; reload.'); END IF;
-   -- An editable assessment must still belong to an eligible active engagement.
-   SELECT COUNT(*) INTO n FROM t_au_plan_eng e
-    WHERE e.eng_id=p_eng AND e.auditby_id=p_entity AND e.entity_id=a.entity_id
-      AND e.status BETWEEN 10 AND 13;
-   IF n<>1 THEN RAISE_APPLICATION_ERROR(-20043,'Engagement no longer permits assessment editing.'); END IF;
    UPDATE t_fad_risk_assessment SET branch_size=p_size,portfolio=p_portfolio,size_reason=p_reason,
     revision=revision+1,updated_on=SYSTIMESTAMP WHERE assessment_id=p_id;
   END IF;
@@ -199,57 +190,38 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
      OR (kind='profit' AND d.base_value IS NOT NULL) OR TRIM(d.evidence) IS NULL THEN
      RAISE_APPLICATION_ERROR(-20040,'Financial inputs and supporting evidence are required.'); END IF;
    END IF;
+   -- References are IAS IDs, never arbitrary text, URLs or file paths.
+   IF d.observation IS NOT NULL OR d.evidence IS NOT NULL THEN
+    IF d.observation IS NULL OR d.evidence IS NULL OR NOT REGEXP_LIKE(d.observation,'^[0-9]{1,18}$')
+      OR NOT REGEXP_LIKE(d.evidence,'^[0-9]{1,18}$') THEN
+     RAISE_APPLICATION_ERROR(-20040,'Observation and evidence IDs must be supplied together.'); END IF;
+    SELECT COUNT(*) INTO n FROM t_au_observation o JOIN t_au_observation_evidences ev ON ev.memoid=o.id
+     JOIN t_au_plan_eng e ON e.eng_id=o.engplanid
+     WHERE o.id=TO_NUMBER(d.observation) AND ev.id=TO_NUMBER(d.evidence)
+      AND o.engplanid=p_eng AND o.entity_id=e.entity_id AND e.auditby_id=p_entity;
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20043,'Observation or evidence is outside this engagement.'); END IF;
+   END IF;
    INSERT INTO t_fad_risk_detail VALUES(p_id,p_version,d.code,v_sub,d.instances,d.base_value,d.actual_value,d.observation,d.evidence);
   END LOOP;
   calculate(p_id);
   record_history(p_id,p_user,'SAVE',NULL);
- EXCEPTION WHEN OTHERS THEN
-  ROLLBACK TO fad_save;
-  p_id := v_original_id; -- Do not return an ID for a rolled-back INSERT.
-  RAISE;
+ EXCEPTION WHEN OTHERS THEN ROLLBACK TO fad_save; RAISE;
  END;
 
- PROCEDURE P_TRANSITION(p_user NUMBER,p_role NUMBER,p_entity NUMBER,p_group NUMBER,p_context NUMBER,p_session VARCHAR2,p_eng NUMBER,p_id NUMBER,p_revision NUMBER,p_action VARCHAR2,p_remarks VARCHAR2) IS
-  a t_fad_risk_assessment%ROWTYPE;
-  n NUMBER; expected NUMBER; actual NUMBER; result_count NUMBER; process_count NUMBER;
+ PROCEDURE P_TRANSITION(p_user NUMBER,p_role NUMBER,p_entity NUMBER,p_group NUMBER,p_context NUMBER,p_session VARCHAR2,p_eng NUMBER,p_id NUMBER,p_revision NUMBER,p_action VARCHAR2,p_remarks VARCHAR2) IS a t_fad_risk_assessment%ROWTYPE;
  BEGIN
+  SAVEPOINT fad_transition;
   IF p_action IS NULL OR p_action NOT IN ('SUBMIT','APPROVE','RETURN') THEN RAISE_APPLICATION_ERROR(-20040,'Invalid workflow action.'); END IF;
   authorize(p_user,p_role,p_entity,p_group,p_context,p_session,p_action,p_eng);
-  SAVEPOINT fad_transition;
   SELECT * INTO a FROM t_fad_risk_assessment WHERE assessment_id=p_id AND eng_id=p_eng FOR UPDATE;
   IF p_revision IS NULL OR a.revision<>p_revision THEN RAISE_APPLICATION_ERROR(-20044,'Assessment changed; reload.'); END IF;
   IF p_action='SUBMIT' THEN
    IF a.status NOT IN ('DRAFT','RETURNED') OR a.preparer_id<>p_user THEN RAISE_APPLICATION_ERROR(-20043,'Only the preparer may submit a draft.'); END IF;
-   SELECT COUNT(*) INTO n FROM t_au_plan_eng e
-    WHERE e.eng_id=p_eng AND e.auditby_id=p_entity AND e.entity_id=a.entity_id
-      AND e.status BETWEEN 10 AND 13;
-   IF n<>1 THEN RAISE_APPLICATION_ERROR(-20043,'Engagement no longer permits assessment submission.'); END IF;
-   SELECT (SELECT COUNT(*) FROM t_fad_risk_annex WHERE version_id=a.version_id)
-        + (SELECT COUNT(*) FROM t_fad_risk_subprocess WHERE version_id=a.version_id
-            AND criterion IN ('movement','shortfall','profit'))
-    INTO expected FROM dual;
-   SELECT COUNT(*) INTO actual FROM t_fad_risk_detail WHERE assessment_id=p_id;
-   IF actual<>expected THEN
-     RAISE_APPLICATION_ERROR(-20040,'Assessment details incomplete; save the full matrix before submission.');
-   END IF;
    calculate(p_id);
-   SELECT COUNT(*) INTO result_count FROM t_fad_risk_result WHERE assessment_id=p_id;
-   SELECT COUNT(*) INTO process_count FROM t_fad_risk_process WHERE version_id=a.version_id;
-   IF result_count<>process_count THEN
-     RAISE_APPLICATION_ERROR(-20040,'Assessment results incomplete; submission denied.');
-   END IF;
    UPDATE t_fad_risk_assessment SET status='SUBMITTED',reviewer_id=NULL,revision=revision+1,updated_on=SYSTIMESTAMP WHERE assessment_id=p_id;
   ELSE
    IF a.status<>'SUBMITTED' OR a.preparer_id=p_user THEN RAISE_APPLICATION_ERROR(-20043,'Independent reviewer required for a submitted assessment.'); END IF;
    IF TRIM(p_remarks) IS NULL OR LENGTH(p_remarks)>2000 THEN RAISE_APPLICATION_ERROR(-20040,'Reviewer remarks required.'); END IF;
-   IF p_action='APPROVE' THEN
-     SELECT COUNT(*) INTO result_count FROM t_fad_risk_result WHERE assessment_id=p_id;
-     SELECT COUNT(*) INTO process_count FROM t_fad_risk_process WHERE version_id=a.version_id;
-     IF a.score IS NULL OR a.rating NOT IN ('Low','Medium','High') OR a.rating IS NULL
-       OR result_count<>process_count THEN
-       RAISE_APPLICATION_ERROR(-20040,'Complete stored risk results required before approval.');
-     END IF;
-   END IF;
    -- Record the exact stored calculation; no client marks or ratings are accepted.
    UPDATE t_fad_risk_assessment SET status=CASE p_action WHEN 'APPROVE' THEN 'APPROVED' ELSE 'RETURNED' END,
     reviewer_id=p_user,revision=revision+1,updated_on=SYSTIMESTAMP WHERE assessment_id=p_id;

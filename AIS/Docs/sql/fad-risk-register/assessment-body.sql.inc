@@ -59,8 +59,8 @@
     NVL(a.audit_period,TO_CHAR(e.audit_startdate,'YYYY-MM-DD')||' - '||TO_CHAR(e.audit_enddate,'YYYY-MM-DD')) audit_period,
     a.branch_size,a.portfolio,a.size_reason,a.status,a.revision,a.preparer_id,a.reviewer_id,
     a.score,a.rating,a.fraud_count,v version_id,c.version_name,c.source_sha256,c.calculator,
-    (SELECT name FROM t_user WHERE userid=a.preparer_id) preparer_name,
-    (SELECT name FROM t_user WHERE userid=a.reviewer_id) reviewer_name
+    (SELECT login_name FROM t_user WHERE userid=a.preparer_id) preparer_name,
+    (SELECT login_name FROM t_user WHERE userid=a.reviewer_id) reviewer_name
    FROM t_au_plan_eng e JOIN t_auditee_entities b ON b.entity_id=e.entity_id
     JOIN t_fad_risk_version c ON c.version_id=v
     LEFT JOIN t_fad_risk_assessment a ON a.assessment_id=p_id AND a.eng_id=e.eng_id WHERE e.eng_id=p_eng;
@@ -131,8 +131,12 @@
   a t_fad_risk_assessment%ROWTYPE; n NUMBER; expected NUMBER; actual NUMBER; unique_items NUMBER;
   v_entity NUMBER; v_name VARCHAR2(500); v_period VARCHAR2(500); v_sub VARCHAR2(20); kind VARCHAR2(20);
  BEGIN
-  authorize(@ARGS@,'SAVE',p_eng);
   SAVEPOINT fad_save;
+  authorize(@ARGS@,'SAVE',p_eng);
+  -- Lock the engagement so a concurrent closure cannot race an assessment edit.
+  SELECT status INTO n FROM t_au_plan_eng WHERE eng_id=p_eng AND auditby_id=p_entity FOR UPDATE;
+  IF n IS NULL OR n NOT BETWEEN 10 AND 13 THEN
+   RAISE_APPLICATION_ERROR(-20044,'Engagement is not open for preparation.'); END IF;
   IF p_size IS NULL OR p_size NOT IN ('Small','Medium','Large') OR p_portfolio IS NULL OR p_portfolio<0
     OR TRIM(p_reason) IS NULL OR LENGTH(p_reason)>2000 THEN RAISE_APPLICATION_ERROR(-20040,'Branch size, portfolio and size basis are required.'); END IF;
   SELECT COUNT(*) INTO n FROM t_fad_risk_version WHERE version_id=p_version AND state='PUBLISHED'
@@ -177,6 +181,17 @@
      OR (kind='profit' AND d.base_value IS NOT NULL) OR TRIM(d.evidence) IS NULL THEN
      RAISE_APPLICATION_ERROR(-20040,'Financial inputs and supporting evidence are required.'); END IF;
    END IF;
+   -- References are IAS IDs, never arbitrary text, URLs or file paths.
+   IF d.observation IS NOT NULL OR d.evidence IS NOT NULL THEN
+    IF d.observation IS NULL OR d.evidence IS NULL OR NOT REGEXP_LIKE(d.observation,'^[0-9]{1,18}$')
+      OR NOT REGEXP_LIKE(d.evidence,'^[0-9]{1,18}$') THEN
+     RAISE_APPLICATION_ERROR(-20040,'Observation and evidence IDs must be supplied together.'); END IF;
+    SELECT COUNT(*) INTO n FROM t_au_observation o JOIN t_au_observation_evidences ev ON ev.memoid=o.id
+     JOIN t_au_plan_eng e ON e.eng_id=o.engplanid
+     WHERE o.id=TO_NUMBER(d.observation) AND ev.id=TO_NUMBER(d.evidence)
+      AND o.engplanid=p_eng AND o.entity_id=e.entity_id AND e.auditby_id=p_entity;
+    IF n<>1 THEN RAISE_APPLICATION_ERROR(-20043,'Observation or evidence is outside this engagement.'); END IF;
+   END IF;
    INSERT INTO t_fad_risk_detail VALUES(p_id,p_version,d.code,v_sub,d.instances,d.base_value,d.actual_value,d.observation,d.evidence);
   END LOOP;
   calculate(p_id);
@@ -186,9 +201,9 @@
 
  @P_TRANSITION@ IS a t_fad_risk_assessment%ROWTYPE;
  BEGIN
+  SAVEPOINT fad_transition;
   IF p_action IS NULL OR p_action NOT IN ('SUBMIT','APPROVE','RETURN') THEN RAISE_APPLICATION_ERROR(-20040,'Invalid workflow action.'); END IF;
   authorize(@ARGS@,p_action,p_eng);
-  SAVEPOINT fad_transition;
   SELECT * INTO a FROM t_fad_risk_assessment WHERE assessment_id=p_id AND eng_id=p_eng FOR UPDATE;
   IF p_revision IS NULL OR a.revision<>p_revision THEN RAISE_APPLICATION_ERROR(-20044,'Assessment changed; reload.'); END IF;
   IF p_action='SUBMIT' THEN

@@ -614,8 +614,8 @@
 
         $.each(data || [], function (_, item) {
             var id = pick(item, ['KPI_SUB_ID']);
-            var code = pick(item, ['KPI_SUB_CODE']);
-            var name = pick(item, ['KPI_SUB_NAME']);
+            var code = pick(item, ['KPI_SUB_CODE', 'KPI_CODE']);
+            var name = pick(item, ['KPI_SUB_NAME', 'KPI_NAME']);
             var weightage = pick(item, ['WEIGHTAGE']);
             var displayOrder = pick(item, ['DISPLAY_ORDER']);
             var isActive = pick(item, ['IS_ACTIVE']);
@@ -649,7 +649,7 @@
 
         $.each(data || [], function (_, item) {
             var id = pick(item, ['KPI_SUB_ID']);
-            var name = pick(item, ['KPI_SUB_NAME']);
+            var name = pick(item, ['KPI_SUB_NAME', 'KPI_NAME']);
             if (id !== '') {
                 ddl.append('<option value="' + safeAttr(id) + '">' + safeText(name) + '</option>');
             }
@@ -907,7 +907,7 @@
         if (value === undefined || value === null) {
             return '';
         }
-        return $('<div>').text(value).html();
+        return $('<div>').text(value).html().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     function valueOrNull(value) {
