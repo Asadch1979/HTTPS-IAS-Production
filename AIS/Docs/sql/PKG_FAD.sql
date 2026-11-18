@@ -544,7 +544,8 @@ create or replace package body PKG_FAD is
          and exists (select 'z'
                 from V_all_outastanding_paras_fad f
                where m.entity_id = e.entity_id
-                 and f.annex is null);
+                 and f.annex is null)
+       order by ee.name, ee.entity_id;
     /*and f.entereddate < '01-Jan'||(EXTRACT(YEAR FROM SYSDATE)))
     or exists (select 'z'
              from V_all_outastanding_paras_fad f
@@ -569,7 +570,8 @@ create or replace package body PKG_FAD is
           on f.entity_id = e.entity_id
          and f.annex is null
        WHERE m.parent_id = ENT_ID
-         and mp.ppno = P_NO;
+         and mp.ppno = P_NO
+       order by e.name, e.entity_id;
     /*                 and not exists (select 'z'
      from V_all_outastanding_paras_fad f
     where m.entity_id = e.entity_id

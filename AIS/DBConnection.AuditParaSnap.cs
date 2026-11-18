@@ -65,7 +65,7 @@ namespace AIS.Controllers
             if (selectedDepartmentId.HasValue && !items.Any(e=>e.Id==selectedDepartmentId.Value))
                 throw new ExecutiveDashboardAccessException("EntityScope",
                     "Selected Department / Cluster does not belong to the chosen Division.");
-            return items;
+            return items.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         }
         internal ExecutiveKpiLifecycle GetAuditParaSnapKpis(ExecutiveDashboardScope scope, ExecutiveDashboardFilterRequest filters)
         {

@@ -416,7 +416,8 @@ create or replace package body PKG_RPT is
                'Y' as ISACTIVE,
                'Y' as DIV_NAME,
                112243 as AUDITED_BY_DEPID
-          from dual;
+          from dual
+         order by NAME, ID;
     
     else
       open io_cursor for
@@ -431,7 +432,8 @@ create or replace package body PKG_RPT is
          where mp.entity_id is not null
            and e.type_id IN (3)
            and e.entity_id = mp.parent_id
-           and e.entity_id = EntityId;
+           and e.entity_id = EntityId
+         order by NAME, ID;
     end if;
   end R_GetDepartments;
 

@@ -2501,7 +2501,7 @@ namespace AIS.Controllers
                     divList.Add(div);
                     }
                 }
-            return divList;
+            return divList.OrderBy(division => division.NAME, StringComparer.CurrentCultureIgnoreCase).ToList();
             }
         public List<AuditObservationTemplateModel> GetAuditObservationTemplates(int activity_id)
             {

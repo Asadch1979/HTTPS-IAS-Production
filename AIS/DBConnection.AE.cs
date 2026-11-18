@@ -1807,7 +1807,7 @@ namespace AIS.Controllers
                     entitiesList.Add(entity);
                     }
                 }
-            return entitiesList;
+            return entitiesList.OrderBy(entity => entity.DESCRIPTION, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             }
 
@@ -1850,7 +1850,7 @@ namespace AIS.Controllers
                     entitiesList.Add(entity);
                     }
                 }
-            return entitiesList;
+            return entitiesList.OrderBy(entity => entity.C_NAME, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             }
 

@@ -3,6 +3,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace AIS.Controllers
     {
@@ -16,11 +17,13 @@ namespace AIS.Controllers
 
         public List<ReportingOfficeSelectionDto> GetReportingOfficesForSelection(int entityTypeId, int pageId)
             => ReadManageUsersSelection("PKG_LG.P_Get_Reporting_Office", pageId, entityTypeId, null,
-                r => new ReportingOfficeSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), DESCRIPTION = ReadString(r, "DESCRIPTION"), PARENT_TYPE_ID = ReadNullableInt(r, "PARENT_TYPE_ID") });
+                r => new ReportingOfficeSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), DESCRIPTION = ReadString(r, "DESCRIPTION"), PARENT_TYPE_ID = ReadNullableInt(r, "PARENT_TYPE_ID") })
+                .OrderBy(office => office.DESCRIPTION, StringComparer.CurrentCultureIgnoreCase).ToList();
 
         public List<PostingSelectionDto> GetPostingsForSelection(int reportingId, int entityTypeId, int pageId)
             => ReadManageUsersSelection("PKG_LG.P_Get_Posting", pageId, entityTypeId, reportingId,
-                r => new PostingSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), C_NAME = ReadString(r, "C_NAME"), TYPEID = Convert.ToInt32(r["TYPEID"]), PARENT_ID = ReadNullableInt(r, "PARENT_ID") });
+                r => new PostingSelectionDto { ENTITY_ID = Convert.ToInt32(r["ENTITY_ID"]), C_NAME = ReadString(r, "C_NAME"), TYPEID = Convert.ToInt32(r["TYPEID"]), PARENT_ID = ReadNullableInt(r, "PARENT_ID") })
+                .OrderBy(posting => posting.C_NAME, StringComparer.CurrentCultureIgnoreCase).ToList();
 
         private List<T> ReadManageUsersSelection<T>(string procedure, int pageId, int? entityTypeId, int? reportingId, Func<OracleDataReader, T> map)
             {

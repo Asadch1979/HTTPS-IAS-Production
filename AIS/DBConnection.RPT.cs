@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Data;
 
@@ -122,7 +123,7 @@ namespace AIS.Controllers
                         }
                     }
                 }
-            return deptList;
+            return deptList.OrderBy(department => department.NAME, StringComparer.CurrentCultureIgnoreCase).ToList();
             }
 
 
@@ -297,7 +298,7 @@ namespace AIS.Controllers
                         }
                     }
                 }
-            return entitiesList;
+            return entitiesList.OrderBy(entity => entity.C_NAME, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             }
 
@@ -340,7 +341,7 @@ namespace AIS.Controllers
                         }
                     }
                 }
-            return entitiesList;
+            return entitiesList.OrderBy(entity => entity.DESCRIPTION, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             }
 
