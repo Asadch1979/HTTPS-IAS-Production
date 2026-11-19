@@ -1,0 +1,43 @@
+@{
+    ViewData["Title"] = "FAD Risk Assessment";
+    Layout = "_Layout";
+}
+<div class="container-fluid mt-3" id="riskAssessment"
+     data-catalog="@Url.Action("AssessmentCatalog", "FADRiskControlPanel")"
+     data-read="@Url.Action("ReadAssessment", "FADRiskControlPanel")"
+     data-save="@Url.Action("SaveAssessment", "FADRiskControlPanel")"
+     data-transition="@Url.Action("TransitionAssessment", "FADRiskControlPanel")">
+    @Html.AntiForgeryToken()
+    <h4>FAD Risk Assessment</h4>
+    <a href="@Url.Action("Index", "FADRiskControlPanel")">Master configuration</a>
+    <p id="riskMessage" role="status" aria-live="polite"></p>
+    <button type="button" class="btn btn-sm btn-outline-secondary mb-2" id="riskRefresh">Refresh assessments</button>
+    <div class="row mb-3">
+        <div class="col-md-5"><label for="riskEngagement">Authorized audit engagement / branch</label><select id="riskEngagement" class="form-select"></select></div>
+        <div class="col-md-4"><label for="riskVersion">Published configuration</label><select id="riskVersion" class="form-select"></select></div>
+        <div class="col-md-3 align-self-end"><button id="riskNew" class="btn btn-primary" type="button">Prepare assessment</button></div>
+    </div>
+    <h5>Existing assessments</h5><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Engagement / branch</th><th>Version</th><th>Status</th><th>Rating</th><th></th></tr></thead><tbody id="riskList"></tbody></table></div>
+    <section id="riskEditor" hidden>
+        <h5 id="riskHeading"></h5><p id="riskMetadata"></p>
+        <p id="riskFinal" class="fw-bold"></p>
+        <form id="riskForm">
+            <fieldset id="riskFields">
+                <div class="row">
+                    <div class="col-md-3"><label for="riskSize">Reviewed branch size</label><select class="form-select" id="riskSize" required><option value="">Select size</option><option>Small</option><option>Medium</option><option>Large</option></select></div>
+                    <div class="col-md-3"><label for="riskPortfolio">Portfolio (millions)</label><input class="form-control" type="number" min="0" step="any" id="riskPortfolio" required /></div>
+                    <div class="col-md-6"><label for="riskReason">Branch size basis</label><input class="form-control" id="riskReason" maxlength="2000" required /></div>
+                </div>
+                <h5 class="mt-3">Rating Matrix</h5>
+                <p>Enter counts by Annexure. Financial rows use opening/target and closing/achievement values; profitability uses rupees. Zero denominators require review. Evidence accepts an observation evidence ID, or WP:ID for financial working-paper evidence without an observation.</p>
+                <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hierarchy / code / description</th><th>Gravity / criterion</th><th>Instances</th><th>Opening / target</th><th>Closing / achievement / profit</th><th>Observation ID</th><th>Evidence reference</th></tr></thead><tbody id="riskMatrix"></tbody></table></div>
+            </fieldset>
+            <button type="submit" id="riskSave" class="btn btn-primary">Save and calculate</button>
+        </form>
+        <h5 class="mt-3">Calculated component marks</h5><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Process</th><th>Raw marks</th><th>Weight</th><th>Normalization total</th><th>Capped marks</th></tr></thead><tbody id="riskResults"></tbody></table></div>
+        <label for="riskRemarks">Workflow remarks</label><textarea id="riskRemarks" class="form-control" maxlength="2000"></textarea>
+        <div class="my-2"><button type="button" id="riskSubmit" class="btn btn-primary">Submit for review</button> <button type="button" id="riskApprove" class="btn btn-success">Approve</button> <button type="button" id="riskReturn" class="btn btn-warning">Return to preparer</button></div>
+        <h5>Assessment history</h5><div id="riskHistory"></div>
+    </section>
+</div>
+<script src="~/js/fad-risk-assessment.js" asp-append-version="true"></script>

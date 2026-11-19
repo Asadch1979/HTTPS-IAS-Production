@@ -9,7 +9,7 @@ using AIS.Services;
 
 namespace AIS.Controllers
     {
-    public class FADRiskControlPanelController : BaseController
+    public partial class FADRiskControlPanelController : BaseController
         {
         private readonly ILogger<FADRiskControlPanelController> _logger;
         private readonly TopMenus tm;

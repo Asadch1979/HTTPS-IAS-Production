@@ -1,5 +1,25 @@
 # FAD Risk Register implementation review
 
+## Application integration (2026-11-19, based on f70682c1)
+
+This section supersedes earlier statements that the assessment application integration is missing. The four MVC actions now call the existing package signatures using Oracle.ManagedDataAccess, named binds and server-session-only identity/context values. Reads dispose all returned cursors/readers and materialize CLOB snapshots before closing the connection. SAVE and TRANSITION use one connection/transaction, check the session again before committing and roll back through transaction disposal on errors. There is no SQL scoring implementation in JavaScript or C#.
+
+The separate `FADRiskControlPanel/Assessment` view preserves the original five configuration tabs. The catalog combines package-authorized assessments/versions with the established GetReportEntities selector. The matrix is rendered from P_READ; no Annexure list or process weights are hardcoded in the UI. Header metadata, results, evidence references, preparer/reviewer, workflow status and historical snapshots are displayed with text-only DOM insertion. Controls use API permissions, explicit risk-access preparation/review flags, ownership and workflow state; Oracle independently authorizes every operation. Interrupted writes require a refresh rather than automatic retry.
+
+New POST request models validate IDs, revisions, sizes, amounts, unique codes, instance counts and observation/working-paper evidence syntax. Oracle validates full configuration membership and evidence ownership. Both writes use ASP.NET antiforgery validation and the established RequestVerificationToken header. Errors use safe JSON messages and HTTP 400/401/403/409/422/500; internal Oracle messages and stack traces are not returned. Existing global session, page/API and object-scope filters are unchanged.
+
+### Registration and deployment
+
+Review `40_application_permissions.sql`, allocate a verified new page ID and supply the existing FAD menu ID. The script adds the independent assessment page and four INACTIVE API entries, rejects conflicting anchors and leaves all existing role grants unchanged. It does not assign groups or enable access. Administrators must explicitly assign this page to approved groups, activate the required API entries and role/API grants, and configure T_FAD_RISK_ACCESS for each authorized audit office. Readers need both GET APIs; preparers additionally need SaveAssessment/TransitionAssessment and can_prepare; independent reviewers need TransitionAssessment and can_review. Clear existing permission caches using normal IAS administration after changes. No permission or migration script has been executed.
+
+Deployment order: validate and install the reviewed Oracle schema/packages first, compile with zero USER_ERRORS, import and publish the reviewed configuration using the dedicated administrator, register permissions, then deploy the application. Old master Annexure callers retain default commits; the application transaction caller requires the new optional p_commit parameters. Application rollback precedes any package rollback. Preserve approved assessments/configuration and never delete historical data as a rollback mechanism.
+
+### Validation and remaining release gates
+
+Run `dotnet run --project tests/fad-risk-register/application/FadRisk.InputChecks.csproj` for actual request-model and Oracle JSON-name checks; run the Python suite for reconciliation/generation/security/application source contracts; run Node syntax and frontend regression checks. Compile AIS including Razor views. Source checks do not establish runtime security or Oracle execution.
+
+Staging remains required: authorize representative preparer/reviewer/read-only users; verify separate page grants, missing/invalid CSRF, expired/revoked/context-switched sessions and direct non-AJAX API denials; test unauthorized engagements and forged evidence; round-trip NUMBER/CLOB/ref-cursor values; save the full sample; exercise submit/return/resubmit/approve and stale revision races; verify approved history cannot change; force a write failure to verify transaction rollback; verify all five master tabs still perform CRUD. Test the screen in the deployed IAS layout and inspect accessibility/responsiveness. No live Oracle or authenticated browser session was available here. Production migrations and merges remain prohibited until reviewed and staging-validated.
+
 ## Follow-up review of 21e89f0
 
 Restored the session's selected user_context_id binding and explicit operation allowlist lost when generation overwrote e604ec18. All package corrections now live in assessment-body.sql.inc; regenerate with build_fad_risk_package.py. The generator refuses to overwrite the artifact when critical safeguard expressions are absent. Source regression tests and byte-for-byte regeneration tests protect these checks, but do not prove Oracle runtime authorization.
