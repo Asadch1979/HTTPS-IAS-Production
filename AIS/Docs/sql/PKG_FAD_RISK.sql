@@ -51,6 +51,8 @@
                                 o_cursor         OUT t_cursor);
   PROCEDURE P_GET_GRAVITY(o_cursor OUT t_cursor);
 
+  -- Source-controlled register; legacy scoring cursors remain unchanged.
+  PROCEDURE P_GET_REGISTER(o_cursor OUT t_cursor);
 END PKG_FAD_RISK;
 /
 
@@ -325,32 +327,8 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                             p_name        IN VARCHAR2,
                             p_is_active   IN CHAR,
                             p_commit      IN CHAR DEFAULT 'Y') IS
-    v_id NUMBER;
   BEGIN
-    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
-      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure commit option.');
-    END IF;
-    IF p_annexure_id IS NULL OR p_annexure_id = 0 THEN
-      v_id := SEQ_RISK_FAD_ANNEXURE.NEXTVAL;
-    
-      INSERT INTO T_RISK_FAD_ANNEXURE
-        (ANNEXURE_ID, ANNEXURE_CODE, ANNEXURE_NAME, IS_ACTIVE)
-      VALUES
-        (v_id, UPPER(TRIM(p_code)), TRIM(p_name), NVL(p_is_active, 'Y'));
-    
-      p_annexure_id := v_id;
-    ELSE
-      UPDATE T_RISK_FAD_ANNEXURE
-         SET ANNEXURE_CODE = UPPER(TRIM(p_code)),
-             ANNEXURE_NAME = TRIM(p_name),
-             IS_ACTIVE     = NVL(p_is_active, 'Y')
-       WHERE ANNEXURE_ID = p_annexure_id;
-      IF SQL%ROWCOUNT <> 1 THEN
-        RAISE_APPLICATION_ERROR(-20048, 'Annexure not found for update.');
-      END IF;
-    END IF;
-  
-    IF p_commit = 'Y' THEN COMMIT; END IF;
+    RAISE_APPLICATION_ERROR(-20102,'Annexure mappings are maintained through the approved staging migration.');
   END P_SAVE_ANNEXURE;
 
   /* ============================================================
@@ -361,26 +339,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                  p_is_active      IN CHAR,
                                  p_commit         IN CHAR DEFAULT 'Y') IS
   BEGIN
-    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
-      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure mapping commit option.');
-    END IF;
-    -- An INSERT still requires the target schema to generate MAP_ID through
-    -- an approved identity, default, or trigger; check in 00_preflight.sql.
-    -- Do not invent a sequence or generate MAP_ID with MAX+1.
-    MERGE INTO T_RISK_FAD_SUBPROC_ANNEX m
-    USING (SELECT p_sub_process_id AS sub_process_id,
-                  p_annexure_id    AS annexure_id
-             FROM dual) s
-    ON (m.SUB_PROCESS_ID = s.sub_process_id AND m.ANNEXURE_ID = s.annexure_id)
-    WHEN MATCHED THEN
-      UPDATE SET m.IS_ACTIVE = NVL(p_is_active, 'Y')
-    WHEN NOT MATCHED THEN
-      INSERT
-        (SUB_PROCESS_ID, ANNEXURE_ID, IS_ACTIVE)
-      VALUES
-        (p_sub_process_id, p_annexure_id, NVL(p_is_active, 'Y'));
-  
-    IF p_commit = 'Y' THEN COMMIT; END IF;
+    RAISE_APPLICATION_ERROR(-20102,'Annexure mappings are maintained through the approved staging migration.');
   END P_SAVE_SUBPROC_ANNEX;
 
   /* ============================================================
@@ -535,6 +494,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   
     OPEN o_cursor FOR v_sql;
   END P_GET_GRAVITY;
+
+  PROCEDURE P_GET_REGISTER(o_cursor OUT t_cursor) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT m.kpi_main_id, m.kpi_code main_code, m.kpi_name main_name,
+             pk.package_id, k.kpi_sub_code package_code, k.kpi_sub_name package_name,
+             p.process_id, p.process_code, p.process_name,
+             sp.sub_process_id procedure_id, sp.sub_process_code procedure_code,
+             sp.sub_process_name procedure_name, am.annexure_id,
+             a.code annexure_code, am.source_annexure_code,
+             am.violation_description, am.risk_classification
+      FROM T_RISK_FAD_PACKAGE pk
+      JOIN T_RISK_FAD_KPI_SUB k ON k.kpi_sub_id=pk.package_id
+      JOIN T_RISK_FAD_KPI_MAIN m ON m.kpi_main_id=k.kpi_main_id
+      JOIN T_RISK_FAD_PROCESS p ON p.package_id=pk.package_id AND p.kpi_sub_id=k.kpi_sub_id
+      JOIN T_RISK_FAD_SUB_PROCESS sp ON sp.process_id=p.process_id
+      JOIN T_RISK_FAD_ANNEXURE_MAP am ON am.sub_process_id=sp.sub_process_id
+      JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON a.id=am.annexure_id
+      ORDER BY m.kpi_code,k.kpi_sub_code,p.process_code,sp.sub_process_code,am.source_annexure_code;
+  END P_GET_REGISTER;
 
 END PKG_FAD_RISK;
 /

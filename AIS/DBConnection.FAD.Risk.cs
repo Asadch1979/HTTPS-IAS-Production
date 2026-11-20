@@ -5,36 +5,28 @@ namespace AIS.Controllers
     {
     public partial class DBConnection
         {
-        // Both writes share a connection and transaction; legacy callers retain
-        // the package's default commit behavior. Deploy the package first.
+        // Never create a parallel Annexure master from this application path.
         public void SaveFadAnnexureMapping(ref int annexureId, int subProcessId,
             string code, string name, string isActive)
             {
+            throw new System.InvalidOperationException("Use the approved staging migration to maintain Annexure mappings.");
+            }
+
+        public DataTable GetFadApprovedRegister()
+            {
             using (var con = DatabaseConnection())
-            using (var transaction = con.BeginTransaction())
             using (var cmd = con.CreateCommand())
                 {
                 cmd.BindByName = true;
-                cmd.Transaction = transaction;
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandText = "PKG_FAD_RISK.P_SAVE_ANNEXURE";
-                cmd.Parameters.Add("p_annexure_id", OracleDbType.Int32).Value = annexureId;
-                cmd.Parameters["p_annexure_id"].Direction = ParameterDirection.InputOutput;
-                cmd.Parameters.Add("p_code", OracleDbType.Varchar2).Value = code;
-                cmd.Parameters.Add("p_name", OracleDbType.Varchar2).Value = name;
-                cmd.Parameters.Add("p_is_active", OracleDbType.Char).Value = isActive;
-                cmd.Parameters.Add("p_commit", OracleDbType.Char).Value = "N";
-                cmd.ExecuteNonQuery();
-                var savedId = int.Parse(cmd.Parameters["p_annexure_id"].Value.ToString());
-                cmd.Parameters.Clear();
-                cmd.CommandText = "PKG_FAD_RISK.P_SAVE_SUBPROC_ANNEX";
-                cmd.Parameters.Add("p_sub_process_id", OracleDbType.Int32).Value = subProcessId;
-                cmd.Parameters.Add("p_annexure_id", OracleDbType.Int32).Value = savedId;
-                cmd.Parameters.Add("p_is_active", OracleDbType.Char).Value = "Y";
-                cmd.Parameters.Add("p_commit", OracleDbType.Char).Value = "N";
-                cmd.ExecuteNonQuery();
-                transaction.Commit();
-                annexureId = savedId;
+                cmd.CommandText = "PKG_FAD_RISK.P_GET_REGISTER";
+                cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor, ParameterDirection.Output);
+                using (var adapter = new OracleDataAdapter(cmd))
+                    {
+                    var table = new DataTable();
+                    adapter.Fill(table); // Oracle CLOB materializes as a complete string.
+                    return table;
+                    }
                 }
             }
         /* =========================

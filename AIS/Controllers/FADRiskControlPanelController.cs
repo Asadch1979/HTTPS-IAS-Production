@@ -58,6 +58,21 @@ namespace AIS.Controllers
             );
             }
 
+        private IActionResult RejectConfigurationWrite()
+            {
+            var authorization = RiskAction(user => new { allowed = true });
+            if (authorization is JsonResult)
+                return new JsonResult(new { success = false, message = "The approved risk hierarchy is maintained through controlled staging migration." })
+                    { StatusCode = StatusCodes.Status409Conflict };
+            return authorization;
+            }
+
+        [HttpGet]
+        public IActionResult RegisterHierarchy()
+            {
+            return RiskAction(user => ConvertDataTable(CreateDbConnection().GetFadApprovedRegister()));
+            }
+
         /* =========================
            MAIN SCREEN
            ========================= */
@@ -67,7 +82,7 @@ namespace AIS.Controllers
             ViewData["TopMenu"] = tm.GetTopMenus();
             ViewData["TopMenuPages"] = tm.GetTopMenusPages();
 
-            if (!User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated != true || !sessionHandler.TryGetUser(out var user) || sessionHandler.IsSessionRevoked(user))
                 return RedirectToAction("Index", "Login");
 
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
@@ -153,19 +168,14 @@ namespace AIS.Controllers
            ========================= */
 
         [HttpPost]
-        public JsonResult SaveMainKpi(
+        public IActionResult SaveMainKpi(
             int? kpiMainId,
             string code,
             string name,
             int displayOrder,
             string isActive)
             {
-            var db = CreateDbConnection();
-            int id = kpiMainId ?? 0;
-
-            db.P_SAVE_KPI_MAIN(ref id, code, name, displayOrder, isActive);
-
-            return Json(new { success = true, kpiMainId = id });
+            return RejectConfigurationWrite();
             }
 
         /* =========================
@@ -173,7 +183,7 @@ namespace AIS.Controllers
            ========================= */
 
         [HttpPost]
-        public JsonResult SaveSubKpi(
+        public IActionResult SaveSubKpi(
             int kpiMainId,
             int? kpiSubId,
             string code,
@@ -182,17 +192,7 @@ namespace AIS.Controllers
             int displayOrder,
             string isActive)
             {
-            if (kpiMainId <= 0)
-                {
-                return Json(new { success = false, message = "Main KPI is required." });
-                }
-
-            var db = CreateDbConnection();
-            int id = kpiSubId ?? 0;
-
-            db.P_SAVE_KPI_SUB(ref id, kpiMainId, code, name, weightage, displayOrder, isActive);
-
-            return Json(new { success = true, kpiSubId = id });
+            return RejectConfigurationWrite();
             }
 
         /* =========================
@@ -200,7 +200,7 @@ namespace AIS.Controllers
            ========================= */
 
         [HttpPost]
-        public JsonResult SaveProcess(
+        public IActionResult SaveProcess(
             int kpiSubId,
             int? processId,
             string code,
@@ -209,17 +209,7 @@ namespace AIS.Controllers
             int displayOrder,
             string isActive)
             {
-            if (kpiSubId <= 0)
-                {
-                return Json(new { success = false, message = "Sub KPI is required." });
-                }
-
-            var db = CreateDbConnection();
-            int id = processId ?? 0;
-
-            db.P_SAVE_PROCESS(ref id, kpiSubId, code, name, weightage, displayOrder, isActive);
-
-            return Json(new { success = true, processId = id });
+            return RejectConfigurationWrite();
             }
 
         /* =========================
@@ -227,7 +217,7 @@ namespace AIS.Controllers
            ========================= */
 
         [HttpPost]
-        public JsonResult SaveSubProcess(
+        public IActionResult SaveSubProcess(
             int processId,
             int? subProcessId,
             string code,
@@ -235,17 +225,7 @@ namespace AIS.Controllers
             int gravityId,
             string isActive)
             {
-            if (processId <= 0)
-                {
-                return Json(new { success = false, message = "Process is required." });
-                }
-
-            var db = CreateDbConnection();
-            int id = subProcessId ?? 0;
-
-            db.P_SAVE_SUB_PROCESS(ref id, processId, code, name, gravityId, isActive);
-
-            return Json(new { success = true, subProcessId = id });
+            return RejectConfigurationWrite();
             }
 
         /* =========================
@@ -253,24 +233,14 @@ namespace AIS.Controllers
            ========================= */
 
         [HttpPost]
-        public JsonResult SaveAnnexure(
+        public IActionResult SaveAnnexure(
             int subProcessId,
             int? annexureId,
             string code,
             string name,
             string isActive)
             {
-            if (subProcessId <= 0)
-                {
-                return Json(new { success = false, message = "Sub Process is required." });
-                }
-
-            var db = CreateDbConnection();
-            int id = annexureId ?? 0;
-
-            db.SaveFadAnnexureMapping(ref id, subProcessId, code, name, isActive);
-
-            return Json(new { success = true, annexureId = id });
+            return RejectConfigurationWrite();
             }
         }
     }
