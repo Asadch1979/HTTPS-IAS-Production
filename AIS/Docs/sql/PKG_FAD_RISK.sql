@@ -51,7 +51,6 @@
                                 o_cursor         OUT t_cursor);
   PROCEDURE P_GET_GRAVITY(o_cursor OUT t_cursor);
 
-  -- Source-controlled register; legacy scoring cursors remain unchanged.
   PROCEDURE P_GET_REGISTER(o_cursor OUT t_cursor);
 END PKG_FAD_RISK;
 /
@@ -103,7 +102,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                             p_display_order IN NUMBER,
                             p_is_active     IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_KPI_SUB WHERE KPI_MAIN_ID=p_kpi_main_id AND KPI_SUB_ID IN (SELECT PACKAGE_ID FROM T_RISK_FAD_PACKAGE);
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_kpi_main_id IS NULL OR p_kpi_main_id = 0 THEN
       v_id := SEQ_RISK_FAD_KPI_MAIN.NEXTVAL;
     
@@ -147,7 +150,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
     v_code_col   VARCHAR2(30);
     v_active_col VARCHAR2(30);
     v_sql        CLOB;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_PACKAGE WHERE PACKAGE_ID=p_kpi_sub_id;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     v_code_col := F_PICK_COL('T_RISK_FAD_KPI_SUB', 'KPI_SUB_CODE', 'KPI_CODE', NULL, NULL);
     IF v_code_col IS NULL THEN
       RAISE_APPLICATION_ERROR(-20001, 'Sub KPI code column not found.');
@@ -234,7 +241,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                            p_display_order IN NUMBER,
                            p_is_active     IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_PROCESS WHERE PROCESS_ID=p_process_id AND PACKAGE_ID IS NOT NULL;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_process_id IS NULL OR p_process_id = 0 THEN
       v_id := SEQ_RISK_FAD_PROCESS.NEXTVAL;
     
@@ -283,7 +294,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                p_gravity_id     IN NUMBER,
                                p_is_active      IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_ANNEXURE_MAP WHERE SUB_PROCESS_ID=p_sub_process_id;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_sub_process_id IS NULL OR p_sub_process_id = 0 THEN
       v_id := SEQ_RISK_FAD_SUB_PROCESS.NEXTVAL;
     
@@ -327,8 +342,32 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                             p_name        IN VARCHAR2,
                             p_is_active   IN CHAR,
                             p_commit      IN CHAR DEFAULT 'Y') IS
+    v_id NUMBER;
   BEGIN
-    RAISE_APPLICATION_ERROR(-20102,'Annexure mappings are maintained through the approved staging migration.');
+    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
+      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure commit option.');
+    END IF;
+    IF p_annexure_id IS NULL OR p_annexure_id = 0 THEN
+      v_id := SEQ_RISK_FAD_ANNEXURE.NEXTVAL;
+    
+      INSERT INTO T_RISK_FAD_ANNEXURE
+        (ANNEXURE_ID, ANNEXURE_CODE, ANNEXURE_NAME, IS_ACTIVE)
+      VALUES
+        (v_id, UPPER(TRIM(p_code)), TRIM(p_name), NVL(p_is_active, 'Y'));
+    
+      p_annexure_id := v_id;
+    ELSE
+      UPDATE T_RISK_FAD_ANNEXURE
+         SET ANNEXURE_CODE = UPPER(TRIM(p_code)),
+             ANNEXURE_NAME = TRIM(p_name),
+             IS_ACTIVE     = NVL(p_is_active, 'Y')
+       WHERE ANNEXURE_ID = p_annexure_id;
+      IF SQL%ROWCOUNT <> 1 THEN
+        RAISE_APPLICATION_ERROR(-20048, 'Annexure not found for update.');
+      END IF;
+    END IF;
+  
+    IF p_commit = 'Y' THEN COMMIT; END IF;
   END P_SAVE_ANNEXURE;
 
   /* ============================================================
@@ -339,7 +378,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                  p_is_active      IN CHAR,
                                  p_commit         IN CHAR DEFAULT 'Y') IS
   BEGIN
-    RAISE_APPLICATION_ERROR(-20102,'Annexure mappings are maintained through the approved staging migration.');
+    IF p_commit IS NULL OR p_commit NOT IN ('Y','N') THEN
+      RAISE_APPLICATION_ERROR(-20040, 'Invalid Annexure mapping commit option.');
+    END IF;
+    -- An INSERT still requires the target schema to generate MAP_ID through
+    -- an approved identity, default, or trigger; check in 00_preflight.sql.
+    -- Do not invent a sequence or generate MAP_ID with MAX+1.
+    MERGE INTO T_RISK_FAD_SUBPROC_ANNEX m
+    USING (SELECT p_sub_process_id AS sub_process_id,
+                  p_annexure_id    AS annexure_id
+             FROM dual) s
+    ON (m.SUB_PROCESS_ID = s.sub_process_id AND m.ANNEXURE_ID = s.annexure_id)
+    WHEN MATCHED THEN
+      UPDATE SET m.IS_ACTIVE = NVL(p_is_active, 'Y')
+    WHEN NOT MATCHED THEN
+      INSERT
+        (SUB_PROCESS_ID, ANNEXURE_ID, IS_ACTIVE)
+      VALUES
+        (p_sub_process_id, p_annexure_id, NVL(p_is_active, 'Y'));
+  
+    IF p_commit = 'Y' THEN COMMIT; END IF;
   END P_SAVE_SUBPROC_ANNEX;
 
   /* ============================================================

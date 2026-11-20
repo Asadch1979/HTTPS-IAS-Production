@@ -1,0 +1,19 @@
+<div class="container-fluid" id="fadApprovedRegister" data-source-url="@Url.Action("RegisterHierarchy", "FADRiskControlPanel")">
+    <h3>Approved Annexure hierarchy (read-only)</h3>
+    <p>Main KPI → Package → Process → Risk Rating Procedure → IAS Annexure</p>
+    <p class="text-muted">Approved Annexure mapping. Configuration changes are imported through controlled reconciliation. Final Rating is used for calculated results and reporting.</p>
+    <div id="registerStatus" role="status" aria-live="polite">Loading approved hierarchy…</div>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><label for="registerMain" class="form-label">Main KPI</label><select id="registerMain" class="form-select" disabled></select></div>
+        <div class="col-md-3"><label for="registerPackage" class="form-label">Package</label><select id="registerPackage" class="form-select" disabled></select></div>
+        <div class="col-md-3"><label for="registerProcess" class="form-label">Process</label><select id="registerProcess" class="form-select" disabled></select></div>
+        <div class="col-md-3"><label for="registerProcedure" class="form-label">Risk Rating Procedure</label><select id="registerProcedure" class="form-select" disabled></select></div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered align-top">
+            <caption>Procedures and their existing IAS Annexures for the selected process</caption>
+            <thead><tr><th scope="col">Procedure code</th><th scope="col">Complete procedure</th><th scope="col">Source Annexure code</th><th scope="col">IAS Annexure code</th><th scope="col">IAS ID</th><th scope="col">Complete violation description</th><th scope="col">Risk classification</th></tr></thead>
+            <tbody id="registerRows"></tbody>
+        </table>
+    </div>
+</div>

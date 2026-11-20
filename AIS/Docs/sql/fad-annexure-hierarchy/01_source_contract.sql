@@ -1,20 +1,39 @@
--- DDL adapter: after schema review, supply actual staging COLUMN NAMES.
--- No defaults: descriptions, risk and weights must come from approved staging.
--- Supplied columns must be scalar VARCHAR2/NUMBER, not expressions or CLOBs.
+-- DDL only. Actual staging columns supplied by owner and original staging DDL.
+-- Main labels are copied from the source pack's Rating Matrix mapping, not Final Rating.
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
-ACCEPT main_name_column CHAR PROMPT 'Staging Main KPI description column: '
-ACCEPT package_name_column CHAR PROMPT 'Staging Package description column: '
-ACCEPT process_name_column CHAR PROMPT 'Staging Process description column: '
-ACCEPT procedure_name_column CHAR PROMPT 'Staging full Procedure description column: '
-ACCEPT violation_column CHAR PROMPT 'Staging full violation description column: '
-ACCEPT risk_column CHAR PROMPT 'Staging risk classification column (exact gravity name): '
-ACCEPT package_weight_column CHAR PROMPT 'Staging approved package weight column: '
-ACCEPT process_weight_column CHAR PROMPT 'Staging approved process weight column: '
+CREATE TABLE T_FAD_RISK_WEIGHT_APPROVAL (
+ SOURCE_SHA256 VARCHAR2(64) NOT NULL,
+ HIERARCHY_LEVEL VARCHAR2(7) NOT NULL CHECK (HIERARCHY_LEVEL IN ('PACKAGE','PROCESS')),
+ SOURCE_CODE VARCHAR2(50) NOT NULL,
+ APPROVED_WEIGHT NUMBER NOT NULL,
+ APPROVED_BY VARCHAR2(128) NOT NULL,
+ APPROVED_ON TIMESTAMP NOT NULL,
+ APPROVAL_REFERENCE VARCHAR2(1000) NOT NULL,
+ CONSTRAINT PK_FAD_WEIGHT_APPROVAL PRIMARY KEY (SOURCE_SHA256,HIERARCHY_LEVEL,SOURCE_CODE),
+ CONSTRAINT CK_FAD_WEIGHT_APPROVAL CHECK (TRIM(APPROVED_BY) IS NOT NULL AND TRIM(APPROVAL_REFERENCE) IS NOT NULL));
+-- Intentionally empty. No zero placeholders, defaults or inferred weights.
 CREATE OR REPLACE VIEW V_FAD_RISK_APPROVED_SOURCE AS
-SELECT IAS_MAIN_KPI_CODE main_code, IAS_SUB_KPI_CODE package_code,
- IAS_PROCESS_CODE process_code, IAS_SUB_PROCESS_CODE procedure_code, ANNEXURE_CODE,
- &main_name_column main_name, &package_name_column package_name,
- &process_name_column process_name, &procedure_name_column procedure_name,
- &violation_column violation_description, &risk_column risk_classification,
- &package_weight_column package_weight, &process_weight_column process_weight
-FROM T_FAD_RISK_MAP_STAGE;
+SELECT s.IAS_MAIN_KPI_CODE main_code, s.IAS_SUB_KPI_CODE package_code,
+ s.IAS_PROCESS_CODE process_code, s.IAS_SUB_PROCESS_CODE procedure_code, s.ANNEXURE_CODE,
+ CASE s.IAS_MAIN_KPI_CODE
+ WHEN 'RRM_PORTFOLIO' THEN q'~Portfolio Management
+ (Lending/ Credit Administration/ Recovery/ Collection & Default Management)~'
+ WHEN 'RRM_ACHIEVEMENT' THEN q'~Business Achievement~'
+ WHEN 'RRM_OPERATIONS' THEN q'~General Banking Operations & Management (Security & Cash Operations, Account Opening, Cheque Book/ Debit Card Management, Receipt/ Payment Operations & General Controls)~'
+ WHEN 'RRM_FRAUD' THEN q'~Fraud & Forgery, Embezzlement, Impersonation, Parallel Banking etc. (A-1, I-4)~'
+ END main_name,
+ s.RESOLVED_PACKAGE package_name,
+ 'Process #' || TO_CHAR(s.PROCESS_NUMBER,'FM999') process_name,
+ s.RISK_RATING_PROCEDURE_EXCEL_TEXT procedure_name,
+ s.VIOLATION_BANK_INSTRUCTIONS violation_description,
+ s.SOURCE_RISK_LEVEL risk_classification,
+ s.RATING_MATRIX_GRAVITY_SCORE gravity_score,
+ s.SOURCE_FILE_SHA256 source_sha256,
+ s.EXCEL_ROW, s.PROCEDURE_GROUP_EXCEL_ROW, s.RATING_MATRIX_ROW,
+ s.SOURCE_PACKAGE_CELL, s.PROCESS_NUMBER,
+ pw.APPROVED_WEIGHT package_weight, rw.APPROVED_WEIGHT process_weight
+FROM T_FAD_RISK_MAP_STAGE s
+LEFT JOIN T_FAD_RISK_WEIGHT_APPROVAL pw ON pw.SOURCE_SHA256=LOWER(TRIM(s.SOURCE_FILE_SHA256))
+ AND pw.HIERARCHY_LEVEL='PACKAGE' AND pw.SOURCE_CODE=s.IAS_SUB_KPI_CODE
+LEFT JOIN T_FAD_RISK_WEIGHT_APPROVAL rw ON rw.SOURCE_SHA256=LOWER(TRIM(s.SOURCE_FILE_SHA256))
+ AND rw.HIERARCHY_LEVEL='PROCESS' AND rw.SOURCE_CODE=s.IAS_PROCESS_CODE;

@@ -58,15 +58,6 @@ namespace AIS.Controllers
             );
             }
 
-        private IActionResult RejectConfigurationWrite()
-            {
-            var authorization = RiskAction(user => new { allowed = true });
-            if (authorization is JsonResult)
-                return new JsonResult(new { success = false, message = "The approved risk hierarchy is maintained through controlled staging migration." })
-                    { StatusCode = StatusCodes.Status409Conflict };
-            return authorization;
-            }
-
         [HttpGet]
         public IActionResult RegisterHierarchy()
             {
@@ -175,7 +166,14 @@ namespace AIS.Controllers
             int displayOrder,
             string isActive)
             {
-            return RejectConfigurationWrite();
+            return RiskAction(user => { 
+            var db = CreateDbConnection();
+            int id = kpiMainId ?? 0;
+
+            db.P_SAVE_KPI_MAIN(ref id, code, name, displayOrder, isActive);
+
+            return (new { success = true, kpiMainId = id });
+             });
             }
 
         /* =========================
@@ -192,7 +190,19 @@ namespace AIS.Controllers
             int displayOrder,
             string isActive)
             {
-            return RejectConfigurationWrite();
+            return RiskAction(user => { 
+            if (kpiMainId <= 0)
+                {
+                return (new { success = false, message = "Main KPI is required." });
+                }
+
+            var db = CreateDbConnection();
+            int id = kpiSubId ?? 0;
+
+            db.P_SAVE_KPI_SUB(ref id, kpiMainId, code, name, weightage, displayOrder, isActive);
+
+            return (new { success = true, kpiSubId = id });
+             });
             }
 
         /* =========================
@@ -209,7 +219,19 @@ namespace AIS.Controllers
             int displayOrder,
             string isActive)
             {
-            return RejectConfigurationWrite();
+            return RiskAction(user => { 
+            if (kpiSubId <= 0)
+                {
+                return (new { success = false, message = "Sub KPI is required." });
+                }
+
+            var db = CreateDbConnection();
+            int id = processId ?? 0;
+
+            db.P_SAVE_PROCESS(ref id, kpiSubId, code, name, weightage, displayOrder, isActive);
+
+            return (new { success = true, processId = id });
+             });
             }
 
         /* =========================
@@ -225,7 +247,19 @@ namespace AIS.Controllers
             int gravityId,
             string isActive)
             {
-            return RejectConfigurationWrite();
+            return RiskAction(user => { 
+            if (processId <= 0)
+                {
+                return (new { success = false, message = "Process is required." });
+                }
+
+            var db = CreateDbConnection();
+            int id = subProcessId ?? 0;
+
+            db.P_SAVE_SUB_PROCESS(ref id, processId, code, name, gravityId, isActive);
+
+            return (new { success = true, subProcessId = id });
+             });
             }
 
         /* =========================
@@ -240,7 +274,19 @@ namespace AIS.Controllers
             string name,
             string isActive)
             {
-            return RejectConfigurationWrite();
+            return RiskAction(user => { 
+            if (subProcessId <= 0)
+                {
+                return (new { success = false, message = "Sub Process is required." });
+                }
+
+            var db = CreateDbConnection();
+            int id = annexureId ?? 0;
+
+            db.SaveFadAnnexureMapping(ref id, subProcessId, code, name, isActive);
+
+            return (new { success = true, annexureId = id });
+             });
             }
         }
     }
