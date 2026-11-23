@@ -422,6 +422,7 @@
             type: 'POST',
             data: payload
         }).done(function (response) {
+            if (response && response.success === true && response.data) response = response.data;
             if (response && response.success === false) {
                 showApiAlert(response, 'Failed to save Sub KPI.');
                 return;
@@ -455,6 +456,7 @@
             type: 'POST',
             data: payload
         }).done(function (response) {
+            if (response && response.success === true && response.data) response = response.data;
             if (response && response.success === false) {
                 showApiAlert(response, 'Failed to save Process.');
                 return;
@@ -487,6 +489,7 @@
             type: 'POST',
             data: payload
         }).done(function (response) {
+            if (response && response.success === true && response.data) response = response.data;
             if (response && response.success === false) {
                 showApiAlert(response, 'Failed to save Sub Process.');
                 return;
@@ -518,6 +521,7 @@
             type: 'POST',
             data: payload
         }).done(function (response) {
+            if (response && response.success === true && response.data) response = response.data;
             if (response && response.success === false) {
                 showApiAlert(response, 'Failed to save Annexure.');
                 return;

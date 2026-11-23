@@ -51,6 +51,7 @@
                                 o_cursor         OUT t_cursor);
   PROCEDURE P_GET_GRAVITY(o_cursor OUT t_cursor);
 
+  PROCEDURE P_GET_REGISTER(o_cursor OUT t_cursor);
 END PKG_FAD_RISK;
 /
 
@@ -101,7 +102,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                             p_display_order IN NUMBER,
                             p_is_active     IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_KPI_SUB WHERE KPI_MAIN_ID=p_kpi_main_id AND KPI_SUB_ID IN (SELECT PACKAGE_ID FROM T_RISK_FAD_PACKAGE);
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_kpi_main_id IS NULL OR p_kpi_main_id = 0 THEN
       v_id := SEQ_RISK_FAD_KPI_MAIN.NEXTVAL;
     
@@ -145,7 +150,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
     v_code_col   VARCHAR2(30);
     v_active_col VARCHAR2(30);
     v_sql        CLOB;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_PACKAGE WHERE PACKAGE_ID=p_kpi_sub_id;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     v_code_col := F_PICK_COL('T_RISK_FAD_KPI_SUB', 'KPI_SUB_CODE', 'KPI_CODE', NULL, NULL);
     IF v_code_col IS NULL THEN
       RAISE_APPLICATION_ERROR(-20001, 'Sub KPI code column not found.');
@@ -232,7 +241,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                            p_display_order IN NUMBER,
                            p_is_active     IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_PROCESS WHERE PROCESS_ID=p_process_id AND PACKAGE_ID IS NOT NULL;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_process_id IS NULL OR p_process_id = 0 THEN
       v_id := SEQ_RISK_FAD_PROCESS.NEXTVAL;
     
@@ -281,7 +294,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
                                p_gravity_id     IN NUMBER,
                                p_is_active      IN CHAR) IS
     v_id NUMBER;
+    v_managed NUMBER;
   BEGIN
+    SELECT COUNT(*) INTO v_managed FROM T_RISK_FAD_ANNEXURE_MAP WHERE SUB_PROCESS_ID=p_sub_process_id;
+    IF v_managed>0 THEN RAISE_APPLICATION_ERROR(-20102,'Approved hierarchy records require controlled staging migration.'); END IF;
+
     IF p_sub_process_id IS NULL OR p_sub_process_id = 0 THEN
       v_id := SEQ_RISK_FAD_SUB_PROCESS.NEXTVAL;
     
@@ -535,6 +552,26 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK AS
   
     OPEN o_cursor FOR v_sql;
   END P_GET_GRAVITY;
+
+  PROCEDURE P_GET_REGISTER(o_cursor OUT t_cursor) IS
+  BEGIN
+    OPEN o_cursor FOR
+      SELECT m.kpi_main_id, m.kpi_code main_code, m.kpi_name main_name,
+             pk.package_id, k.kpi_sub_code package_code, k.kpi_sub_name package_name,
+             p.process_id, p.process_code, p.process_name,
+             sp.sub_process_id procedure_id, sp.sub_process_code procedure_code,
+             sp.sub_process_name procedure_name, am.annexure_id,
+             a.code annexure_code, am.source_annexure_code,
+             am.violation_description, am.risk_classification
+      FROM T_RISK_FAD_PACKAGE pk
+      JOIN T_RISK_FAD_KPI_SUB k ON k.kpi_sub_id=pk.package_id
+      JOIN T_RISK_FAD_KPI_MAIN m ON m.kpi_main_id=k.kpi_main_id
+      JOIN T_RISK_FAD_PROCESS p ON p.package_id=pk.package_id AND p.kpi_sub_id=k.kpi_sub_id
+      JOIN T_RISK_FAD_SUB_PROCESS sp ON sp.process_id=p.process_id
+      JOIN T_RISK_FAD_ANNEXURE_MAP am ON am.sub_process_id=sp.sub_process_id
+      JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON a.id=am.annexure_id
+      ORDER BY m.kpi_code,k.kpi_sub_code,p.process_code,sp.sub_process_code,am.source_annexure_code;
+  END P_GET_REGISTER;
 
 END PKG_FAD_RISK;
 /

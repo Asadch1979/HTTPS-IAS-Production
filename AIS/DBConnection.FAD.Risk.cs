@@ -5,6 +5,24 @@ namespace AIS.Controllers
     {
     public partial class DBConnection
         {
+        public DataTable GetFadApprovedRegister()
+            {
+            using (var con = DatabaseConnection())
+            using (var cmd = con.CreateCommand())
+                {
+                cmd.BindByName = true;
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.CommandText = "PKG_FAD_RISK.P_GET_REGISTER";
+                cmd.Parameters.Add("o_cursor", OracleDbType.RefCursor, ParameterDirection.Output);
+                using (var adapter = new OracleDataAdapter(cmd))
+                    {
+                    var table = new DataTable();
+                    adapter.Fill(table); // Oracle CLOB materializes as a complete string.
+                    return table;
+                    }
+                }
+            }
+
         // Both writes share a connection and transaction; legacy callers retain
         // the package's default commit behavior. Deploy the package first.
         public void SaveFadAnnexureMapping(ref int annexureId, int subProcessId,

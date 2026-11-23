@@ -16,6 +16,11 @@
         </div>
     </div>
 
+    <partial name="~/Views/FAD/FADRiskControlPanel/_ApprovedHierarchy.cshtml" />
+    <hr />
+    <h3>Legacy configuration editor</h3>
+    <p>Legacy configuration is separate from the approved Annexure hierarchy. Imported records are protected from legacy editing.</p>
+
     <!-- Tabs Navigation -->
     <ul class="nav nav-tabs" id="fadRiskTabs" role="tablist">
         <li class="nav-item">
@@ -224,5 +229,6 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/fad-risk-control-panel.js"></script>
+    <script src="~/js/fad-risk-control-panel.js" asp-append-version="true"></script>
+    <script src="~/js/fad-approved-hierarchy.js" asp-append-version="true"></script>
 }
