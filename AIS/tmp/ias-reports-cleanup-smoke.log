@@ -77,7 +77,7 @@ warn: AIS.Services.PageIdRouteValidator[0]
          at AIS.Services.MenuPagesReader.GetActiveMenuPages() in C:\Users\Asad Ali\Documents\GitHub\HTTPS-IAS-Production\AIS\Services\MenuPagesReader.cs:line 27
          at AIS.Services.PageIdRouteValidator.StartAsync(CancellationToken cancellationToken) in C:\Users\Asad Ali\Documents\GitHub\HTTPS-IAS-Production\AIS\Services\PageIdRouteValidator.cs:line 42
 info: AIS.Services.LoginViewResolver[0]
-      LoginViewResolver detected DBDataSource: 10.1.100.112:1521/qadb18c.ztbl.com.pk
+      LoginViewResolver detected DBDataSource: 10.1.100.83:1521/dev19c
 info: AIS.Services.LoginViewResolver[0]
       Login view resolved to index_dev based on DBDataSource configuration. Mode=DEV.
 info: AIS.Startup[0]

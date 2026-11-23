@@ -6,7 +6,7 @@ namespace AIS.Services
     {
     public class LoginViewResolver
         {
-        private const string DevDataSource = "10.1.100.112:1521/qadb18c.ztbl.com.pk";
+        private const string DevDataSource = "10.1.100.83:1521/dev19c";
 
         public LoginViewResolver(
             IConfiguration configuration,

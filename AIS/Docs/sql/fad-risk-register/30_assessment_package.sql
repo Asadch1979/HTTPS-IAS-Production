@@ -157,25 +157,25 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ASSESS AS
  END;
 
  PROCEDURE calculate(p_id NUMBER) IS
-  total NUMBER:=0; fraud NUMBER:=0; raw NUMBER; marks NUMBER; v NUMBER; size_name VARCHAR2(10);
+  total NUMBER:=0; fraud NUMBER:=0; v_raw_marks NUMBER; marks NUMBER; v NUMBER; size_name VARCHAR2(10);
  BEGIN
   SELECT version_id,branch_size INTO v,size_name FROM t_fad_risk_assessment WHERE assessment_id=p_id;
   DELETE FROM t_fad_risk_result WHERE assessment_id=p_id;
   FOR p IN (SELECT * FROM t_fad_risk_process WHERE version_id=v) LOOP
-   raw:=0;
+   v_raw_marks:=0;
    FOR d IN (SELECT d.*,s.gravity,s.criterion FROM t_fad_risk_detail d
     JOIN t_fad_risk_subprocess s ON s.version_id=d.version_id AND s.sub_code=d.sub_code
     WHERE d.assessment_id=p_id AND s.process_code=p.process_code) LOOP
     CASE d.criterion
-     WHEN 'instances' THEN raw:=raw+PKG_FAD_RISK_SCORE_V1.instance_marks(d.gravity,d.instances);
+     WHEN 'instances' THEN v_raw_marks:=v_raw_marks+PKG_FAD_RISK_SCORE_V1.instance_marks(d.gravity,d.instances);
      WHEN 'fraud_override' THEN fraud:=fraud+d.instances;
-     WHEN 'movement' THEN raw:=raw+PKG_FAD_RISK_SCORE_V1.movement_marks(d.base_value,d.actual_value);
-     WHEN 'shortfall' THEN raw:=raw+PKG_FAD_RISK_SCORE_V1.shortfall_marks(d.base_value,d.actual_value);
-     WHEN 'profit' THEN raw:=raw+PKG_FAD_RISK_SCORE_V1.profit_marks(d.actual_value);
+     WHEN 'movement' THEN v_raw_marks:=v_raw_marks+PKG_FAD_RISK_SCORE_V1.movement_marks(d.base_value,d.actual_value);
+     WHEN 'shortfall' THEN v_raw_marks:=v_raw_marks+PKG_FAD_RISK_SCORE_V1.shortfall_marks(d.base_value,d.actual_value);
+     WHEN 'profit' THEN v_raw_marks:=v_raw_marks+PKG_FAD_RISK_SCORE_V1.profit_marks(d.actual_value);
     END CASE;
    END LOOP;
-   marks:=PKG_FAD_RISK_SCORE_V1.normalized_marks(raw,p.weight,p.denominator);
-   INSERT INTO t_fad_risk_result VALUES(p_id,p.process_code,raw,p.weight,p.denominator,marks);
+   marks:=PKG_FAD_RISK_SCORE_V1.normalized_marks(v_raw_marks,p.weight,p.denominator);
+   INSERT INTO t_fad_risk_result VALUES(p_id,p.process_code,v_raw_marks,p.weight,p.denominator,marks);
    total:=total+marks;
   END LOOP;
   UPDATE t_fad_risk_assessment SET score=total,fraud_count=fraud,
