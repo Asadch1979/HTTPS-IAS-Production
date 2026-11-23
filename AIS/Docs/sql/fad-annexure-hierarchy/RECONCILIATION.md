@@ -1,18 +1,17 @@
-# Annexure reconciliation — pending database evidence
+# Pending operational Annexure reconciliation
 
-The supplied baseline is 121 staged codes, 114 matched IDs, 114 distinct matched IDs and seven unmatched codes. These are user-provided counts, not locally observed query results. Neither the staging rows nor `FAD_Risk_True_Source_Mapping.csv` is present in this checkout. The seven actual codes and their proposed IAS IDs therefore remain unidentified; no aliases have been invented or approved.
+The user-supplied baseline is 121 staged Annexures, 114 unique matched IAS IDs and seven unmatched codes. The approved source CSV is in source/FAD_Risk_True_Source_Mapping.csv. Live operational match results are not available in this checkout, so this correction does not invent the seven codes or their target IDs.
 
-`02_unmatched_diagnostic.sql` produces the reconciliation report with staged code, full violation, procedure code and description, possible IAS code, existing IAS ID and proposal reason. Each unmatched code remains in the report even when no candidate exists. Multiple candidates produce multiple rows, so the report can exceed seven rows. The second query also reports ambiguous exact matches.
+V_FAD_RISK_REGISTER preserves all staged rows. Normalized matching means UPPER(TRIM(code)) on both sides; case and surrounding whitespace are already covered. Punctuation removal and letter O/digit zero substitutions are diagnostic proposals only and never resolve a production mapping.
 
-Candidate proposals are separate from resolution:
+02_unmatched_diagnostic.sql lists actual pending rows with full violation/procedure text and reports possible formatting candidates separately. Missing candidates remain listed. The application shows every pending code across the catalog, as well as the status of each row in the selected process. Missing or ambiguous operational IDs are NULL in the read result and displayed as unresolved; no NULL is inserted into a scoring column or master.
 
-| Difference | Proposed review | Approval state |
-| --- | --- | --- |
-| Case / surrounding whitespace | Compare exact meaning and operational heading | Unapproved |
-| Hyphens / punctuation / spacing | Compare source and operational Annexure | Unapproved |
-| Letter O / digit zero | Inspect original source; especially codes shaped like BO7 | Unapproved; BO7 is not asserted to be one of the seven |
-| No formatting candidate | Review IAS `CODE` and `HEADING` manually for naming differences | Unresolved |
+| Display status | Meaning |
+| --- | --- |
+| MATCHED | One normalized operational code row with a globally unique non-null IAS ID |
+| PENDING_RECONCILIATION | No normalized operational code match |
+| CONFLICTING_IAS_CODE | Multiple operational rows match the normalized code |
+| INVALID_IAS_ID | Matching operational row has no ID |
+| CONFLICTING_IAS_ID | Candidate ID occurs on multiple operational rows |
 
-Record each decision with staged code, existing IAS code and ID, reason, approving person, date and approval reference. Only separately approved decisions may be inserted into `T_RISK_FAD_CODE_ALIAS`; this delivery contains no alias inserts. Aliases must refer to existing operational IDs. An alias on an already exact-matched code is rejected as conflicting, even if it names the same ID. Two source codes cannot silently collapse to one IAS ID.
-
-If no existing IAS Annexure matches, retain the unresolved row and stop the entire import. Do not edit the operational Annexure table or allocate an ID. Run the diagnostic before migration; migration also prints all unresolved/ambiguous codes before rejecting the transaction.
+Pending mappings remain blocked from operational use. They do not prevent browsing the hierarchy and are not silently discarded. The view deliberately does not consume the previous alias table, which may depend on the absent physical ID key. Any future alias support requires a separately approved mapping design with approval evidence and ambiguity controls. Record staged code, proposed existing IAS code/ID, rationale, approver, date and approval reference before such work. Do not edit the staging codes to evade source fingerprints or modify the operational Annexure table through this correction.

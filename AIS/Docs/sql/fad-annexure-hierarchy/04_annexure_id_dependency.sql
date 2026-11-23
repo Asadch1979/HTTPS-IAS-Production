@@ -1,3 +1,5 @@
+-- OPTIONAL historical FK report; NOT a prerequisite for the staging-backed display.
+-- The register does not create a physical FK and reports duplicate/null IDs as pending.
 -- READ ONLY. A unique index alone is not an Oracle referenced P/U constraint.
 -- Never create a duplicate Annexure master, drop the FK, or alter the operational table here.
 SET LINESIZE 250

@@ -17,7 +17,9 @@ namespace AIS.Controllers
                 using (var adapter = new OracleDataAdapter(cmd))
                     {
                     var table = new DataTable();
-                    adapter.Fill(table); // Oracle CLOB materializes as a complete string.
+                    // Staging codes identify hierarchy nodes; only resolved Annexures have IAS IDs.
+                    // Keep null IDs and reconciliation status so pending rows reach the browser.
+                    adapter.Fill(table);
                     return table;
                     }
                 }
