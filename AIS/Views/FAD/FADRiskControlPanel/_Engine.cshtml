@@ -1,0 +1,14 @@
+<section id="riskEngine" data-catalog="@Url.Action("EngineCatalog")" data-results="@Url.Action("EngineResults")" data-bulk="@Url.Action("RunEnginePeriod")" data-single="@Url.Action("RunEngineEntity")">
+<h3>Risk Register Results</h3>
+@Html.AntiForgeryToken()
+<p>Each execution creates a new historical run. Pending inputs have no numerical rating.</p>
+<label for="enginePeriod">Audit Period</label><select id="enginePeriod" class="form-select"></select>
+<label for="engineType">Entity Type</label><select id="engineType" class="form-select"></select>
+<label for="engineEntity">Branch / Entity</label><select id="engineEntity" class="form-select"></select>
+<button type="button" id="engineLoad" class="btn btn-secondary">Load results</button>
+<button type="button" id="engineBulk" class="btn btn-primary">Execute All</button>
+<button type="button" id="engineSingle" class="btn btn-primary">Recalculate Branch</button>
+<p id="engineStatus" role="status" aria-live="polite"></p>
+<div class="table-responsive"><table class="table"><thead><tr><th>Audit Period</th><th>Entity</th><th>Engagement</th><th>Observations</th><th>Score</th><th>Risk Rating</th><th>Status</th><th>Last Calculated</th><th>Run / Details</th></tr></thead><tbody id="engineRows"></tbody></table></div>
+<h4>Selected result details</h4><div id="engineDetails"></div>
+</section>
