@@ -29,12 +29,12 @@ BEGIN
     RAISE_APPLICATION_ERROR(-20103,'Super User page assignment missing/duplicated. Review IAS administration.');
   END IF;
 
-  -- Check all four routes before changing any permission.
+  -- Check the three Phase 1 routes before changing any permission.
   FOR a IN (
     SELECT 'EngineCatalog' action_name,'GET' verb FROM dual
     UNION ALL SELECT 'EngineResults','GET' FROM dual
     UNION ALL SELECT 'RunEnginePeriod','POST' FROM dual
-    UNION ALL SELECT 'RunEngineEntity','POST' FROM dual
+    
   ) LOOP
     SELECT COUNT(*),MAX(api_id) INTO v_count,v_api_id
       FROM T_AU_API_MASTER
@@ -62,7 +62,7 @@ BEGIN
     SELECT 'EngineCatalog' action_name,'GET' verb FROM dual
     UNION ALL SELECT 'EngineResults','GET' FROM dual
     UNION ALL SELECT 'RunEnginePeriod','POST' FROM dual
-    UNION ALL SELECT 'RunEngineEntity','POST' FROM dual
+    
   ) LOOP
     SELECT api_id INTO v_api_id
       FROM T_AU_API_MASTER
@@ -83,6 +83,24 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Super User engine API active: '||a.action_name||
       ' / '||a.verb);
   END LOOP;
+  -- Phase 2 individual-branch API is not active in Phase 1.
+  -- If an earlier version of this script activated it, disable that route.
+  UPDATE T_AU_API_MASTER
+     SET is_active='N'
+   WHERE LOWER(TRIM(BOTH '/' FROM api_path))=
+         'fadriskcontrolpanel/runengineentity'
+     AND UPPER(http_method)='POST'
+     AND page_id=v_page_id AND is_active='Y';
+
+  UPDATE T_AU_ROLE_API_PERMISSION p
+     SET p.is_active='N'
+   WHERE p.role_id=1 AND p.is_active='Y'
+     AND EXISTS (SELECT 1 FROM T_AU_API_MASTER a
+       WHERE a.api_id=p.api_id AND a.page_id=v_page_id
+         AND LOWER(TRIM(BOTH '/' FROM a.api_path))=
+             'fadriskcontrolpanel/runengineentity'
+         AND UPPER(a.http_method)='POST');
+
   COMMIT;
 EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE;
 END;
