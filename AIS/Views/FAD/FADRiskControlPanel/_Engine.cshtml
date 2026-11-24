@@ -1,19 +1,61 @@
-<section id="riskEngine" data-catalog="@Url.Action("EngineCatalog")" data-results="@Url.Action("EngineResults")" data-bulk="@Url.Action("RunEnginePeriod")" data-single="@Url.Action("RunEngineEntity")">
-<h3>Risk Register Results</h3>
-@Html.AntiForgeryToken()
-<p>Each execution creates a new historical run. Pending inputs have no numerical rating.</p>
-<label for="enginePeriod">Audit Period</label><select id="enginePeriod" class="form-select"></select>
-<label for="engineType">Entity Type</label><select id="engineType" class="form-select"></select>
-<label for="engineEntity">Branch / Entity</label><select id="engineEntity" class="form-select"></select>
-<button type="button" id="engineLoad" class="btn btn-secondary">Load results</button>
-<button type="button" id="engineBulk" class="btn btn-primary">Execute All</button>
-<button type="button" id="engineSingle" class="btn btn-primary">Recalculate Branch</button>
-<p id="engineStatus" role="status" aria-live="polite"></p>
-<h4>Current Risk Register Results</h4>
-<p>Latest completed run for each engagement. Not Executed means no completed run is available in your office.</p>
-<div class="table-responsive"><table class="table"><thead><tr><th>Audit Period</th><th>Entity</th><th>Engagement</th><th>Observations</th><th>Score</th><th>Risk Rating</th><th>Status</th><th>Last Calculated</th><th>Run / Details</th></tr></thead><tbody id="engineCurrentRows"></tbody></table></div>
-<h4>Execution History</h4>
-<p>All prior runs are retained. Select a run for its recorded inputs and pending requirements.</p>
-<div class="table-responsive"><table class="table"><thead><tr><th>Audit Period</th><th>Entity</th><th>Engagement</th><th>Observations</th><th>Score</th><th>Risk Rating</th><th>Status</th><th>Last Calculated</th><th>Run / Details</th></tr></thead><tbody id="engineRows"></tbody></table></div>
-<h4>Selected result details</h4><div id="engineDetails"></div>
+<section id="riskEngine"
+         data-catalog="@Url.Action("EngineCatalog", "FADRiskControlPanel")"
+         data-results="@Url.Action("EngineResults", "FADRiskControlPanel")"
+         data-bulk="@Url.Action("RunEnginePeriod", "FADRiskControlPanel")">
+    <h3>Branch Risk Rating (Excel Model)</h3>
+    @Html.AntiForgeryToken()
+    <p class="text-muted">
+        Select an audit period to calculate and store risk ratings for all
+        audited branches (Entity Type 6). Branch-specific execution will be enabled in Phase 2.
+    </p>
+
+    <div class="row g-3 align-items-end mb-3">
+        <div class="col-sm-8 col-lg-5">
+            <label class="form-label" for="enginePeriod">Audit Period</label>
+            <select id="enginePeriod" class="form-select">
+                <option value="">Loading audit periods...</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="button" id="engineLoad" class="btn btn-secondary">View Results</button>
+        </div>
+        <div class="col-auto">
+            <button type="button" id="engineBulk" class="btn btn-primary">Calculate Branch Ratings</button>
+        </div>
+    </div>
+
+    <p id="engineStatus" role="status" aria-live="polite"></p>
+
+    <h4>Current Branch Risk Ratings</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Audit Period</th><th>Branch</th><th>Engagement</th>
+                    <th>Observations</th><th>Instances</th><th>Score</th>
+                    <th>Risk Category</th><th>Status</th>
+                    <th>Calculated On</th><th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="engineCurrentRows"></tbody>
+        </table>
+    </div>
+
+    <h4 class="mt-4">Execution History</h4>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Audit Period</th><th>Branch</th><th>Engagement</th>
+                    <th>Observations</th><th>Instances</th><th>Score</th>
+                    <th>Risk Category</th><th>Status</th>
+                    <th>Calculated On</th><th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="engineRows"></tbody>
+        </table>
+    </div>
+
+    <h4 class="mt-3">Component Marks and Missing Inputs</h4>
+    <div id="engineDetails"></div>
 </section>
