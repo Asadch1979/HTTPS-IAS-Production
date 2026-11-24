@@ -202,16 +202,29 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ENGINE AS
                    sub.sub_code,sub.sub_code,sub.description,
                    v_value,'CALCULATED');
 
-          EXCEPTION WHEN NO_DATA_FOUND THEN
-            v_process_missing:=1; v_missing:=v_missing+1;
-            INSERT INTO T_FAD_RISK_ENGINE_DETAIL(
-              result_id,node_level,main_code,package_code,process_code,
-              procedure_code,source_code,description,status)
-            VALUES(p_result,'INPUT',p.main_kpi,p.sub_kpi,p.process_code,
-                   sub.sub_code,sub.sub_code,sub.description,'PENDING_INPUT');
-            INSERT INTO T_FAD_RISK_ENGINE_EXCEPTION(result_id,code,message)
-            VALUES(p_result,'FINANCIAL_INPUT',
-                   'Approved input unavailable for '||sub.sub_code);
+          EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+              v_process_missing:=1; v_missing:=v_missing+1;
+              INSERT INTO T_FAD_RISK_ENGINE_DETAIL(
+                result_id,node_level,main_code,package_code,process_code,
+                procedure_code,source_code,description,status)
+              VALUES(p_result,'INPUT',p.main_kpi,p.sub_kpi,p.process_code,
+                     sub.sub_code,sub.sub_code,sub.description,'PENDING_INPUT');
+              INSERT INTO T_FAD_RISK_ENGINE_EXCEPTION(result_id,code,message)
+              VALUES(p_result,'FINANCIAL_INPUT',
+                     'Approved input unavailable for '||sub.sub_code);
+            WHEN OTHERS THEN
+              IF SQLCODE NOT IN (-20040,-20041) THEN RAISE; END IF;
+              v_process_missing:=1; v_missing:=v_missing+1;
+              INSERT INTO T_FAD_RISK_ENGINE_DETAIL(
+                result_id,node_level,main_code,package_code,process_code,
+                procedure_code,source_code,description,status)
+              VALUES(p_result,'INPUT',p.main_kpi,p.sub_kpi,p.process_code,
+                     sub.sub_code,sub.sub_code,sub.description,'PENDING_INPUT');
+              INSERT INTO T_FAD_RISK_ENGINE_EXCEPTION(result_id,code,message)
+              VALUES(p_result,'FINANCIAL_INPUT',
+                     'Approved input is invalid or denominator is zero for '||
+                     sub.sub_code);
           END;
         END IF;
       END LOOP;
@@ -360,8 +373,11 @@ CREATE OR REPLACE PACKAGE BODY PKG_FAD_RISK_ENGINE AS
         ROLLBACK TO branch_risk;
         UPDATE T_FAD_RISK_ENGINE_RESULT SET status='FAILED'
          WHERE result_id=v_result;
-        INSERT INTO T_FAD_RISK_ENGINE_EXCEPTION(result_id,code,message)
-        VALUES(v_result,'CALCULATION_ERROR',v_error);
+        INSERT INTO T_FAD_RISK_ENGINE_EXCEPTION(
+          result_id,code,message,technical_details)
+        VALUES(v_result,'CALCULATION_ERROR',
+               'Calculation failed. Refer to the protected error details.',
+               v_error);
       END;
     END LOOP;
 
