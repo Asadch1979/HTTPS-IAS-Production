@@ -19,6 +19,7 @@ namespace AIS.Services
     {
     public class SystemErrorMonitor
         {
+        public const string HandledExceptionKey = "SystemErrorMonitor.HandledException";
         private static readonly Regex VolatileTokenRegex = new Regex(@"\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{16,}|trace\s*id\s*[:=]\s*\S+)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex WhitespaceRegex = new Regex(@"\s+", RegexOptions.Compiled);
         private readonly IConfiguration _configuration;
@@ -129,7 +130,7 @@ namespace AIS.Services
         public Task<SystemErrorRecord> ReportStatusCodeAsync(HttpContext context, int statusCode)
             {
             var path = context?.Request?.Path.Value ?? string.Empty;
-            var ex = new InvalidOperationException($"HTTP {statusCode} response completed without an exception for {path}.");
+            var ex = context?.Items[HandledExceptionKey] as Exception ?? new InvalidOperationException($"HTTP {statusCode} response completed without an exception for {path}.");
             return ReportAsync(ex, context, "HTTP", null);
             }
 

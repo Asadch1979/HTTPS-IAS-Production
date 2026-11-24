@@ -33,7 +33,7 @@ namespace AIS.Controllers
             ViewData["TopMenu"]=tm.GetTopMenus(); ViewData["TopMenuPages"]=tm.GetTopMenusPages();
             return View("~/Views/FAD/FADRiskControlPanel/Assessment.cshtml");
         }
-        private IActionResult RiskAction(Func<SessionUser,object> action)
+        private IActionResult RiskAction(Func<SessionUser,object> action, string failureMessage = "The assessment operation could not be completed.")
         {
             Response.Headers["Cache-Control"]="no-store";
             if (User.Identity?.IsAuthenticated != true || !sessionHandler.TryGetUser(out var user) || sessionHandler.IsSessionRevoked(user))
@@ -50,16 +50,25 @@ namespace AIS.Controllers
             {
                 var status=ex.Number==20043 ? 403 : ex.Number==20044 || ex.Number==20045 || ex.Number==1 ? 409 :
                     ex.Number==20040 || ex.Number==20041 ? 422 : 500;
-                _logger.LogWarning("FAD assessment Oracle failure {Code}",ex.Number);
+                LogRiskFailure(ex, status, ex.Number);
                 return StatusCode(status,new { success=false,message=status==403 ? "Assessment access or evidence ownership denied." :
                     status==409 ? "The assessment changed, already exists, or is locked. Reload before continuing." :
-                    status==422 ? "Check the complete matrix, evidence IDs and nonzero financial denominators." : "The assessment operation could not be completed." });
+                    status==422 ? "Check the complete matrix, evidence IDs and nonzero financial denominators." : failureMessage });
             }
             catch (Exception ex)
             {
-                _logger.LogError("FAD assessment failure of type {Type}",ex.GetType().Name);
-                return StatusCode(500,new { success=false,message="The assessment operation could not be completed." });
+                LogRiskFailure(ex, 500, null);
+                return StatusCode(500,new { success=false,message=failureMessage });
             }
+        }
+        private void LogRiskFailure(Exception exception, int status, int? oracleNumber)
+        {
+            if (status >= 500) HttpContext.Items[SystemErrorMonitor.HandledExceptionKey] = exception;
+            _logger.LogError(exception,
+                "FAD failure Controller={Controller} Action={Action} Path={Path} OracleNumber={OracleNumber} TraceId={TraceId} Reference={Reference}",
+                ControllerContext.ActionDescriptor.ControllerName, ControllerContext.ActionDescriptor.ActionName,
+                Request.PathBase.Add(Request.Path).Value, oracleNumber, HttpContext.TraceIdentifier,
+                Response.Headers["X-Error-Reference-Id"].ToString());
         }
         [HttpGet]
         public IActionResult AssessmentCatalog() => RiskAction(user => {

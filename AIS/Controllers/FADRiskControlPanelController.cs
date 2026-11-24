@@ -61,7 +61,7 @@ namespace AIS.Controllers
         [HttpGet]
         public IActionResult RegisterHierarchy()
             {
-            return RiskAction(user => ConvertDataTable(CreateDbConnection().GetFadApprovedRegister()));
+            return RiskAction(user => ConvertDataTable(CreateDbConnection().GetFadApprovedRegister()), "The approved hierarchy is unavailable. Contact the administrator.");
             }
 
         /* =========================
