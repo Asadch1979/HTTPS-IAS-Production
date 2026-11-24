@@ -46,7 +46,8 @@ namespace AIS.Middleware
                 return;
                 }
 
-            var errorReferenceId = Guid.NewGuid().ToString("N")[..12];
+            var errorReferenceId = context.Response.Headers[ErrorReferenceHeader].ToString();
+            if (string.IsNullOrWhiteSpace(errorReferenceId)) errorReferenceId = context.TraceIdentifier;
             TryAttachErrorReference(context.Response, errorReferenceId);
 
             var endpoint = context.GetEndpoint();

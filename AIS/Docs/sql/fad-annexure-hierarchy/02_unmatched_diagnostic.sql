@@ -4,6 +4,12 @@ SET PAGESIZE 50000
 SET LONG 1000000
 SPOOL fad-unmatched-annexures.txt
 SELECT COUNT(*) staged_rows, COUNT(DISTINCT UPPER(TRIM(annexure_code))) staged_codes FROM T_FAD_RISK_MAP_STAGE;
+-- Authoritative display status includes duplicate/null operational IDs as unresolved.
+SELECT reconciliation_status,COUNT(*) source_rows FROM V_FAD_RISK_REGISTER
+GROUP BY reconciliation_status;
+SELECT source_annexure_code,procedure_code,procedure_name,violation_description,
+       reconciliation_status,annexure_id FROM V_FAD_RISK_REGISTER
+WHERE reconciliation_status<>'MATCHED' ORDER BY excel_row;
 SELECT COUNT(*) matched_rows, COUNT(DISTINCT a.id) distinct_matched_ias_ids
 FROM T_FAD_RISK_MAP_STAGE s JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON UPPER(TRIM(a.code))=UPPER(TRIM(s.annexure_code));
 SELECT COUNT(*) unmatched_codes FROM T_FAD_RISK_MAP_STAGE s

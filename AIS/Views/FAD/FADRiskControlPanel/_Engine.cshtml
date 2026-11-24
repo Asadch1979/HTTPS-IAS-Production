@@ -1,0 +1,61 @@
+<section id="riskEngine"
+         data-catalog="@Url.Action("EngineCatalog", "FADRiskControlPanel")"
+         data-results="@Url.Action("EngineResults", "FADRiskControlPanel")"
+         data-bulk="@Url.Action("RunEnginePeriod", "FADRiskControlPanel")">
+    <h3>Branch Risk Rating (Excel Model)</h3>
+    @Html.AntiForgeryToken()
+    <p class="text-muted">
+        Select an audit period to calculate and store risk ratings for all
+        audited branches (Entity Type 6). Branch-specific execution will be enabled in Phase 2.
+    </p>
+
+    <div class="row g-3 align-items-end mb-3">
+        <div class="col-sm-8 col-lg-5">
+            <label class="form-label" for="enginePeriod">Audit Period</label>
+            <select id="enginePeriod" class="form-select">
+                <option value="">Loading audit periods...</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="button" id="engineLoad" class="btn btn-secondary">View Results</button>
+        </div>
+        <div class="col-auto">
+            <button type="button" id="engineBulk" class="btn btn-primary">Calculate Branch Ratings</button>
+        </div>
+    </div>
+
+    <p id="engineStatus" role="status" aria-live="polite"></p>
+
+    <h4>Current Branch Risk Ratings</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Audit Period</th><th>Branch</th><th>Engagement</th>
+                    <th>Observations</th><th>Instances</th><th>Score</th>
+                    <th>Risk Category</th><th>Status</th>
+                    <th>Calculated On</th><th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="engineCurrentRows"></tbody>
+        </table>
+    </div>
+
+    <h4 class="mt-4">Execution History</h4>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Audit Period</th><th>Branch</th><th>Engagement</th>
+                    <th>Observations</th><th>Instances</th><th>Score</th>
+                    <th>Risk Category</th><th>Status</th>
+                    <th>Calculated On</th><th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="engineRows"></tbody>
+        </table>
+    </div>
+
+    <h4 class="mt-3">Component Marks and Missing Inputs</h4>
+    <div id="engineDetails"></div>
+</section>

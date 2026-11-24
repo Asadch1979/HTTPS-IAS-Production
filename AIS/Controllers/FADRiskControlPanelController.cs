@@ -61,7 +61,7 @@ namespace AIS.Controllers
         [HttpGet]
         public IActionResult RegisterHierarchy()
             {
-            return RiskAction(user => ConvertDataTable(CreateDbConnection().GetFadApprovedRegister()));
+            return RiskAction(user => ConvertDataTable(CreateDbConnection().GetFadApprovedRegister()), "The approved hierarchy is unavailable. Contact the administrator.");
             }
 
         /* =========================
@@ -78,6 +78,11 @@ namespace AIS.Controllers
 
             if (!this.UserHasPagePermissionForCurrentAction(sessionHandler))
                 return RedirectToAction("Index", "PageNotFound");
+
+            // Hide the separate execution facility outside verified Super User sessions.
+            // PKG_FAD_RISK_ENGINE independently enforces the same role/group and API rights.
+            ViewData["ShowFadEngine"] = user.UserRoleID == 1
+                && user.UserGroupID == 1 && sessionHandler.IsSuperUser();
 
             return View("~/Views/FAD/FADRiskControlPanel/Index.cshtml");
             }

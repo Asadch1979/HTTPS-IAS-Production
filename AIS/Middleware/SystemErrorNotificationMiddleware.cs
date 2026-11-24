@@ -27,7 +27,7 @@ namespace AIS.Middleware
                 if (context.Response.StatusCode >= StatusCodes.Status500InternalServerError)
                     {
                     var record = await monitor.ReportStatusCodeAsync(context, context.Response.StatusCode);
-                    _logger.LogError("HTTP {StatusCode} system error persisted as {Reference}.", context.Response.StatusCode, record.ErrorReference);
+                    _logger.LogError("HTTP {StatusCode} system error persisted as {Reference}. TraceId={TraceId}", context.Response.StatusCode, record.ErrorReference, context.TraceIdentifier);
                     }
                 }
             catch (Exception ex)
