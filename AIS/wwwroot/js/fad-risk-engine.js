@@ -6,263 +6,201 @@
         if (!root.length) return;
 
         var period = $('#enginePeriod');
-        var type = $('#engineType');
-        var entity = $('#engineEntity');
         var status = $('#engineStatus');
-        var catalog = [];
         var busy = false;
-        var requestNumber = 0;
+        var lastRequest = 0;
 
-        function message(value) {
-            status.text(value || '');
-        }
-
-        function errorMessage(xhr) {
-            var detail = xhr && xhr.responseJSON && xhr.responseJSON.message;
-            var code = xhr && xhr.status;
-            var ref = xhr && xhr.getResponseHeader && xhr.getResponseHeader('X-Error-Reference-Id');
-            var fallback = code === 401 ? 'Your session has expired. Sign in again.'
-                : code === 403 ? 'Access denied. Verify Super User access and the four engine API grants.'
-                : 'The request failed. Review the IAS system error log.';
-            return (detail || fallback) + (ref ? ' Request trace: ' + ref : '');
+        function show(message) {
+            status.text(message || '');
         }
 
         function fail(xhr) {
-            message(errorMessage(xhr));
+            var response = xhr && xhr.responseJSON;
+            var ref = xhr && xhr.getResponseHeader &&
+                xhr.getResponseHeader('X-Error-Reference-Id');
+            var message = (response && response.message) ||
+                (xhr.status === 403
+                    ? 'Super User permission or Engine API activation is missing.'
+                    : xhr.status === 401
+                        ? 'Your IAS session has expired.'
+                        : 'Request failed. Review the IAS error log.');
+            show(message + (ref ? ' Reference: ' + ref : ''));
         }
 
-        function keyOf(value) {
-            return value == null ? '' : String(value);
+        function display(value) {
+            return value == null || value === '' ? '—' : String(value);
         }
 
-        function fill(select, rows, key, label, prompt, allowAll, preferred) {
-            var seen = {};
-            select.empty().append($('<option>').val('').text(prompt));
-            if (allowAll) select.append($('<option>').val('0').text('All entities'));
-            (rows || []).forEach(function (row) {
-                var value = keyOf(row[key]);
-                if (!value || seen[value]) return;
-                seen[value] = true;
-                select.append($('<option>').val(value).text(keyOf(row[label]) || value));
-            });
-            var choice = keyOf(preferred);
-            if (choice && select.find('option').filter(function () { return this.value === choice; }).length) {
-                select.val(choice);
-            } else if (allowAll) {
-                select.val('0');
-            } else if (select.find('option').length > 1) {
-                select.prop('selectedIndex', 1);
-            } else {
-                select.val('');
-            }
+        function fetchResults(params, onData) {
+            $.getJSON(root.attr('data-results'), params)
+                .done(function (response) {
+                    if (!response || response.success !== true || !response.data) {
+                        show('The result service returned an invalid response.');
+                        return;
+                    }
+                    onData(response.data);
+                })
+                .fail(fail);
         }
 
-        function selected() {
-            return { period: period.val() || '', type: type.val() || '',
-                entity: entity.val() || '0' };
-        }
-
-        function buttons() {
-            var values = selected();
-            root.find('button').prop('disabled', busy);
-            $('#engineLoad').prop('disabled', busy || !values.period);
-            $('#engineBulk').prop('disabled', busy || !values.period || !values.type);
-            $('#engineSingle').prop('disabled', busy || !values.period || Number(values.entity) <= 0);
-            root.find('select').prop('disabled', busy);
-        }
-
-        period.on('change', function () {
-            var oldType = type.val();
-            var rows = catalog.filter(function (row) {
-                return keyOf(row.period_id) === period.val();
-            });
-            fill(type, rows, 'type_id', 'type_id', 'Select entity type', false, oldType);
-            type.trigger('change');
-            buttons();
-        });
-
-        type.on('change', function () {
-            var oldEntity = entity.val();
-            var rows = catalog.filter(function (row) {
-                return keyOf(row.period_id) === period.val()
-                    && keyOf(row.type_id) === type.val();
-            });
-            fill(entity, rows, 'entity_id', 'name', 'Select entity', true, oldEntity);
-            buttons();
-        });
-
-        function getResults(params, callback) {
-            return $.getJSON(root.attr('data-results'), params).done(function (response) {
-                if (!response || response.success !== true || !response.data) {
-                    message('The results service returned an invalid response.');
-                    return;
-                }
-                callback(response.data);
-            }).fail(fail);
-        }
-
-        function details(resultId) {
-            var params = selected();
-            params.result = resultId;
-            getResults(params, function (data) {
-                var box = $('#engineDetails').empty();
+        function detail(resultId) {
+            if (!resultId) return;
+            fetchResults({ period: period.val(), result: resultId }, function (data) {
+                var container = $('#engineDetails').empty();
                 (data.exceptions || []).forEach(function (item) {
-                    box.append($('<p>').text(item.code + ': ' + item.message));
+                    container.append($('<p>').text(item.code + ': ' + item.message));
                 });
-                var table = $('<table>').addClass('table table-sm');
-                var head = $('<tr>');
-                ['Level', 'Source code', 'Observation', 'Instances', 'Status'].forEach(function (label) {
-                    head.append($('<th>').text(label));
+
+                var table = $('<table>').addClass('table table-sm table-bordered');
+                var heading = $('<tr>');
+                ['Level', 'Component', 'Annexure', 'Observations', 'Instances',
+                    'Marks', 'Status'].forEach(function (name) {
+                    heading.append($('<th>').text(name));
                 });
-                table.append($('<thead>').append(head));
+                table.append($('<thead>').append(heading));
                 var body = $('<tbody>');
                 (data.detail || []).forEach(function (item) {
-                    var tr = $('<tr>');
-                    [item.node_level, item.source_code || item.procedure_code ||
-                        item.process_code || item.package_code || item.main_code,
-                        item.observation_id, item.instances, item.status].forEach(function (value) {
-                        tr.append($('<td>').text(value == null ? '—' : value));
+                    var row = $('<tr>');
+                    [item.node_level, item.process_code || item.procedure_code,
+                        item.source_code || item.annex_id,
+                        item.observations, item.instances,
+                        item.score, item.status].forEach(function (value) {
+                        row.append($('<td>').text(display(value)));
                     });
-                    body.append(tr);
+                    body.append(row);
                 });
-                if (!body.children().length && !(data.exceptions || []).length) {
-                    box.append($('<p>').text('No details are recorded for this result.'));
+                if (!body.children().length) {
+                    body.append($('<tr>').append($('<td>')
+                        .attr('colspan', 7).text('No component detail recorded.')));
                 }
-                box.append(table.append(body));
+                container.append(table.append(body));
             });
         }
 
-        function render(rows, target, emptyText) {
-            var body = $(target).empty();
-            if (!rows.length) {
-                body.append($('<tr>').append($('<td>').attr('colspan', 9).text(emptyText)));
+        function render(rows, id, emptyMessage) {
+            var body = $(id).empty();
+            if (!Array.isArray(rows) || !rows.length) {
+                body.append($('<tr>').append($('<td>')
+                    .attr('colspan', 10).text(emptyMessage)));
                 return;
             }
-            rows.forEach(function (row) {
+
+            rows.forEach(function (item) {
                 var tr = $('<tr>');
-                var state = row.status || 'UNKNOWN';
-                var pending = state === 'PENDING_INPUT';
-                var rating = pending ? 'Pending Input' : row.risk_rating;
-                var score = pending ? 'Pending Input' : row.score;
-                [row.period_id, row.entity_name, row.eng_id, row.observations, score,
-                    rating, state.replace(/_/g, ' '), row.calculated_on].forEach(function (value) {
-                    tr.append($('<td>').text(value == null ? '—' : value));
+                var calculated = item.status === 'CALCULATED';
+                [
+                    item.period_id, item.entity_name, item.eng_id,
+                    item.observations, item.instances,
+                    calculated ? item.score : null,
+                    calculated ? item.risk_rating : null,
+                    display(item.status).replace(/_/g, ' '),
+                    item.calculated_on
+                ].forEach(function (value) {
+                    tr.append($('<td>').text(display(value)));
                 });
-                var cell = $('<td>');
-                if (row.result_id) {
-                    cell.append($('<button>').attr('type', 'button')
+                var details = $('<td>');
+                if (item.result_id != null) {
+                    details.append($('<button>').attr('type', 'button')
                         .addClass('btn btn-sm btn-link')
-                        .text('Run ' + row.run_id + ' / details')
-                        .on('click', function () { details(row.result_id); }));
-                    if (row.processed != null) {
-                        cell.append($('<div>').text(
-                            row.processed + ' processed; ' + row.calculated + ' calculated; ' +
-                            row.pending + ' pending; ' + row.skipped + ' skipped; ' +
-                            row.failed + ' failed.'));
-                    }
+                        .text('Components / inputs')
+                        .on('click', function () { detail(item.result_id); }));
                 } else {
-                    cell.text('Not executed');
+                    details.text('Not executed');
                 }
-                tr.append(cell);
+                tr.append(details);
                 body.append(tr);
             });
         }
 
         function load() {
-            var params = selected();
-            if (!params.period) {
-                message('Select an audit period first.');
+            var auditPeriod = period.val();
+            if (!auditPeriod) {
+                show('Select an audit period.');
                 return;
             }
-            var number = ++requestNumber;
-            getResults(params, function (data) {
-                if (number !== requestNumber) return;
-                if (!Array.isArray(data.current) || !Array.isArray(data.cursor)) {
-                    message('The results service returned an unexpected data format.');
-                    return;
-                }
-                render(data.current, '#engineCurrentRows', 'No engagements for these filters.');
-                render(data.cursor, '#engineRows', 'No previous execution history.');
-                message(data.current.length + ' engagement(s) loaded.');
+            var request = ++lastRequest;
+            fetchResults({ period: auditPeriod }, function (data) {
+                if (request !== lastRequest) return;
+                render(data.current, '#engineCurrentRows',
+                    'No audited branches found for the selected period.');
+                render(data.cursor, '#engineRows',
+                    'No previous risk calculations for this period.');
+                show((data.current || []).length +
+                    ' branch engagement(s) available for Audit Period ' +
+                    auditPeriod + '.');
             });
         }
 
-        function run(bulk) {
-            if (busy) return;
-            var values = selected();
-            if (!values.period || (bulk && !values.type) ||
-                (!bulk && Number(values.entity) <= 0)) {
-                message(bulk ? 'Select audit period and entity type.'
-                    : 'Select audit period and one branch.');
-                return;
-            }
-            var question = bulk
-                ? 'Execute all eligible engagements for the selected period and entity type?'
-                : 'Recalculate all eligible engagements for this branch and period?';
-            if (!window.confirm(question)) return;
+        function calculate() {
+            var auditPeriod = period.val();
+            if (busy || !auditPeriod) return;
+            if (!window.confirm('Calculate Excel-model risk ratings for ALL ' +
+                'audited branches (Entity Type 6) in Audit Period ' +
+                auditPeriod + '? A new results history will be saved.')) return;
 
             var token = root.find('input[name="__RequestVerificationToken"]').val();
             if (!token) {
-                message('Security token is missing. Reload the page.');
+                show('Antiforgery token missing. Reload the page.');
                 return;
             }
-            var payload = { period: values.period, __RequestVerificationToken: token };
-            if (bulk) payload.type = values.type;
-            else payload.entity = values.entity;
 
             busy = true;
-            buttons();
-            message('Executing risk register. Do not resubmit the same request.');
-            $.post(root.attr(bulk ? 'data-bulk' : 'data-single'), payload)
-                .done(function (response) {
-                    if (!response || response.success !== true || !response.data) {
-                        message('Execution response was incomplete. Refresh results before retrying.');
-                        return;
-                    }
-                    var r = response.data;
-                    message('Run ' + r.runId + ': ' + r.processed + ' processed, ' +
-                        r.calculated + ' calculated, ' + r.pending + ' pending, ' +
-                        r.skipped + ' skipped, ' + r.failed + ' failed.');
-                    load();
-                })
-                .fail(function (xhr) {
-                    fail(xhr);
-                    // A timed-out write may still have committed; review history before retrying.
-                })
-                .always(function () {
-                    busy = false;
-                    buttons();
-                });
+            root.find('button,select').prop('disabled', true);
+            show('Calculating branch risk ratings...');
+            $.post(root.attr('data-bulk'), {
+                period: auditPeriod, __RequestVerificationToken: token
+            }).done(function (response) {
+                if (!response || response.success !== true || !response.data) {
+                    show('Execution response is incomplete. Check history before retrying.');
+                    return;
+                }
+                var r = response.data;
+                show('Run ' + r.runId + ': ' + r.calculated +
+                    ' rated, ' + r.pending + ' pending inputs, ' +
+                    r.failed + ' failed.');
+                load();
+            }).fail(function (xhr) {
+                fail(xhr);
+                // A timeout may have committed; inspect saved history before retry.
+            }).always(function () {
+                busy = false;
+                root.find('button,select').prop('disabled', false);
+            });
         }
 
         $('#engineLoad').on('click', load);
-        $('#engineBulk').on('click', function () { run(true); });
-        $('#engineSingle').on('click', function () { run(false); });
-        fill(period, [], 'period_id', 'period_id', 'Loading audit periods...', false);
-        fill(type, [], 'type_id', 'type_id', 'Select entity type', false);
-        fill(entity, [], 'entity_id', 'name', 'Select entity', true);
-        buttons();
+        $('#engineBulk').on('click', calculate);
+        period.empty().append($('<option>').val('')
+            .text('Loading audit periods...'));
+        root.find('button').prop('disabled', true);
 
-        $.getJSON(root.attr('data-catalog'))
-            .done(function (response) {
-                var rows = response && response.data && response.data.cursor;
-                if (!response || response.success !== true || !Array.isArray(rows)) {
-                    message('The engine catalog returned an unexpected response.');
-                    return;
-                }
-                catalog = rows;
-                if (!catalog.length) {
-                    fill(period, [], 'period_id', 'period_id', 'No audit periods found', false);
-                    message('No audit engagements were returned. Check the engine catalog and its Super User API permission.');
-                    buttons();
-                    return;
-                }
-                fill(period, catalog, 'period_id', 'period_id',
-                    'Select audit period', false,
-                    catalog.some(function (row) { return keyOf(row.period_id) === '5'; }) ? '5' : '');
-                period.trigger('change');
-                load();
-            })
-            .fail(fail);
+        $.getJSON(root.attr('data-catalog')).done(function (response) {
+            var rows = response && response.data && response.data.cursor;
+            if (!response || response.success !== true ||
+                !Array.isArray(rows)) {
+                show('Audit period service returned unexpected data.');
+                return;
+            }
+
+            period.empty().append($('<option>').val('')
+                .text('Select audit period'));
+            rows.forEach(function (item) {
+                var id = item.auditperiodid;
+                if (id == null) return;
+                period.append($('<option>').val(String(id))
+                    .text(display(item.description) + ' (' + id + ')'));
+            });
+            if (!rows.length) {
+                show('No audit periods found in T_AU_PERIOD.');
+                return;
+            }
+            if (rows.some(function (item) {
+                return Number(item.auditperiodid) === 5;
+            })) period.val('5');
+            else period.prop('selectedIndex', 1);
+
+            root.find('button').prop('disabled', false);
+            load();
+        }).fail(fail);
     });
 })(jQuery);
