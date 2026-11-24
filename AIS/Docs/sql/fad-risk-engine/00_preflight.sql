@@ -1,21 +1,45 @@
--- Read only; labels do not constitute approval.
-SELECT SYS_CONTEXT('USERENV','CURRENT_SCHEMA') current_schema FROM dual;
-SELECT table_name,column_name,data_type FROM user_tab_columns WHERE table_name IN ('T_AU_PLAN_ENG','T_AUDITEE_ENTITIES','T_AU_OBSERVATION','T_FAD_RISK_MAP_STAGE');
-SELECT statusid,statusname FROM t_au_observation_status;
-SELECT status,COUNT(*) FROM t_au_plan_eng GROUP BY status;
-SELECT type_id,COUNT(*) FROM t_auditee_entities GROUP BY type_id;
-SELECT version_id,state,calculator FROM T_FAD_RISK_VERSION;
--- Stop installation if approved numeric ANEX_ID is absent. Never infer aliases.
-SELECT anex_id,COUNT(*) FROM T_FAD_RISK_MAP_STAGE GROUP BY anex_id HAVING COUNT(*)>1 OR anex_id IS NULL;
+-- Read-only preflight for Phase 1 branch risk rating.
+-- The Excel configuration must be installed and PUBLISHED before execution.
 
--- Period 5 is the initial target, never a hardcoded authorization override.
-SELECT auditperiodid FROM T_AU_PERIOD WHERE auditperiodid=5;
-SELECT g.auditby_id,b.type_id,g.status,COUNT(*) engagements FROM T_AU_PLAN_ENG g
- JOIN T_AUDITEE_ENTITIES b ON b.entity_id=g.entity_id WHERE g.period_id=5
- GROUP BY g.auditby_id,b.type_id,g.status;
-SELECT s.excel_row,s.annexure_code,s.anex_id,a.code operational_code
- FROM T_FAD_RISK_MAP_STAGE s LEFT JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON a.id=s.anex_id
- WHERE a.id IS NULL OR REPLACE(UPPER(TRIM(a.code)),'-','')<>REPLACE(UPPER(TRIM(s.annexure_code)),'-','');
--- Read after applying 11_review_upgrade.sql. Existing rows must not be auto-approved.
-SELECT policy_id,entity_type_id,policy_version,approval_ref,approved_on,reference_rule FROM T_FAD_ENGINE_POLICY;
-SELECT eng_id,policy_version,final_observation_count,approval_ref,approved_on FROM T_FAD_ENGINE_COMPLETENESS;
+SELECT p.auditperiodid,p.description,p.start_date,p.end_date,
+       p.status_id,s.status
+  FROM T_AU_PERIOD p
+  JOIN T_AU_PERIOD_STATUS s ON s.id=p.status_id
+ ORDER BY p.auditperiodid;
+
+SELECT g.period_id,COUNT(*) engagements,COUNT(DISTINCT g.entity_id) branches
+  FROM T_AU_PLAN_ENG g
+ WHERE g.entity_type=6
+ GROUP BY g.period_id
+ ORDER BY g.period_id;
+
+SELECT v.version_id,v.version_name,v.state,v.calculator,
+       (SELECT COUNT(*) FROM T_FAD_RISK_PROCESS p
+         WHERE p.version_id=v.version_id) process_count,
+       (SELECT NVL(SUM(p.weight),0) FROM T_FAD_RISK_PROCESS p
+         WHERE p.version_id=v.version_id) total_weight,
+       (SELECT COUNT(*) FROM T_FAD_RISK_ANNEX a
+         WHERE a.version_id=v.version_id) annexure_count
+  FROM T_FAD_RISK_VERSION v
+ ORDER BY v.version_id;
+
+SELECT COUNT(*) stage_rows,COUNT(DISTINCT s.anex_id) distinct_ids,
+       COUNT(CASE WHEN a.id IS NOT NULL THEN 1 END) existing_ids
+  FROM T_FAD_RISK_MAP_STAGE s
+  LEFT JOIN T_AUDIT_CHECKLIST_ANNEXURE a ON a.id=s.anex_id;
+
+-- This is not an automatic source for financial/branch-size figures.
+-- It shows availability of approved manual IAS inputs for the new model.
+SELECT g.period_id,COUNT(*) engagements,
+       COUNT(a.assessment_id) approved_input_assessments
+  FROM T_AU_PLAN_ENG g
+  LEFT JOIN T_FAD_RISK_ASSESSMENT a ON a.eng_id=g.eng_id
+     AND a.status='APPROVED'
+ WHERE g.entity_type=6
+ GROUP BY g.period_id
+ ORDER BY g.period_id;
+
+SELECT object_name,object_type,status FROM USER_OBJECTS
+ WHERE object_name IN ('PKG_FAD_RISK','PKG_FAD_RISK_SCORE_V1',
+   'PKG_FAD_RISK_ENGINE','V_FAD_RISK_ENGINE_CURRENT')
+ ORDER BY object_name,object_type;
