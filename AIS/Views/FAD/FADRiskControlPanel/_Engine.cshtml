@@ -9,6 +9,11 @@
 <button type="button" id="engineBulk" class="btn btn-primary">Execute All</button>
 <button type="button" id="engineSingle" class="btn btn-primary">Recalculate Branch</button>
 <p id="engineStatus" role="status" aria-live="polite"></p>
+<h4>Current Risk Register Results</h4>
+<p>Latest completed run for each engagement. Not Executed means no completed run is available in your office.</p>
+<div class="table-responsive"><table class="table"><thead><tr><th>Audit Period</th><th>Entity</th><th>Engagement</th><th>Observations</th><th>Score</th><th>Risk Rating</th><th>Status</th><th>Last Calculated</th><th>Run / Details</th></tr></thead><tbody id="engineCurrentRows"></tbody></table></div>
+<h4>Execution History</h4>
+<p>All prior runs are retained. Select a run for its recorded inputs and pending requirements.</p>
 <div class="table-responsive"><table class="table"><thead><tr><th>Audit Period</th><th>Entity</th><th>Engagement</th><th>Observations</th><th>Score</th><th>Risk Rating</th><th>Status</th><th>Last Calculated</th><th>Run / Details</th></tr></thead><tbody id="engineRows"></tbody></table></div>
 <h4>Selected result details</h4><div id="engineDetails"></div>
 </section>

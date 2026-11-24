@@ -9,7 +9,7 @@ namespace AIS.Controllers {
   [HttpPost,ValidateAntiForgeryToken,FadRiskJsonFailure]
   public IActionResult RunEnginePeriod(int period,int type) {
    if(period<=0 || type<=0) ModelState.AddModelError("selection","Select period and entity type.");
-   return RiskAction(user=>dBConnection.EngineRun(true,period,type),"Risk register execution could not be completed.");
+   return RiskAction(user=>dBConnection.EngineRun(true,period,type),"Risk register execution could not be completed.", "Check the selected period and entity, approved execution policy, and shared engine prerequisites. Contact the administrator with the request reference.");
   }
   [HttpPost,ValidateAntiForgeryToken,FadRiskJsonFailure]
   public IActionResult RunEngineEntity(int period,int entity) {

@@ -33,7 +33,7 @@ namespace AIS.Controllers
             ViewData["TopMenu"]=tm.GetTopMenus(); ViewData["TopMenuPages"]=tm.GetTopMenusPages();
             return View("~/Views/FAD/FADRiskControlPanel/Assessment.cshtml");
         }
-        private IActionResult RiskAction(Func<SessionUser,object> action, string failureMessage = "The assessment operation could not be completed.")
+        private IActionResult RiskAction(Func<SessionUser,object> action, string failureMessage = "The assessment operation could not be completed.", string validationMessage = "Check the complete matrix, evidence IDs and nonzero financial denominators.")
         {
             Response.Headers["Cache-Control"]="no-store";
             if (User.Identity?.IsAuthenticated != true || !sessionHandler.TryGetUser(out var user) || sessionHandler.IsSessionRevoked(user))
@@ -53,7 +53,7 @@ namespace AIS.Controllers
                 LogRiskFailure(ex, status, ex.Number);
                 return StatusCode(status,new { success=false,message=status==403 ? "Assessment access or evidence ownership denied." :
                     status==409 ? "The assessment changed, already exists, or is locked. Reload before continuing." :
-                    status==422 ? "Check the complete matrix, evidence IDs and nonzero financial denominators." : failureMessage });
+                    status==422 ? validationMessage : failureMessage });
             }
             catch (Exception ex)
             {

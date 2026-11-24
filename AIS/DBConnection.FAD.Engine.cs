@@ -17,7 +17,7 @@ namespace AIS.Controllers {
     RiskParameter(cmd,"p_ent",OracleDbType.Int32,entity>0?(object)entity:null);
     RiskParameter(cmd,"p_result",OracleDbType.Int32,result);
    }
-   var names=catalog?new[]{"cursor"}:new[]{"cursor","detail","exceptions"};
+   var names=catalog?new[]{"cursor"}:new[]{"current","cursor","detail","exceptions"};
    foreach(var name in names) cmd.Parameters.Add("o_"+name,OracleDbType.RefCursor).Direction=ParameterDirection.Output;
    cmd.ExecuteNonQuery();
    var output=new Dictionary<string,List<Dictionary<string,object>>>();
@@ -44,7 +44,7 @@ namespace AIS.Controllers {
   public object EngineRun(bool bulk,int period,int selection) {
    var user=RiskSession();
    using var con=DatabaseConnection();
-   using var tx=con.BeginTransaction();
+   using var tx=con.BeginTransaction(IsolationLevel.Serializable);
    using var cmd=con.CreateCommand();
    cmd.Transaction=tx; RiskContext(cmd,user);
    cmd.CommandText="PKG_FAD_RISK_ENGINE."+(bulk?"P_RUN_PERIOD":"P_RUN_ENTITY");
@@ -55,12 +55,12 @@ namespace AIS.Controllers {
    var id=long.Parse(cmd.Parameters["p_run_id"].Value.ToString());
    cmd.Parameters.Clear();
    cmd.CommandType=CommandType.Text;
-   cmd.CommandText="SELECT processed,skipped,pending,failed FROM T_FAD_RISK_ENGINE_RUN WHERE run_id=:id AND audit_office_id=:office";
+   cmd.CommandText="SELECT processed,skipped,pending,failed,calculated FROM T_FAD_RISK_ENGINE_RUN WHERE run_id=:id AND audit_office_id=:office";
    RiskParameter(cmd,"id",OracleDbType.Int64,id); RiskParameter(cmd,"office",OracleDbType.Int32,user.UserEntityID);
    object summary;
    using(var reader=cmd.ExecuteReader()) {
     if(!reader.Read()) throw new InvalidOperationException("Engine summary unavailable.");
-    summary=new {runId=id,processed=reader.GetDecimal(0),skipped=reader.GetDecimal(1),pending=reader.GetDecimal(2),failed=reader.GetDecimal(3)};
+    summary=new {runId=id,processed=reader.GetDecimal(0),skipped=reader.GetDecimal(1),pending=reader.GetDecimal(2),failed=reader.GetDecimal(3),calculated=reader.GetDecimal(4)};
    }
    RiskSessionUnchanged(user); tx.Commit(); return summary;
   }
