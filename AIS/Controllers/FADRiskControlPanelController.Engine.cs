@@ -7,14 +7,16 @@ namespace AIS.Controllers {
    return RiskAction(user=>dBConnection.EngineRead(false,period,type,entity,result),"Risk register results are unavailable.");
   }
   [HttpPost,ValidateAntiForgeryToken,FadRiskJsonFailure]
-  public IActionResult RunEnginePeriod(int period,int type) {
-   if(period<=0 || type<=0) ModelState.AddModelError("selection","Select period and entity type.");
-   return RiskAction(user=>dBConnection.EngineRun(true,period,type),"Risk register execution could not be completed.", "Check the selected period and entity, approved execution policy, and shared engine prerequisites. Contact the administrator with the request reference.");
+  public IActionResult RunEnginePeriod(int period) {
+   if(period<=0) ModelState.AddModelError("selection","Select a valid audit period.");
+   return RiskAction(user=>dBConnection.EngineRun(false,period),
+       "Risk register calculation could not be completed.",
+       "Verify the selected audit period, published Excel scoring version and IAS Annexure mapping.");
   }
   [HttpPost,ValidateAntiForgeryToken,FadRiskJsonFailure]
   public IActionResult RunEngineEntity(int period,int entity) {
    if(period<=0 || entity<=0) ModelState.AddModelError("selection","Select period and entity.");
-   return RiskAction(user=>dBConnection.EngineRun(false,period,entity),"Risk register execution could not be completed.", "Check the selected period and entity, approved execution policy, and shared engine prerequisites. Contact the administrator with the request reference.");
+   return RiskAction(user=>dBConnection.EngineRun(true,period,entity),"Risk register calculation could not be completed.", "Verify the selected audit period, branch and published scoring version.");
   }
  }
 }
